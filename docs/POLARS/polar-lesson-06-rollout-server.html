@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Polar 逐文件精读 · 第 6 课：Rollout Server 与流水线</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 6 课</p><h1>Rollout Server 与流水线</h1><p>能访问 CDN 时切换为交互版。本课讲清 Polar 的 Rollout Server 作为“Rollout as a Service”的对外 HTTP 接口、RolloutManager 如何编排单个任务的会话生命周期、Pipeline 如何把派发与回收做成可重叠的多阶段流水、NodeScheduler 如何按阶段压力做负载均衡与 Runtime 分配，以及 StageTimer 为异步效率横评埋点的计时数据结构。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const POLAR="vscode://file/Users/xinyu/Code/Agentic-RL/ProRL-Agent-Server/";
+  function srcUrl(p,l){return POLAR+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Awaitable","Tensor","torch","dist","nn","int","float","bool","str","dict","list","tuple","frozenset","datetime","Path","Field","BaseModel","StrEnum","GatewayNode","GatewayNodeInfo","NodeScheduler","RolloutManager","Pipeline","Runtime","Harness","Trajectory","SessionContext","SessionResult","SessionStatus","SessionDispatchRequest","SessionTiming","TaskRequest","TaskResult","TaskStatus","StageTimer","NodeStageMetrics","DispatcherSnapshot","SessionStage","EventBus","Future","httpx"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","polar-lesson-01-foundations.html"],[2,"Agent与Harness","polar-lesson-02-agent-harness.html"],[3,"Gateway","polar-lesson-03-gateway.html"],[4,"协议变换","polar-lesson-04-transform.html"],[5,"Runtime池化","polar-lesson-05-runtime.html"],[6,"Rollout服务","polar-lesson-06-rollout-server.html"],[7,"轨迹与评估","polar-lesson-07-trajectory.html"],[8,"slime集成","polar-lesson-08-slime-bridge.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"polar-course-index.html"},"Polar",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== Rollout as a Service：对外接口 =====
+  function ServiceSection(){
+    return h("div",null,
+      h("p",null,"前五课自底向上建立了执行侧的全部组件：Agent 与 Harness（第 2 课）、Gateway（第 3 课）、协议变换（第 4 课）、Runtime 池化（第 5 课）。这一课转到调度侧，看 Polar 如何把这些组件包装成一个对训练框架开放的服务。其设计核心是一句话：把 rollout 当作一种远程服务（Rollout as a Service）。训练框架不再在自己的进程里内嵌一个推理与采样的子系统，而是以 HTTP 请求的方式向 Rollout Server 提交一批采样任务，随后用回调或轮询取回结果。"),
+      h("p",null,"这样划分边界的动机有三点。第一，",h("strong",null,"解耦训练后端与执行后端"),"。训练框架（如 slime、verl 或自研系统）只需会说一种简单的 HTTP 协议，就能复用同一套 agent harness、runtime 池与评估流程，因此换训练框架不必重写执行侧。第二，",h("strong",null,"使异步成为默认形态"),"。提交接口立即返回 task_id 而不阻塞，生成与训练得以重叠进行，这正是异步 RL 提高吞吐的前提。第三，",h("strong",null,"集中调度多节点容量"),"。一个 Rollout Server 面对多个 gateway 节点，由它统一做负载均衡，训练框架无需感知底层有多少台机器。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"对外"),"Rollout Server"),
+          h("p",null,"FastAPI 应用，承载任务提交、任务查询、节点注册/心跳、会话结果回调与 SSE 事件流五类端点。它是训练框架唯一需要知道的地址。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"对内"),"Gateway 节点群"),
+          h("p",null,"每个 gateway 节点向 Server 注册并定期心跳上报阶段占用。Server 据此把会话派发到压力最低的节点，由该节点的 dispatcher 实际执行（第 3、4、5 课）。")
+        )
+      ),
+      h("h3",null,"五类端点：服务的对外契约"),
+      h("p",null,"全部端点定义在 ",h("code",null,"server.py")," 中，由模块级 ",h("code",null,"RolloutState")," 持有 scheduler / pipeline / manager / event_bus 四个长生命周期对象。",h("code",null,"get_state()")," 惰性构造一次，FastAPI 的 lifespan 在启动时调用 ",h("code",null,"pipeline.start()"),"、在关闭时调用 ",h("code",null,"pipeline.close()"),"。"),
+      h(Code,null,"@app.post(\"/rollout/task/submit\")\nasync def submit_task_async(request: TaskRequest):\n    \"\"\"Non-blocking task submission. Returns immediately with task_id.\n\n    Poll ``GET /rollout/task/{task_id}`` until status becomes terminal.\n    \"\"\"\n    state = get_state()\n    try:\n        task_id = await state.manager.submit_task(request)\n    except ValueError as exc:\n        raise HTTPException(status_code=409, detail=str(exc)) from exc\n    return {\"task_id\": task_id, \"status\": \"running\"}"),
+      h("ul",null,
+        h("li",null,h("code",null,"POST /rollout/task/submit"),"：提交一个 ",h("code",null,"TaskRequest"),"，立即返回 task_id 与 running 状态，真正的执行在后台任务中进行。重复提交同一个 running 的 task_id 会得到 409。"),
+        h("li",null,h("code",null,"GET /rollout/task/{task_id}"),"：返回 ",h("code",null,"TaskStatus"),"（总会话数、已完成数与已收集结果），训练框架轮询它直到状态变为终态。"),
+        h("li",null,h("code",null,"POST /nodes/register"),"、",h("code",null,"POST /nodes/{id}/heartbeat"),"、",h("code",null,"GET /nodes"),"、",h("code",null,"DELETE /nodes/{id}"),"：gateway 节点的注册、心跳、列举与排空（drain）。"),
+        h("li",null,h("code",null,"POST /callbacks/session_result"),"：gateway 完成一个会话后，把 ",h("code",null,"SessionResult")," 主动 POST 回来，交给 pipeline 唤醒等待的 future。"),
+        h("li",null,h("code",null,"GET /events"),"：Server-Sent Events 事件流，把任务与会话状态变化推给观测面板。")
+      ),
+      h("div",null,h(Src,{label:"submit_task_async",path:"src/polar/rollout/server.py",line:109}),h(Src,{label:"get_task",path:"src/polar/rollout/server.py",line:123}),h(Src,{label:"register_node",path:"src/polar/rollout/server.py",line:136}),h(Src,{label:"session_result_callback",path:"src/polar/rollout/server.py",line:170}),h(Src,{label:"stream_events",path:"src/polar/rollout/server.py",line:206}),h(Src,{label:"RolloutState / _build_state",path:"src/polar/rollout/server.py",line:56})),
+      h("div",{className:"note"},"提交接口里没有任何“等待全部完成”的同步变体。Polar 的对外协议是 async-only：提交立即返回，结果通过回调（首选）或轮询（兜底）取回。这一选择从接口层就把训练循环推向异步形态。slime 侧的对应客户端见第 8 课的 ",h("code",null,"src/slime_bridge/rollout.py"),"。")
+    );
+  }
+
+  // ===== TaskRequest → SessionContext：数据契约 =====
+  function ModelsSection(){
+    return h("div",null,
+      h("p",null,"在看编排逻辑之前，先确定数据契约。",h("code",null,"models.py")," 用 Pydantic 模型定义了从训练框架到 gateway 节点之间流动的全部消息，以及只在 Server 进程内部流动的可变状态。把这些类型读清楚，后面的编排代码就只是在这些类型之间搬运。"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"TaskRequest：一次任务"),
+          h("p",null,"训练框架提交的请求。",h("code",null,"num_samples")," 决定要为同一条 ",h("code",null,"instruction")," 采样多少条轨迹（GRPO 等算法需要一组同源样本估计基线），",h("code",null,"timeout_seconds")," 是每条会话的执行预算，",h("code",null,"agent")," / ",h("code",null,"runtime")," / ",h("code",null,"builder")," / ",h("code",null,"evaluator")," 分别指定 harness、运行时、轨迹构建策略与评估器。"),
+          h(Code,null,"class TaskRequest(BaseModel):\n    task_id: str\n    instruction: str\n    num_samples: int = Field(default=1, ge=1)\n    timeout_seconds: float = Field(default=600.0, gt=0)\n    runtime: RuntimeSpec | None = None\n    agent: AgentSpec\n    builder: StrategySpec = Field(...)\n    evaluator: EvaluatorSpec | None = None\n    callback_url: str | None = None\n    metadata: dict[str, object] = Field(...)"),
+          h("div",null,h(Src,{label:"TaskRequest",path:"src/polar/rollout/models.py",line:59}),h(Src,{label:"SessionDispatchRequest",path:"src/polar/rollout/models.py",line:74}))
+        ),
+        h("div",null,
+          h("h4",null,"SessionContext：会话的内部状态"),
+          h("p",null,"一个 ",h("code",null,"dataclass"),"（非 Pydantic），承载一条会话在派发与回收过程中的全部可变状态：分配到的 ",h("code",null,"node_id")," / ",h("code",null,"gateway_url"),"、单调时钟的 ",h("code",null,"deadline_monotonic"),"、一个 ",h("code",null,"StageTimer"),"，以及一个 ",h("code",null,"completion_future"),"。这个 future 是异步编排的关键：回调一旦到达，就用它的结果唤醒正在等待的协程。"),
+          h(Code,null,"@dataclass(slots=True)\nclass SessionContext:\n    session_id: str\n    task_id: str\n    request: TaskRequest\n    deadline_monotonic: float = field(...)\n    node_id: str | None = None\n    gateway_url: str | None = None\n    timer: StageTimer = field(...)\n    rollout_result: SessionResult | None = None\n    completion_future: Future[SessionResult] | None = field(...)"),
+          h("div",null,h(Src,{label:"SessionContext",path:"src/polar/rollout/models.py",line:208}),h(Src,{label:"SessionResult",path:"src/polar/rollout/models.py",line:120}))
+        )
+      ),
+      h("h3",null,"会话生命周期状态机"),
+      h("p",null,h("code",null,"SessionStatus")," 是一个 ",h("code",null,"StrEnum"),"，枚举一条会话从注册到终态的全部状态。它直接对应 gateway dispatcher 的四个执行阶段，是连接“Server 的会话视图”与“gateway 的阶段视图”的共同词汇表。",h("code",null,"terminal()")," 与 ",h("code",null,"active()")," 两个类方法把状态分成终态集合与活跃集合，轮询逻辑据此判断是否还要继续等。"),
+      h(Code,null,"class SessionStatus(StrEnum):\n    REGISTERED = \"REGISTERED\"     # 已派发, 在 gateway 队列中等待 INIT\n    INITIALIZING = \"INITIALIZING\" # runtime 启动 + 准备 (init 阶段)\n    READY = \"READY\"               # runtime 就绪, 等待进入 RUNNING\n    RUNNING = \"RUNNING\"           # agent harness 在执行 (run 阶段)\n    POST_RUN = \"POST_RUN\"         # 收尾 (build/eval/teardown)\n    BUILDING = \"BUILDING\"\n    EVALUATING = \"EVALUATING\"\n    COMPLETED = \"COMPLETED\"       # 终态\n    ERROR = \"ERROR\"               # 终态\n    TIMEOUT = \"TIMEOUT\"           # 终态"),
+      h("p",null,"用 ",h("code",null,"StrEnum")," 而非普通枚举有一个具体好处：实例序列化为其字符串值，因此即使旧客户端按裸字符串读取 status 字段，协议依然兼容。这是 Polar 在演进数据契约时保持向后兼容的一种做法。"),
+      h("div",null,h(Src,{label:"SessionStatus",path:"src/polar/rollout/models.py",line:22}),h(Src,{label:"terminal / active",path:"src/polar/rollout/models.py",line:41}),h(Src,{label:"NodeStageMetrics",path:"src/polar/rollout/models.py",line:164}),h(Src,{label:"GatewayNodeInfo",path:"src/polar/rollout/models.py",line:192}))
+    );
+  }
+
+  // ===== RolloutManager：任务编排 =====
+  function ManagerSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"RolloutManager")," 管理单个已提交任务的会话生命周期。它的职责边界很清晰：把一个 ",h("code",null,"TaskRequest")," 展开成 ",h("code",null,"num_samples")," 条 ",h("code",null,"SessionContext"),"，交给 ",h("code",null,"Pipeline")," 并发执行，在每条会话完成时更新内存中的任务记录，全部完成后回调训练框架。它不直接和 gateway 通信，那是 pipeline 的事。"),
+      h("h3",null,"提交即返回：后台任务模式"),
+      h("p",null,h("code",null,"submit_task")," 先在锁内登记一条 ",h("code",null,"_TaskRecord"),"（状态 running），随后用 ",h("code",null,"asyncio.create_task")," 把真正的执行放进后台，立即返回 task_id。这与对外接口的 async-only 契约一致：HTTP 请求不会被一批可能耗时数分钟的采样阻塞。"),
+      h(Code,null,"async def submit_task(self, request: TaskRequest) -> str:\n    self._loop = asyncio.get_running_loop()\n    with self._lock:\n        existing = self._tasks.get(request.task_id)\n        if existing is not None and existing.status == \"running\":\n            raise ValueError(f\"task {request.task_id} is already running\")\n        self._tasks[request.task_id] = _TaskRecord(\n            task_id=request.task_id, status=\"running\",\n            total_sessions=request.num_samples, ...)\n    self._emit(\"task.created\", {...})\n    asyncio.create_task(self._run_task_background(request))\n    return request.task_id"),
+      h("p",null,"任务记录 ",h("code",null,"_TaskRecord")," 是一个 ",h("code",null,"slots")," dataclass，记录总数、已完成数、出错数、结果列表与逐会话状态字典。所有读写都在一把 ",h("code",null,"threading.RLock")," 下进行，因为 HTTP 请求处理（在事件循环线程）与回调更新可能并发触碰同一记录。"),
+      h("h3",null,"展开会话与并发执行"),
+      h("p",null,h("code",null,"_execute_task")," 是编排的主体。它为每个样本构造一条 ",h("code",null,"SessionContext"),"（带全局唯一的 ",h("code",null,"sk-polar-{uuid}")," 会话 id 与单调截止时刻），定义一个增量更新记录的 ",h("code",null,"_on_result")," 回调，然后调用 ",h("code",null,"pipeline.run_batch")," 一次性并发跑完整批。"),
+      h(Code,null,"async def _execute_task(self, request: TaskRequest) -> TaskResult:\n    sessions = [\n        SessionContext(\n            session_id=f\"sk-polar-{uuid.uuid4()}\",\n            task_id=request.task_id,\n            request=request,\n            deadline_monotonic=time.monotonic() + request.timeout_seconds,\n        )\n        for _ in range(request.num_samples)\n    ]\n\n    async def _on_result(result: SessionResult) -> None:\n        # 每完成一条会话就增量更新记录并发事件\n        with self._lock:\n            record = self._tasks[request.task_id]\n            record.completed_sessions += 1\n            if result.status in {SessionStatus.ERROR, SessionStatus.TIMEOUT}:\n                record.errored_sessions += 1\n            record.results.append(result)\n        self._emit(\"task.updated\", {...})\n\n    results = await self.pipeline.run_batch(sessions, on_result=_on_result)\n    # 全部完成: 标记 completed, 用有序结果覆盖增量收集的乱序结果\n    ..."),
+      h("p",null,"这里有一个值得注意的细节：",h("code",null,"_on_result")," 在会话完成的那一刻把结果追加进 ",h("code",null,"record.results"),"，顺序是完成顺序（乱序）；而 ",h("code",null,"run_batch")," 返回的 ",h("code",null,"results")," 与提交顺序一致。",h("code",null,"_execute_task")," 最后用这份有序结果整体覆盖记录，从而对外暴露稳定顺序，同时在执行期间又能让查询接口看到实时进度。"),
+      h("h3",null,"完成后的回调与查询视图"),
+      h("p",null,"任务全部完成后，",h("code",null,"_run_task_background")," 发出 ",h("code",null,"task.completed")," 事件，并在设置了 ",h("code",null,"callback_url")," 时把终态 ",h("code",null,"TaskResult")," POST 回训练框架。这个回调是尽力而为的：失败只记一条 warning，因为训练框架仍可通过轮询 ",h("code",null,"GET /rollout/task/{id}")," 兜底。",h("code",null,"get_task")," / ",h("code",null,"list_tasks")," / ",h("code",null,"list_sessions_for")," 提供任务级与会话级的监控视图，",h("code",null,"list_tasks")," 还会用 ",h("code",null,"_mean_reward")," 汇总每个任务最后一条 trace 的奖励均值。"),
+      h(Code,null,"async def _post_callback(self, callback_url: str, result: TaskResult) -> None:\n    \"\"\"Best-effort POST the terminal TaskResult to the trainer's callback URL.\"\"\"\n    try:\n        async with httpx.AsyncClient(timeout=_CALLBACK_TIMEOUT_SECONDS) as client:\n            response = await client.post(callback_url, json=result.model_dump(mode=\"json\"))\n            response.raise_for_status()\n    except Exception:\n        logger.warning(\n            \"Callback POST to %s failed for task %s; trainer must fall back to polling\",\n            callback_url, result.task_id, exc_info=True)"),
+      h("div",null,h(Src,{label:"RolloutManager",path:"src/polar/rollout/manager.py",line:74}),h(Src,{label:"submit_task",path:"src/polar/rollout/manager.py",line:101}),h(Src,{label:"_run_task_background",path:"src/polar/rollout/manager.py",line:128}),h(Src,{label:"_post_callback",path:"src/polar/rollout/manager.py",line:148}),h(Src,{label:"_execute_task",path:"src/polar/rollout/manager.py",line:177}),h(Src,{label:"get_task",path:"src/polar/rollout/manager.py",line:241}),h(Src,{label:"_mean_reward",path:"src/polar/rollout/manager.py",line:60}))
+    );
+  }
+
+  // ===== Pipeline：派发 + 回收 + 阶段流水 =====
+  function PipelineSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"Pipeline")," 是这一课的承重文件，承担两件事：把一条会话派发到一个 gateway 节点，并可靠地回收它的结果。",h("code",null,"run_batch")," 的实现只有一行核心逻辑，但这一行就是异步效率的起点。"),
+      h(Code,null,"async def run_batch(self, sessions, *, on_result=None) -> list[SessionResult]:\n    await self.start()\n    return await asyncio.gather(\n        *(self._dispatch_and_collect(session, on_result) for session in sessions)\n    )"),
+      h("p",null,h("code",null,"asyncio.gather")," 把整批会话的 ",h("code",null,"_dispatch_and_collect")," 协程同时挂上事件循环。由于每条协程在等待网络（派发 POST、等待回调、轮询 GET）时都会让出控制权，多条会话因此天然重叠：当一条慢会话在等待 agent 长时间运行时，其他快会话已经完成并回收。这就是“慢任务不阻塞快任务”的来源，也是 Rollout Staging 在 Server 侧的第一层重叠。"),
+      h("h3",null,"单条会话的派发与回收"),
+      h("p",null,h("code",null,"_dispatch_and_collect")," 是单条会话的完整生命周期。它先在事件循环上创建一个 future 并登记进 ",h("code",null,"self._pending"),"（键为会话 id），把它挂到 ",h("code",null,"session.completion_future"),"；随后派发会话、等待终态结果、写入磁盘、触发回调，最后无论成败都清理 gateway 上的会话。"),
+      h(Code,null,"async def _dispatch_and_collect(self, session, callback) -> SessionResult:\n    loop = asyncio.get_running_loop()\n    future = loop.create_future()\n    session.completion_future = future\n    async with self._pending_lock:\n        self._pending[session.session_id] = future\n\n    session.timer.mark(\"dispatch\", \"started\")\n    try:\n        dispatch_request = await self._dispatch_session(session)\n        session.timer.mark(\"dispatch\", \"finished\")\n        result = await self._wait_for_result(session, dispatch_request, future)\n    except TimeoutError as exc:\n        result = self._failure_result(session, status=SessionStatus.TIMEOUT, error=str(exc))\n    except Exception as exc:\n        result = self._failure_result(session, error=str(exc))\n    finally:\n        async with self._pending_lock:\n            self._pending.pop(session.session_id, None)\n\n    await asyncio.to_thread(self._persist_result, result)\n    session.rollout_result = result\n    try:\n        if callback is not None:\n            maybe_awaitable = callback(result)\n            if inspect.isawaitable(maybe_awaitable):\n                await maybe_awaitable\n        return result\n    finally:\n        await self._cleanup_session(session)"),
+      h("p",null,"两个工程细节值得点出：其一，结果写入磁盘用 ",h("code",null,"asyncio.to_thread"),"，把同步的文件写挪到线程池，避免阻塞事件循环；其二，任何异常都被转换成一个 ",h("code",null,"_failure_result"),"（一条空轨迹 + 错误信息），而不是让异常向上传播，因为一条会话失败不应该让整批 ",h("code",null,"gather")," 崩溃。"),
+      h("h3",null,"派发：选节点、POST、处理重复派发竞态"),
+      h("p",null,h("code",null,"_dispatch_session")," 循环向 ",h("code",null,"scheduler.acquire_node()")," 要一个可用节点；要不到就按 ",h("code",null,"dispatch_poll_interval_seconds")," 退避后重试，直到截止时刻耗尽抛 ",h("code",null,"TimeoutError"),"。拿到节点后，把会话信息打包成 ",h("code",null,"SessionDispatchRequest")," POST 到该节点的 ",h("code",null,"/sessions"),"。"),
+      h(Code,null,"async def _dispatch_session(self, session) -> SessionDispatchRequest:\n    while True:\n        node = self.scheduler.acquire_node()\n        if node is None:\n            remaining_timeout = self._remaining_timeout_seconds(session)\n            await asyncio.sleep(min(self.dispatch_poll_interval_seconds, remaining_timeout))\n            continue\n        session.node_id = node.node_id\n        session.gateway_url = node.gateway_url\n        dispatch_request = SessionDispatchRequest(...)\n        try:\n            response = await self._client.post(\n                f\"{node.gateway_url}/sessions\", json=dispatch_request.model_dump(mode=\"json\"), ...)\n            response.raise_for_status()\n            return dispatch_request\n        except Exception as exc:\n            if await self._accepted_duplicate_dispatch(exc, node.gateway_url, session, dispatch_request):\n                return dispatch_request\n            self.scheduler.release_reservation(node.node_id)\n            self.scheduler.mark_unhealthy(node.node_id)\n            ...  # 退避后换节点重试"),
+      h("div",{className:"warn"},h("strong",null,"重复派发竞态"),"：gateway 可能已经接受了会话，但 POST 的应答在网络上丢失。简单重试会撞上 409（会话 id 单次有效）。",h("code",null,"_accepted_duplicate_dispatch")," 在出错后 GET ",h("code",null,"/sessions/{id}")," 确认：若该会话确实属于本任务，就把这次“失败的派发”当作成功，继续等待结果，而不是无限重试。这是网络不可靠下保证“恰好一次”语义的具体做法。"),
+      h("h3",null,"回收：回调优先，轮询兜底"),
+      h("p",null,h("code",null,"_wait_for_result")," 是整个文件最精巧的部分。它把“等待回调”与“轮询 gateway 状态”交织进同一个循环，使轮询路径成为一条始终在线的安全网，而非永不执行的死代码。它要同时处理两种竞态。"),
+      h(Code,null,"async def _wait_for_result(self, session, dispatch_request, future) -> SessionResult:\n    # REGISTERED 是 gateway 队列等待时间: 计入会话计时, 但此时不消耗执行超时预算\n    execution_timeout_started = False\n    callback_deadline: float | None = None\n    pre_init_poll_interval = self.dispatch_poll_interval_seconds\n    result_poll_interval = max(self.dispatch_poll_interval_seconds, 5.0)\n\n    while True:\n        # 1) 优先等回调唤醒 future (用 shield 防止超时取消 future 本身)\n        if execution_timeout_started:\n            remaining = callback_deadline - time.monotonic()\n            if remaining <= 0:\n                break\n            wait_timeout = min(result_poll_interval, remaining)\n        else:\n            wait_timeout = pre_init_poll_interval\n        try:\n            return await asyncio.wait_for(asyncio.shield(future), timeout=wait_timeout)\n        except asyncio.TimeoutError:\n            pass\n        # 2) 回调没来: 主动轮询 gateway 状态\n        try:\n            status, result = await self._poll_session_state(session, timeout=30.0)\n        except Exception:\n            status = None; result = None\n        if result is not None:\n            if not future.done():\n                future.set_result(result)\n            return result\n        # 3) 一旦离开 REGISTERED 进入 INIT, 才开始计执行超时\n        if (not execution_timeout_started and status is not None\n                and status != SessionStatus.REGISTERED):\n            session.deadline_monotonic = time.monotonic() + session.request.timeout_seconds\n            callback_deadline = self._callback_deadline_monotonic(session)\n            execution_timeout_started = True\n\n    raise TimeoutError(\"session ... did not return a terminal result before the callback deadline\")"),
+      h("p",null,"它覆盖两个竞态：第一，回调 HTTP POST 丢失或延迟，轮询 GET 会发现结果；第二，gateway 把状态翻成终态后、还没把结果序列化进 GET 响应时，本轮 ",h("code",null,"_poll_session_state")," 返回 ",h("code",null,"(status, None)"),"，循环下一轮再查，而不是据此合成一个空轨迹“假失败”。后一点尤其重要："),
+      h("div",{className:"note"},"源码注释明确记录：若在结果尚未就绪时合成空轨迹失败，会“污染 GRPO 批次”。因为 GRPO 要在一组同源样本上做组内归一化，掺入空样本会扭曲优势估计。因此 Polar 宁可多轮询几次也不轻易判失败。这是正确性优先于吞吐的一处具体取舍。"),
+      h("h3",null,"两段式超时：队列等待不计入执行预算"),
+      h("p",null,"另一处设计是把超时分成两段。会话刚派发后处于 ",h("code",null,"REGISTERED"),"（在 gateway 队列里排队等 runtime），这段时间计入会话计时，但",h("strong",null,"不消耗执行超时预算"),"。只有当状态离开 ",h("code",null,"REGISTERED")," 进入 INIT，才重置 ",h("code",null,"deadline_monotonic")," 开始计执行超时。这样做的理由是：排队时间取决于集群当时的拥塞，把它算进 agent 的执行预算会让繁忙时大量会话被误判超时。执行超时之外再叠加一个 ",h("code",null,"callback_grace_seconds")," 的回调宽限期，给结果回传留出余量。"),
+      h(Formula,{cap:"回调截止时刻：执行预算之上叠加回调宽限"},"$$ t_{\\text{callback}} = t_{\\text{INIT}} + \\texttt{timeout\\_seconds} + \\texttt{callback\\_grace\\_seconds} $$"),
+      h("div",null,h(Src,{label:"Pipeline",path:"src/polar/rollout/pipeline.py",line:33}),h(Src,{label:"run_batch",path:"src/polar/rollout/pipeline.py",line:84}),h(Src,{label:"accept_callback_result",path:"src/polar/rollout/pipeline.py",line:95}),h(Src,{label:"_dispatch_and_collect",path:"src/polar/rollout/pipeline.py",line:112}),h(Src,{label:"_dispatch_session",path:"src/polar/rollout/pipeline.py",line:165}),h(Src,{label:"_accepted_duplicate_dispatch",path:"src/polar/rollout/pipeline.py",line:216}),h(Src,{label:"_wait_for_result",path:"src/polar/rollout/pipeline.py",line:269}),h(Src,{label:"_poll_session_state",path:"src/polar/rollout/pipeline.py",line:337}),h(Src,{label:"_persist_result",path:"src/polar/rollout/pipeline.py",line:409}),h(Src,{label:"_failure_result",path:"src/polar/rollout/pipeline.py",line:438}))
+    );
+  }
+
+  // ===== Rollout Staging 探索器 =====
+  const STAGES=[
+    {key:"overview",name:"为何要分阶段",render:function(){return [
+      h("p",null,"一条 rollout 会话不是一个不可分的整体，而是一串性质不同的阶段：准备 runtime（可能要拉起一个容器或沙箱）、运行 agent harness（与模型多轮交互，最慢）、构建轨迹、评估奖励、拆除 runtime。如果用一个 worker 串行跑完整条会话，那么慢阶段（运行）会把所有快阶段（构建、评估）卡在身后，节点利用率低。"),
+      h("p",null,"Rollout Staging 的思路是把这些阶段拆成各自独立的 worker 池，让不同会话的不同阶段在节点上重叠：会话 A 在运行时，会话 B 已经在准备 runtime，会话 C 正在评估。这样节点的各类资源（CPU 准备、推理带宽、评估计算）都能保持忙碌，而不是轮流空转。"),
+      h("p",null,"重叠发生在两个层面。",h("strong",null,"Server 层"),"：",h("code",null,"asyncio.gather")," 让一批会话的派发与回收协程并发，慢会话让出控制权时快会话推进。",h("strong",null,"Gateway 层"),"：",h("code",null,"dispatcher.py")," 用四个隔离的 worker 池（INIT / READY / RUNNING / POSTRUN）驱动会话穿过各阶段，每个池有独立并发上限。本课聚焦 Server 层与调度，gateway dispatcher 的内部实现见第 3、4 课。"),
+      h("div",null,h(Src,{label:"dispatcher.py（阶段说明）",path:"src/polar/gateway/dispatcher.py",line:1}),h(Src,{label:"SessionStage",path:"src/polar/gateway/dispatcher.py",line:31}))
+    ];}},
+    {key:"stages",name:"四个阶段与计量",render:function(){return [
+      h("p",null,"gateway dispatcher 把会话生命周期切成四个阶段，每个阶段区分“排队”与“执行中”两种占用。",h("code",null,"DispatcherSnapshot")," 用六个计数器精确刻画当前占用，并通过心跳上报为 ",h("code",null,"NodeStageMetrics"),"，成为调度的输入。"),
+      h(Code,null,"@dataclass(slots=True)\nclass DispatcherSnapshot:\n    init_queue_depth: int = 0    # INIT 阶段排队中\n    init_inflight: int = 0       # INIT 阶段执行中 (准备 runtime)\n    ready_depth: int = 0         # 已就绪, 等待进入 RUNNING\n    run_inflight: int = 0        # RUNNING 阶段执行中 (agent 运行)\n    postrun_queue_depth: int = 0 # POSTRUN 阶段排队中\n    postrun_inflight: int = 0    # POSTRUN 阶段执行中 (build/eval/teardown)"),
+      h("p",null,"为什么是这六个量而不是简单的“忙/闲”？因为它们让调度器能看清每个节点在哪一类资源上吃紧：",h("code",null,"run_inflight")," 高说明推理带宽吃紧，",h("code",null,"postrun_*")," 高说明评估积压，",h("code",null,"init_*")," 高说明 runtime 准备排队。粒度更细的计量直接决定了下一节负载均衡能否做出准确判断。"),
+      h("div",null,h(Src,{label:"DispatcherSnapshot",path:"src/polar/gateway/dispatcher.py",line:38}),h(Src,{label:"NodeStageMetrics",path:"src/polar/rollout/models.py",line:164}),h(Src,{label:"total_sessions",path:"src/polar/rollout/models.py",line:175}))
+    ];}},
+    {key:"ready",name:"Ready 缓冲与预热",render:function(){return [
+      h("p",null,"四个阶段之间，READY 是一个特殊的缓冲区。它存放“runtime 已经准备好、但 agent 还没开始运行”的会话。设这个缓冲的动机是：runtime 准备（INIT）耗时且不稳定，若等到要运行时才准备，运行阶段就会被准备时间拖慢。预先攒一批就绪会话，运行阶段就能连续取用，不必等待。"),
+      h("p",null,"balancer 把就绪缓冲的目标深度设为与运行并发上限一一对应：",h("code",null,"ready_buffer_target == max_run_workers"),"。直觉是：运行池有多少个并发槽，就预备多少个就绪会话垫在后面，恰好够它满负荷连续运转，又不会过度占用 runtime。"),
+      h(Code,null,"@property\ndef ready_buffer_target(self) -> int:\n    \"\"\"Ready buffer tracks run capacity one-for-one.\"\"\"\n    return self.max_run_workers"),
+      h("div",null,h(Src,{label:"ready_buffer_target",path:"src/polar/rollout/balancer.py",line:35}))
+    ];}}
+  ];
+  function StageExplorer(){const [s,setS]=useState(0);const d=STAGES[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},STAGES.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== NodeScheduler：负载均衡 =====
+  function BalancerSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"NodeScheduler")," 是 balancer 的实现，承担两件事：维护已注册节点的健康状态，以及按阶段压力把会话分配给最合适的节点（Runtime Pooling 分配的调度入口）。pipeline 的 ",h("code",null,"_dispatch_session")," 每要派发一条会话，就调用一次 ",h("code",null,"acquire_node()"),"。"),
+      h("h3",null,"健康判定：心跳与陈旧因子"),
+      h("p",null,"节点通过 ",h("code",null,"register_node")," 注册、通过 ",h("code",null,"heartbeat")," 定期上报 ",h("code",null,"NodeStageMetrics"),"。一个节点被判定为健康，当且仅当距上次心跳的时间不超过 ",h("code",null,"heartbeat_interval_seconds × stale_factor"),"（默认 ",h("code",null,"stale_factor=2.5"),"）。乘一个大于 1 的陈旧因子，是为了容忍偶尔丢失一两个心跳而不立刻把节点判死。健康在每次 ",h("code",null,"acquire_node")," 前用 ",h("code",null,"_refresh_health_locked")," 重算，列举类接口则返回不修改状态的快照。"),
+      h(Code,null,"def _is_node_healthy(self, node: GatewayNode, now: datetime) -> bool:\n    timeout_seconds = max(1.0, node.heartbeat_interval_seconds * self._stale_factor)\n    return (now - node.last_heartbeat).total_seconds() <= timeout_seconds"),
+      h("h3",null,"准入：节点是否还能再接一条会话"),
+      h("p",null,h("code",null,"acquire_node")," 先筛掉不健康、正在排空、或已达准入上限的节点。准入上限是四个阶段容量之和（init + ready + run + postrun）；此外还有一道额外约束：POSTRUN 积压（执行中 + 排队）不得超过 ",h("code",null,"max_postrun_workers × 2"),"。后一条防止评估阶段成为瓶颈时，节点仍不断吸入新会话，最终在收尾处堆积。"),
+      h(Code,null,"@staticmethod\ndef _can_accept_session(node: GatewayNode) -> bool:\n    admission_limit = (node.max_init_workers + node.ready_buffer_target\n                       + node.max_run_workers + node.max_postrun_workers)\n    if node.total_sessions >= admission_limit:\n        return False\n    postrun_backlog = node.metrics.postrun_inflight + node.metrics.postrun_queue_depth\n    return postrun_backlog < (node.max_postrun_workers * 2)"),
+      h("h3",null,"选节点：多键字典序打分"),
+      h("p",null,"在所有可准入的候选里，",h("code",null,"acquire_node")," 选 ",h("code",null,"_node_score")," 最小者。打分不是单一标量，而是一个六元组，按字典序比较：先比运行压力，再比收尾压力、初始化压力，再比就绪缺口（取负，缺口越大越优先以补满缓冲），再比总压力，最后用 node_id 做确定性平手裁决。"),
+      h(Code,null,"@staticmethod\ndef _node_score(node) -> tuple[float, float, float, float, float, str]:\n    run_pressure = node.metrics.run_inflight / node.max_run_workers\n    postrun_pressure = (node.metrics.postrun_inflight\n                        + node.metrics.postrun_queue_depth) / node.max_postrun_workers\n    init_pressure = (node.metrics.init_inflight + node.metrics.init_queue_depth\n                     + node.dispatch_reservations) / node.max_init_workers\n    ready_gap = max(0, node.ready_buffer_target - node.metrics.ready_depth)\n    admission_limit = (node.max_init_workers + node.ready_buffer_target\n                       + node.max_run_workers + node.max_postrun_workers)\n    total_pressure = node.total_sessions / admission_limit\n    return (run_pressure, postrun_pressure, init_pressure,\n            -float(ready_gap), total_pressure, node.node_id)"),
+      h("p",null,"用字典序而非加权求和，是一个刻意的选择。加权求和需要为各维选权重，权重难调且会掩盖维度间的优先级；字典序则明确表达了优先级顺序：",h("strong",null,"先保运行阶段不过载（推理是最稀缺资源），再保收尾不积压，然后才考虑准备阶段与缓冲补足"),"。把各压力都做成“占用 / 容量”的归一化比值，使得不同容量的异构节点之间可比。"),
+      h("div",{className:"note"},h("strong",null,"dispatch_reservations 的作用"),"：",h("code",null,"acquire_node")," 选中一个节点后立即把它的 ",h("code",null,"dispatch_reservations += 1"),"。因为从派发到该会话出现在心跳指标里有延迟，预约计数让调度器在这段窗口内不会把同一个节点反复选爆。派发失败时 ",h("code",null,"release_reservation")," 归还，下一次心跳到来时预约清零（已被真实指标取代）。"),
+      h("h3",null,"排空：优雅下线"),
+      h("p",null,h("code",null,"drain_node")," 把节点标记为 ",h("code",null,"draining"),"：不再接新会话，但已在其上的会话继续跑完。当节点的 ",h("code",null,"total_sessions")," 归零，",h("code",null,"_maybe_remove_drained_locked")," 才把它从注册表移除。这让运维能无损地下线一个 gateway 节点，而不打断正在进行的 rollout。"),
+      h("div",null,h(Src,{label:"NodeScheduler",path:"src/polar/rollout/balancer.py",line:55}),h(Src,{label:"register_node",path:"src/polar/rollout/balancer.py",line:82}),h(Src,{label:"heartbeat",path:"src/polar/rollout/balancer.py",line:103}),h(Src,{label:"acquire_node",path:"src/polar/rollout/balancer.py",line:114}),h(Src,{label:"_node_score",path:"src/polar/rollout/balancer.py",line:198}),h(Src,{label:"_can_accept_session",path:"src/polar/rollout/balancer.py",line:226}),h(Src,{label:"drain_node / _maybe_remove",path:"src/polar/rollout/balancer.py",line:152}))
+    );
+  }
+
+  // ===== StageTimer：异步效率埋点 =====
+  function TimerSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"timer.py")," 很短，却是把异步效率变成可度量指标的关键。",h("code",null,"StageTimer")," 记录会话各阶段的单调时间戳，",h("code",null,"to_session_timing()")," 把它们折算成 ",h("code",null,"SessionTiming")," 的四个公开时长字段（毫秒）。"),
+      h(Code,null,"@dataclass(slots=True)\nclass StageTimer:\n    _marks: dict[str, float] = field(default_factory=dict)\n\n    def mark(self, stage: str, event: str) -> None:\n        self._marks[f\"{stage}_{event}\"] = time.monotonic()\n\n    def to_session_timing(self) -> SessionTiming:\n        return SessionTiming(\n            register_to_init_queue_ms=self._span_ms(\"dispatch_started\", \"init_started\"),\n            init_ms=self._duration_ms(\"init\"),\n            run_ms=self._duration_ms(\"run\"),\n            postrun_ms=self._postrun_span_ms())"),
+      h("p",null,"四个时长各自的含义：",h("code",null,"register_to_init_queue_ms")," 是派发到进入 INIT 的排队等待（即上一节那段“不计入执行预算”的时间），",h("code",null,"init_ms")," 是 runtime 启动加准备，",h("code",null,"run_ms")," 是 agent harness 的执行时间，",h("code",null,"postrun_ms")," 是收尾（构建、评估、拆除）。注意收尾时长用 ",h("code",null,"_postrun_span_ms"),"：取 build/eval/teardown 等一族标记中“最早开始到最晚结束”的跨度，因为这些子阶段本身可能重叠，单纯相加会高估。"),
+      h("p",null,"为什么这些埋点对横评重要？在异步 RL 里，吞吐取决于各阶段能否充分重叠。把每条会话的四段时长留存下来，就能回答“瓶颈在准备、运行还是收尾”“排队等待占比多大”这类问题，从而量化“异步效率”这一维度。",h("code",null,"_marks")," 里更细的 build/eval/teardown 标记仍写入字典供调试日志使用，只是在公开 schema 里归并进 ",h("code",null,"postrun_ms"),"，保持对外字段稳定。"),
+      h(Formula,{cap:"会话执行墙钟时长可分解为四段（排队 + 准备 + 运行 + 收尾）"},"$$ T_{\\text{wall}} \\approx \\texttt{register\\_to\\_init\\_queue} + \\texttt{init} + \\texttt{run} + \\texttt{postrun} $$"),
+      h("p",null,"在批级别，由于 ",h("code",null,"asyncio.gather")," 使会话重叠，整批的墙钟时长远小于各会话时长之和。理想重叠下，批墙钟时长趋近于“最慢会话的时长 + 调度开销”，这正是 Rollout Staging 想逼近的目标。"),
+      h(Formula,{cap:"批吞吐：重叠越充分, 批墙钟越接近单条最慢会话"},"$$ T_{\\text{batch}} \\ge \\max_i T_{\\text{wall}}^{(i)}, \\qquad \\text{理想重叠时取等号} $$"),
+      h("div",null,h(Src,{label:"StageTimer",path:"src/polar/rollout/timer.py",line:17}),h(Src,{label:"mark",path:"src/polar/rollout/timer.py",line:23}),h(Src,{label:"to_session_timing",path:"src/polar/rollout/timer.py",line:27}),h(Src,{label:"_postrun_span_ms",path:"src/polar/rollout/timer.py",line:50}),h(Src,{label:"SessionTiming",path:"src/polar/rollout/models.py",line:103}))
+    );
+  }
+
+  // ===== 跨框架扩展 =====
+  function ScaleSection(){
+    return h("div",null,
+      h("p",null,"把以上各层串起来，就能看清这套设计如何让异步 RL 在不同训练框架下扩展。训练框架（slime、verl 或自研）只需做一件事：向 Rollout Server POST 一个 ",h("code",null,"TaskRequest"),"，然后等回调或轮询结果。它不需要知道底层有多少 gateway 节点、用什么 runtime、跑哪个 harness。这层 HTTP 边界把训练后端与执行后端彻底分开。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill green"},"扩展"),"水平扩容"),
+          h("p",null,"加机器就是多注册几个 gateway 节点。NodeScheduler 自动把它们纳入候选并按压力分配，训练框架代码无需改动。节点异构（不同容量）也能比较，因为压力都归一化为占用比。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"异步"),"重叠生成与训练"),
+          h("p",null,"提交接口立即返回 + 回调取回结果, 使训练步与生成步重叠。这与 slime 等框架的异步训练循环吻合: 提前发起下一批生成, 用上一批数据训练。")
+        )
+      ),
+      h("p",null,"对“异步效率”这一横评维度，本课的设计在多处埋点：",h("code",null,"StageTimer")," 的四段时长量化单条会话的时间构成，",h("code",null,"NodeStageMetrics")," 的六个计数器量化节点各阶段占用，",h("code",null,"list_tasks")," 的 ",h("code",null,"mean_reward")," 与会话级 timing 让批级效率可观测。这些指标共同回答一个问题：在给定硬件下，rollout 阶段的重叠做得有多充分。"),
+      h("p",null,"slime 侧如何调用这套接口（提交、轮询、把 ",h("code",null,"TaskResult")," 转回训练样本、按完成比例做准入控制），是第 8 课 ",h("code",null,"src/slime_bridge/rollout.py")," 的主题。本课只需记住对外契约是 ",h("code",null,"/rollout/task/submit")," + ",h("code",null,"/rollout/task/{id}")," + 回调。"),
+      h("div",null,h(Src,{label:"slime_bridge 客户端（第8课）",path:"src/slime_bridge/rollout.py"}),h(Src,{label:"slime_bridge README",path:"src/slime_bridge/README.md"}),h(Ext,{href:"https://arxiv.org/pdf/2605.24220"},"Polar Tech Report"),h(Ext,{href:"https://arxiv.org/pdf/2505.24298"},"AReaL 异步 RL"))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"Polar Tech Report",d:"Rollout as a Service 与异步效率的设计动机",href:"https://arxiv.org/pdf/2605.24220"},
+    {t:"AReaL 异步 RL",d:"异步 RL 训练系统与陈旧度控制的参照",href:"https://arxiv.org/pdf/2505.24298"},
+    {t:"FastAPI 文档",d:"Rollout Server 的 Web 框架, lifespan 与依赖",href:"https://fastapi.tiangolo.com/"},
+    {t:"asyncio 文档",d:"gather / shield / wait_for / Future 语义",href:"https://docs.python.org/3/library/asyncio.html"},
+    {t:"httpx 文档",d:"派发与回调使用的异步 HTTP 客户端",href:"https://www.python-httpx.org/"},
+    {t:"GRPO（DeepSeekMath）",d:"为何空轨迹会污染组内归一化优势",href:"https://arxiv.org/abs/2402.03300"},
+    {t:"server.py（本机）",d:"src/polar/rollout/server.py",href:srcUrl("src/polar/rollout/server.py",null)},
+    {t:"pipeline.py（本机）",d:"src/polar/rollout/pipeline.py",href:srcUrl("src/polar/rollout/pipeline.py",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:6}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 6 课 / 共 8 · Rollout 服务"),
+          h("h1",null,"Rollout Server 与流水线"),
+          h("p",{className:"lead"},"这是异步效率的核心一课。前五课建好了执行侧组件，这一课转到调度侧：Rollout Server 如何把 rollout 当作服务对训练框架开放，RolloutManager 如何编排单个任务的会话生命周期，Pipeline 如何把派发与回收做成可重叠的流水（Rollout Staging），NodeScheduler 如何按阶段压力做负载均衡与 Runtime 分配，以及 StageTimer 如何为异步效率横评埋点。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"src/polar/rollout/")," 的 server / manager / pipeline / balancer / models / timer 六个文件。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/ProRL-Agent-Server")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"server.py · 对外接口"),
+          h("h2",null,"Rollout as a Service：把 rollout 变成服务"),
+          h(ServiceSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"models.py · 数据契约"),
+          h("h2",null,"从 TaskRequest 到 SessionContext"),
+          h(ModelsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"manager.py · 任务编排"),
+          h("h2",null,"RolloutManager：单任务的会话生命周期"),
+          h(ManagerSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"pipeline.py · 承重文件"),
+          h("h2",null,"Pipeline：派发、回收与重叠"),
+          h(PipelineSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"Rollout Staging"),
+          h("h2",null,"阶段流水：让慢任务不阻塞快任务"),
+          h("p",null,"把一条会话拆成多个阶段、让不同会话的不同阶段重叠，是这套系统提高吞吐的核心机制。点 Tab 依次看：为何分阶段、四个阶段如何计量、READY 缓冲的作用。"),
+          h(StageExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"balancer.py · 负载均衡"),
+          h("h2",null,"NodeScheduler：按阶段压力分配会话"),
+          h(BalancerSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"timer.py · 异步效率埋点"),
+          h("h2",null,"StageTimer：把效率变成可度量的指标"),
+          h(TimerSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"跨框架扩展"),
+          h("h2",null,"这套设计如何让异步 RL 扩展"),
+          h(ScaleSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档，能把 Rollout as a Service、异步 RL 与本课组件的设计动机补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"Rollout as a Service"),"：训练框架以 HTTP 提交 ",h("code",null,"TaskRequest"),"，Server 立即返回 task_id。对外契约是 async-only（提交 + 轮询 + 回调），从接口层就把训练循环推向异步，并解耦训练后端与执行后端。"),
+            h("li",null,h("strong",null,"两级编排"),"：RolloutManager 管单个任务（展开会话、增量更新记录、完成后回调），Pipeline 管单条会话（选节点、派发、回收、清理）。",h("code",null,"asyncio.gather")," 让整批会话并发重叠。"),
+            h("li",null,h("strong",null,"正确性优先于吞吐"),"：回调优先 + 轮询兜底、重复派发竞态确认、结果未就绪不合成假失败（避免污染 GRPO 批次）、两段式超时（队列等待不计执行预算），都是为可靠回收一条结果而付出的工程代价。"),
+            h("li",null,h("strong",null,"Rollout Staging 提高吞吐"),"：会话拆成 INIT / READY / RUNNING / POSTRUN 四阶段并重叠，READY 缓冲按运行容量一一预备就绪会话，使慢任务不阻塞快任务。"),
+            h("li",null,h("strong",null,"阶段压力驱动调度"),"：NodeScheduler 用六维归一化压力的字典序打分选节点，优先保运行不过载；心跳陈旧因子判健康，预约计数防过选，排空机制优雅下线。"),
+            h("li",null,h("strong",null,"为异步效率埋点"),"：StageTimer 的四段时长 + NodeStageMetrics 的六个计数器，让“重叠做得多充分”成为可观测、可横评的维度。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"polar-lesson-05-runtime.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 5 课：Runtime 池化")),
+            h("a",{href:"polar-lesson-07-trajectory.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 7 课：Trajectory 构建与评估"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

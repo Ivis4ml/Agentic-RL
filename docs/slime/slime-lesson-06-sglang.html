@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>slime 逐文件精读 · 第 6 课：推理后端 SGLang</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 6 课</p><h1>推理后端 SGLang</h1><p>能访问 CDN 时切换为交互版。本课讲清 slime 如何启动并管理 SGLang server：SGLangEngine 封装与 HTTP 接口、router 注册、暂停/继续生成与权重同步的配合、参数翻译、外部引擎接入，以及 prefill/decode 分离（PD disaggregation）与 mooncake 传输后端。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const SLIME="vscode://file/Users/xinyu/Code/Agentic-RL/slime/";
+  function srcUrl(p,l){return SLIME+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","Sample","Args","RolloutController","RolloutManager","RayTrainGroup","RayActor","SGLangEngine","Box","ray","asyncio","Timer","ParamInfo","RolloutBatch","ServerArgs","ServerGroupConfig","ModelConfig","SglangConfig","ExternalEngineInfo","ExternalRolloutServer","DeltaSpec","DeltaEncoding","DeltaParam","str"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与双引擎","slime-lesson-01-foundations.html"],[2,"统一配置","slime-lesson-02-config.html"],[3,"RL 数学原语","slime-lesson-03-rl-math.html"],[4,"数据与 Buffer","slime-lesson-04-data-buffer.html"],[5,"Megatron 后端","slime-lesson-05-megatron.html"],[6,"SGLang 后端","slime-lesson-06-sglang.html"],[7,"权重同步","slime-lesson-07-weight-sync.html"],[8,"Rollout 与异步","slime-lesson-08-rollout-async.html"],[9,"Agent 层","slime-lesson-09-agent.html"],[10,"Ray 编排","slime-lesson-10-orchestration.html"],[11,"miles 增量","slime-lesson-11-miles-delta.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"slime-course-index.html"},"slime",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 总览：SGLang 在 slime 中的角色 =====
+  function OverviewSection(){
+    return h("div",null,
+      h("p",null,"slime 刻意只选择 SGLang 一个 rollout（推理与采样）后端，于是可以直接使用 SGLang 全部的服务能力，而不必把多个推理引擎压成一个最小公共抽象。本课讨论的全部代码都在 ",h("code",null,"slime/backends/sglang_utils/")," 目录下，外加 ",h("code",null,"slime/backends/megatron_utils/sglang.py")," 这个依赖隔离层。它们共同回答一个问题：训练侧的 Megatron 进程如何启动、确认健康、控制并把权重推给一组 SGLang 推理服务。"),
+      h("p",null,"理解全局有三个层次，自底向上：其一，每个 ",h("strong",{className:"hl-teal"},"SGLang server")," 是一个独立的 HTTP 服务进程，对外暴露 ",h("code",null,"/generate"),"、",h("code",null,"/flush_cache"),"、",h("code",null,"/update_weights_from_distributed"),"、",h("code",null,"/pause_generation")," 等接口；其二，slime 用一个轻量的 Ray actor ",h("strong",{className:"hl-blue"},"SGLangEngine")," 包裹每个 server，把这些 HTTP 接口转成可远程调用的 Python 方法；其三，多个 server 注册到同一个 ",h("strong",{className:"hl-amber"},"sglang-router")," 后面，router 按负载把生成请求分发到各 server，对训练侧呈现为单一服务地址。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"进程"),"SGLang HTTP server"),
+          h("p",null,"由 ",h("code",null,"launch_server")," 在子进程中拉起，加载模型、分配 KV 缓存、启动调度循环。slime 不修改其内部，只通过 HTTP 与之交互。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill blue"},"Ray actor"),"SGLangEngine"),
+          h("p",null,"每个 server 对应一个 ",h("code",null,"SGLangEngine")," 实例（继承自 ",h("code",null,"RayActor"),"）。它把启动参数翻译、健康检查、权重更新、暂停/继续、性能剖析等都封装为远程方法。")
+        )
+      ),
+      h("p",null,"为什么这样分层？原因在于训练与推理在物理上是跨进程、跨节点的两套系统。SGLang server 必须是独立进程，因为它有自己的 CUDA context、调度循环与 KV 缓存管理；而训练侧需要一个可以从 Megatron 主进程 ",h("code",null,"ray.get(...)")," 调用的句柄。",h("code",null,"SGLangEngine")," 作为 Ray actor 恰好充当这个句柄，所有跨进程通信落到 HTTP 与 Ray RPC 两条通道上，保持显式可追踪。"),
+      h("div",null,h(Src,{label:"sglang_engine.py",path:"slime/backends/sglang_utils/sglang_engine.py"}),h(Src,{label:"server_control.py",path:"slime/backends/sglang_utils/server_control.py"}),h(Src,{label:"sglang_config.py",path:"slime/backends/sglang_utils/sglang_config.py"}),h(Src,{label:"external.py",path:"slime/backends/sglang_utils/external.py"}),h(Src,{label:"arguments.py",path:"slime/backends/sglang_utils/arguments.py"}),h(Ext,{href:"https://docs.sglang.ai/"},"SGLang 文档"))
+    );
+  }
+
+  // ===== SGLangEngine：启动与生命周期 =====
+  function EngineSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"SGLangEngine")," 是承重类。构造函数只记录参数（",h("code",null,"args"),"、",h("code",null,"rank"),"、",h("code",null,"worker_type"),"、",h("code",null,"base_gpu_id")," 等），真正的工作在 ",h("code",null,"init(...)")," 中完成：先确定本进程的 host 与 GPU，再调用 ",h("code",null,"_compute_server_args")," 把 slime 参数翻译为 SGLang 的 ",h("code",null,"ServerArgs"),"，最后根据是否为外部引擎走 ",h("code",null,"_init_external")," 或 ",h("code",null,"_init_normal"),"。"),
+      h(Code,null,"class SGLangEngine(RayActor):\n    def init(self, dist_init_addr, port, nccl_port, host=None,\n             disaggregation_bootstrap_port=None, router_ip=None, router_port=None):\n        # 路由地址：构造时未给则回退到全局 --sglang-router-ip/port\n        self.router_ip = router_ip if router_ip is not None else self.args.sglang_router_ip\n        self.router_port = router_port if router_port is not None else self.args.sglang_router_port\n        host = host or get_host_info()[1]\n        # ... IPv6 地址加方括号规范化 ...\n        server_args_dict, external_engine_need_check_fields = _compute_server_args(\n            self.args, self.rank, dist_init_addr, nccl_port, host, port,\n            self.worker_type, disaggregation_bootstrap_port,\n            base_gpu_id=self.base_gpu_id, sglang_overrides=self.sglang_overrides,\n            num_gpus_per_engine=self.num_gpus_per_engine)\n        self.node_rank = server_args_dict[\"node_rank\"]\n        self.server_host = server_args_dict[\"host\"]\n        self.server_port = server_args_dict[\"port\"]\n        if self.args.rollout_external:\n            self._init_external(server_args_dict, external_engine_need_check_fields=...)\n        else:\n            self._init_normal(server_args_dict)"),
+      h("p",null,h("code",null,"_init_normal")," 在本地子进程拉起 server，并把自己注册到 router。注意一个引擎可能横跨多个节点（张量并行加流水并行的总卡数超过单节点卡数），此时只有 ",h("code",null,"node_rank == 0")," 的进程负责对外发起 HTTP 请求与 router 注册，其余 rank 仅作为 worker 存在。",h("code",null,"_make_request")," 与各 HTTP 方法开头都有 ",h("code",null,"if self.node_rank != 0: return")," 的判断，正是出于这个原因。"),
+      h(Code,null,"def _init_normal(self, server_args_dict):\n    logger.info(f\"Launch HttpServerEngineAdapter at: {self.server_host}:{self.server_port}\")\n    self.process = launch_server_process(ServerArgs(**server_args_dict))\n    self._register_to_router(server_args_dict)\n\ndef launch_server_process(server_args: ServerArgs) -> multiprocessing.Process:\n    from sglang.srt.entrypoints.http_server import launch_server\n    multiprocessing.set_start_method(\"spawn\", force=True)\n    server_args.host = server_args.host.strip(\"[]\")\n    p = multiprocessing.Process(target=launch_server, args=(server_args,))\n    p.start()\n    if getattr(server_args, \"node_rank\", 0) != 0:\n        return p\n    # 仅 node_rank 0 轮询 /health_generate 直到 HTTP 200\n    _wait_server_healthy(base_url=server_args.url(), api_key=server_args.api_key,\n                         is_process_alive=lambda: p.is_alive())\n    return p"),
+      h("p",null,"健康检查的设计动机：SGLang server 启动需要加载模型权重、编译 CUDA graph、分配 KV 缓存，耗时可达数分钟。",h("code",null,"_wait_server_healthy")," 用一个带 2 秒间隔的循环反复请求 ",h("code",null,"/health_generate"),"，直到返回 200 才认为引擎就绪；循环中同时检查子进程是否仍存活，若进程意外退出立即抛出异常，避免训练侧无限等待一个已死的 server。"),
+      h("h3",null,"注册到 router 与版本兼容"),
+      h("p",null,h("code",null,"_register_to_router")," 体现了 slime 对 sglang-router 版本演进的兼容处理。旧版 router（≤ 0.2.1）只支持 ",h("code",null,"POST /add_worker?url=..."),"，且不支持 PD 分离；新版改用 ",h("code",null,"POST /workers")," 并在 JSON 中带 ",h("code",null,"worker_type"),"，prefill worker 还需附带 ",h("code",null,"bootstrap_port")," 供 decode 侧建立 KV 传输连接。",h("code",null,"shutdown")," 同样按 router 版本分三种方式注销 worker（query 参数、URL 编码、或先查 worker id 再 delete）。"),
+      h(Code,null,"def _register_to_router(self, server_args_dict):\n    if self.worker_type == \"encoder\":\n        return\n    if self.node_rank == 0 and self.router_ip and self.router_port:\n        worker_url = f\"http://{self.server_host}:{self.server_port}\"\n        if parse(sglang_router.__version__) <= parse(\"0.2.1\"):\n            assert self.worker_type == \"regular\", \"pd disaggregation is not supported in old router.\"\n            response = requests.post(f\"http://{self.router_ip}:{self.router_port}/add_worker?url={worker_url}\")\n        else:\n            payload = {\"url\": worker_url, \"worker_type\": self.worker_type}\n            if self.worker_type == \"prefill\":\n                bootstrap_port = server_args_dict.get(\"disaggregation_bootstrap_port\")\n                payload[\"bootstrap_port\"] = bootstrap_port  # decode 侧据此连 prefill\n            response = requests.post(f\"http://{self.router_ip}:{self.router_port}/workers\", json=payload)\n        response.raise_for_status()"),
+      h("div",{className:"note"},"engine 由谁启动？答案在第 10 课的 ",h("code",null,"slime/ray/rollout.py"),"。其中的 ServerGroup 用 ",h("code",null,"RolloutRayActor = ray.remote(SGLangEngine)")," 把引擎类变成 Ray actor，按 placement group 的 bundle 与物理 GPU id 分配，每个 actor 仅占 0.2 GPU（实际显存由 server 子进程持有），再统一调用各引擎的 ",h("code",null,"init.remote(...)"),"。router 由 ",h("code",null,"_start_router")," 以独立守护进程启动。"),
+      h("div",null,h(Src,{label:"SGLangEngine",path:"slime/backends/sglang_utils/sglang_engine.py",line:101}),h(Src,{label:"init",path:"slime/backends/sglang_utils/sglang_engine.py",line:118}),h(Src,{label:"_init_normal",path:"slime/backends/sglang_utils/sglang_engine.py",line:185}),h(Src,{label:"launch_server_process",path:"slime/backends/sglang_utils/sglang_engine.py",line:51}),h(Src,{label:"_wait_server_healthy",path:"slime/backends/sglang_utils/sglang_engine.py",line:80}),h(Src,{label:"_register_to_router",path:"slime/backends/sglang_utils/sglang_engine.py",line:190}),h(Src,{label:"shutdown",path:"slime/backends/sglang_utils/sglang_engine.py",line:315}),h(Src,{label:"ServerGroup 起引擎",path:"slime/ray/rollout.py",line:166}),h(Src,{label:"_start_router",path:"slime/ray/rollout.py",line:999}))
+    );
+  }
+
+  // ===== HTTP 接口探索器 =====
+  const ENDPOINTS=[
+    {key:"health",name:"健康与缓存",render:function(){return [
+      h("p",null,h("code",null,"health_generate")," 直接 GET ",h("code",null,"/health_generate")," 探测 server 是否能完成一次生成，带超时；",h("code",null,"flush_cache")," 清空 server 的 RadixAttention 前缀缓存。后者的实现要点是：当 server 还有挂起请求时 ",h("code",null,"/flush_cache")," 不会返回 200，因此用一个最多 60 次、每次间隔 1 秒的循环重试，超时则抛 ",h("code",null,"TimeoutError"),"。"),
+      h(Code,null,"def flush_cache(self):\n    if self.node_rank != 0:\n        return\n    # flush cache 在有挂起请求时不会返回 200\n    for _ in range(60):\n        try:\n            response = requests.get(f\"http://{self.server_host}:{self.server_port}/flush_cache\")\n            if response.status_code == 200:\n                break\n            time.sleep(1)\n        except NewConnectionError as e:\n            raise e\n        except Exception:\n            time.sleep(1)\n            continue\n    else:\n        raise TimeoutError(\"Timeout while flushing cache.\")"),
+      h("p",null,"为什么权重更新前要先 flush cache？因为 RadixAttention 缓存的是旧权重算出的 KV 表示，权重一旦更新这些缓存即失效。第 7 课的权重同步流程在 pause 之后、推送权重之前显式调用 ",h("code",null,"flush_cache"),"，确保新一轮生成不会复用陈旧的 KV。"),
+      h("div",null,h(Src,{label:"health_generate",path:"slime/backends/sglang_utils/sglang_engine.py",line:242}),h(Src,{label:"flush_cache",path:"slime/backends/sglang_utils/sglang_engine.py",line:289}),h(Ext,{href:"https://arxiv.org/abs/2312.07104"},"RadixAttention 论文"))
+    ];}},
+    {key:"weights",name:"权重更新接口",render:function(){return [
+      h("p",null,"slime 支持四条权重更新路径，对应 server 的四个接口，全部由 ",h("code",null,"SGLangEngine")," 转发，真正的实现与发送方逻辑在第 7 课。这里先认识接口本身："),
+      h("ul",null,
+        h("li",null,h("code",null,"update_weights_from_distributed(names, dtypes, shapes, group_name, ...)"),"：经 NCCL 进程组广播张量，HTTP 只传元数据，真实权重在 GPU 之间直接拷贝。这是 colocate 与多数场景的默认路径。"),
+        h("li",null,h("code",null,"update_weights_from_tensor(serialized_named_tensors, ...)"),"：把序列化后的张量句柄经 HTTP 传入，server 据句柄从 GPU 取数。"),
+        h("li",null,h("code",null,"update_weights_from_disk(model_path, load_format, files, ...)"),"：从磁盘 checkpoint 重新加载，支持 ",h("code",null,"load_format=\"delta\"")," 的增量更新。"),
+        h("li",null,h("code",null,"init_weights_update_group / destroy_weights_update_group"),"：建立或销毁用于上述分布式广播的 NCCL 组。")),
+      h(Code,null,"def update_weights_from_distributed(self, names, dtypes, shapes, group_name,\n                                   flush_cache=False, weight_version=None,\n                                   load_format=None, delta=None):\n    payload = {\n        \"names\": names,\n        \"dtypes\": [str(dtype).replace(\"torch.\", \"\") for dtype in dtypes],\n        \"shapes\": shapes,\n        \"group_name\": group_name,\n        \"flush_cache\": flush_cache,\n    }\n    if delta is not None:\n        # DeltaSpec -> JSON 字符串, 接收端重建为 DeltaEncoding + DeltaParam\n        payload[\"delta\"] = json.dumps({\"encoding\": delta.encoding.value,\n                                       \"params\": [asdict(p) for p in delta.params],\n                                       \"checksum\": delta.checksum})\n    return self._make_request(\"update_weights_from_distributed\", payload)"),
+      h("p",null,"还有几个辅助接口配合权重版本管理：",h("code",null,"get_weight_version"),"/",h("code",null,"set_weight_version")," 读写 server 记录的权重版本号；当一次增量同步产生零字节（例如全零差分）时，发送方仍需用 ",h("code",null,"set_weight_version")," 把 server 的版本号推进到与训练侧一致，否则 CI 的版本相等性检查会失败。",h("code",null,"post_process_weights")," 在 int4/fp4 量化场景下做权重的预处理与量化后处理。"),
+      h("div",null,h(Src,{label:"update_weights_from_distributed",path:"slime/backends/sglang_utils/sglang_engine.py",line:431}),h(Src,{label:"update_weights_from_tensor",path:"slime/backends/sglang_utils/sglang_engine.py",line:264}),h(Src,{label:"update_weights_from_disk",path:"slime/backends/sglang_utils/sglang_engine.py",line:382}),h(Src,{label:"init_weights_update_group",path:"slime/backends/sglang_utils/sglang_engine.py",line:406}),h(Src,{label:"get_weight_version",path:"slime/backends/sglang_utils/sglang_engine.py",line:349}),h(Src,{label:"set_weight_version",path:"slime/backends/sglang_utils/sglang_engine.py",line:357}),h(Src,{label:"post_process_weights",path:"slime/backends/sglang_utils/sglang_engine.py",line:481}))
+    ];}},
+    {key:"memory",name:"显存占用切换",render:function(){return [
+      h("p",null,"colocate（actor 与 rollout 共用同一批 GPU）模式下，训练与推理交替占用显存。",h("code",null,"SGLangEngine")," 暴露 ",h("code",null,"release_memory_occupation")," 与 ",h("code",null,"resume_memory_occupation")," 两个接口，让 server 在训练阶段释放权重与 KV 缓存所占的显存，训练结束后再恢复。"),
+      h(Code,null,"def release_memory_occupation(self):\n    self.flush_cache()\n    return self._make_request(\"release_memory_occupation\")\n\ndef resume_memory_occupation(self, tags: list[str] = None):\n    # 多阶段恢复可用 tags: weights, kv_cache\n    return self._make_request(\"resume_memory_occupation\", {\"tags\": tags})"),
+      h("p",null,"两个细节：其一，",h("code",null,"release_memory_occupation")," 先 flush cache 再释放，避免残留 KV；其二，",h("code",null,"resume_memory_occupation")," 支持按 ",h("code",null,"tags")," 分阶段恢复（先恢复 weights、再恢复 kv_cache），这样权重同步可以只恢复权重所需显存，把 KV 缓存的恢复推迟到生成真正开始时。这个分阶段恢复由第 7 课和第 10 课的 rollout 控制器编排（",h("code",null,"GPU_MEMORY_TYPE_WEIGHTS")," 标签）。",h("code",null,"enable_memory_saver")," 这个 server 参数由 ",h("code",null,"args.offload_rollout")," 决定是否开启。"),
+      h("div",null,h(Src,{label:"release_memory_occupation",path:"slime/backends/sglang_utils/sglang_engine.py",line:366}),h(Src,{label:"resume_memory_occupation",path:"slime/backends/sglang_utils/sglang_engine.py",line:370}),h(Src,{label:"rollout 控制器调用处",path:"slime/ray/rollout.py",line:255}))
+    ];}},
+    {key:"profile",name:"剖析与容错",render:function(){return [
+      h("p",null,h("code",null,"start_profile / stop_profile")," 转发 server 的性能剖析接口，可指定输出目录、起始步、步数与采集的 activities，用于诊断推理瓶颈。",h("code",null,"check_weights(action)")," 调用 server 的 ",h("code",null,"weights_checker"),"，在 CI 中校验权重是否正确同步。",h("code",null,"simulate_crash")," 用于容错测试：当存在本地引擎进程时直接调用 ",h("code",null,"shutdown")," 模拟一次崩溃，对外部引擎则跳过（外部引擎不归 slime 管理）。"),
+      h(Code,null,"def simulate_crash(self):\n    if self.args.rollout_external or not getattr(self, \"process\", None):\n        logger.info(\"simulate_crash called but no local engine process exists; skip kill\")\n        return\n    logger.info(f\"Simulating crash on engine {self.server_host}:{self.server_port}...\")\n    self.shutdown()"),
+      h("p",null,"容错的设计动机：长程 RL 训练中单个推理 server 偶发崩溃在所难免。slime 通过 ",h("code",null,"simulate_crash")," 在 CI 中主动注入崩溃，验证 rollout 控制器能否检测并重建引擎（",h("code",null,"recover"),"），把容错作为一等工程目标而非事后补丁。"),
+      h("div",null,h(Src,{label:"start_profile",path:"slime/backends/sglang_utils/sglang_engine.py",line:500}),h(Src,{label:"check_weights",path:"slime/backends/sglang_utils/sglang_engine.py",line:379}),h(Src,{label:"simulate_crash",path:"slime/backends/sglang_utils/sglang_engine.py",line:534}))
+    ];}}
+  ];
+  function EndpointExplorer(){const [s,setS]=useState(0);const d=ENDPOINTS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},ENDPOINTS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 暂停 / 继续 与 abort =====
+  function PauseSection(){
+    return h("div",null,
+      h("p",null,"权重同步与生成之间存在一个根本矛盾：生成过程会在 KV 缓存中积累由旧权重算出的中间表示，而权重一旦更新这些 KV 即失效。如果在生成进行到一半时替换权重，server 会用新权重续解一个由旧权重起头的序列，产生语义错乱的输出。",h("code",null,"server_control.py")," 与引擎的 ",h("code",null,"pause_generation"),"/",h("code",null,"continue_generation")," 接口共同解决这个问题。"),
+      h("h3",null,"pause → flush → 推权重 → continue"),
+      h("p",null,"第 7 课的所有权重更新路径（distributed、tensor、disk、delta）都遵循同一个骨架：在 rank 0 上先对所有引擎调用 ",h("code",null,"pause_generation"),"，再 ",h("code",null,"flush_cache")," 切断旧 KV，然后推送权重，最后 ",h("code",null,"continue_generation")," 恢复。下面是 ",h("code",null,"update_weight_from_distributed.py")," 的真实结构："),
+      h(Code,null,"@torch.no_grad()\ndef update_weights(self) -> None:\n    \"\"\"Pause -> flush -> _send_weights -> continue. Progress on PP source.\"\"\"\n    self.weight_version += 1\n    if dist.get_rank() == 0:\n        ray.get([engine.pause_generation.remote() for engine in self.rollout_engines])\n        ray.get([engine.flush_cache.remote() for engine in self.rollout_engines])\n    dist.barrier(group=get_gloo_group())\n    # ... 在 PP 源 rank 上分块广播权重 ...\n    self._send_weights(pbar)\n    if dist.get_rank() == 0:\n        ray.get([engine.continue_generation.remote() for engine in self.rollout_engines])\n    dist.barrier(group=get_gloo_group())"),
+      h("p",null,h("code",null,"pause_generation")," 与 ",h("code",null,"continue_generation")," 的实现本身极简：直接 POST 到 server 对应端点。它们不带 ",h("code",null,"node_rank")," 判断，因为暂停/继续是对单个 server 入口的控制，由 rank 0 引擎统一触发。"),
+      h(Code,null,"def pause_generation(self):\n    response = requests.post(f\"http://{self.server_host}:{self.server_port}/pause_generation\", json={})\n    response.raise_for_status()\n    return response\n\ndef continue_generation(self):\n    response = requests.post(f\"http://{self.server_host}:{self.server_port}/continue_generation\", json={})\n    response.raise_for_status()\n    return response"),
+      h("h3",null,"abort_servers_until_idle：把在途请求清空"),
+      h("p",null,h("code",null,"server_control.py")," 处理另一类需求：在某些流程（如部分 rollout 的 abort、异步切换）中需要把 server 队列里所有正在进行与等待中的请求都终止并等到队列清空。",h("code",null,"abort_server_until_idle")," 反复 POST ",h("code",null,"/abort_request")," 并查询 ",h("code",null,"/v1/loads"),"，直到请求数归零："),
+      h(Code,null,"def num_requests_from_load(load: Any) -> int:\n    # 从 /v1/loads 的嵌套结构里把 running + waiting 请求数加总\n    ...\n    running = load.get(\"num_running_reqs\", load.get(\"total_running_reqs\"))\n    waiting = load.get(\"num_waiting_reqs\", load.get(\"total_waiting_reqs\"))\n    return (running if isinstance(running, int) else 0) + (waiting if isinstance(waiting, int) else 0)\n\nasync def abort_server_until_idle(url, retry_interval=ABORT_RETRY_INTERVAL_SECONDS):\n    while True:\n        await _abort_server_once(url)               # POST /abort_request {abort_all: True}\n        num_requests = await _get_server_num_requests(url)\n        if num_requests <= 0:\n            return\n        await asyncio.sleep(retry_interval)         # 默认 3 秒后重试\n\nasync def abort_servers_until_idle(urls):\n    await asyncio.gather(*(abort_server_until_idle(url) for url in urls))"),
+      h("p",null,"为什么需要重试而非一次 abort？因为在高并发下，发出 abort 的瞬间可能仍有新请求正被 router 分发进来，或部分请求处于不可中断的内核执行段。循环重试直到 ",h("code",null,"/v1/loads")," 报告零请求，才能保证 server 真正空闲。该函数被 ",h("code",null,"slime/rollout/sglang_rollout.py")," 的 ",h("code",null,"abort")," 协程调用（第 8 课展开 rollout 异步与部分 rollout）。"),
+      h("div",{className:"note"},h("strong",null,"pause/abort 的区别"),"：",h("code",null,"pause_generation")," 只是暂停调度循环、保留已有请求状态，权重换好后 ",h("code",null,"continue_generation")," 即可继续；",h("code",null,"abort")," 则是把请求彻底终止并清空队列。前者用于权重同步（呼应第 7 课），后者用于需要丢弃在途生成的场景。"),
+      h("div",null,h(Src,{label:"pause_generation",path:"slime/backends/sglang_utils/sglang_engine.py",line:471}),h(Src,{label:"continue_generation",path:"slime/backends/sglang_utils/sglang_engine.py",line:476}),h(Src,{label:"update_weights（pause/continue 调用处）",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed.py",line:102}),h(Src,{label:"abort_server_until_idle",path:"slime/backends/sglang_utils/server_control.py",line:43}),h(Src,{label:"abort_servers_until_idle",path:"slime/backends/sglang_utils/server_control.py",line:66}),h(Src,{label:"num_requests_from_load",path:"slime/backends/sglang_utils/server_control.py",line:12}),h(Src,{label:"rollout 中的 abort",path:"slime/rollout/sglang_rollout.py",line:351}))
+    );
+  }
+
+  // ===== 参数翻译：_compute_server_args =====
+  function ArgsSection(){
+    return h("div",null,
+      h("p",null,"slime 的设计哲学之一是原生参数透传：已安装 SGLang 的每一个 ",h("code",null,"ServerArgs")," 字段都能通过加 ",h("code",null,"--sglang-")," 前缀从命令行传入。这个透传在两处实现：",h("code",null,"arguments.py")," 负责在 argparse 层把 SGLang 的 CLI 参数全部加上前缀，",h("code",null,"_compute_server_args")," 负责在运行时把这些 ",h("code",null,"args.sglang_*")," 还原回 ",h("code",null,"ServerArgs")," 字段。"),
+      h("h3",null,"arguments.py：给每个参数加 --sglang- 前缀"),
+      h("p",null,h("code",null,"add_sglang_arguments")," 临时替换 ",h("code",null,"parser.add_argument"),"，让 SGLang 自带的 ",h("code",null,"ServerArgs.add_cli_args(parser)")," 注册进来的每个参数都被包一层：把 ",h("code",null,"--foo-bar")," 改名为 ",h("code",null,"--sglang-foo-bar"),"，把 ",h("code",null,"dest")," 改为 ",h("code",null,"sglang_foo_bar"),"。这样 slime 与 SGLang 的参数命名空间互不冲突，且 SGLang 上游新增参数无需 slime 改代码即可使用。"),
+      h(Code,null,"def new_add_argument_wrapper(*name_or_flags, **kwargs):\n    # 跳过那些 slime 自己计算的参数 (model_path, tp_size, port, ...)\n    if canonical_name_for_skip_check in skipped_args:\n        return\n    # 把 --foo-bar 改成 --sglang-foo-bar\n    new_name_or_flags_list = []\n    for item_flag in name_or_flags:\n        if isinstance(item_flag, str) and item_flag.startswith(\"-\"):\n            original_flag_stem = item_flag.lstrip(\"-\")\n            new_name_or_flags_list.append(f\"--sglang-{original_flag_stem}\")\n    # 把 dest 也加上 sglang_ 前缀\n    if \"dest\" in final_kwargs and not final_kwargs[\"dest\"].startswith(\"sglang_\"):\n        final_kwargs[\"dest\"] = f\"sglang_{final_kwargs['dest']}\"\n    old_add_argument(*new_name_or_flags_list, **final_kwargs)\n\nparser.add_argument = new_add_argument_wrapper\nServerArgs.add_cli_args(parser)   # 期间所有注册都被加前缀\nparser.add_argument = old_add_argument"),
+      h("p",null,h("code",null,"skipped_args")," 列出由 slime 自己计算、不允许用户直接传的字段，例如 ",h("code",null,"model_path"),"、",h("code",null,"tp_size"),"、",h("code",null,"port"),"、",h("code",null,"node_rank"),"、",h("code",null,"base_gpu_id")," 等。这些和 GPU 拓扑、分布式编址强相关，必须由 slime 根据 placement group 统一推导，否则会与 Ray 的设备分配冲突。",h("code",null,"validate_args")," 则把若干并行尺寸归一（",h("code",null,"sglang_dp_size = sglang_data_parallel_size")," 等），并校验 PD 分离相关参数的互斥关系。"),
+      h("h3",null,"_compute_server_args：还原为 ServerArgs"),
+      h("p",null,"运行时，",h("code",null,"_compute_server_args")," 先组装 slime 必须显式控制的字段（GPU 编址、并行尺寸、端口、随机种子），再遍历 ",h("code",null,"ServerArgs")," 的全部字段，凡是 ",h("code",null,"args")," 上存在对应 ",h("code",null,"sglang_<name>")," 属性且未被显式设过的，就回填进去。这就是透传的运行时一半。"),
+      h(Code,null,"def _compute_server_args(args, rank, dist_init_addr, nccl_port, host, port,\n                         worker_type=\"regular\", disaggregation_bootstrap_port=None,\n                         base_gpu_id=None, sglang_overrides=None, num_gpus_per_engine=None):\n    _gpus_per_engine = num_gpus_per_engine or args.rollout_num_gpus_per_engine\n    nnodes = max(1, _gpus_per_engine // args.num_gpus_per_node)   # 引擎可跨节点\n    node_rank = rank % nnodes\n    base = base_gpu_id if base_gpu_id is not None else get_base_gpu_id(args, rank)\n    base = _to_local_gpu_id(base)          # 在 CUDA_VISIBLE_DEVICES 下重映射为本地 id\n    kwargs = {\n        \"model_path\": args.hf_checkpoint, \"trust_remote_code\": True,\n        \"random_seed\": args.seed + rank, \"enable_memory_saver\": args.offload_rollout,\n        \"host\": host, \"port\": port, \"nccl_port\": nccl_port,\n        \"nnodes\": nnodes, \"node_rank\": node_rank, \"dist_init_addr\": dist_init_addr,\n        \"base_gpu_id\": base, \"gpu_id_step\": 1,\n        \"tp_size\": _gpus_per_engine // args.sglang_pp_size,\n        \"dp_size\": args.sglang_dp_size, \"pp_size\": args.sglang_pp_size, \"ep_size\": args.sglang_ep_size,\n        \"skip_server_warmup\": True, \"enable_draft_weights_cpu_backup\": True, \"enable_metrics\": True,\n    }\n    if worker_type == \"prefill\":\n        kwargs[\"disaggregation_mode\"] = \"prefill\"\n        kwargs[\"disaggregation_bootstrap_port\"] = disaggregation_bootstrap_port\n    elif worker_type == \"decode\":\n        kwargs[\"disaggregation_mode\"] = \"decode\"\n        kwargs[\"prefill_round_robin_balance\"] = True\n    # 遍历 ServerArgs 字段, 回填所有 --sglang-<name>\n    for attr in dataclasses.fields(ServerArgs):\n        if hasattr(args, f\"sglang_{attr.name}\") and attr.name not in kwargs:\n            kwargs[attr.name] = getattr(args, f\"sglang_{attr.name}\")\n    # 来自 --sglang-config YAML 的 per-group overrides 优先级最高\n    if sglang_overrides:\n        for key, value in sglang_overrides.items():\n            kwargs[key.replace(\"-\", \"_\")] = value\n    return kwargs, external_engine_need_check_fields"),
+      h("p",null,"几个固定项的设计动机值得点明：",h("code",null,"skip_server_warmup=True")," 跳过 server 自带的预热以避免预热超时；",h("code",null,"enable_draft_weights_cpu_backup=True")," 保证在没有 MTP（多 token 预测）草稿权重时训练也能跑；",h("code",null,"enable_metrics=True")," 始终打开 Prometheus 指标，使 router 的 ",h("code",null,"/engine_metrics")," 端点可被外部抓取。引擎的并行尺寸 ",h("code",null,"tp_size")," 由 ",h("code",null,"num_gpus_per_engine // pp_size")," 推出，这正是 slime 必须接管该字段、不让用户直接传的原因。"),
+      h("div",null,h(Src,{label:"add_sglang_arguments",path:"slime/backends/sglang_utils/arguments.py",line:33}),h(Src,{label:"new_add_argument_wrapper",path:"slime/backends/sglang_utils/arguments.py",line:63}),h(Src,{label:"skipped_args",path:"slime/backends/sglang_utils/arguments.py",line:43}),h(Src,{label:"validate_args",path:"slime/backends/sglang_utils/arguments.py",line:139}),h(Src,{label:"_compute_server_args",path:"slime/backends/sglang_utils/sglang_engine.py",line:546}),h(Src,{label:"get_base_gpu_id",path:"slime/backends/sglang_utils/sglang_engine.py",line:23}),h(Src,{label:"_to_local_gpu_id",path:"slime/backends/sglang_utils/sglang_engine.py",line:33}))
+    );
+  }
+
+  // ===== external.py 外部引擎接入 =====
+  function ExternalSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"external.py")," 处理一种重要场景：SGLang server 不由 slime 启动，而是预先在别处拉起，slime 只通过地址接入。它的两个用途是：rollout-only 调试（无需启动训练侧也能驱动一组已存在的推理 server）和 PD 分离的灵活部署（prefill、decode 引擎各自独立启动后再注册）。"),
+      h("h3",null,"探测外部引擎拓扑"),
+      h("p",null,"流程从命令行 ",h("code",null,"--rollout-external-engine-addrs")," 给出的地址列表开始。",h("code",null,"discover_external_engines")," 对每个地址 GET ",h("code",null,"/server_info"),"（或 ",h("code",null,"/get_server_info"),"），解析出并行尺寸、GPU 数、worker 类型与 bootstrap 端口，封装成 ",h("code",null,"ExternalEngineInfo"),"；",h("code",null,"apply_external_engine_info_to_args")," 把推断出的拓扑（引擎数、总 GPU 数）写回 ",h("code",null,"args"),"，让后续流程像对待自启引擎一样对待它们。"),
+      h(Code,null,"def discover_external_engines(addrs, timeout=30.0) -> list[ExternalEngineInfo]:\n    infos = []\n    for addr in addrs:\n        url = normalize_external_engine_addr(addr)        # host:port -> http://host:port\n        server_info = get_server_info(url, timeout=timeout)\n        pp_size = int(server_info.get(\"pp_size\") or server_info.get(\"pipeline_parallel_size\") or 1)\n        tp_size = int(server_info.get(\"tp_size\") or server_info.get(\"tensor_parallel_size\") or 1)\n        num_gpus = int(server_info.get(\"num_gpus\") or tp_size * pp_size)\n        infos.append(ExternalEngineInfo(url=url, host=..., port=...,\n                     worker_type=_infer_worker_type(server_info), num_gpus=num_gpus,\n                     disaggregation_bootstrap_port=..., server_info=server_info))\n    return infos\n\ndef _infer_worker_type(server_info: dict) -> str:\n    if server_info.get(\"encoder_only\"): return \"encoder\"\n    mode = server_info.get(\"disaggregation_mode\")\n    if mode in (\"prefill\", \"decode\"): return mode\n    return \"regular\""),
+      h("h3",null,"接入与一致性检查"),
+      h("p",null,"接入时引擎走 ",h("code",null,"_init_external")," 而非 ",h("code",null,"_init_normal"),"：不启动本地进程，而是 GET 外部 server 的实际参数，与 slime 期望的参数逐字段比对（",h("code",null,"_sanity_check_server_args"),"），不一致即断言失败，避免用一个与训练侧配置不符的引擎做 rollout。比对时会跳过那些与拓扑/编址有关、本就允许不同的字段（",h("code",null,"_EXTERNAL_ENGINE_SKIP_CHECK_FIELDS"),"，如 ",h("code",null,"host"),"、",h("code",null,"base_gpu_id"),"、",h("code",null,"mem_fraction_static")," 等）。"),
+      h(Code,null,"def _init_external(self, expect_server_args, external_engine_need_check_fields):\n    def _sanity_check_server_args(actual, expect):\n        for name in external_engine_need_check_fields:\n            assert actual.get(name) == expect.get(name), f\"{name=} mismatch ...\"\n    actual_server_args = get_server_info(f\"http://{self.server_host}:{self.server_port}\")\n    _sanity_check_server_args(actual_server_args, expect_server_args)\n    self._register_to_router(expect_server_args)"),
+      h("p",null,"对外部引擎，slime 用一个特殊的 ",h("code",null,"ExternalRolloutServer")," 替代普通的 ServerGroup。它的 ",h("code",null,"offload"),"/",h("code",null,"onload")," 都返回空（外部引擎的显存不归 slime 管），",h("code",null,"recover")," 仅打印警告（不支持容错重建）。",h("code",null,"start_external_rollout_servers")," 为每个外部引擎创建一个不占 GPU（",h("code",null,"num_gpus=0"),"）的 ",h("code",null,"SGLangEngine")," Ray actor，仅作为通信句柄，并把它们注册到一个共享 router。",h("code",null,"validate_args")," 中确保 ",h("code",null,"--rollout-external-engine-addrs")," 与 ",h("code",null,"--prefill-num-servers"),"、",h("code",null,"--sglang-config")," 互斥。"),
+      h("div",{className:"note"},"调试价值：第 1 课提到 slime 把以正确性为先作为设计目标，支持独立的 rollout-only 与 train-only 调试路径。",h("code",null,"external.py")," 正是 rollout-only 调试的基础设施之一，让开发者把推理 server 单独拉起、反复驱动而不必每次重建训练侧。对应测试见 ",h("code",null,"tests/test_external_sglang_engines.py")," 与 ",h("code",null,"tests/test_qwen3_4B_external_pd.py"),"。"),
+      h("div",null,h(Src,{label:"ExternalEngineInfo",path:"slime/backends/sglang_utils/external.py",line:14}),h(Src,{label:"discover_external_engines",path:"slime/backends/sglang_utils/external.py",line:79}),h(Src,{label:"apply_external_engine_info_to_args",path:"slime/backends/sglang_utils/external.py",line:107}),h(Src,{label:"_init_external",path:"slime/backends/sglang_utils/sglang_engine.py",line:170}),h(Src,{label:"ExternalRolloutServer",path:"slime/backends/sglang_utils/external.py",line:134}),h(Src,{label:"start_external_rollout_servers",path:"slime/backends/sglang_utils/external.py",line:178}),h(Src,{label:"_EXTERNAL_ENGINE_SKIP_CHECK_FIELDS",path:"slime/backends/sglang_utils/sglang_engine.py",line:651}),h(Src,{label:"external 测试",path:"tests/test_qwen3_4B_external_pd.py"}))
+    );
+  }
+
+  // ===== PD 分离与 mooncake =====
+  function PDSection(){
+    return h("div",null,
+      h("p",null,"PD（prefill/decode）分离，即 disaggregated serving，是 SGLang 与 slime 共同支持的高吞吐部署形态。理解它要先看清生成的两个阶段在硬件特性上的根本差异。"),
+      h("h3",null,"为什么要把 prefill 与 decode 分开"),
+      h("p",null,"自回归生成分两阶段：",h("strong",null,"prefill")," 一次性处理整段 prompt，把全部 token 并行送入模型，计算密集（compute-bound），GPU 利用率高；",h("strong",null,"decode")," 逐个生成新 token，每步只处理一个 token，受 KV 缓存读写带宽制约（memory-bound），算力大量闲置。若把两者放在同一 server，二者会争抢同一批 GPU：长 prompt 的 prefill 会阻塞正在 decode 的请求，造成尾延迟抖动；而 decode 的低算力利用又拉低了整体吞吐。"),
+      h("p",null,"PD 分离的解法是把 prefill 与 decode 放到不同的引擎组：prefill 引擎专做 prompt 编码，算完后把 KV 缓存通过高速互联传给 decode 引擎，decode 引擎接手逐 token 生成。两组各自按自身特性配置批大小与并行方式，互不阻塞。"),
+      h(Formula,{cap:"分离前后吞吐的直觉对比：合置时两阶段争用同一资源 R，分离后各自独占按需配比的资源"},"$$ \\text{Throughput}_{\\text{disagg}} \\;\\approx\\; \\min\\!\\big(\\tfrac{R_{P}}{c_{P}},\\; \\tfrac{R_{D}}{c_{D}}\\big),\\qquad \\text{合置时}\\;\\; \\text{Throughput}_{\\text{co}} \\;\\approx\\; \\frac{R}{c_{P}+c_{D}} $$"),
+      h("p",null,"上式只是直觉性说明：",h("code",null,"c_P"),"、",h("code",null,"c_D")," 分别是 prefill、decode 单位工作的资源成本。分离后可以独立扩缩两组引擎数，使各自接近其资源上限，而合置时两阶段共享一份资源、彼此挤占。代价是引入了一次 prefill 到 decode 的 KV 缓存跨引擎传输，这正是 mooncake 要解决的环节。"),
+      h("h3",null,"slime 中的 PD：worker_type 与 disaggregation_mode"),
+      h("p",null,"在 ",h("code",null,"_compute_server_args")," 中，",h("code",null,"worker_type")," 决定 server 的角色：prefill worker 设 ",h("code",null,"disaggregation_mode=\"prefill\"")," 并需要 ",h("code",null,"disaggregation_bootstrap_port"),"（decode 侧据此建立 KV 传输连接），decode worker 设 ",h("code",null,"disaggregation_mode=\"decode\"")," 与 ",h("code",null,"prefill_round_robin_balance=True"),"。router 在 PD 模式下需开启 ",h("code",null,"pd_disaggregation"),"（见 ",h("code",null,"_start_router"),"），并关闭熔断器以避免高负载下 RDMA 传输的瞬时超时把 decode worker 误判为死亡。"),
+      h("h3",null,"两种配置入口"),
+      h("p",null,"slime 提供两种描述 PD 拓扑的方式。简单方式是 ",h("code",null,"--prefill-num-servers N"),"，由 ",h("code",null,"SglangConfig.from_prefill_num_servers")," 把总 GPU 按 N 个 prefill 引擎与其余 decode 引擎切分。完整方式是 ",h("code",null,"--sglang-config")," 指向一个 YAML，用 ",h("code",null,"server_groups")," 显式描述每组的 ",h("code",null,"worker_type"),"、",h("code",null,"num_gpus"),"、每引擎 GPU 数与 per-group ",h("code",null,"overrides"),"。下面是 ",h("code",null,"test_glm4.7_30B_A3B_pd_mooncake.py")," 中真实的 YAML（每组都把传输后端设为 mooncake）："),
+      h(Code,null,"# tests/test_glm4.7_30B_A3B_pd_mooncake.py: write_sglang_config()\nconfig = {\n    \"sglang\": [\n        {\n            \"name\": \"default\",\n            \"server_groups\": [\n                {\"worker_type\": \"prefill\", \"num_gpus\": 4, \"num_gpus_per_engine\": 4,\n                 \"overrides\": {\"disaggregation_transfer_backend\": \"mooncake\"}},\n                {\"worker_type\": \"decode\", \"num_gpus\": 4, \"num_gpus_per_engine\": 4,\n                 \"overrides\": {\"disaggregation_transfer_backend\": \"mooncake\"}},\n            ],\n        }\n    ]\n}"),
+      h("p",null,h("code",null,"SglangConfig")," 把这个 YAML 解析成 ",h("code",null,"ModelConfig")," 与 ",h("code",null,"ServerGroupConfig")," 的层次结构。",h("code",null,"ServerGroupConfig")," 的 ",h("code",null,"worker_type")," 可取 ",h("code",null,"regular"),"、",h("code",null,"prefill"),"、",h("code",null,"decode"),"、",h("code",null,"placeholder"),"（仅占 GPU 槽位不建引擎）、",h("code",null,"encoder"),"（用于 EPD 即编码-预填充-解码三段分离）。每个 ",h("code",null,"ModelConfig")," 对应独立 router，并可设 ",h("code",null,"update_weights=False")," 表示该模型（如 reference、reward）不接收训练权重更新。",h("code",null,"resolve")," 方法会从模型级、再到全局 ",h("code",null,"args")," 逐层回填每组默认值，并自动推断 ",h("code",null,"update_weights"),"（model_path 与 ",h("code",null,"hf_checkpoint")," 一致则为 True）。"),
+      h("h3",null,"mooncake：KV 缓存的跨引擎传输"),
+      h("p",null,h("code",null,"mooncake")," 是 ",h("code",null,"disaggregation_transfer_backend")," 的一种取值，负责 PD 分离中 prefill 引擎到 decode 引擎的 KV 缓存传输。它是一个以 KV 缓存为中心的传输与存储库，利用 RDMA 在 GPU 显存之间直接搬运 KV，避免经主机内存中转，从而把跨引擎传输的开销压到足够低，使 PD 分离的吞吐收益不被传输成本抵消。在 slime 中只需把每个 PD 组的 ",h("code",null,"disaggregation_transfer_backend")," 设为 ",h("code",null,"mooncake"),"（YAML override 或 ",h("code",null,"--sglang-disaggregation-transfer-backend mooncake"),"），其余由 SGLang 与 mooncake 库处理。"),
+      h("div",{className:"warn"},"PD 分离不支持旧版 router（≤ 0.2.1）：",h("code",null,"_register_to_router")," 在旧版下断言 ",h("code",null,"worker_type == \"regular\""),"。此外 PD 与异步训练天然契合（生成与训练各占独立 GPU 组），但与 colocate 的组合需要更细的显存编排；",h("code",null,"test_glm4.7_30B_A3B_pd_mooncake.py")," 演示的正是单节点 colocate 下的 PD + mooncake。"),
+      h("div",null,h(Src,{label:"_compute_server_args（worker_type）",path:"slime/backends/sglang_utils/sglang_engine.py",line:593}),h(Src,{label:"ServerGroupConfig",path:"slime/backends/sglang_utils/sglang_config.py",line:11}),h(Src,{label:"ModelConfig",path:"slime/backends/sglang_utils/sglang_config.py",line:44}),h(Src,{label:"resolve",path:"slime/backends/sglang_utils/sglang_config.py",line:68}),h(Src,{label:"SglangConfig.from_yaml",path:"slime/backends/sglang_utils/sglang_config.py",line:157}),h(Src,{label:"from_prefill_num_servers",path:"slime/backends/sglang_utils/sglang_config.py",line:182}),h(Src,{label:"router PD 配置",path:"slime/ray/rollout.py",line:1028}),h(Src,{label:"PD mooncake 测试",path:"tests/test_glm4.7_30B_A3B_pd_mooncake.py",line:30}),h(Ext,{href:"https://github.com/kvcache-ai/Mooncake"},"Mooncake 仓库"))
+    );
+  }
+
+  // ===== megatron_utils/sglang.py 依赖隔离层 =====
+  function DepsSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"backends/megatron_utils/sglang.py")," 是一个很薄但很关键的依赖隔离层。它的唯一职责是：把 Megatron 训练侧用到的全部 SGLang 符号集中在一处导入，并对不同版本的 SGLang 镜像做 ",h("code",null,"try/except ImportError")," 兼容。"),
+      h(Code,null,"# the file to manage all sglang deps in the megatron actor\ntry:\n    from sglang.srt.layers.quantization.fp8_utils import quant_weight_ue8m0, transform_scale_ue8m0\n    from sglang.srt.model_loader.utils import should_deepgemm_weight_requant_ue8m0\nexcept ImportError:\n    quant_weight_ue8m0 = transform_scale_ue8m0 = should_deepgemm_weight_requant_ue8m0 = None\n\ntry:\n    from sglang.srt.managers.io_struct import DeltaEncoding, DeltaParam, DeltaSpec\nexcept ImportError:\n    # 旧镜像没有 delta-sync io_struct, 只有 --update-weight-mode=delta 才需要\n    DeltaEncoding = DeltaParam = DeltaSpec = None\n\nfrom sglang.srt.utils import MultiprocessingSerializer\ntry:\n    from sglang.srt.weight_sync.tensor_bucket import FlattenedTensorBucket\nexcept ImportError:\n    from sglang.srt.model_executor.model_runner import FlattenedTensorBucket"),
+      h("p",null,"为什么需要这一层？因为权重同步（第 7 课）要在 Megatron 进程内调用 SGLang 的若干工具：",h("code",null,"MultiprocessingSerializer")," 序列化张量句柄、",h("code",null,"FlattenedTensorBucket")," 把多个张量打包成一个连续 bucket 以减少广播次数、",h("code",null,"quant_weight_ue8m0")," 等做 FP8 量化、",h("code",null,"DeltaSpec/DeltaEncoding/DeltaParam")," 描述增量更新。这些符号在不同 SGLang 版本里路径或存在性都可能变化。把它们集中在一个文件里，使得版本兼容代码只写一处，其余调用方从 ",h("code",null,"slime.backends.megatron_utils.sglang")," 统一导入，不必各自处理 ImportError。"),
+      h("div",{className:"note"},"这正是第 1 课所说原生透传哲学的另一面：slime 紧贴 SGLang 上游，因此必须有一处集中吸收上游 API 的版本漂移。",h("code",null,"DeltaSpec")," 等增量更新结构会在第 7 课与第 11 课（miles 增量）详细使用。"),
+      h("div",null,h(Src,{label:"megatron_utils/sglang.py",path:"slime/backends/megatron_utils/sglang.py",line:1}),h(Src,{label:"__all__ 导出",path:"slime/backends/megatron_utils/sglang.py",line:33}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"SGLang 文档",d:"server 参数、router、RadixAttention、PD 分离的权威说明",href:"https://docs.sglang.ai/"},
+    {t:"Mooncake 仓库",d:"以 KV 缓存为中心的传输/存储库，PD 分离的传输后端",href:"https://github.com/kvcache-ai/Mooncake"},
+    {t:"RadixAttention 论文",d:"SGLang 的前缀缓存机制，理解 flush_cache 的对象",href:"https://arxiv.org/abs/2312.07104"},
+    {t:"slime 官方文档",d:"用法、PD 分离与外部引擎的进阶指南",href:"https://thudm.github.io/slime/"},
+    {t:"sglang_engine.py（本机）",d:"SGLangEngine 全部 HTTP 接口的源码",href:srcUrl("slime/backends/sglang_utils/sglang_engine.py",null)},
+    {t:"sglang_config.py（本机）",d:"PD/多模型部署的配置数据类",href:srcUrl("slime/backends/sglang_utils/sglang_config.py",null)},
+    {t:"PD mooncake 测试（本机）",d:"完整可运行的 PD + mooncake 配置样例",href:srcUrl("tests/test_glm4.7_30B_A3B_pd_mooncake.py",null)},
+    {t:"external.py（本机）",d:"外部引擎接入与 rollout-only 调试基础设施",href:srcUrl("slime/backends/sglang_utils/external.py",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:6}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 6 课 / 共 11 · 推理后端"),
+          h("h1",null,"推理后端 SGLang"),
+          h("p",{className:"lead"},"这一课走进 slime 的 rollout 引擎层。我们自底向上讲清：每个 SGLang server 如何被启动、确认健康并注册到 router；SGLangEngine 把哪些 HTTP 接口封装为远程方法；暂停/继续生成如何在权重同步时切断旧 KV（呼应第 7 课）；slime 怎样把 --sglang- 前缀参数翻译回 ServerArgs；external.py 如何接入已存在的引擎用于 rollout-only 调试与 PD 部署；以及 prefill/decode 分离与 mooncake 传输后端如何提升吞吐。"),
+          h("div",{className:"note"},"覆盖文件：",h("code",null,"backends/sglang_utils/")," 下的 sglang_engine / server_control / sglang_config / external / arguments，外加 ",h("code",null,"backends/megatron_utils/sglang.py")," 依赖隔离层。引擎的启动编排（ServerGroup、router 进程）属于第 10 课，权重同步的发送方逻辑属于第 7 课，rollout 异步与部分 rollout 属于第 8 课，此处只在交界处点到为止。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"总览"),
+          h("h2",null,"SGLang 在 slime 中的三层结构"),
+          h(OverviewSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"sglang_engine.py"),
+          h("h2",null,"SGLangEngine：启动、健康检查与 router 注册"),
+          h(EngineSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"sglang_engine.py · HTTP 接口"),
+          h("h2",null,"封装的 HTTP 接口：分组探索"),
+          h("p",null,"SGLangEngine 把 server 的 HTTP 端点转为远程方法。点 Tab 分组查看：健康与缓存、权重更新、显存占用切换、剖析与容错。"),
+          h(EndpointExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"server_control.py · pause/continue"),
+          h("h2",null,"暂停/继续生成与请求清空"),
+          h(PauseSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"arguments.py · sglang_engine.py"),
+          h("h2",null,"参数翻译：从 --sglang- 前缀到 ServerArgs"),
+          h(ArgsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"external.py"),
+          h("h2",null,"接入外部/已存在的引擎"),
+          h(ExternalSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"sglang_config.py · PD 分离"),
+          h("h2",null,"PD 分离与 mooncake：高吞吐 disaggregated serving"),
+          h(PDSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"megatron_utils/sglang.py"),
+          h("h2",null,"依赖隔离层：集中吸收上游版本漂移"),
+          h(DepsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档，能把 SGLang server、router、RadixAttention 前缀缓存与 PD 分离的角色补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"三层结构，HTTP 为界"),"：SGLang server 是独立子进程，SGLangEngine 是包裹它的 Ray actor，router 把多个 server 聚合为单一服务地址。跨进程通信只走 HTTP 与 Ray RPC，保持显式可追踪。"),
+            h("li",null,h("strong",null,"启动即健康检查"),"：",h("code",null,"launch_server_process")," 拉起子进程后，仅 node_rank 0 轮询 ",h("code",null,"/health_generate")," 直到就绪并监控进程存活；",h("code",null,"_register_to_router")," 按 router 版本兼容地注册 worker。"),
+            h("li",null,h("strong",null,"暂停而非中断，先 flush 再换权重"),"：权重同步遵循 pause → flush_cache → 推权重 → continue 的骨架，切断由旧权重算出的 KV 缓存，避免新旧权重在同一序列上混用（呼应第 7 课）。",h("code",null,"abort_servers_until_idle")," 则用于需要彻底清空在途请求的场景。"),
+            h("li",null,h("strong",null,"原生参数透传"),"：",h("code",null,"arguments.py")," 给每个 SGLang CLI 参数加 ",h("code",null,"--sglang-")," 前缀，",h("code",null,"_compute_server_args")," 运行时回填为 ",h("code",null,"ServerArgs"),"；GPU 编址与并行尺寸等由 slime 接管，其余字段直接透传，使上游新参数无需改 slime 代码即可用。"),
+            h("li",null,h("strong",null,"外部引擎与 PD 分离扩展部署形态"),"：",h("code",null,"external.py")," 接入已存在引擎用于 rollout-only 调试与灵活部署并做参数一致性检查；",h("code",null,"sglang_config.py")," 用 server_groups 描述 prefill/decode（乃至 encoder）分离，配合 mooncake 在 GPU 间直传 KV，使两阶段各按硬件特性独立扩缩以提升吞吐。"),
+            h("li",null,h("strong",null,"依赖隔离收口版本漂移"),"：",h("code",null,"megatron_utils/sglang.py")," 把训练侧用到的 SGLang 符号集中导入并兼容多版本，使版本适配只写一处。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"slime-lesson-05-megatron.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 5 课：训练后端 Megatron")),
+            h("a",{href:"slime-lesson-07-weight-sync.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 7 课：权重同步"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

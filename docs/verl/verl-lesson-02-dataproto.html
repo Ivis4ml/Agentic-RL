@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 第 2 课：DataProto 数据协议</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 2 课</p><h1>DataProto 数据协议</h1><p>能访问 CDN 时切换为交互版。本课讲清 verl 中一切数据流动的载体 DataProto：它以 TensorDict 为张量后端、以 numpy 对象数组承载非张量数据、以普通字典承载 meta_info 的三段式结构；concat / chunk / split / select / pop / union / repeat / padding 等批操作在分发（dispatch）时如何切分与聚合；DataProtoFuture 如何与 Ray future 配合实现惰性数据；以及它与 Ray 对象存储之间的序列化传递。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const VERL="vscode://file/Users/xinyu/Code/Agentic-RL/verl/";
+  function srcUrl(p,l){return VERL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global","nonlocal"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","TensorDict","DataProto","DataProtoItem","DataProtoFuture","BatchData","WorkerGroup","ResourcePool","RayWorkerGroup","AgentLoop","NonTensorData","NonTensorStack","torch","dist","nn","np","int","float","bool","str","dict","list","tuple","set","ray","ObjectRef","DataLoader"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与HybridFlow","verl-lesson-01-foundations.html"],[2,"DataProto","verl-lesson-02-dataproto.html"],[3,"混合控制器","verl-lesson-03-single-controller.html"],[4,"配置","verl-lesson-04-config.html"],[5,"RL数学","verl-lesson-05-core-algos.html"],[6,"训练引擎","verl-lesson-06-engines.html"],[7,"Workers","verl-lesson-07-workers.html"],[8,"Rollout","verl-lesson-08-rollout.html"],[9,"异步服务","verl-lesson-09-async-server.html"],[10,"Agent Loop","verl-lesson-10-agent-loop.html"],[11,"异步训练","verl-lesson-11-async-train.html"],[12,"Trainer与端到端","verl-lesson-12-trainer-e2e.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"verl-course-index.html"},"verl",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 为什么需要 DataProto =====
+  function WhySection(){
+    return h("div",null,
+      h("p",null,"在 HybridFlow（verl 论文）的设计里，单个控制器（single controller）在驱动进程上发号施令，多个工作进程（multiple workers）在 GPU 上执行。RL 的一次迭代要在这些组件之间传递大量异构数据：token 张量、注意力掩码、对数概率、优势、奖励，还有原始 prompt 文本、工具调用记录、样本来源等无法张量化的对象，以及温度、是否验证等标量配置。如果每个组件各自约定字段名与切分方式，跨组件的数据传递就会退化为大量一次性的胶水代码。",h("strong",null,"DataProto 是 verl 为此设立的统一数据协议"),"：任意两个函数或模块之间传递的数据，都包装成同一个 DataProto，于是分发与聚合的逻辑可以一次写好、处处复用。"),
+      h("p",null,"源码开头的注释把意图写得很直接：实现任意两个函数、模块之间的基础数据传输协议（base data transfer protocol）。整个类是一个 ",h("code",null,"@dataclass"),"，只有三个字段。"),
+      h(Code,null,"@dataclass\nclass DataProto:\n    \"\"\"A DataProto is a data structure that aims to provide a standard protocol\n    for data exchange between functions. It contains a batch (TensorDict) and a\n    meta_info (Dict). The batch is a TensorDict https://pytorch.org/tensordict/.\"\"\"\n\n    batch: TensorDict = None              # 同 batch size 的张量集合\n    non_tensor_batch: dict = field(default_factory=dict)   # numpy object 数组\n    meta_info: dict = field(default_factory=dict)          # 标量与配置\n\n    def __post_init__(self):\n        self.check_consistency()          # 构造即校验三段一致"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"batch"),"TensorDict"),
+          h("p",null,"形状第一维都是 batch size 的张量集合，例如 ",h("code",null,"input_ids"),"、",h("code",null,"attention_mask"),"、",h("code",null,"old_log_probs"),"、",h("code",null,"advantages"),"。沿 batch 维切分与拼接的操作都委托给 TensorDict。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"non_tensor_batch"),"numpy object 数组"),
+          h("p",null,"无法张量化但仍按样本一一对应的数据，例如原始 prompt 字符串、消息列表、工具调用轨迹。每个值都是 ",h("code",null,"dtype=object")," 的 numpy 数组，第一维同样是 batch size。")
+        )
+      ),
+      h("p",null,"第三段 ",h("strong",null,"meta_info")," 是普通的 Python 字典，承载与样本无关的整批配置或元信息：采样温度、是否计算熵、本批 metrics 等。它不随 batch 维切分，而是按规则被复制或合并（下文 concat 一节展开）。"),
+      h("div",{className:"note"},"三段式的分工源于一个朴素观察：RL 数据天然分为三类。其一是规整的等长张量，适合交给张量库批量处理；其二是按样本对应但无法张量化的对象，需要一个能逐元素索引、切分、拼接的容器，numpy 的 object 数组恰好满足；其三是整批共享的标量配置，用普通字典即可。把三者放进同一个对象，下游就只需面对一种数据类型。"),
+      h("div",null,h(Src,{label:"DataProto 定义",path:"verl/protocol.py",line:318}),h(Src,{label:"三个字段",path:"verl/protocol.py",line:326}),h(Src,{label:"模块注释",path:"verl/protocol.py",line:14}),h(Ext,{href:"https://arxiv.org/abs/2409.19256"},"HybridFlow 论文"))
+    );
+  }
+
+  // ===== 为什么用 TensorDict 作后端 =====
+  function TensorDictSection(){
+    return h("div",null,
+      h("p",null,"batch 段的后端选择是 ",h("strong",{className:"hl-teal"},"TensorDict"),"，PyTorch 官方的张量字典容器。它让一组键到张量的映射可以像单个张量那样被整体操作：对整个 TensorDict 调用 ",h("code",null,".to(device)"),"、",h("code",null,".chunk(n)"),"、",h("code",null,"torch.cat(...)"),"、切片 ",h("code",null,"td[10:20]"),"，会对其中每个张量同时生效，且自动维护一个公共的 ",h("code",null,"batch_size"),"。这正是 DataProto 需要的语义：批操作应当作用于所有字段，而不必逐键手写循环。"),
+      h("p",null,"verl 在模块加载时就关闭了 TensorDict 的惰性遗留模式（lazy legacy），并在版本低于 0.10 时开启 list-to-stack，使非张量数据能以堆叠形式存入。这是为了让序列化、嵌套张量与非张量数据的行为可预测。"),
+      h(Code,null,"with contextlib.suppress(Exception):\n    tensordict.set_lazy_legacy(False).set()\n    if parse_version(tensordict.__version__) < parse_version(\"0.10.0\"):\n        tensordict.set_list_to_stack(True).set()"),
+      h("h3",null,"为什么不直接用一个普通 dict"),
+      h("p",null,"普通的 ",h("code",null,"dict[str, Tensor]")," 当然也能存张量，但每个批操作都得自己写循环：切分要逐键 ",h("code",null,"chunk"),"，拼接要逐键 ",h("code",null,"cat"),"，搬设备要逐键 ",h("code",null,".to()"),"，并且没有统一的 ",h("code",null,"batch_size")," 一致性保证。TensorDict 把这些抽象成对容器整体的操作，并强制各字段第一维相同。DataProto 因此能把 batch 段的切分、拼接、索引几乎全部转交给 TensorDict，自己只负责把 non_tensor_batch 与 meta_info 按同样的规则一并处理。"),
+      h("p",null,"check_consistency 把这条契约写成断言：batch 只允许一维 batch 维（",h("code",null,"num_batch_dims=1"),"），non_tensor_batch 的每个值必须是 numpy 数组，且当两段同时存在时它们的第一维必须相等。"),
+      h(Code,null,"def check_consistency(self):\n    if self.batch is not None:\n        assert len(self.batch.batch_size) == 1, \"only support num_batch_dims=1\"\n    if self.batch is not None and len(self.non_tensor_batch) != 0:\n        batch_size = self.batch.batch_size[0]\n        for key, val in self.non_tensor_batch.items():\n            assert isinstance(val, np.ndarray)\n            assert val.shape[0] == batch_size, \\\n                f\"key {key} length {len(val)} is not equal to batch size {batch_size}\""),
+      h("h3",null,"三个构造入口"),
+      h("p",null,"实际代码很少直接 ",h("code",null,"DataProto(batch=...)"),"，而是用三个类方法之一。",h("code",null,"from_single_dict")," 接收混合字典，自动按值的类型把 ",h("code",null,"torch.Tensor")," 分到 batch、把 ",h("code",null,"np.ndarray")," 分到 non_tensor_batch；",h("code",null,"from_dict")," 接收已分好的张量与非张量字典，并校验所有张量第一维一致；",h("code",null,"from_tensordict")," 从一个含 NonTensorData / NonTensorStack 的 TensorDict 还原回三段结构。"),
+      h(Code,null,"@classmethod\ndef from_single_dict(cls, data, meta_info=None, auto_padding=False):\n    tensors, non_tensors = {}, {}\n    for key, val in data.items():\n        if isinstance(val, torch.Tensor):\n            tensors[key] = val\n        elif isinstance(val, np.ndarray):\n            non_tensors[key] = val\n        else:\n            raise ValueError(f\"Unsupported type in data {type(val)}\")\n    return cls.from_dict(tensors=tensors, non_tensors=non_tensors,\n                         meta_info=meta_info, auto_padding=auto_padding)"),
+      h("div",null,h(Src,{label:"lazy legacy 设置",path:"verl/protocol.py",line:45}),h(Src,{label:"check_consistency",path:"verl/protocol.py",line:454}),h(Src,{label:"from_single_dict",path:"verl/protocol.py",line:480}),h(Src,{label:"from_dict",path:"verl/protocol.py",line:496}),h(Src,{label:"from_tensordict",path:"verl/protocol.py",line:546}),h(Ext,{href:"https://pytorch.org/tensordict/"},"TensorDict 文档"))
+    );
+  }
+
+  // ===== 核心批操作探索器 =====
+  const OPS=[
+    {key:"chunk",name:"chunk / split",render:function(){return [
+      h("p",null,h("code",null,"chunk(chunks)")," 把整个 DataProto 沿 batch 维切成 ",h("code",null,"chunks")," 份，是分发（dispatch）的核心：当 world_size 个 worker 各自要处理一份数据时，控制器调用 ",h("code",null,"chunk(world_size)")," 把一批切成等大的若干份再分别发出。默认要求 ",h("code",null,"len(self) % chunks == 0"),"，除非启用了自动填充（auto padding）。"),
+      h(Code,null,"def chunk(self, chunks: int) -> list[\"DataProto\"]:\n    if not self.is_padding_enabled():\n        assert len(self) % chunks == 0, \"only support equal chunk.\"\n    # 1) batch 段直接委托给 TensorDict.chunk\n    batch_lst = self.batch.chunk(chunks=chunks, dim=0)\n    bsz_in_batch = np.array([b.batch_size[0] for b in batch_lst])\n    chunk_indices = np.cumsum(bsz_in_batch)[:-1]\n    # 2) non_tensor_batch 按同样的边界用 np.array_split 切\n    non_tensor_batch_lst = [{} for _ in range(chunks)]\n    for key, val in self.non_tensor_batch.items():\n        non_tensor_lst = np.array_split(val, chunk_indices.tolist())\n        for i in range(chunks):\n            non_tensor_batch_lst[i][key] = non_tensor_lst[i]\n    # 3) meta_info 整份复制给每一片\n    return [type(self)(batch=batch_lst[i],\n                       non_tensor_batch=non_tensor_batch_lst[i],\n                       meta_info=self.meta_info) for i in range(chunks)]"),
+      h("p",null,"三段各按其语义切：batch 用 ",h("code",null,"TensorDict.chunk")," 切张量并据此算出每片实际大小，non_tensor_batch 用 numpy 的 ",h("code",null,"array_split")," 按完全相同的边界切，保证同一行样本的张量部分与非张量部分仍然对应。meta_info 不切，直接整份复制给每一片。",h("code",null,"split(split_size)")," 是另一种切法：按固定大小逐段取，最后一段可以更短，常用于把一大批拆成定长的小批。"),
+      h("div",null,h(Src,{label:"chunk",path:"verl/protocol.py",line:864}),h(Src,{label:"split",path:"verl/protocol.py",line:905}))
+    ];}},
+    {key:"concat",name:"concat",render:function(){return [
+      h("p",null,h("code",null,"DataProto.concat(list)")," 是聚合（collect）的核心：world_size 个 worker 各自返回一片 DataProto，控制器把它们沿 batch 维拼回一整批。batch 段用 ",h("code",null,"torch.cat"),"，non_tensor_batch 段先把各片同名的 numpy 数组归拢成列表再 ",h("code",null,"np.concatenate"),"，meta_info 则需要特殊处理。"),
+      h(Code,null,"@staticmethod\ndef concat(data: list[\"DataProto\"]) -> \"DataProto\":\n    new_batch = torch.cat([d.batch for d in data], dim=0) if data[0].batch is not None else None\n    non_tensor_batch = list_of_dict_to_dict_of_list([d.non_tensor_batch for d in data])\n    for key, val in non_tensor_batch.items():\n        non_tensor_batch[key] = np.concatenate(val, axis=0)\n    # meta_info: metrics 累积, 其余键校验一致\n    merged_meta_info = {}\n    all_metrics = []\n    for d in data:\n        for k, v in d.meta_info.items():\n            if k == \"metrics\":\n                all_metrics.extend(v if isinstance(v, list) else [v])\n            elif k in merged_meta_info:\n                assert merged_meta_info[k] == v, f\"Conflicting values for meta_info key '{k}'\"\n            else:\n                merged_meta_info[k] = v\n    if all_metrics:\n        merged_meta_info[\"metrics\"] = list_of_dict_to_dict_of_list(all_metrics)\n    return type(data[0]).concat... # 返回拼接后的 DataProto"),
+      h("p",null,"meta_info 的合并体现了一个设计权衡：对于配置类的键（温度、是否验证等），各 worker 应当持有相同的值，因此遇到冲突直接报错；唯独 ",h("code",null,"metrics")," 例外，因为它是每个 worker 各自统计的，需要累积而非去重。这样 concat 既能保证配置一致，又能把分散在各 worker 的指标汇总起来。",h("code",null,"chunk")," 与 ",h("code",null,"concat")," 是互逆的一对，分发时切、聚合时拼，构成单控制器与多 worker 之间数据往返的两端。"),
+      h("div",null,h(Src,{label:"concat",path:"verl/protocol.py",line:917}),h(Src,{label:"metrics 累积",path:"verl/protocol.py",line:937}))
+    ];}},
+    {key:"select",name:"select / pop / union / rename",render:function(){return [
+      h("p",null,"这一组是沿字段维度（而非 batch 维）的操作。",h("code",null,"select")," 按键挑出一个子集，返回新 DataProto；",h("code",null,"pop")," 在挑出的同时从原对象中移除这些键，常用于把一组键交给下一阶段后就不再保留；",h("code",null,"union")," 把另一个 DataProto 的字段并入当前对象（要求 batch size 一致，同名键必须值相等）；",h("code",null,"rename")," 改 batch 段中键的名字。"),
+      h(Code,null,"def select(self, batch_keys=None, non_tensor_batch_keys=None,\n           meta_info_keys=None, deepcopy=False) -> \"DataProto\":\n    sub_batch = self.batch.select(*batch_keys) if batch_keys is not None else self.batch\n    non_tensor_batch = {k: v for k, v in self.non_tensor_batch.items()\n                        if non_tensor_batch_keys is None or k in non_tensor_batch_keys}\n    sub_meta_info = {k: v for k, v in self.meta_info.items()\n                     if meta_info_keys is None or k in meta_info_keys}\n    return type(self)(batch=sub_batch, non_tensor_batch=non_tensor_batch,\n                      meta_info=sub_meta_info)\n\ndef pop(self, batch_keys=None, non_tensor_batch_keys=None, meta_info_keys=None):\n    tensors = {k: self.batch.pop(k) for k in (batch_keys or [])}\n    non_tensors = {k: self.non_tensor_batch.pop(k) for k in (non_tensor_batch_keys or [])}\n    meta_info = {k: self.meta_info.pop(k) for k in (meta_info_keys or [])}\n    return DataProto.from_dict(tensors=tensors, non_tensors=non_tensors, meta_info=meta_info)"),
+      h("p",null,"union 的三段分别交给三个辅助函数：batch 段用 ",h("code",null,"union_tensor_dict"),"（同名键要求 ",h("code",null,".equal"),"），non_tensor_batch 段用 ",h("code",null,"union_numpy_dict"),"（同名键用 ",h("code",null,"_deep_equal")," 做能处理 NaN 与对象类型的深比较），meta_info 段用 ",h("code",null,"union_two_dict"),"。同名键必须相等的约束，是为了防止两次写入悄悄覆盖彼此而产生静默错误，这与 verl 以正确性为先的取向一致。"),
+      h("div",null,h(Src,{label:"select",path:"verl/protocol.py",line:600}),h(Src,{label:"pop",path:"verl/protocol.py",line:721}),h(Src,{label:"union",path:"verl/protocol.py",line:781}),h(Src,{label:"rename",path:"verl/protocol.py",line:754}),h(Src,{label:"union_tensor_dict",path:"verl/protocol.py",line:109}),h(Src,{label:"union_numpy_dict",path:"verl/protocol.py",line:188}))
+    ];}},
+    {key:"repeat",name:"repeat / 索引 / reorder",render:function(){return [
+      h("p",null,h("code",null,"repeat(repeat_times, interleave)")," 把每个样本复制若干份，是 RL 里 group sampling 的基础：对同一个 prompt 采样 G 条 response 做 GRPO 一类的组内归一时，先 ",h("code",null,"repeat(G)")," 再送去生成。",h("code",null,"interleave=True")," 时用 ",h("code",null,"repeat_interleave")," 把同一样本的副本相邻排列（",h("code",null,"AABBCC"),"），否则用 expand + reshape 平铺成块（",h("code",null,"ABCABC"),"）。"),
+      h(Code,null,"def repeat(self, repeat_times=2, interleave=True):\n    if interleave:\n        repeated_tensors = {k: t.repeat_interleave(repeat_times, dim=0)\n                            for k, t in self.batch.items()}\n    else:\n        repeated_tensors = {k: t.unsqueeze(0).expand(repeat_times, *t.shape)\n                                 .reshape(-1, *t.shape[1:])\n                            for k, t in self.batch.items()}\n    repeated_batch = TensorDict(source=repeated_tensors,\n                                batch_size=(self.batch.batch_size[0] * repeat_times,))\n    repeated_non_tensor_batch = {}\n    for k, v in self.non_tensor_batch.items():\n        repeated_non_tensor_batch[k] = (np.repeat(v, repeat_times, axis=0) if interleave\n                                        else np.tile(v, (repeat_times,) + (1,)*(v.ndim-1)))\n    return type(self)(batch=repeated_batch,\n                      non_tensor_batch=repeated_non_tensor_batch, meta_info=self.meta_info)"),
+      h("p",null,"索引方面，",h("code",null,"__getitem__")," 把不同的索引类型路由到不同方法：切片走 ",h("code",null,"slice")," 返回新 DataProto，列表 / numpy 数组 / 张量走 ",h("code",null,"select_idxs")," 做按索引选择（支持布尔掩码），单个整数返回一个 ",h("code",null,"DataProtoItem"),"（保留向后兼容）。",h("code",null,"reorder(indices)")," 按给定顺序原地重排，常用于按序列长度做负载均衡后的洗牌。",h("code",null,"sample_level_repeat")," 则允许每个样本各复制不同次数。"),
+      h("div",null,h(Src,{label:"repeat",path:"verl/protocol.py",line:971}),h(Src,{label:"__getitem__",path:"verl/protocol.py",line:343}),h(Src,{label:"select_idxs",path:"verl/protocol.py",line:635}),h(Src,{label:"reorder",path:"verl/protocol.py",line:963}),h(Src,{label:"sample_level_repeat",path:"verl/protocol.py",line:1054}))
+    ];}},
+    {key:"padding",name:"padding / unpad / make_iterator",render:function(){return [
+      h("p",null,"当一批的样本数不能被 world_size 整除时，无法等分给各 worker。",h("code",null,"pad_dataproto_to_divisor")," 通过把已有样本重复若干次，把长度补到 ",h("code",null,"size_divisor")," 的整数倍，返回补齐后的数据与补的个数；处理完再用 ",h("code",null,"unpad_dataproto")," 去掉尾部的填充。这对工具函数让分发逻辑不必假设批大小恰好可整除。"),
+      h(Code,null,"def pad_dataproto_to_divisor(data: \"DataProto\", size_divisor: int):\n    if len(data) % size_divisor != 0:\n        pad_size = size_divisor - len(data) % size_divisor\n        padding_protos, remaining = [], pad_size\n        while remaining > 0:                       # 不足时可循环取整批补\n            take = min(remaining, len(data))\n            padding_protos.append(data[:take])\n            remaining -= take\n        data_padded = DataProto.concat([data] + padding_protos)\n    else:\n        pad_size, data_padded = 0, data\n    return data_padded, pad_size\n\ndef unpad_dataproto(data, pad_size):\n    return data[:-pad_size] if pad_size != 0 else data"),
+      h("p",null,"实例方法 ",h("code",null,"padding(padding_size, padding_candidate)")," 则用首样本或尾样本重复来补，并在 dispatch 的自动填充路径里被调用。",h("code",null,"make_iterator(mini_batch_size, epochs)")," 把 DataProto 当作 PyTorch 数据集，用 ",h("code",null,"DataLoader")," 与自定义 ",h("code",null,"collate_fn")," 产出 mini-batch 迭代器，要求总批大小能被 ",h("code",null,"mini_batch_size")," 整除，是 PPO 多轮 mini-batch 更新的取数入口。"),
+      h(Code,null,"def make_iterator(self, mini_batch_size, epochs, seed=None, dataloader_kwargs=None):\n    assert self.batch.batch_size[0] % mini_batch_size == 0\n    train_dataloader = DataLoader(dataset=self, batch_size=mini_batch_size,\n                                  collate_fn=collate_fn, generator=generator,\n                                  **dataloader_kwargs)\n    def get_data():\n        for _ in range(epochs):\n            for d in train_dataloader:\n                d.meta_info = self.meta_info   # 每个 mini-batch 继承整批 meta_info\n                yield d\n    return iter(get_data())"),
+      h("div",null,h(Src,{label:"pad_dataproto_to_divisor",path:"verl/protocol.py",line:74}),h(Src,{label:"unpad_dataproto",path:"verl/protocol.py",line:102}),h(Src,{label:"padding",path:"verl/protocol.py",line:849}),h(Src,{label:"make_iterator",path:"verl/protocol.py",line:800}),h(Src,{label:"collate_fn",path:"verl/protocol.py",line:296}))
+    ];}}
+  ];
+  function OpsExplorer(){const [s,setS]=useState(0);const d=OPS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},OPS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== dispatch 与 BatchData =====
+  function DispatchSection(){
+    return h("div",null,
+      h("p",null,"chunk 与 concat 之所以重要，是因为它们正是 HybridFlow 分发机制的两端。单控制器在 ",h("code",null,"verl/single_controller/base/decorator.py")," 里用一组 dispatch / collect 函数描述一个方法的数据如何切给各 worker、各 worker 的结果如何拼回。最常用的 ",h("code",null,"dispatch_dp_compute_data_proto")," 就是按 world_size 把入参 chunk 开，",h("code",null,"collect_dp_compute_data_proto")," 把各 worker 的返回 concat 起来。"),
+      h(Code,null,"# decorator.py: 把每个入参按 world_size 切成 chunks 份\ndef _split_args_kwargs_data_proto(chunks, *args, **kwargs):\n    splitted_args = []\n    for arg in args:\n        assert BatchData(arg).is_chunkable()\n        chunked_arg = BatchData(arg).chunk(chunks=chunks)\n        splitted_args.append(chunked_arg)\n    ...\n    return splitted_args, splitted_kwargs\n\n# 聚合: 把各 worker 返回的列表 concat 回一整批\ndef collect_dp_compute_data_proto(worker_group, output):\n    assert BatchData(output).is_concatable()\n    return _concat_data_proto_or_future(output)"),
+      h("p",null,"这里出现的 ",h("code",null,"BatchData")," 是 protocol.py 里的一个统一分发包装器。它把所有针对具体类型的 ",h("code",null,"isinstance")," 判断集中到一处，使调用方（decorator.py）不必关心被分发的数据究竟是 ",h("code",null,"DataProto"),"、",h("code",null,"DataProtoFuture"),"、裸 ",h("code",null,"TensorDict")," 还是 transfer queue 的 ",h("code",null,"BatchMeta"),"。无论哪种，调用 ",h("code",null,"BatchData(x).chunk(n)")," 与 ",h("code",null,"BatchData(list).concat()")," 都能得到正确结果。"),
+      h(Code,null,"class BatchData:\n    def chunk(self, chunks: int):\n        data = self._data\n        if isinstance(data, TensorDict):\n            from verl.utils.tensordict_utils import chunk_tensordict, contiguous\n            raw_chunks = chunk_tensordict(data, chunks)\n            return tuple(contiguous(v).consolidate() for v in raw_chunks)\n        # DataProto, DataProtoFuture 等都自带 .chunk()\n        return data.chunk(chunks=chunks)\n\n    def concat(self):\n        sample = self._data[0]\n        if isinstance(sample, ray.ObjectRef):\n            return DataProtoFuture.concat(self._data)\n        ...\n        return type(sample).concat(self._data)"),
+      h("p",null,"启用自动填充时，dispatch 走 ",h("code",null,"_split_args_kwargs_data_proto_with_auto_padding"),"：它先按 ",h("code",null,"is_padding_enabled")," 判断是否需要补齐，对所有入参用同一个 ",h("code",null,"padding_size")," 调用 ",h("code",null,"padding"),"，再 chunk，并把 ",h("code",null,"padding_size")," 通过一个特殊键 ",h("code",null,"_padding_size_key")," 透传给下游，方便 worker 端在返回前去掉填充。把这套逻辑收拢进 BatchData 的好处是：日后新增一种可分发的数据类型，只需在 BatchData 里加分支，所有 dispatch 调用点自动受益。"),
+      h("div",{className:"note"},"分发机制本身（注册 dispatch / collect、",h("code",null,"@register")," 装饰器、Dispatch 枚举）是第 3 课 single controller 的主题。本课只需明确：DataProto 的 chunk / concat 是分发的数据原语，BatchData 是把这些原语统一对外的薄包装。"),
+      h("div",null,h(Src,{label:"BatchData",path:"verl/protocol.py",line:1231}),h(Src,{label:"BatchData.chunk",path:"verl/protocol.py",line:1271}),h(Src,{label:"BatchData.concat",path:"verl/protocol.py",line:1291}),h(Src,{label:"_split_args_kwargs_data_proto",path:"verl/single_controller/base/decorator.py",line:71}),h(Src,{label:"auto padding 分发",path:"verl/single_controller/base/decorator.py",line:91}),h(Src,{label:"collect_dp_compute_data_proto",path:"verl/single_controller/base/decorator.py",line:191}))
+    );
+  }
+
+  // ===== DataProtoFuture =====
+  function FutureSection(){
+    return h("div",null,
+      h("p",null,"在异步执行中，控制器不应当为了拿到一个 worker 的结果而阻塞。",h("strong",{className:"hl-purple"},"DataProtoFuture")," 就是为此设立的惰性数据：它持有一组 Ray 的 ",h("code",null,"ObjectRef")," 而非真实数据，并携带两个可调用对象：",h("code",null,"collect_fn")," 把这组 future 归约成一个 DataProto，",h("code",null,"dispatch_fn")," 再把这个 DataProto 切分并选出本 worker 需要的那一片。只有在真正调用 ",h("code",null,".get()")," 时才会去 Ray 对象存储取数。"),
+      h(Code,null,"@dataclass\nclass DataProtoFuture:\n    \"\"\"DataProtoFuture aims to eliminate actual data fetching on driver. By doing so,\n    the driver doesn't have to wait for data so that asynchronous execution becomes possible.\"\"\"\n    collect_fn: Callable\n    futures: list[ray.ObjectRef]\n    dispatch_fn: Callable = None\n\n    @staticmethod\n    def concat(data: list[ray.ObjectRef]) -> \"DataProtoFuture\":\n        return DataProtoFuture(collect_fn=DataProto.concat, futures=data)\n\n    def chunk(self, chunks: int) -> list[\"DataProtoFuture\"]:\n        out = []\n        for i in range(chunks):\n            def dispatch_fn(x, i, chunks):\n                return x.chunk(chunks=chunks)[i]\n            out.append(DataProtoFuture(collect_fn=self.collect_fn,\n                       dispatch_fn=partial(dispatch_fn, i=i, chunks=chunks),\n                       futures=self.futures))\n        return out"),
+      h("p",null,"关键在于 ",h("code",null,"chunk")," 不真的切数据，而是为每一份构造一个新的 future，把切分动作记进 ",h("code",null,"dispatch_fn")," 里延后执行。于是一个方法的输出 DataProtoFuture 可以直接当作另一个方法的输入，链接成调用图，而驱动进程始终不接触真实张量。这正是把上一阶段的输出（一组 worker 的 ObjectRef）直接喂给下一阶段输入的能力。"),
+      h(Code,null,"def get(self):\n    output = ray.get(self.futures)             # 真正取数: 每个 dp rank 一份\n    for o in output:\n        assert isinstance(o, DataProto | TensorDict)\n    if isinstance(output[0], DataProto):\n        output = DataProto.concat(output)      # collect: 选 dp 并拼接\n    elif isinstance(output[0], TensorDict):\n        output = concat_tensordict(output)\n    if self.dispatch_fn is not None:\n        output = self.dispatch_fn(output)      # dispatch: 沿 batch 切并按 dp 选\n    return output"),
+      h(Formula,{cap:"惰性数据让生成与训练得以重叠：驱动进程的等待被延后到真正需要数据的那一刻"},"$$ T_{\\text{wall}} \\;\\approx\\; \\max\\bigl(T_{\\text{compute}},\\, T_{\\text{transfer}}\\bigr) \\;<\\; T_{\\text{compute}} + T_{\\text{transfer}} $$"),
+      h("p",null,"上式只是直觉性的说明：把取数推迟到 ",h("code",null,".get()"),"，意味着 worker 的计算与数据传输可以与驱动进程的其他工作重叠，墙钟时间趋近于两者的较大者而非两者之和。源码注释也指出一个约束：DataProtoFuture 只支持把一个方法的输出直接传给另一个方法的输入，不能在驱动进程上对它做任何运算。"),
+      h("div",null,h(Src,{label:"DataProtoFuture",path:"verl/protocol.py",line:1174}),h(Src,{label:"concat",path:"verl/protocol.py",line:1193}),h(Src,{label:"chunk",path:"verl/protocol.py",line:1197}),h(Src,{label:"get",path:"verl/protocol.py",line:1212}),h(Ext,{href:"https://docs.ray.io/en/latest/ray-core/objects.html"},"Ray Objects 文档"))
+    );
+  }
+
+  // ===== 序列化与 Ray object store =====
+  function SerdeSection(){
+    return h("div",null,
+      h("p",null,"DataProto 要在进程之间、节点之间传递，必然经过序列化。Ray 用 pickle 序列化对象后放进对象存储（object store），因此 DataProto 实现了 ",h("code",null,"__getstate__")," 与 ",h("code",null,"__setstate__"),"，对 batch 段做专门处理，而 non_tensor_batch 与 meta_info 直接交给 pickle。"),
+      h("p",null,"默认路径把 TensorDict 先 ",h("code",null,"contiguous().consolidate()")," 整理成连续内存，再用 ",h("code",null,"torch.save")," 写进字节缓冲。consolidate 把分散的张量合并成单块存储，能显著减少 pickle 的开销与对象数量，这对动辄数百兆的 token 批尤为重要。"),
+      h(Code,null,"def __getstate__(self):\n    if version.parse(tensordict.__version__) >= version.parse(\"0.5.0\") and self.batch is not None:\n        if len(self.batch.keys()) > 0:\n            batch = self.batch.contiguous().consolidate()   # 合并为连续单块\n        else:\n            batch = self.batch\n    else:\n        batch = self.batch\n\n    if os.getenv(\"VERL_DATAPROTO_SERIALIZATION_METHOD\") == \"numpy\":\n        if batch is not None:\n            batch = serialize_tensordict(self.batch)         # 备选: numpy 字节编码\n        return (batch, self.non_tensor_batch, self.meta_info)\n    else:\n        buffer = io.BytesIO()\n        torch.save(batch, buffer)                            # 默认: torch.save\n        return buffer.getvalue(), self.non_tensor_batch, self.meta_info"),
+      h("p",null,"另有一条由环境变量 ",h("code",null,"VERL_DATAPROTO_SERIALIZATION_METHOD=numpy")," 启用的备选路径：用 ",h("code",null,"serialize_tensordict")," 把每个张量 flatten 成 uint8 字节、记录 dtype 与 shape，反序列化时再 ",h("code",null,"frombuffer")," 还原。这条路径避开了 ",h("code",null,"torch.save")," 的一些开销，适合特定环境。反序列化时 ",h("code",null,"__setstate__")," 会在当前设备不可用时把张量映射到 CPU，使一台机器存的数据能在另一台还原。"),
+      h("p",null,"除了 pickle，DataProto 也支持显式存盘：",h("code",null,"save_to_disk")," / ",h("code",null,"load_from_disk")," 直接 pickle 到文件，用于断点续训与离线调试。还有一个用于分布式的 ",h("code",null,"all_gather_data_proto"),"：它原地把各 rank 的 DataProto 全收集（all-gather）成一整批，batch 段走 ",h("code",null,"allgather_dict_tensors"),"（逐张量 all_gather 再 cat），non_tensor_batch 段走 ",h("code",null,"all_gather_object"),"。"),
+      h(Code,null,"def all_gather_data_proto(data: DataProto, process_group):\n    group_size = torch.distributed.get_world_size(group=process_group)\n    prev_device = data.batch.device\n    data = data.to(get_device_id())\n    data.batch = allgather_dict_tensors(data.batch.contiguous(),\n                                        size=group_size, group=process_group, dim=0)\n    data = data.to(prev_device)\n    all_non_tensor_batch = [None for _ in range(group_size)]\n    torch.distributed.all_gather_object(all_non_tensor_batch, data.non_tensor_batch, group=process_group)\n    data.non_tensor_batch = {k: np.concatenate([d[k] for d in all_non_tensor_batch])\n                             for k in data.non_tensor_batch}"),
+      h("div",null,h(Src,{label:"__getstate__",path:"verl/protocol.py",line:377}),h(Src,{label:"__setstate__",path:"verl/protocol.py",line:404}),h(Src,{label:"serialize_tensordict",path:"verl/protocol.py",line:247}),h(Src,{label:"save_to_disk",path:"verl/protocol.py",line:426}),h(Src,{label:"all_gather_data_proto",path:"verl/protocol.py",line:1334}),h(Src,{label:"allgather_dict_tensors",path:"verl/utils/torch_functional.py",line:407}))
+    );
+  }
+
+  // ===== 张量原语 =====
+  const PRIMS=[
+    {n:"tensordict_utils.concat_tensordict",d:"沿 dim=0 拼接多个 TensorDict，对嵌套张量（nested tensor）特殊处理：把非嵌套键用 TensorDict.cat 拼，嵌套键单独用 concat_nested_tensors。BatchData.concat 在数据为裸 TensorDict 时调用它。",links:[["concat_tensordict","verl/utils/tensordict_utils.py",247]]},
+    {n:"tensordict_utils.chunk_tensordict",d:"把 TensorDict 切成等大的 chunks 份，对 3D 以上的不规则（jagged）嵌套张量绕开 PyTorch unbind 的已知缺陷：失败时回退到 to_padded_tensor 再按 offsets 还原。mRoPE 的 3D position_ids 会走到这条回退路径。",links:[["chunk_tensordict","verl/utils/tensordict_utils.py",302]]},
+    {n:"tensordict_utils.pad_to_divisor / unpad",d:"TensorDict 版本的补齐与去填充，与 protocol 里 DataProto 版语义一致：长度不是 size_divisor 整数倍时用开头若干样本重复补齐，返回补齐后的张量与 pad_size；unpad 即 data[:-pad_size]。",links:[["pad_to_divisor","verl/utils/tensordict_utils.py",813],["unpad","verl/utils/tensordict_utils.py",858]]},
+    {n:"tensordict_utils.get_tensordict / assign_non_tensor",d:"构造与写入工具：get_tensordict 从张量字典与非张量字典组装一个含 NonTensorData / NonTensorStack 的 TensorDict；assign_non_tensor 自动识别值是标量还是嵌套列表，分别用 NonTensorData 或 NonTensorStack 写入。to_tensordict 把 DataProto 转回 TensorDict 时依赖它。",links:[["get_tensordict","verl/utils/tensordict_utils.py",377],["assign_non_tensor","verl/utils/tensordict_utils.py",76]]},
+    {n:"tensordict_utils.get / pop / get_keys",d:"对 TensorDict 的统一存取：get 带默认值取值并自动 unwrap NonTensorData，pop 取出并删除，get_keys / pop_keys 批量操作。把对裸 TensorDict 的字段级操作与 DataProto 的 select / pop 在语义上统一。",links:[["get","verl/utils/tensordict_utils.py",662],["pop","verl/utils/tensordict_utils.py",737],["get_keys","verl/utils/tensordict_utils.py",698]]},
+    {n:"torch_functional.masked_sum / mean / var / whiten",d:"带掩码的统计原语：在 response 掩码上求和、求均值、求方差，masked_whiten 据此做零均值单位方差的白化，是优势归一化（advantage whitening）的底层实现。掩码外的 NaN 会被置零以免污染。",links:[["masked_sum","verl/utils/torch_functional.py",266],["masked_mean","verl/utils/torch_functional.py",287],["masked_whiten","verl/utils/torch_functional.py",322]]},
+    {n:"torch_functional.pad_sequence_to_length / pad_2d_list_to_length",d:"把变长序列补到固定长度（可选左填充），把二维 list 补成等长张量。rollout 产出的变长 response 在进入 batch 段之前要先补成规整的二维张量，这里是其底层。",links:[["pad_sequence_to_length","verl/utils/torch_functional.py",494],["pad_2d_list_to_length","verl/utils/torch_functional.py",483]]},
+    {n:"torch_functional.get_response_mask / logprobs_from_logits",d:"get_response_mask 由 response 与 eos token 生成有效位置掩码；logprobs_from_logits 从 logits 与 labels 取每 token 对数概率（多种后端实现）。两者产出的张量都以字段形式存进 DataProto 的 batch 段。",links:[["get_response_mask","verl/utils/torch_functional.py",342],["logprobs_from_logits","verl/utils/torch_functional.py",72]]}
+  ];
+  function PrimsSection(){
+    return h("div",null,
+      h("p",null,"DataProto 只负责组织数据，真正对张量做的事散落在两个工具模块里。",h("code",null,"tensordict_utils.py")," 提供针对裸 TensorDict 的切分、拼接、补齐、构造与存取原语（BatchData 在处理裸 TensorDict 时正是调用它们），",h("code",null,"torch_functional.py")," 提供训练用的张量函数（带掩码统计、序列填充、对数概率）。下面逐个给出角色与源码行。"),
+      h("div",{className:"linkgrid"},PRIMS.map(function(u,i){return h("div",{className:"linkcard",key:i},
+        h("div",{className:"lt"},h("code",null,u.n)),
+        h("div",{className:"ld"},u.d),
+        h("div",null,u.links.map(function(l,j){return h(Src,{key:j,label:l[0],path:l[1],line:l[2]});})));}))
+      ,
+      h("div",{className:"note"},"带掩码统计与白化这组原语，是第 5 课 RL 数学（优势估计、PPO 损失、归一化）的底层依赖，此处仅作一句话覆盖。序列填充与对数概率这组原语在第 6、7、8 课的训练引擎与 rollout 处会反复出现。")
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"TensorDict 文档",d:"DataProto 的 batch 后端，理解整体张量操作的语义",href:"https://pytorch.org/tensordict/"},
+    {t:"HybridFlow 论文",d:"verl 的设计来源, 解释单控制器与数据协议的动机",href:"https://arxiv.org/abs/2409.19256"},
+    {t:"Ray Objects 文档",d:"对象存储与 ObjectRef, DataProtoFuture 的底座",href:"https://docs.ray.io/en/latest/ray-core/objects.html"},
+    {t:"NumPy object 数组",d:"non_tensor_batch 的承载类型, 逐元素索引与拼接",href:"https://numpy.org/doc/stable/reference/arrays.dtypes.html"},
+    {t:"protocol.py（本机）",d:"本课主文件, 1345 行的数据协议实现",href:srcUrl("verl/protocol.py",null)},
+    {t:"tensordict_utils.py（本机）",d:"裸 TensorDict 的切分/拼接/补齐原语",href:srcUrl("verl/utils/tensordict_utils.py",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:2}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 2 课 / 共 12 · DataProto 数据协议"),
+          h("h1",null,"DataProto 数据协议"),
+          h("p",{className:"lead"},"DataProto 是 verl 一切数据流动的载体。本课自底向上讲清它的三段式结构（TensorDict 张量后端 + numpy 对象数组 + meta_info 字典）与为什么这样设计，核心批操作 concat / chunk / split / select / pop / union / rename / repeat / padding / make_iterator 各自的语义与在分发时的切分聚合规则，惰性数据 DataProtoFuture 如何与 Ray future 配合，以及它与 Ray 对象存储之间的序列化传递。读完这一课，后续每一课里出现的 DataProto 都能被读懂。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"verl/protocol.py")," 的 DataProto / DataProtoItem / DataProtoFuture / BatchData 与序列化、",h("code",null,"verl/utils/tensordict_utils.py")," 的 TensorDict 原语、",h("code",null,"verl/utils/torch_functional.py")," 的张量与掩码原语，并触及 ",h("code",null,"single_controller/base/decorator.py")," 的分发用法。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/verl")," 源码行（Python 包在 verl/verl）。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"protocol.py · 设计动机"),
+          h("h2",null,"为什么需要一个统一数据协议"),
+          h(WhySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"protocol.py · batch 后端"),
+          h("h2",null,"三段式结构与 TensorDict 后端"),
+          h(TensorDictSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"protocol.py · 批操作"),
+          h("h2",null,"核心批操作：切、拼、选、并、重复、补齐"),
+          h("p",null,"DataProto 的方法可分两类：沿 batch 维（行）的 chunk / split / concat / repeat / padding，以及沿字段维（列）的 select / pop / union / rename。点 Tab 逐组查看它们的真实实现与设计要点。这些操作贯穿后续每一课的数据流。"),
+          h(OpsExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"protocol.py + decorator.py"),
+          h("h2",null,"批操作如何驱动分发：BatchData"),
+          h(DispatchSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"protocol.py · 惰性数据"),
+          h("h2",null,"DataProtoFuture：与 Ray future 配合的惰性数据"),
+          h(FutureSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"protocol.py · 序列化"),
+          h("h2",null,"与 Ray 对象存储的序列化传递"),
+          h(SerdeSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"tensordict_utils + torch_functional"),
+          h("h2",null,"底层张量与数据原语：每个一句话"),
+          h(PrimsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"读 DataProto 时配合这些文档，能把 TensorDict 的整体张量语义、Ray 对象存储的角色与 HybridFlow 的设计动机补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"一种数据类型贯穿全系统"),"：任意两个函数或模块之间都传 DataProto，分发与聚合逻辑因此只需写一次。这是理解 verl 数据流的总纲。"),
+            h("li",null,h("strong",null,"三段按其本性分工"),"：等长张量交给 TensorDict（可整体切拼搬设备），按样本对应的非张量对象用 numpy object 数组，整批配置用普通字典 meta_info；三段在每个批操作里各按自己的规则被处理。"),
+            h("li",null,h("strong",null,"chunk 与 concat 是分发的两端"),"：分发时按 world_size 切、聚合时拼回；meta_info 的配置键校验一致、metrics 键累积，体现以正确性为先的取向。BatchData 把这些原语统一对外，新增数据类型只需加一处分支。"),
+            h("li",null,h("strong",null,"DataProtoFuture 让数据惰性"),"：持有 Ray ObjectRef 而非真实数据，把 collect 与 dispatch 推迟到 .get()，使一个方法的输出能直接当作另一个方法的输入，生成与训练得以重叠。"),
+            h("li",null,h("strong",null,"序列化为跨进程传递服务"),"：__getstate__ 把 TensorDict 先 consolidate 再 torch.save，备选 numpy 字节路径；save_to_disk 与 all_gather_data_proto 覆盖存盘与分布式收集。底层张量原语留在 tensordict_utils 与 torch_functional，第 5 课起反复使用。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"verl-lesson-01-foundations.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 1 课：地基与 HybridFlow 全局观")),
+            h("a",{href:"verl-lesson-03-single-controller.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 3 课：single controller 混合控制器"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

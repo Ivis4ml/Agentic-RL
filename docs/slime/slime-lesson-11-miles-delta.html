@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>slime 逐文件精读 · 第 11 课：miles 增量章节</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+    table.delta{width:100%;border-collapse:collapse;margin:14px 0;font-size:12.5px;}
+    table.delta th,table.delta td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top;}
+    table.delta th{background:#101826;color:var(--ink);font-weight:700;}
+    table.delta td{color:var(--muted);}
+    table.delta td:first-child{font-family:var(--mono);color:var(--teal);white-space:nowrap;}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 11 课</p><h1>miles 增量章节</h1><p>能访问 CDN 时切换为交互版。本课讲清 miles 相对 slime 的增量：miles 是 slime 的生产硬化分支（radixark / InfiXAI + 蚂蚁 AQ + SGLang RL 团队），新增 router/（R3 路由重放服务化）、true_on_policy/（消除 train-infer 失配）、统一 FP8 与 INT4 W4A16 QAT 全栈、MrlX 多智能体协同演化与 RL 中的投机解码。本课链接打开的是 miles 仓库源码。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const SLIME="vscode://file/Users/xinyu/Code/Agentic-RL/miles/";
+  function srcUrl(p,l){return SLIME+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","Sample","Args","RolloutController","RolloutManager","RayTrainGroup","RayActor","SglangEngine","Box","ray","asyncio","Timer","ParamInfo","RolloutBatch","Literal","MilesRouter","FastAPI","Request","Replay","BaseReplayManager","RoutingReplayManager","IndexerReplayManager","TrueOnPolicyConfig","TrueOnPolicyLaunchPlan","TrueOnPolicyKernelPolicy","TrueOnPolicyContract","TrueOnPolicyModelProfile","TrueOnPolicyArgList","Namespace","WQLinear_GEMM","httpx","uvicorn","Response","JSONResponse","np","str","set"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与双引擎","slime-lesson-01-foundations.html"],[2,"统一配置","slime-lesson-02-config.html"],[3,"RL 数学原语","slime-lesson-03-rl-math.html"],[4,"数据与 Buffer","slime-lesson-04-data-buffer.html"],[5,"Megatron 后端","slime-lesson-05-megatron.html"],[6,"SGLang 后端","slime-lesson-06-sglang.html"],[7,"权重同步","slime-lesson-07-weight-sync.html"],[8,"Rollout 与异步","slime-lesson-08-rollout-async.html"],[9,"Agent 层","slime-lesson-09-agent.html"],[10,"Ray 编排","slime-lesson-10-orchestration.html"],[11,"miles 增量","slime-lesson-11-miles-delta.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"slime-course-index.html"},"slime",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 总览：miles = slime 内核 + 生产硬化 =====
+  function OverviewSection(){
+    return h("div",null,
+      h("p",null,"miles 是 slime 的一个分支（fork），由 ",h("strong",{className:"hl-purple"},"radixark / InfiXAI")," 团队联合 ",h("strong",{className:"hl-amber"},"蚂蚁 AQ 团队")," 与 ",h("strong",{className:"hl-teal"},"SGLang RL 团队")," 维护。它保留 slime 的全部内核设计（Megatron 训练 + SGLang rollout + Data Buffer 同流、Ray 编排、原生参数透传、刻意只选 SGLang 一个推理后端），在此之上叠加一层面向大规模生产训练的系统硬化。README 的自述定位是 “enterprise-grade RL for large-scale model training”，强调三件事：高吞吐 rollout、低精度训练、生产稳定性。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"slime"),"研究内核"),
+          h("p",null,"清华 / 智谱（THUDM / Z.ai）维护，是 GLM-4.x、GLM-5、GLM-5.1、GLM-5.2 背后的 RL 框架。优先关注模块化、可读性与可复现性，作为前沿模型后训练的参考实现。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"miles"),"生产分支"),
+          h("p",null,"在 slime 内核上补足生产规模下暴露的系统问题：MoE RL 的训练崩溃、训练与推理数值失配、超大模型显存、长尾 rollout 吞吐。新增 router/、true_on_policy/，移除 slime 的 agent/ 子包（agent 退回为 examples 层的数据生成示例）。")
+        )
+      ),
+      h("h3",null,"为什么会分叉：两种取舍"),
+      h("p",null,"GLM 团队用 slime 验证完整的后训练循环，因此 slime 的设计重心是“正确性优先、模块清晰、足以训练前沿模型”。蚂蚁与 InfiX 把 slime 用在更激进的生产场景（万亿参数 MoE、低精度、长程多轮 agentic），这些场景把若干 slime 中尚属研究阶段的机制（如路由重放）推向了必须工程化的程度。据此，miles 的取舍是“在不重写训练内核的前提下，把这些机制做成可配置、可校验、可在 CI 中回归的生产组件”。两者并非竞争关系：miles 的许多增量会回流到上游，slime 仍是其声明的核心架构来源。"),
+      h("div",{className:"note"},"目录差异（用工具对比 ",h("code",null,"slime/slime/")," 与 ",h("code",null,"miles/miles/")," 得到）：miles 新增 ",h("code",null,"miles/router/")," 与 ",h("code",null,"miles/true_on_policy/")," 两个子包；移除 slime 的 ",h("code",null,"slime/agent/")," 子包（multi-agent 改由 ",h("code",null,"examples/multi_agent/")," 承载）；slime 的 ",h("code",null,"slime/utils/routing_replay.py")," 在 miles 中被替换并扩展为 ",h("code",null,"miles/utils/replay_base.py"),"。其余 ",h("code",null,"backends/"),"、",h("code",null,"ray/"),"、",h("code",null,"rollout/"),"、",h("code",null,"utils/")," 结构同源但各有增补。"),
+      h("div",null,h(Src,{label:"miles README.md",path:"README.md"}),h(Src,{label:"miles 顶层包 __init__.py",path:"miles/__init__.py"}),h(Src,{label:"router/__init__.py",path:"miles/router/__init__.py"}),h(Src,{label:"true_on_policy/__init__.py",path:"miles/true_on_policy/__init__.py",line:1}),h(Ext,{href:"https://lmsys.org/blog/2025-11-19-miles/"},"miles 启动公告"),h(Ext,{href:"https://miles.radixark.com/docs"},"miles 文档"))
+    );
+  }
+
+  // ===== router/：R3 路由重放服务化 =====
+  function RouterSection(){
+    return h("div",null,
+      h("p",null,"先厘清两个不同层级的“router”。其一是 ",h("strong",null,"HTTP 请求路由器"),"：把 rollout 请求分发到多个 SGLang worker 引擎。slime 默认用上游 ",h("code",null,"sglang-router")," 做 token 级路由。miles 在 ",h("code",null,"miles/router/router.py")," 中提供一个自研的 ",h("strong",{className:"hl-purple"},"MilesRouter"),"（FastAPI + httpx 异步代理），由 ",h("code",null,"--use-miles-router")," 开关启用。其二是 ",h("strong",null,"专家路由重放（Routing Replay）"),"：记录 MoE 模型在推理时每个 token 选中的专家，训练时按相同选择重放，这是 R3 论文（arXiv 2510.11370）的核心，与 SGLang 团队合作完成。两者都叫 router，但解决的问题不同。"),
+      h("h3",null,"MilesRouter：最少活跃请求的负载均衡代理"),
+      h("p",null,"MilesRouter 维护每个 worker 的活跃请求计数，转发时选择活跃请求最少的 worker（",h("code",null,"_use_url"),"），转发完成后计数回减（",h("code",null,"_finish_url"),"）。它另起一个后台健康检查协程：连续失败次数超过阈值即把 worker 标记为 dead，移出路由池；恢复时则清零失败计数。设计动机是文本级路由（基于 session 的一致性哈希）配合 PD 分离之外的稳定服务，并保证一个被重新拉起的 worker 不会带着陈旧权重静默回到池中而引入 off-policy 污染（源码中有对应 TODO 说明）。"),
+      h(Code,null,"# miles/router/router.py: 选择活跃请求最少的 worker\ndef _use_url(self):\n    if not self.dead_workers:\n        url = min(self.worker_request_counts, key=self.worker_request_counts.get)\n    else:\n        valid_workers = (w for w in self.worker_request_counts if w not in self.dead_workers)\n        try:\n            url = min(valid_workers, key=self.worker_request_counts.get)\n        except ValueError:\n            raise RuntimeError(\"No healthy workers available in the pool\") from None\n    self.worker_request_counts[url] += 1\n    return url"),
+      h("p",null,"启动入口是 ",h("code",null,"start_router")," （",h("code",null,"miles/ray/rollout/router_manager.py"),"）：当 ",h("code",null,"--use-miles-router")," 开启时导入 ",h("code",null,"miles.router.router.run_router"),"，否则回退到上游 ",h("code",null,"sglang_router")," 的 ",h("code",null,"RouterArgs"),"。两条路径都以独立守护进程运行，再等待端口就绪。SGLang 引擎侧（",h("code",null,"sglang_engine.py"),"）在 router 版本过旧或使用 miles router 时，会主动 POST ",h("code",null,"/add_worker")," 把自己注册进路由池，且断言 miles router 不支持 PD 分离。"),
+      h("div",null,h(Src,{label:"MilesRouter",path:"miles/router/router.py",line:30}),h(Src,{label:"run_router",path:"miles/router/router.py",line:16}),h(Src,{label:"_use_url",path:"miles/router/router.py",line:207}),h(Src,{label:"_health_check_loop",path:"miles/router/router.py",line:83}),h(Src,{label:"start_router",path:"miles/ray/rollout/router_manager.py",line:19}),h(Src,{label:"add_worker 注册",path:"miles/backends/sglang_utils/sglang_engine.py",line:222})),
+      h("h3",null,"R3：从 slime 的进程内重放到 miles 的服务化重放"),
+      h("p",null,"MoE 的不稳定根源在于：推理引擎（SGLang）与训练引擎（Megatron）对同一序列计算专家路由时，由于 kernel、并行布局、数值路径不同，可能选出不同的 top-k 专家集合。被选专家不同，等价于推理与训练用的是不同的子网络，重要性采样比就失真，大模型（Qwen3、DeepSeek-V3）上会出现训练崩溃。R3 的解法是：推理时记录每个 token 实际选中的专家索引，训练时强制按这份记录重放，从而保证逐位（bit-wise）一致的专家选择。"),
+      h("h4",null,"slime 的实现：utils/routing_replay.py"),
+      h("p",null,"slime 的 ",h("code",null,"RoutingReplay")," 是一个进程内的全局单例配合环境变量驱动的状态机：通过 ",h("code",null,"ENABLE_ROUTING_REPLAY")," 与 ",h("code",null,"ROUTING_REPLAY_STAGE")," 环境变量在 fallthrough / record / replay_forward / replay_backward 之间切换，",h("code",null,"compute_topk")," 被包装后在 record 阶段把 ",h("code",null,"top_indices")," 复制到 CPU 固定内存，在 replay 阶段取回并用 ",h("code",null,"scores.gather")," 重算 ",h("code",null,"probs"),"。它解决的是单次训练步内 forward 与 backward 的路由一致，但本身没有把“推理侧”的路由作为数据源。"),
+      h(Code,null,"# slime/slime/utils/routing_replay.py（对照基准，路径在 slime 仓库）\nclass RoutingReplay:\n    def record(self, top_indices):\n        buf = torch.empty_like(top_indices, device=\"cpu\", pin_memory=True)\n        buf.copy_(top_indices)\n        self.top_indices_list.append(buf)\n    def pop_forward(self):\n        top_indices = self.top_indices_list[self.forward_index]\n        self.forward_index += 1\n        return top_indices.to(torch.cuda.current_device())"),
+      h("h4",null,"miles 的实现：utils/replay_base.py（服务化、可校验、可扩展）"),
+      h("p",null,"miles 把这套机制重写为 ",h("code",null,"BaseReplayManager")," 抽象，并实例化两个具体管理器：",h("code",null,"RoutingReplayManager")," （MoE 专家路由）与 ",h("code",null,"IndexerReplayManager")," （为带 indexer 的层重放 KV 位置，服务 DeepSeek-V3.2 这类稀疏注意力）。三处关键演进："),
+      h("ul",null,
+        h("li",null,h("strong",null,"以对象状态取代环境变量"),"：阶段切换是管理器的 ",h("code",null,"stage")," 字段（",h("code",null,"_set_replay_stage"),"），不再依赖进程级环境变量，多个 replay 类型可独立开关。"),
+        h("li",null,h("strong",null,"推理侧路由作为数据源（rollout routing replay）"),"：rollout 请求带上 ",h("code",null,"return_routed_experts=True"),"，SGLang 把每个 token 实际选中的专家以 base64 回传，",h("code",null,"sglang_rollout.py")," 解码为 ",h("code",null,"sample.rollout_routed_experts"),"，训练时通过 ",h("code",null,"fill_replay_data")," 把它填进每个 MoE 模块的 ",h("code",null,"Replay"),"，再以 replay_forward / replay_backward 强制训练侧采用推理侧的专家选择。这才是 R3（arXiv 2510.11370）相对 slime 进程内重放的本质区别：消除的是“训练与推理之间”的失配，而非仅“同一训练步内”的失配。"),
+        h("li",null,h("strong",null,"内置 CI 校验"),"：",h("code",null,"check_replay_result")," 逐 token 度量训练引擎重算的 top-k 与重放 top-k 的集合重叠，超过 ",h("code",null,"replay_check_max_mismatch_fraction")," 即抛错。它用成员掩码（membership mask）的 ",h("code",null,"scatter_")," + ",h("code",null,"gather")," 避免 O(n·topk²) 的全配对张量，使校验可常驻 CI。")
+      ),
+      h(Code,null,"# miles/utils/replay_base.py: 由 stage 驱动的 topk 包装\ndef new_topk_fn(scores, topk, *args, **kwargs):\n    if not manager.enabled:\n        return old_topk_fn(scores, topk, *args, **kwargs)\n    stage = manager.stage\n    replay = manager.get_current()\n    if stage == \"fallthrough\":\n        return old_topk_fn(scores, topk, *args, **kwargs)\n    elif stage == \"record\":\n        result = old_topk_fn(scores, topk, *args, **kwargs)\n        top_indices = result[1] if return_probs else result\n        replay.record(top_indices)\n        return result\n    elif stage == \"replay_forward\":\n        return _get_replay_result(replay.pop_forward(), scores, topk, *args, **kwargs)\n    elif stage == \"replay_backward\":\n        return _get_replay_result(replay.pop_backward(), scores, topk, *args, **kwargs)"),
+      h(Code,null,"# miles/rollout/sglang_rollout.py: 请求推理侧回传专家路由\nif args.use_rollout_routing_replay:\n    payload[\"return_routed_experts\"] = True\n# ... 收到响应后\nif \"routed_experts\" in output[\"meta_info\"]:\n    sample.rollout_routed_experts = np.frombuffer(\n        pybase64.b64decode(output[\"meta_info\"][\"routed_experts\"].encode(\"ascii\")),\n        dtype=np.int32,\n    ).reshape(len(sample.tokens) - 1, args.num_layers, ...)"),
+      h("p",null,"路由重放在训练步中的编排见 ",h("code",null,"actor.py"),"：所有 replay 管理器在 ",h("code",null,"setup")," 时按 ",h("code",null,"use_{name}_replay")," 决定是否启用并在 CI 模式下打开校验；计算 ref / teacher 的 log-prob 时强制 ",h("code",null,"fallthrough"),"（这些前向不参与重放），计算 actor 的 forward 时切到 ",h("code",null,"record")," 或 ",h("code",null,"replay_forward"),"，backward 时切到 ",h("code",null,"replay_backward"),"。"),
+      h("div",null,h("a",{className:"src",href:"vscode://file/Users/xinyu/Code/Agentic-RL/slime/slime/utils/routing_replay.py:13",title:"slime/slime/utils/routing_replay.py:13"},"slime RoutingReplay（对照）"),h(Src,{label:"miles Replay",path:"miles/utils/replay_base.py",line:14}),h(Src,{label:"BaseReplayManager",path:"miles/utils/replay_base.py",line:53}),h(Src,{label:"get_topk_fn",path:"miles/utils/replay_base.py",line:87}),h(Src,{label:"check_replay_result",path:"miles/utils/replay_base.py",line:158}),h(Src,{label:"RoutingReplayManager",path:"miles/utils/replay_base.py",line:215}),h(Src,{label:"IndexerReplayManager",path:"miles/utils/replay_base.py",line:224}),h(Src,{label:"rollout 记录专家",path:"miles/rollout/sglang_rollout.py",line:178}),h(Src,{label:"actor 重放阶段",path:"miles/backends/megatron_utils/actor.py",line:323}),h(Ext,{href:"https://arxiv.org/pdf/2510.11370"},"R3 论文 2510.11370"),h(Ext,{href:"https://miles.radixark.com/docs"},"miles 文档"))
+    );
+  }
+
+  // ===== true_on_policy/：消除 train-infer 失配 =====
+  function TrueOnPolicySection(){
+    return h("div",null,
+      h("p",null,"R3 把专家选择确定下来，但失配的来源还有 attention kernel、RoPE/SwiGLU 的融合算子、TP 全归约的累加顺序、prefill 与 decode 路径的数值差异。",h("code",null,"miles/true_on_policy/")," 子包的目标是把 SGLang（推理）与 Megatron 或 FSDP（训练）在算子层面统一到逐位一致，使训练所用的 log-prob 与生成时的 log-prob 完全相同，从而把策略真正变成 on-policy。这是一个跨仓库的“启动契约（launch contract）”：从一个公开开关 ",h("code",null,"--true-on-policy"),"，推导出训练侧、推理侧、环境变量三组配置。"),
+      h("h3",null,"为什么失配会破坏 RL"),
+      h("p",null,"策略梯度依赖重要性采样比 ",h("code",null,"r = π_train / π_rollout"),"。理想情形下生成与训练用同一组参数，比值恒为 1。但当推理与训练的前向数值不一致时，即使参数相同，",h("code",null,"r")," 也会偏离 1，引入有偏梯度。"),
+      h(Formula,{cap:"逐位一致使重要性比退化为 1，梯度无偏"},"$$ r_t=\\frac{\\pi_{\\theta}^{\\text{train}}(a_t\\mid s_t)}{\\pi_{\\theta}^{\\text{rollout}}(a_t\\mid s_t)} \\;\\xrightarrow[\\text{bit-wise identical}]{}\\; 1 \\quad\\Longrightarrow\\quad \\nabla_\\theta J=\\mathbb{E}\\big[r_t\\,A_t\\,\\nabla_\\theta\\log\\pi_\\theta\\big]\\ \\text{unbiased} $$"),
+      h("h3",null,"分层契约：schema → contract → profile → config → launch plan"),
+      h("p",null,"这个子包刻意把“声明”与“执行”分开，用五个不可变 dataclass 表达一条契约，避免在脚本里散落魔法字符串："),
+      h("ul",null,
+        h("li",null,h("code",null,"schema.py"),"：最底层的声明式标识 ",h("code",null,"TrueOnPolicyContractSchema"),"，记录契约名、模型族、所需 kernel 契约、log-prob 契约（如 ",h("code",null,"sglang_prefill"),"）、SGLang attention 后端（如 ",h("code",null,"fa3"),"）、FSDP attention 实现（如 ",h("code",null,"flash_attention_3"),"）。当前内置 ",h("code",null,"qwen3_dense_true_on_policy_v1"),"。"),
+        h("li",null,h("code",null,"contracts.py"),"：",h("code",null,"TrueOnPolicyContract")," 包装 schema，并据训练后端与 SGLang 目标推导 kernel 策略关键字（",h("code",null,"kernel_policy_kwargs_for"),"），例如 Megatron 后端要求确定性训练、禁用 RoPE 融合、禁用 bias-SwiGLU 融合、开启 batch-invariant。"),
+        h("li",null,h("code",null,"model_profiles.py"),"：",h("code",null,"TrueOnPolicyModelProfile")," 把契约绑定到具体模型名与 Megatron model type，声明支持的训练并行布局（dp/tp/pp/ulysses_cp）与 rollout 布局，并提供能力查询（是否支持 Ulysses CP、是否支持 TP-invariant）。"),
+        h("li",null,h("code",null,"config.py"),"：从命令行参数派生 ",h("code",null,"TrueOnPolicyConfig"),"，做一致性校验（契约模型族与 profile 是否匹配、后端是否支持、PP/CP 是否在支持列表内），再 ",h("code",null,"build_launch_plan")," 组装出 ",h("code",null,"TrueOnPolicyLaunchPlan"),"。")
+      ),
+      h(Code,null,"# miles/true_on_policy/config.py: 由开关派生 kernel 策略\ndef kernel_policy_kwargs_for(self, *, train_backend, sglang_target):\n    uses_megatron = train_backend == \"megatron\"\n    uses_tp_invariant_rollout = sglang_target == \"fsdp_tp\"\n    return {\n        \"deterministic_inference\": True,\n        \"deterministic_training\": True,\n        \"sglang_attention_backend\": self.sglang_attention_backend,  # fa3\n        \"megatron_uses_sglang_backend\": uses_megatron,\n        \"disable_rope_fusion\": uses_megatron,\n        \"disable_bias_swiglu_fusion\": uses_megatron,\n        \"batch_invariant_mode\": uses_megatron,\n        \"tp_invariant_row_linear\": uses_tp_invariant_rollout,\n        \"deterministic_tp_allreduce\": uses_tp_invariant_rollout,\n    }"),
+      h("p",null,"启动计划最终落成三组命令行参数与一组环境变量。SGLang 侧加 ",h("code",null,"--sglang-enable-deterministic-inference")," 与 ",h("code",null,"--sglang-attention-backend fa3"),"；Megatron 侧加 ",h("code",null,"--true-on-policy-contract"),"、",h("code",null,"--transformer-impl local"),"、",h("code",null,"--no-bias-swiglu-fusion"),"、",h("code",null,"--no-rope-fusion"),"、",h("code",null,"--batch-invariant-mode"),"；miles 侧统一加 ",h("code",null,"--deterministic-mode"),"、",h("code",null,"--true-on-policy-mode"),"、",h("code",null,"--recompute-logprobs-via-prefill"),"。环境变量则固定 ",h("code",null,"NCCL_ALGO=Ring"),"、",h("code",null,"NVTE_ALLOW_NONDETERMINISTIC_ALGO=0"),"、",h("code",null,"CUBLAS_WORKSPACE_CONFIG=:4096:8"),"，确保 NCCL 全归约与 cuBLAS 工作区的确定性。"),
+      h(Code,null,"# miles/true_on_policy/config.py: build_env_vars\ndef build_env_vars(self):\n    return {\n        \"NCCL_ALGO\": os.environ.get(\"NCCL_ALGO\", \"Ring\"),\n        \"NVTE_ALLOW_NONDETERMINISTIC_ALGO\": \"0\",\n        \"CUBLAS_WORKSPACE_CONFIG\": \":4096:8\",\n    }"),
+      h("div",{className:"note"},"为什么用 ",h("code",null,"--recompute-logprobs-via-prefill"),"：部分模型的 prefill 与 decode kernel 数值不一致，rollout 在 decode 路径下生成的 log-prob 与训练（等价于 prefill）算出的不同。重算改走 prefill 即可统一二者，对应 ",h("code",null,"arguments.py")," 的同名开关。",h("code",null,"--true-on-policy-mode")," 是 true-on-policy 的总开关，见 ",h("code",null,"arguments.py")," 第 154 行。"),
+      h("h3",null,"算法层兜底：当失配无法消除时（TIS / MIS）"),
+      h("p",null,"逐位一致是系统层的理想，但并非所有模型 / 布局都能达成（MoE 上仍在推进，见 README Roadmap）。失配不可避免时，miles 在损失层提供重要性采样修正。",h("code",null,"corrections.py")," 的 ",h("code",null,"vanilla_tis_function")," 实现截断重要性采样（Truncated Importance Sampling, TIS）：把 ",h("code",null,"exp(train - rollout)")," 截断到 ",h("code",null,"[tis_clip_low, tis_clip]")," 后乘进 ",h("code",null,"pg_loss"),"；",h("code",null,"icepop_function")," 则采用 clip-or-pop 策略，把超出区间的 token 直接置零。",h("code",null,"--custom-tis-function-path")," 允许接入自定义的 MIS（Masked Importance Sampling）实现，示例见 ",h("code",null,"examples/train_infer_mismatch_helper/mis.py"),"。"),
+      h(Formula,{cap:"TIS：截断重要性比并乘入策略梯度损失（vanilla_tis_function）"},"$$ w_t=\\operatorname{clip}\\!\\Big(\\exp\\big(\\log\\pi^{\\text{train}}_t-\\log\\pi^{\\text{rollout}}_t\\big),\\ c_{\\text{low}},\\ c_{\\text{high}}\\Big),\\qquad \\mathcal{L}_{\\text{pg}}\\leftarrow w_t\\cdot\\mathcal{L}_{\\text{pg}} $$"),
+      h("div",null,h(Src,{label:"schema.py",path:"miles/true_on_policy/schema.py",line:13}),h(Src,{label:"contracts.py",path:"miles/true_on_policy/contracts.py",line:15}),h(Src,{label:"kernel_policy_kwargs_for",path:"miles/true_on_policy/contracts.py",line:49}),h(Src,{label:"model_profiles.py",path:"miles/true_on_policy/model_profiles.py",line:10}),h(Src,{label:"TrueOnPolicyConfig",path:"miles/true_on_policy/config.py",line:138}),h(Src,{label:"build_launch_plan",path:"miles/true_on_policy/config.py",line:204}),h(Src,{label:"--true-on-policy-mode",path:"miles/utils/arguments.py",line:153}),h(Src,{label:"--recompute-logprobs-via-prefill",path:"miles/utils/arguments.py",line:159}),h(Src,{label:"vanilla_tis_function",path:"miles/backends/training_utils/loss_hub/corrections.py",line:7}),h(Src,{label:"icepop_function",path:"miles/backends/training_utils/loss_hub/corrections.py",line:35}),h(Src,{label:"--use-tis",path:"miles/utils/arguments.py",line:1031}),h(Src,{label:"MIS 示例",path:"examples/train_infer_mismatch_helper/mis.py",line:1}),h(Ext,{href:"https://fengyao.notion.site/off-policy-rl"},"off-policy RL 笔记"))
+    );
+  }
+
+  // ===== 低精度全栈：统一 FP8 与 INT4 W4A16 QAT =====
+  const LOWPREC=[
+    {key:"fp8",name:"统一 FP8 量化",render:function(){return [
+      h("p",null,"统一 FP8（Unified FP8，lmsys 2025-11-25）的核心主张是：训练与推理使用同一套 FP8 量化逻辑。MoE RL 崩溃的一个隐蔽来源是量化失配，即推理引擎与训练引擎各自把 BF16 权重量化成 FP8 时采用了不同的分块方式或 scale 格式，导致同一权重在两侧的有效数值不同。miles 把权重转 FP8 的逻辑统一到 SGLang 的实现：",h("code",null,"backends/megatron_utils/sglang.py")," 直接复用 SGLang 的 ",h("code",null,"quant_weight_ue8m0"),"、",h("code",null,"transform_scale_ue8m0"),"、",h("code",null,"per_block_cast_to_fp8")," 与 mxfp8 分组量化，权重同步时按同一逻辑生成 FP8 权重与 scale。"),
+      h(Code,null,"# miles/backends/megatron_utils/megatron_to_hf/processors/quantizer_fp8.py\ndef quantize_params_fp8(args, megatron_name, converted_named_params, quantization_config):\n    assert quantization_config[\"quant_method\"] == \"fp8\"\n    assert quantization_config[\"activation_scheme\"] == \"dynamic\"\n    weight_block_size = quantization_config.get(\"weight_block_size\", None)\n    # ue8m0 / per-block(128x128) / triton blockwise 三条路径, 与 SGLang 推理侧一致\n    if _get_scale_format(args, name, weight_block_size) == \"ue8m0\":\n        qweight, scale = quant_weight_ue8m0(weight, weight_block_size=weight_block_size)\n        scale = transform_scale_ue8m0(scale, mn=qweight.shape[-2])"),
+      h("p",null,"为什么这能稳定训练：FP8（e4m3）的动态范围有限，量化误差对 scale 的分块策略敏感。若训练侧用一种分块、推理侧用另一种，等价于两侧在不同的权重上做前向，重要性比再次失真。统一到同一套 ue8m0 / per-block 逻辑后，权重在两侧逐位一致，与 true-on-policy 的目标互补：true-on-policy 统一算子，统一 FP8 统一权重量化。miles README 称其为“首个实现端到端 FP8 采样与训练”的框架。"),
+      h("div",null,h(Src,{label:"sglang.py（FP8 复用）",path:"miles/backends/megatron_utils/sglang.py",line:1}),h(Src,{label:"quantize_params_fp8",path:"miles/backends/megatron_utils/megatron_to_hf/processors/quantizer_fp8.py",line:15}),h(Src,{label:"blockwise_cast_to_fp8_triton",path:"miles/utils/fp8_kernel.py",line:61}),h(Ext,{href:"https://lmsys.org/blog/2025-11-25-fp8-rl/"},"统一 FP8 RL 博客"))
+    ];}},
+    {key:"int4",name:"INT4 W4A16 QAT 全栈",render:function(){return [
+      h("p",null,"INT4 W4A16 量化感知训练（QAT）受 Kimi K2-Thinking 报告启发（lmsys 2026-01-26）。目标是让 1TB 级别的超大模型装进单机显存（如单台 NVIDIA H200），从而消除跨节点权重同步的瓶颈、把 rollout 效率翻倍，同时保持接近 BF16 的精度。W4A16 指权重 4 bit、激活 16 bit。"),
+      h("p",null,"实现是“全栈”的：训练时用一个 CUDA 伪量化（fake-quant）kernel 在前向中模拟 INT4 的取整误差，使模型在训练阶段就适应量化噪声（这正是 QAT 与训练后量化的区别）。kernel 在 ",h("code",null,"kernels/int4_qat/fake_int4_quant_cuda.cu")," 中，按 ",h("code",null,"[1, 32]")," 分块做对称（除以 7）或非对称（除以 15）量化，用 warp 级 ",h("code",null,"__shfl_xor_sync")," 归约求每块的 max / min 得到 scale 与 zero point。",h("code",null,"setup.py")," 按本机 GPU 架构编译，并固定附带 ",h("code",null,"sm_90a"),"（Hopper）。"),
+      h(Code,null,"// miles/backends/megatron_utils/kernels/int4_qat/fake_int4_quant_cuda.cu\n// almost all int4 use blocksize = [1, 32]\nconstexpr float SYM_CONS  = 1.0f / 7.0f;   // 对称: 4bit 有符号 [-7, 7]\nconstexpr float ASYM_CONS = 1.0f / 15.0f;  // 非对称: 4bit 无符号 [0, 15]\nfloat block_max = warpReduceMax(val);       // warp 内求块最大\nfloat block_min = warpReduceMin(val);       // warp 内求块最小"),
+      h("p",null,"导出侧则把训练好的权重打包成推理可用的 INT4 格式：",h("code",null,"quantizer_compressed_tensors.py")," 中的 ",h("code",null,"WQLinear_GEMM")," 与 ",h("code",null,"pack_to_int32")," 把 4-bit 权重按组（group_size）打包进 int32 张量（每个 int32 装 8 个 4-bit 值），符合 compressed-tensors / AWQ 风格的服务契约。若编译了 ",h("code",null,"fake_int4_quant_cuda")," 扩展则在导出时复用同一量化 kernel，保证训练所见的量化与部署一致。"),
+      h(Code,null,"# miles/.../megatron_to_hf/processors/quantizer_compressed_tensors.py\ntry:\n    import fake_int4_quant_cuda          # 与训练共用同一伪量化 kernel\nexcept ImportError:\n    fake_int4_quant_cuda = None\n\nclass WQLinear_GEMM(nn.Module):           # AWQ 风格的打包线性层\n    def __init__(self, w_bit, group_size, in_features, out_features, bias, dev, training=False):\n        ..."),
+      h("div",null,h(Src,{label:"fake_int4_quant_cuda.cu",path:"miles/backends/megatron_utils/kernels/int4_qat/fake_int4_quant_cuda.cu",line:28}),h(Src,{label:"int4 QAT setup.py",path:"miles/backends/megatron_utils/kernels/int4_qat/setup.py",line:24}),h(Src,{label:"WQLinear_GEMM",path:"miles/backends/megatron_utils/megatron_to_hf/processors/quantizer_compressed_tensors.py",line:19}),h(Src,{label:"pack_to_int32",path:"miles/backends/megatron_utils/megatron_to_hf/processors/quantizer_compressed_tensors.py",line:135}),h(Ext,{href:"https://lmsys.org/blog/2026-01-26-int4-qat/"},"INT4 QAT 博客"))
+    ];}}
+  ];
+  function LowPrecExplorer(){const [s,setS]=useState(0);const d=LOWPREC[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},LOWPREC.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== MrlX 多智能体协同演化 + RL 中的投机解码 =====
+  function MultiAgentSpecSection(){
+    return h("div",null,
+      h("h3",null,"MrlX：多智能体异步协同演化"),
+      h("p",null,"slime 的 ",h("code",null,"slime/agent/")," 子包在 miles 中被移除，multi-agent 退回为 ",h("code",null,"examples/multi_agent/")," 下的数据生成示例，符合 slime “agent 是数据生成工作流、不派生训练内核”的设计哲学。在此之上，miles 集成了 ",h("strong",{className:"hl-purple"},"MrlX"),"，一个用于多智能体 RL 的异步协同演化（co-evolutionary）框架。它让多个专长不同的智能体共同进化，在 Doctor-Patient 模拟、DeepResearch 等复杂任务上取得更好的协作表现。"),
+      h("p",null,"示例 ",h("code",null,"examples/multi_agent/agent_system.py")," 给出一个最小的多智能体编排：",h("code",null,"SolverAgent")," 生成初始解、",h("code",null,"RewriterAgent")," 改写、",h("code",null,"SelectorAgent")," 选择，全部通过异步 ",h("code",null,"generate_response")," 调用同一个 SGLang 服务。这条路径把多智能体协作表达为 rollout 阶段的数据生成逻辑，训练内核无需改动。"),
+      h("div",null,h(Src,{label:"agent_system.py",path:"examples/multi_agent/agent_system.py",line:78}),h(Src,{label:"rollout_with_multi_agents.py",path:"examples/multi_agent/rollout_with_multi_agents.py"}),h(Ext,{href:"https://github.com/AQ-MedAI/MrlX"},"MrlX 仓库")),
+      h("h3",null,"RL 中的投机解码：在线 SFT draft 模型"),
+      h("p",null,"投机解码（speculative decoding）用一个小的 draft 模型一次性提议若干 token，再由主模型并行验证，从而加速生成。在 RL 中直接套用会遇到一个特有问题：主策略在 RL 过程中持续更新，固定的 draft 模型会逐渐与主策略偏离（policy drift），接受率下降、加速失效。miles 的解法是 ",h("strong",null,"在线 SFT draft 模型"),"：在 RL 过程中用主模型的输出在线蒸馏更新 draft 策略，使其跟随主策略，README 称可获得 25% 以上的 rollout 加速。"),
+      h("p",null,"系统侧的支撑：SGLang 引擎默认开启 ",h("code",null,"enable_draft_weights_cpu_backup"),"（即便不带 MTP 权重也能跑训练）；MTP（multi-token prediction）训练由 ",h("code",null,"--enable-mtp-training")," 等参数控制；投机统计（",h("code",null,"spec_accept_token_num"),"、",h("code",null,"spec_draft_token_num"),"、",h("code",null,"spec_verify_ct"),"）作为 ",h("code",null,"Sample.SpecInfo")," 沿 rollout 路径回传并在合并样本时累加（",h("code",null,"sample_utils.py")," 的 ",h("code",null,"_merge_spec_info"),"）。"),
+      h(Formula,{cap:"投机解码的期望加速正比于接受长度；在线 SFT 维持高接受率 α"},"$$ \\text{speedup}\\approx \\frac{\\mathbb{E}[\\text{accepted tokens per step}]}{1},\\qquad \\text{在线 SFT}:\\ \\alpha(\\theta_{\\text{draft}}\\!\\to\\!\\theta_{\\text{policy}})\\ \\text{随 RL 步保持高位} $$"),
+      h("div",null,h(Src,{label:"draft 权重 CPU 备份",path:"miles/backends/sglang_utils/sglang_engine.py",line:636}),h(Src,{label:"_merge_spec_info",path:"miles/rollout/generate_utils/sample_utils.py",line:140}),h(Src,{label:"--enable-mtp-training",path:"miles/utils/arguments.py",line:1708}),h(Ext,{href:"https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/main/rlhf/slime/spec/readme-en.md"},"投机 RL 教程"))
+    );
+  }
+
+  // ===== miles_plugins =====
+  function PluginsSection(){
+    return h("div",null,
+      h("p",null,"miles 把模型适配与权重桥接抽到一个独立的顶层包 ",h("code",null,"miles_plugins/"),"，与训练内核解耦，便于按模型族增量扩展而不触碰核心代码。三个子目录："),
+      h("ul",null,
+        h("li",null,h("code",null,"mbridge/"),"：HuggingFace 与 Megatron 之间的权重桥接（bridge）插件，按模型族一文件，覆盖 ",h("code",null,"deepseek_v32"),"、",h("code",null,"deepseekv4"),"、",h("code",null,"glm4"),"、",h("code",null,"glm4moe")," / ",h("code",null,"glm4moe_lite"),"、",h("code",null,"qwen3_5"),"、",h("code",null,"qwen3_next"),"、",h("code",null,"mimo")," 等。"),
+        h("li",null,h("code",null,"megatron_bridge/"),"：面向较新 Megatron-Bridge 接口的适配（如 ",h("code",null,"nemotron_h"),"）。"),
+        h("li",null,h("code",null,"models/"),"：模型实现与算子插件，含 ",h("code",null,"glm5/"),"、",h("code",null,"deepseek_v4/"),"、",h("code",null,"qwen3_next"),"（GDN 线性注意力后端 ",h("code",null,"qwen_gdn_backend.py"),"）、上下文并行工具 ",h("code",null,"cp_utils.py")," 与 ",h("code",null,"hf_attention.py"),"。")
+      ),
+      h("p",null,"设计动机：slime 强调原生参数透传，但超大 MoE（GLM-5、DeepSeek-V4）的权重排布与算子在 HF 与 Megatron 之间并非一一对应，需要按模型族写桥接。把这些放进 ",h("code",null,"miles_plugins/")," 而非内核，既保留透传，又让模型扩展成为纯增量。"),
+      h("div",null,h(Src,{label:"miles_plugins/__init__.py",path:"miles_plugins/__init__.py"}),h(Src,{label:"mbridge/glm4moe.py",path:"miles_plugins/mbridge/glm4moe.py"}),h(Src,{label:"mbridge/deepseekv4.py",path:"miles_plugins/mbridge/deepseekv4.py"}),h(Src,{label:"models/qwen_gdn_backend.py",path:"miles_plugins/models/qwen_gdn_backend.py"}),h(Src,{label:"models/cp_utils.py",path:"miles_plugins/models/cp_utils.py"}))
+    );
+  }
+
+  // ===== slime -> miles delta 对照表 =====
+  function DeltaTable(){
+    const rows=[
+      ["agent/","slime 有 slime/agent/ 子包","移除；multi-agent 退回 examples/multi_agent/，并集成 MrlX 协同演化","保持“agent 即数据生成”的内核解耦原则"],
+      ["router/","用上游 sglang-router 做 token 级路由","新增 miles/router/router.py（MilesRouter）+ --use-miles-router，最少活跃请求路由 + 后台健康检查","文本级路由与生产稳定性"],
+      ["routing replay","slime/utils/routing_replay.py 进程内、env 驱动、单训练步内一致","miles/utils/replay_base.py 服务化（stage 字段）、推理侧路由作数据源（R3）、内置 CI 校验、扩展 indexer 重放","消除训练与推理之间的 MoE 路由失配（arXiv 2510.11370）"],
+      ["true_on_policy/","无该子包","新增分层契约（schema/contracts/profiles/config），由 --true-on-policy 派生确定性算子与环境变量","逐位一致使重要性比退化为 1"],
+      ["FP8","研究阶段的低精度","统一 FP8：训练与推理复用 SGLang 同一量化逻辑（ue8m0 / per-block / mxfp8）","消除量化失配导致的 MoE 崩溃（lmsys 2025-11-25）"],
+      ["INT4 QAT","无","全栈 W4A16 QAT：CUDA 伪量化 kernel + compressed-tensors 打包导出","1TB 模型入单机显存、rollout 翻倍（lmsys 2026-01-26）"],
+      ["投机解码","无 RL 内集成","在线 SFT draft 模型 + MTP 训练 + SpecInfo 统计","draft 随主策略更新，避免 policy drift，25%+ 加速"],
+      ["miles_plugins/","模型实现在内核或 examples","独立顶层包 mbridge / megatron_bridge / models，按模型族增量","保留透传同时支持超大 MoE 桥接"],
+      ["TIS / MIS","slime 亦有 off-policy 修正","corrections.py 的 vanilla_tis / icepop + --custom-tis-function-path 接 MIS","失配不可消除时的算法兜底"]
+    ];
+    return h("div",null,
+      h("p",null,"把本课的增量集中成一张 slime → miles 的对照表。左列为模块或机制，中间两列是 slime 与 miles 的状态，右列是设计动机。"),
+      h("table",{className:"delta"},
+        h("thead",null,h("tr",null,h("th",null,"模块 / 机制"),h("th",null,"slime"),h("th",null,"miles"),h("th",null,"设计动机"))),
+        h("tbody",null,rows.map(function(r,i){return h("tr",{key:i},h("td",null,r[0]),h("td",null,r[1]),h("td",null,r[2]),h("td",null,r[3]));})))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"miles 文档",d:"用法、CLI 参考、advanced（miles-router 等）",href:"https://miles.radixark.com/docs"},
+    {t:"R3 论文",d:"Rollout Routing Replay，解 MoE RL 不稳定",href:"https://arxiv.org/pdf/2510.11370"},
+    {t:"统一 FP8 RL（lmsys）",d:"训练与推理同一 FP8 量化逻辑",href:"https://lmsys.org/blog/2025-11-25-fp8-rl/"},
+    {t:"INT4 QAT（lmsys）",d:"W4A16 QAT，1TB 模型入单机",href:"https://lmsys.org/blog/2026-01-26-int4-qat/"},
+    {t:"MrlX 多智能体",d:"异步协同演化的多智能体 RL 框架",href:"https://github.com/AQ-MedAI/MrlX"},
+    {t:"miles 启动公告",d:"InfiXAI + 蚂蚁 + SGLang RL 团队",href:"https://lmsys.org/blog/2025-11-19-miles/"},
+    {t:"slime 仓库",d:"miles 声明的核心架构来源",href:"https://github.com/THUDM/slime"},
+    {t:"投机 RL 教程",d:"speculative rollout + 在线 SFT",href:"https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/main/rlhf/slime/spec/readme-en.md"}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:11}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 11 课 / 共 11 · miles 增量章节"),
+          h("h1",null,"miles 增量章节：slime 的生产硬化分支"),
+          h("p",{className:"lead"},"miles 是 slime 的分支（radixark / InfiXAI + 蚂蚁 AQ + SGLang RL 团队），在 slime 内核之上叠加生产规模的系统硬化。本课讲清六组增量：router/（R3 路由重放服务化）、true_on_policy/（消除 train-infer 失配）、统一 FP8 量化、INT4 W4A16 QAT 全栈、MrlX 多智能体协同演化与 RL 中的投机解码，并给出 slime → miles 的完整对照表。"),
+          h("div",{className:"warn"},"本课的源码链接打开的是 ",h("strong",null,"miles 仓库"),"（",h("code",null,"/Users/xinyu/Code/Agentic-RL/miles"),"），而非前十课的 slime 仓库。蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签的 vscode 路径相对 miles 仓库根；标注为“对照”的少数链接指向 slime 仓库（如 ",h("code",null,"slime/utils/routing_replay.py"),"）。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部权威文档。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"README · 定位"),
+          h("h2",null,"总览：miles = slime 内核 + 生产硬化"),
+          h(OverviewSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"miles/router · utils/replay_base"),
+          h("h2",null,"router/：HTTP 路由与 R3 路由重放服务化"),
+          h(RouterSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"miles/true_on_policy"),
+          h("h2",null,"true_on_policy/：消除训练与推理失配"),
+          h(TrueOnPolicySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"低精度全栈"),
+          h("h2",null,"统一 FP8 与 INT4 W4A16 QAT"),
+          h("p",null,"点 Tab 切换两套低精度机制。它们共享同一条主线：把量化逻辑在训练与推理之间统一，从而既省显存又不破坏 RL 的数值前提。"),
+          h(LowPrecExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"examples/multi_agent · sglang spec"),
+          h("h2",null,"MrlX 多智能体与 RL 中的投机解码"),
+          h(MultiAgentSpecSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"miles_plugins"),
+          h("h2",null,"miles_plugins：模型适配与桥接插件"),
+          h(PluginsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"对照"),
+          h("h2",null,"slime → miles delta 对照表"),
+          h(DeltaTable)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档把 miles 的每项增量补齐：论文给出 R3 的稳定性证据，lmsys 博客给出 FP8 与 INT4 的工程细节，MrlX 与投机教程给出多智能体与加速的背景。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"不重写内核，只做生产硬化"),"：miles 保留 slime 的双引擎同流、Ray 编排与原生透传，把研究阶段的机制工程化为可配置、可校验、可在 CI 回归的组件。这是理解 miles 增量的总纲。"),
+            h("li",null,h("strong",null,"消除失配是贯穿全课的主题"),"：R3 统一专家路由、true-on-policy 统一算子、统一 FP8 统一权重量化，三者从不同层级把重要性采样比 ",h("code",null,"π_train/π_rollout")," 推向 1；失配无法消除时再用 TIS / MIS 在损失层兜底。"),
+            h("li",null,h("strong",null,"路由重放从进程内走向服务化"),"：slime 的 ",h("code",null,"routing_replay.py")," 用环境变量驱动、只保证单训练步内一致；miles 的 ",h("code",null,"replay_base.py")," 以管理器状态驱动、把推理侧路由作数据源、内置 CI 校验，并扩展到 indexer 重放。"),
+            h("li",null,h("strong",null,"低精度换显存与吞吐"),"：统一 FP8 与 INT4 W4A16 QAT 让超大 MoE 装进更少的卡，单机部署消除跨节点同步瓶颈，rollout 效率显著提高，同时保持接近 BF16 的精度。"),
+            h("li",null,h("strong",null,"agent 与模型扩展保持解耦"),"：multi-agent（含 MrlX）退回 examples 数据生成层，模型桥接抽到独立的 ",h("code",null,"miles_plugins/"),"，二者都不触碰训练内核，使扩展成为纯增量。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"slime-lesson-10-orchestration.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 10 课：Ray 编排与端到端")),
+            h("a",{href:"slime-course-index.html"},h("div",{className:"faint"},"返回 →"),h("strong",null,"课程总览"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

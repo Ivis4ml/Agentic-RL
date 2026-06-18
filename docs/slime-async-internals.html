@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>slime 异步内核（代码级）：fully_async 在途池 + delta 权重同步</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip:hover{color:var(--teal);border-color:#265450;text-decoration:none;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:40px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:26px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:860px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .pick{border-left:3px solid var(--green);padding:8px 16px;margin:13px 0;color:#cfe8d3;background:#0f210f33;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:5px 0;}
+    .steps{counter-reset:st;list-style:none;padding-left:0;}
+    .steps>li{position:relative;padding:6px 0 6px 38px;margin:6px 0;}
+    .steps>li::before{counter-increment:st;content:counter(st);position:absolute;left:0;top:6px;width:24px;height:24px;border-radius:50%;background:#0e2120;color:var(--teal);border:1px solid #265450;font-family:var(--mono);font-size:12px;display:flex;align-items:center;justify-content:center;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:30px;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback</p><h1>slime 异步内核（代码级）</h1><p>能访问 CDN 时切换为交互版。本页把 fully_async 在途池与 delta 权重同步展开到代码级机制。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const SLIME="vscode://file/Users/xinyu/Code/Agentic-RL/slime/";
+  function srcUrl(p,l){return SLIME+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","Optional","Callable","Tensor","torch","dist","np","Sample","Status","DeltaBucket","DeltaState","DeltaSpec","DeltaParam","ParamDiff","EncodedChunk","AsyncRolloutWorker","GenerateState","Stream","Event","set","dict","list","int","float","bool","str","bytes"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  function TopNav(){return h("div",{className:"course-nav"},
+    h("a",{className:"home",href:"rl-framework-comparison.html"},"slime 异步内核",h("span",{className:"dot"},"·"),"代码级"),
+    h("div",{className:"lessons"},
+      h("a",{className:"lchip",href:"rl-framework-comparison.html"},"← 五框架横评"),
+      h("a",{className:"lchip",href:"slime/slime-course-index.html"},"slime 精读"),
+      h("a",{className:"lchip",href:"slime/slime-lesson-08-rollout-async.html"},"L8 Rollout 与异步"),
+      h("a",{className:"lchip",href:"slime/slime-lesson-07-weight-sync.html"},"L7 权重同步")));}
+
+  const FA = "slime/rollout/fully_async_rollout.py";
+  const DL = "slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py";
+
+  function FullyAsync(){const ref=useTypeset("fa");
+    return h("div",{ref:ref},
+      h("h3",null,"它解决什么：把在途并发与训练 batch 解耦"),
+      h("p",null,"同步 rollout 的瓶颈是“等齐整批”：一步的耗时由批内最慢轨迹决定。长程 agentic 任务里轨迹长度方差极大，这个长尾直接拖垮吞吐。fully_async 的核心是让一个常驻后台线程维持一个固定大小的在途轨迹池，池的大小 ",h("code",null,"max_concurrent_tasks")," 与训练 batch 大小 ",h("code",null,"rollout_batch_size")," 完全解耦：慢轨迹仍在跑时，快轨迹已经完成并被新轨迹补位，池始终保持满。"),
+      h(Formula,{cap:"有效生成吞吐由池占用率决定，与最慢单条轨迹无关（只要池保持满）"},"$$ \\text{throughput}_{\\text{gen}} \\approx \\frac{\\texttt{max\\_concurrent\\_tasks}}{\\mathbb{E}[T_{\\text{traj}}]}, \\qquad \\texttt{max\\_concurrent\\_tasks} = \\texttt{sglang\\_server\\_concurrency} \\times N_{\\text{engines}} $$"),
+      h("p",null,"并发上限取自 ",h("code",null,"args.sglang_server_concurrency")," 乘以 SGLang 引擎数，与 ",h("code",null,"sglang_rollout")," 里的 per-sample 信号量上限一致；worker 是进程级全局单例，跨 rollout 调用复用，使队列保持“热”。"),
+      h("div",null,h(Src,{label:"_get_global_worker（全局常驻）",path:FA,line:53}),h(Src,{label:"concurrency 计算",path:FA,line:59}),h(Src,{label:"AsyncRolloutWorker",path:FA,line:76})),
+
+      h("h3",null,"后台事件循环：回收 + 补满 + 让出"),
+      h("p",null,"worker 在独立线程里跑一个 asyncio 事件循环（",h("code",null,"_thread_main → asyncio.run(self._loop())"),"）。每轮做三件事：回收已完成的 task、把在途池补满到 ",h("code",null,"max_concurrent"),"、然后 ",h("code",null,"await asyncio.sleep(1)")," 让出控制权给真正的生成协程。"),
+      h(Code,null,"async def _loop(self):\n    active_tasks: set[asyncio.Task] = set()\n    max_concurrent = self.concurrency        # = sglang_server_concurrency * num_engines\n    while self.running:\n        # 1) 回收已完成任务（结果已在回调里处理）\n        done = {t for t in active_tasks if t.done()}\n        active_tasks -= done\n        # 2) 把在途池补满（与 rollout_batch_size 无关）\n        while len(active_tasks) < max_concurrent and self.running:\n            groups = self.data_buffer.get_samples(1)\n            if not groups:\n                break\n            for group in groups:\n                task = asyncio.create_task(\n                    generate_and_rm_group(self.args, group,\n                        sampling_params=self.state.sampling_params.copy(),\n                        evaluation=False))\n                task.add_done_callback(self._make_done_cb(gid))\n                active_tasks.add(task)\n        await asyncio.sleep(1)"),
+      h("p",null,"每个 task 是一组（group）的生成 + 打分，调用 slime 自己的 ",h("code",null,"generate_and_rm_group"),"，后者再分派到 ",h("code",null,"--custom-generate-function-path")," 与 ",h("code",null,"--custom-rm-path"),"。worker 本身不感知 slime 上层的 pause / 权重更新信号，每条生成各自在信号上短路并标记状态，worker 只负责调度与回收。"),
+      h("div",null,h(Src,{label:"_loop",path:FA,line:118}),h(Src,{label:"补满在途池",path:FA,line:136}),h(Src,{label:"create_task(generate_and_rm_group)",path:FA,line:143}),h(Src,{label:"data_buffer.get_samples(1)",path:FA,line:137})),
+
+      h("h3",null,"完成回调：中止的组退回 buffer，不送训练"),
+      h("p",null,"这是 fully_async 与异步正确性的衔接点。一条生成若在权重切换时被中止，会带 ",h("code",null,"Sample.Status.ABORTED"),"。回调判断：只要组内任一样本是 ABORTED，就把整组退回 ",h("code",null,"data_buffer")," 等下一轮（携新权重）重跑，而不是把半截的 off-policy 轨迹送去训练；否则放入 ",h("code",null,"output_queue"),"。"),
+      h(Code,null,"def _cb(done_task):\n    result = done_task.result()        # list[Sample]\n    # 中止的组（权重切换时被打断）退回 buffer, 不送训练\n    if any(s.status == Sample.Status.ABORTED for s in result):\n        self.data_buffer.add_samples([result])\n        return\n    self.output_queue.put((gid, result))"),
+      h("div",null,h(Src,{label:"_make_done_cb",path:FA,line:169}),h(Src,{label:"ABORTED 退回 buffer",path:FA,line:183}),h(Src,{label:"output_queue.put",path:FA,line:189})),
+
+      h("h3",null,"收集端：攒够一个 batch 就返回"),
+      h("p",null,"训练侧入口 ",h("code",null,"generate_rollout_fully_async")," 拿到全局 worker，持续从 ",h("code",null,"output_queue")," 抽取已完成的组，攒够 ",h("code",null,"target = rollout_batch_size")," 即按 ",h("code",null,"sample.index")," 排序后返回（slime 的确定性约定）。注意它显式拒绝 evaluation 模式。"),
+      h(Code,null,"async def _generate_rollout_async(args, rollout_id, data_buffer):\n    worker = _get_global_worker(args, data_buffer)   # 全局常驻, 队列保持\"热\"\n    target = args.rollout_batch_size\n    collected = {}\n    while len(collected) < target:\n        for gid, group in worker.get_completed_groups():\n            collected[gid] = group\n        if not drained:\n            await asyncio.sleep(0.05)\n    return sorted(collected.values(), key=_index)[:target]"),
+      h("div",{className:"note"},"与陈旧度的衔接：每条 ",h("code",null,"Sample.weight_versions")," 是一个列表（一条长轨迹可跨多个权重版本生成）；训练侧据此做重要性采样修正，",h("code",null,"--mask-offpolicy-in-partial-rollout")," 把续跑前旧前缀的 loss_mask 置零。见 ",h(Src,{label:"Sample（weight_versions）",path:"slime/utils/types.py",line:9}),"与第 8 课。"),
+      h("div",null,h(Src,{label:"_generate_rollout_async",path:FA,line:194}),h(Src,{label:"攒够 target",path:FA,line:211}),h(Src,{label:"按 index 排序",path:FA,line:241}),h(Src,{label:"拒绝 evaluation",path:FA,line:254})),
+
+      h("div",{className:"pick"},h("strong",null,"为什么这解决长尾："),"池占用率而非最慢轨迹决定吞吐；ABORTED 组回收重跑而非污染训练；全局常驻 worker 让队列跨 rollout 边界保持热，避免每个 rollout 重新预热的冷启动开销。")
+    );
+  }
+
+  function DeltaSync(){const ref=useTypeset("dl");
+    return h("div",{ref:ref},
+      h("h3",null,"它解决什么：只传变化的字节，且无损覆盖"),
+      h("p",null,"每步训练后要把更新的权重推给推理引擎。全量广播让 ",h("code",null,"T_sync")," 很大，吃掉异步重叠的收益。delta 同步的思路：把当前权重与“上一次广播的 pinned-CPU 快照”做按位 diff，只打包变化的位置与值发送；接收端用训练侧的精确字节覆盖变化位置（无任何算术），因此是无损的，不会有需要靠周期性重同步去纠正的漂移。首次 ",h("code",null,"update_weights")," 只播种快照、不联系推理引擎（它们在 init 时已加载同一 HF checkpoint）。"),
+      h(Formula,{cap:"传输字节量随密度 ρ 线性下降（bf16 权重实测 ρ≈2%）"},"$$ \\text{wire\\_bytes} \\approx \\rho \\cdot N_{\\text{params}} \\cdot (b_{\\text{val}} + b_{\\text{pos}}),\\quad \\rho \\approx 2\\%,\\ b_{\\text{val}}=2\\,(\\text{bf16}),\\ b_{\\text{pos}}\\in\\{2,4\\}\\,\\text{字节} $$"),
+      h("div",null,h(Src,{label:"模块说明（三编码 + 无损覆盖）",path:DL,line:1}),h(Src,{label:"UpdateWeightFromDistributedDelta",path:DL,line:479})),
+
+      h("h3",null,"一次同步的总流程"),
+      h("p",null,"非首次 ",h("code",null,"update_weights")," 的骨架是经典的“停、换、续”，中间夹 diff/编码/广播，两段计时 ",h("code",null,"delta_encode")," 与 ",h("code",null,"delta_finalize")," 之和即用户观测到的同步延迟。"),
+      h(Code,null,"@torch.no_grad()\ndef update_weights(self):\n    if not self._snapshot_seeded:           # 首次: 只播种快照, 不联系推理引擎\n        self._seed_snapshot(); self._snapshot_seeded = True; return\n    self.weight_version += 1\n    if dist.get_rank() == 0:\n        ray.get([e.pause_generation.remote() for e in self.rollout_engines])  # 停\n        ray.get([e.flush_cache.remote() for e in self.rollout_engines])       # 换(切旧 KV)\n    dist.barrier(group=get_gloo_group())\n    with timer(\"delta_encode\"):\n        self._send_weights(pbar)            # 逐 chunk: 取快照->diff->编码->入桶->广播或写入磁盘\n        if self.writer: self.writer.drain()\n        self.delta_state.flush_snapshot()\n        dist.barrier(group=get_gloo_group())\n    with timer(\"delta_finalize\"):\n        self._finalize_sync()               # 续: 等 apply 落定 -> continue_generation\n    self._record_metrics()"),
+      h("div",null,h(Src,{label:"update_weights",path:DL,line:568}),h(Src,{label:"首次只播种快照",path:DL,line:576}),h(Src,{label:"停 + 换 + barrier",path:DL,line:587}),h(Src,{label:"_seed_snapshot（355B 约 50s）",path:DL,line:612})),
+
+      h("h3",null,"compute：按位 diff（dtype 无关）"),
+      h("p",null,"diff 不依赖具体浮点类型，而是把张量按元素字节宽度 reinterpret 成整数再逐元素比较，得到一个同形状的布尔掩码。这样 bf16 / fp16 / fp32 / fp8 都走同一条路径，且“相等即字节相同”，保证接收端覆盖是无损的。"),
+      h(Code,null,"def _bytewise_diff_mask(current, snapshot):\n    es = current.element_size()\n    int_dtype = {1: torch.uint8, 2: torch.int16, 4: torch.int32, 8: torch.int64}[es]\n    return current.view(int_dtype) != snapshot.view(int_dtype)   # 按位比较, dtype 无关"),
+      h("p",null,"为把“每参数一次 host 同步”收敛成“每 chunk 一次”，",h("code",null,"_sparse_boundaries")," 把一个 chunk 内所有参数的值与掩码各自 concat 成一根大张量，做一次 ",h("code",null,"nonzero")," 取出全部变化下标、一次 ",h("code",null,"searchsorted")," 算出每参数边界、一次 ",h("code",null,"tolist()")," 回主机。"),
+      h("div",null,h(Src,{label:"_bytewise_diff_mask",path:DL,line:106}),h(Src,{label:"_sparse_boundaries（一次 nonzero）",path:DL,line:117}),h(Src,{label:"ParamDiff",path:DL,line:63})),
+
+      h("h3",null,"encode：三种位置编码"),
+      h("p",null,"值（变化处的新权重）按参数 dtype 原样存；差异只在“位置”怎么编码，对应 ",h("code",null,"--update-weight-encoding"),"："),
+      h("ul",null,
+        h("li",null,h("strong",null,"indices"),"：int32 绝对下标，每参数局部化（pos_width=4）。"),
+        h("li",null,h("strong",null,"deltas（默认）"),"：对排序后的下标做 gap 编码（存 ",h("code",null,"idx[k]-idx[k-1]-1"),"，首项设 idx[-1]:=-1），按参数下探到 uint16，放不下才回退 uint32。bf16 权重在约 2% 伯努利密度下最大 gap 约 300，uint16 足够，回退只为极端输入兜底。接收端 ",h("code",null,"idx = cumsum(delta+1)-1")," 还原。"),
+        h("li",null,h("strong",null,"deltas_zstd"),"：在 deltas 基础上，写入磁盘时对 safetensors blob 套 zstd L1。")),
+      h(Code,null,"# encode_deltas: gap 编码 + 每参数选位宽\nlocal_idx = big_idx[prev_b:b] - prev_param_start            # int64, 已排序\nprev = cat([tensor([-1]), local_idx[:-1]])\ndeltas = local_idx - prev - 1                              # gap\nwidth = 2 if int(deltas.max()) <= 65535 else 4             # uint16, 否则 uint32\nb_chunk = deltas.cpu().numpy().astype(np_dtype).tobytes()"),
+      h("div",null,h(Src,{label:"encode_indices",path:DL,line:137}),h(Src,{label:"encode_deltas（gap, uint16/32）",path:DL,line:185}),h(Src,{label:"约 2% 密度、max gap≈300 注释",path:DL,line:188})),
+
+      h("h3",null,"snapshot 双侧流流水线（隐藏 H2D/D2H 拷贝）"),
+      h("p",null,"快照常驻 pinned CPU。diff 要把快照搬上 GPU（H2D），更新快照要把新权重搬下 CPU（D2H）。为不让这两次拷贝阻塞计算，",h("code",null,"DeltaState")," 用两条独立 CUDA 侧流，并在 ",h("code",null,"_pipeline_pass")," 里做一步前瞻：chunk N+1 的快照 H2D 预取与 chunk N 的 diff+编码在默认流上重叠。"),
+      h(Code,null,"def _pipeline_pass(self, chunk_iter, bucket, pbar):\n    pending_chunk = pending_prefetch = None\n    for hf_chunk in chunk_iter:\n        next_prefetch = self.delta_state.prefetch_snapshot(hf_chunk)   # H2D 侧流预取 N+1 快照\n        if pending_prefetch is not None:\n            self._enqueue_chunk(pending_chunk, pending_prefetch, bucket, pbar)  # 计算 N\n        pending_chunk, pending_prefetch = hf_chunk, next_prefetch\n    if pending_prefetch is not None:\n        self._enqueue_chunk(pending_chunk, pending_prefetch, bucket, pbar)\n\ndef _enqueue_chunk(self, hf_chunk, prefetched, bucket, pbar):\n    diffs = self.delta_state.compute_diffs(hf_chunk, prefetched)   # 等 H2D event, 按位 diff\n    self.delta_state.update_snapshot_async(hf_chunk)              # D2H 侧流更新快照\n    chunk = self._encode(diffs)                                  # indices / deltas\n    if bucket.should_flush_before_add(chunk, self.args.update_weight_buffer_size):\n        self._flush_bucket(bucket, pbar)\n    bucket.add(chunk)"),
+      h("div",null,h(Src,{label:"DeltaState",path:DL,line:259}),h(Src,{label:"prefetch_snapshot（H2D 侧流）",path:DL,line:272}),h(Src,{label:"compute_diffs",path:DL,line:289}),h(Src,{label:"update_snapshot_async（D2H 侧流）",path:DL,line:304}),h(Src,{label:"_pipeline_pass（一步前瞻）",path:DL,line:661}),h(Src,{label:"_enqueue_chunk",path:DL,line:683})),
+
+      h("h3",null,"bucket 与传输：NCCL 广播 / 磁盘写入"),
+      h("p",null,"编码后的 chunk 累积进 ",h("code",null,"DeltaBucket"),"，超过 ",h("code",null,"--update-weight-buffer-size")," 就 flush（攒桶控制重建完整权重时的显存峰值）。flush 时算一次 ",h("code",null,"torch.hash_tensor")," 校验和；两种传输共用同一 wire 布局（",h("code",null,"__positions__")," uint8 blob + ",h("code",null,"__values__")," 值张量 + 每参数解码清单）："),
+      h(Code,null,"def _flush_bucket(self, bucket, pbar):\n    positions_cpu = bucket.merged_positions_cpu()     # uint8 位置 blob\n    values_gpu = bucket.merged_values()               # 变化处的新值\n    checksum = _checksum(positions_gpu, values_gpu)   # torch.hash_tensor XOR\n    if self.transport == \"nccl\":\n        spec = DeltaSpec(encoding=self.encoding, params=params, checksum=checksum)\n        self._update_bucket_weights_from_distributed(\n            [(\"__positions__\", positions_gpu), (\"__values__\", values_gpu)],\n            load_format=\"delta\", delta=spec)          # 每桶一次 NCCL 广播\n    else:  # disk: 写一个 safetensors 文件, 末尾一次 update_weights_from_disk RPC\n        self.writer.enqueue(path, {\"__positions__\": positions_cpu,\n                                   \"__values__\": values_gpu.cpu()}, metadata)"),
+      h("p",null,"专家（MoE）参数那一遍被切成 ",h("code",null,"_EXPERT_SUBPASSES = 4")," 个子遍，使较早一批的接收端 apply 与较晚专家的编码重叠，而不是堆到同步末尾。Megatron 把 MoE 层均匀切到各 PP rank，故每 rank 的专家子列表切分一致，publish 次数相同、不会 barrier 失步。"),
+      h("div",null,h(Src,{label:"_flush_bucket",path:DL,line:705}),h(Src,{label:"NCCL 广播（load_format=delta）",path:DL,line:723}),h(Src,{label:"磁盘 safetensors 写入",path:DL,line:731}),h(Src,{label:"_send_weights（专家子遍）",path:DL,line:625}),h(Src,{label:"_EXPERT_SUBPASSES=4",path:DL,line:648})),
+
+      h("h3",null,"finalize：等 apply 落定再恢复生成"),
+      h("p",null,"NCCL 传输下每个桶在 flush 时已经广播完，finalize 只需 rank 0 调 ",h("code",null,"continue_generation")," 恢复；磁盘传输下要先 publish 末批文件、",h("code",null,"ray.get")," 等所有接收端 apply 落定、按需清理版本目录，再恢复生成。若本次无任何 delta 文件（全零 diff），显式调 ",h("code",null,"set_weight_version")," 让引擎记录的版本与训练侧一致。"),
+      h(Code,null,"def _finalize_sync(self):\n    if self.transport == \"nccl\":\n        if dist.get_rank() == 0:\n            ray.get([e.continue_generation.remote() for e in self.rollout_engines])  # 续\n        dist.barrier(group=get_gloo_group()); return\n    # disk: 发末批 -> 等接收端 apply -> 清理 -> 续\n    if dist.get_rank() == 0:\n        ray.get(object_refs)                       # 等所有 update_weights_from_disk apply 落定\n        if not self.args.update_weight_delta_keep_files:\n            shutil.rmtree(self._version_dir, ignore_errors=True)\n        ray.get([e.continue_generation.remote() for e in self.rollout_engines])"),
+      h("p",null,"同步结束 ",h("code",null,"_record_metrics")," 跨 PP-src rank allreduce 出本次 density（约 0.02）、wire_bytes、flush 次数等，写入 ",h("code",null,"perf/update_weights_*")," 供下一步日志。这组指标正是横评里“T_sync 被压低”的可观测证据。"),
+      h("div",null,h(Src,{label:"_finalize_sync",path:DL,line:792}),h(Src,{label:"NCCL continue_generation",path:DL,line:798}),h(Src,{label:"磁盘等 apply + 清理 + 续",path:DL,line:806}),h(Src,{label:"_record_metrics（density/wire_bytes）",path:DL,line:824})),
+
+      h("div",{className:"warn"},"约束：colocate（共置）下禁用 delta（断言）。同卡共置时权重通过 CUDA IPC 句柄近零成本传递（",h("code",null,"from_tensor"),"），逐字节 diff 反而是净开销。delta 面向的是非共置的分布式异步训练。")
+    );
+  }
+
+  function App(){return h("div",null,
+    h(TopNav),
+    h("main",null,
+      h("section",null,
+        h("p",{className:"kicker"},"slime 异步内核 · 代码级深读"),
+        h("h1",null,"fully_async 在途池 + delta 权重同步"),
+        h("p",{className:"lead"},"这是五框架横评里“推荐组合如何端到端解决 Async RL”的两块承重机制的代码级展开：slime 怎样用一个常驻在途池吸收长程任务的生成长尾，以及怎样用按位 diff 的增量权重同步把 T_sync 压到约 2% 字节。所有代码片段忠实于源码，蓝色标签用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/slime")," 对应行。"),
+        h("div",{className:"note"},"承重文件：",h("code",null,"slime/rollout/fully_async_rollout.py"),"（256 行）、",h("code",null,"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py"),"（864 行）。配合 ",h("a",{href:"slime/slime-lesson-08-rollout-async.html"},"slime 第 8 课"),"与 ",h("a",{href:"slime/slime-lesson-07-weight-sync.html"},"第 7 课"),"读。")
+      ),
+      h("section",null,
+        h("p",{className:"kicker"},"fully_async_rollout.py"),
+        h("h2",null,"一、fully_async 在途池"),
+        h(FullyAsync)
+      ),
+      h("section",null,
+        h("p",{className:"kicker"},"update_weight_from_distributed_delta.py"),
+        h("h2",null,"二、delta 权重同步"),
+        h(DeltaSync)
+      ),
+      h("section",null,
+        h("p",{className:"kicker"},"小结"),
+        h("h2",null,"两者如何共同压低异步成本"),
+        h("ul",null,
+          h("li",null,h("strong",null,"在途池吸收生成长尾"),"：吞吐由池占用率而非最慢轨迹决定；ABORTED 组回收重跑，不污染训练；全局常驻避免冷启动。"),
+          h("li",null,h("strong",null,"delta 压低 T_sync"),"：按位 diff + gap 编码只传约 2% 字节；双侧流流水线隐藏 H2D/D2H 拷贝；NCCL 每桶广播或写入磁盘；无损覆盖无漂移。"),
+          h("li",null,h("strong",null,"二者衔接"),"：长轨迹跨多版本由 ",h("code",null,"weight_versions")," 记录、由重要性采样修正；权重切换的“停、换、续”与在途池的 ABORTED 回收共同保证异步下的数据版本正确。")),
+        h("div",null,h(Ext,{href:"https://z.ai/blog/glm-5.2"},"GLM-5.2"),h(Ext,{href:"https://github.com/kvcache-ai/Mooncake"},"mooncake（miles P2P 传输）"),h(Ext,{href:"https://thudm.github.io/slime/"},"slime 文档")),
+        h("div",{className:"foot"},
+          h("a",{href:"rl-framework-comparison.html"},h("div",{className:"faint"},"← 返回"),h("strong",null,"五框架大横评")),
+          h("a",{href:"slime/slime-lesson-08-rollout-async.html"},h("div",{className:"faint"},"深入 →"),h("strong",null,"slime 第 8 课：Rollout 与异步")))
+      )
+    )
+  );}
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

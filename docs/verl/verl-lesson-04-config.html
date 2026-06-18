@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 第 4 课：配置体系</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 4 课</p><h1>配置体系</h1><p>能访问 CDN 时切换为交互版。本课讲清 verl 的配置体系：base_config.py 的冻结 dataclass 基类、trainer/config 下 actor/critic/ref/rollout/reward/algorithm 各组结构化配置、Hydra 与 OmegaConf 如何组合 YAML 与命令行覆盖，以及配置如何流入 main_ppo 并决定资源池映射与各 worker 的后端选择。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const VERL="vscode://file/Users/xinyu/Code/Agentic-RL/verl/";
+  function srcUrl(p,l){return VERL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","str","set","DataProto","WorkerGroup","ResourcePool","RayWorkerGroup","AgentLoop","BaseConfig","ActorConfig","CriticConfig","RolloutConfig","AlgoConfig","DictConfig","ListConfig","OmegaConf","CheckpointConfig","FSDPActorConfig","McoreActorConfig","ResourcePoolManager","Role","FilterGroupsConfig","KLControlConfig","RolloutCorrectionConfig","HFModelConfig","FrozenInstanceError","Mapping","Enum","MISSING"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与HybridFlow","verl-lesson-01-foundations.html"],[2,"DataProto","verl-lesson-02-dataproto.html"],[3,"混合控制器","verl-lesson-03-single-controller.html"],[4,"配置","verl-lesson-04-config.html"],[5,"RL数学","verl-lesson-05-core-algos.html"],[6,"训练引擎","verl-lesson-06-engines.html"],[7,"Workers","verl-lesson-07-workers.html"],[8,"Rollout","verl-lesson-08-rollout.html"],[9,"异步服务","verl-lesson-09-async-server.html"],[10,"Agent Loop","verl-lesson-10-agent-loop.html"],[11,"异步训练","verl-lesson-11-async-train.html"],[12,"Trainer与端到端","verl-lesson-12-trainer-e2e.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"verl-course-index.html"},"verl",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 一、为什么需要一套配置体系 =====
+  function WhySection(){
+    return h("div",null,
+      h("p",null,"一次 RL 后训练涉及的可调参数数以百计：actor 用什么并行策略、micro batch 多大、rollout 选 vLLM 还是 SGLang、张量并行多少、优势估计用 GAE 还是 GRPO、KL 系数多少、checkpoint 存哪些内容。如果把这些参数散落在脚本里，既无法静态检查类型，也无法在不改代码的前提下扫描超参。verl 的配置体系要同时满足三个互相牵制的诉求："),
+      h("ul",null,
+        h("li",null,h("strong",null,"可组合"),"：actor、rollout、critic、reward、algorithm 等组可独立替换。换一个训练后端只应替换 actor 一组，而非重写整份配置。"),
+        h("li",null,h("strong",null,"可覆盖"),"：命令行能逐字段覆盖 YAML 默认值，便于扫描超参与脚本化实验，无需为每个变体复制一份 YAML。"),
+        h("li",null,h("strong",null,"类型安全"),"：到了 worker 内部，配置应是带类型标注的 Python 对象（dataclass），而非裸 dict，从而能在构造时校验取值范围、互斥项与必填项。")
+      ),
+      h("p",null,"verl 的解法是两层结构：用 ",h("strong",{className:"hl-teal"},"Hydra + OmegaConf")," 在外层完成 YAML 组合与命令行覆盖，得到一棵 ",h("code",null,"DictConfig")," 配置树；用 ",h("strong",{className:"hl-amber"},"BaseConfig dataclass")," 在内层把配置树的子节点转换为类型化、默认冻结的 Python 对象。两层之间的桥梁是 ",h("code",null,"omega_conf_to_dataclass")," 与 YAML 中的 ",h("code",null,"_target_")," 字段。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"外层"),"Hydra / OmegaConf"),
+          h("p",null,"职责：按 ",h("code",null,"defaults")," 列表组合多份 YAML，解析 ",h("code",null,"${...}")," 插值与 ",h("code",null,"oc.select")," 选择器，应用命令行覆盖。产物是一棵 ",h("code",null,"DictConfig"),"。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"内层"),"BaseConfig dataclass"),
+          h("p",null,"职责：把 ",h("code",null,"DictConfig")," 子树转为带类型标注的 dataclass，默认冻结字段、在 ",h("code",null,"__post_init__")," 校验，并保留 dict 式访问接口以便与既有代码兼容。")
+        )
+      ),
+      h("div",{className:"note"},"本课聚焦配置的定义、组合与流入，不展开 RL 数学本身（优势估计、KL 估计的公式在第 5 课），也不展开各后端引擎的实现细节（第 6 课）。这里只需理解：每个数值最终从哪份 YAML 来、被谁覆盖、以什么类型抵达 worker。"),
+      h("div",null,h(Src,{label:"trainer/config/ppo_trainer.yaml",path:"verl/trainer/config/ppo_trainer.yaml",line:8}),h(Src,{label:"trainer/config/config.py",path:"verl/trainer/config/config.py"}),h(Src,{label:"base_config.py",path:"verl/base_config.py",line:22}),h(Ext,{href:"https://hydra.cc/docs/intro/"},"Hydra 文档"),h(Ext,{href:"https://omegaconf.readthedocs.io/"},"OmegaConf 文档"))
+    );
+  }
+
+  // ===== 二、BaseConfig：冻结 dataclass 的设计 =====
+  function BaseConfigSection(){
+    const ref=useTypeset("base");
+    return h("div",{ref:ref},
+      h("p",null,"所有结构化配置类都继承自 ",h("code",null,"BaseConfig"),"，它定义在 ",h("code",null,"verl/base_config.py"),"。这是整个配置体系的最底层基石，只有约 70 行，却确定了三条关键性质：默认冻结、dict 式访问、与 OmegaConf 兼容。"),
+      h(Code,null,"@dataclass\nclass BaseConfig(collections.abc.Mapping):\n    \"\"\"为 dataclass 配置提供 dict 式接口。\n    默认所有字段不可变, 除非列入 _mutable_fields。\n    继承 Mapping 抽象基类, 使实例能像字典一样使用。\"\"\"\n\n    _mutable_fields = set()\n    _target_: str = \"\"\n\n    def __setattr__(self, name, value):\n        # 字段一旦存在即视为冻结, 除非它在 _mutable_fields 中\n        if name in self.__dict__ and name not in getattr(self, \"_mutable_fields\", set()):\n            raise FrozenInstanceError(f\"Field '{name}' is frozen and cannot be modified\")\n        super().__setattr__(name, value)\n\n    def get(self, key, default=None):\n        try:\n            return getattr(self, key)\n        except AttributeError:\n            return default\n\n    def __getitem__(self, key):\n        return getattr(self, key)"),
+      h("h3",null,"为什么默认冻结"),
+      h("p",null,"RL 训练的 bug 往往是静默的：某个超参在构造后被某处代码意外改写，训练照常进行但结果偏差，难以察觉。",h("code",null,"BaseConfig")," 重写 ",h("code",null,"__setattr__"),"，使任何已存在字段的再次赋值都抛出 ",h("code",null,"FrozenInstanceError"),"。这把“配置在构造后不应改变”这条约定从口头约束变为运行时强制。确需在运行期回填的字段（例如 batch size 需按实际 GPU 数校正），通过类变量 ",h("code",null,"_mutable_fields")," 显式列入白名单，从而把“哪些字段可变”也变成可审阅的声明。"),
+      h("h3",null,"为什么继承 Mapping"),
+      h("p",null,"verl 早期大量代码以 ",h("code",null,"config['actor']['ppo_epochs']")," 或 ",h("code",null,"config.get('lora', {})")," 的字典风格访问配置。",h("code",null,"BaseConfig")," 继承 ",h("code",null,"collections.abc.Mapping")," 并实现 ",h("code",null,"__getitem__"),"、",h("code",null,"__iter__"),"、",h("code",null,"__len__"),"、",h("code",null,"get"),"，使得迁移到 dataclass 后，原有的字典式访问仍然成立。这是一种刻意保留的向后兼容：既获得 dataclass 的类型标注与属性访问，又不必一次性改写所有调用点。"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"_mutable_fields 的典型用法"),
+          h("p",null,"在 ",h("code",null,"ActorConfig")," 中，batch size 相关字段被列入白名单，因为它们要在校验阶段按数据并行规模回填："),
+          h(Code,null,"_mutable_fields = BaseConfig._mutable_fields | {\n    \"ppo_mini_batch_size\",\n    \"ppo_micro_batch_size\",\n    \"ppo_micro_batch_size_per_gpu\",\n    \"engine\",\n    \"model_config\",\n}")
+        ),
+        h("div",null,
+          h("h4",null,"_target_ 字段的作用"),
+          h("p",null,h("code",null,"_target_")," 是 Hydra 的实例化标记，记录“这份配置应被转换成哪个类”。",h("code",null,"BaseConfig")," 把它设为空串默认值，使每个子类都自带该字段，从而支持递归实例化（一个配置内嵌另一个带 ",h("code",null,"_target_")," 的子配置）。下一节会看到 YAML 中如何写它。")
+        )
+      ),
+      h("div",null,h(Src,{label:"BaseConfig",path:"verl/base_config.py",line:22}),h(Src,{label:"__setattr__ 冻结逻辑",path:"verl/base_config.py",line:33}),h(Src,{label:"get / __getitem__",path:"verl/base_config.py",line:40}),h(Src,{label:"ActorConfig._mutable_fields",path:"verl/workers/config/actor.py",line:141}))
+    );
+  }
+
+  // ===== 三、结构化配置类：各组字段 =====
+  const GROUPS=[
+    {key:"algo",name:"algorithm",render:function(){return [
+      h("p",null,h("code",null,"AlgoConfig")," 定义算法级超参，决定优势如何估计、KL 如何处理。它本身组合了若干子配置（KL 控制、过滤分组、rollout 修正）。"),
+      h(Code,null,"@dataclass\nclass AlgoConfig(BaseConfig):\n    gamma: float = 1.0                  # 折扣因子\n    lam: float = 1.0                    # GAE 的偏差-方差权衡\n    adv_estimator: str = \"gae\"          # gae / grpo / reinforce_plus_plus ...\n    norm_adv_by_std_in_grpo: bool = True\n    use_kl_in_reward: bool = False      # 奖励内 KL 惩罚\n    kl_penalty: str = \"kl\"              # kl / abs / mse / low_var_kl / full\n    kl_ctrl: KLControlConfig = field(default_factory=KLControlConfig)\n    use_pf_ppo: bool = False\n    pf_ppo: dict[str, Any] = field(default_factory=dict)\n    filter_groups: Optional[FilterGroupsConfig] = None\n    rollout_correction: Optional[RolloutCorrectionConfig] = None"),
+      h("p",null,h("code",null,"adv_estimator")," 是后续第 5 课的入口：它选定优势函数的形式（GAE 需要 critic 给出价值估计，GRPO 则用组内归一化的奖励，无需 critic）。",h("code",null,"kl_ctrl")," 内嵌 ",h("code",null,"KLControlConfig"),"，区分固定系数与自适应控制器。",h("code",null,"rollout_correction")," 处理训练与推理策略不一致引入的偏移，提供大量命名工厂方法（如 ",h("code",null,"decoupled_seq_is()"),"、",h("code",null,"bypass_ppo_clip()"),"）以便一行选定预设。"),
+      h("div",null,h(Src,{label:"AlgoConfig",path:"verl/trainer/config/algorithm.py",line:617}),h(Src,{label:"KLControlConfig",path:"verl/trainer/config/algorithm.py",line:24}),h(Src,{label:"FilterGroupsConfig",path:"verl/trainer/config/algorithm.py",line:43}),h(Src,{label:"RolloutCorrectionConfig",path:"verl/trainer/config/algorithm.py",line:60}))
+    ];}},
+    {key:"actor",name:"actor",render:function(){return [
+      h("p",null,h("code",null,"ActorConfig")," 是策略网络的训练配置，字段最多。它定义在 ",h("code",null,"verl/workers/config/actor.py"),"，按训练后端派生出 ",h("code",null,"FSDPActorConfig"),"、",h("code",null,"McoreActorConfig"),"、",h("code",null,"VeOmniActorConfig")," 等子类。"),
+      h(Code,null,"@dataclass\nclass ActorConfig(BaseConfig):\n    strategy: str = MISSING             # 训练策略, 必须指定\n    ppo_mini_batch_size: int = 256\n    ppo_micro_batch_size_per_gpu: Optional[int] = None\n    use_dynamic_bsz: bool = False       # 是否用序列打包动态分批\n    ppo_max_token_len_per_gpu: int = 16384\n    clip_ratio: float = 0.2             # PPO 裁剪比\n    clip_ratio_low: float = 0.2\n    clip_ratio_high: float = 0.2\n    policy_loss: PolicyLossConfig = field(default_factory=PolicyLossConfig)\n    loss_agg_mode: str = \"token-mean\"\n    use_kl_loss: bool = False           # GRPO 用 KL 损失\n    kl_loss_coef: float = 0.001\n    ppo_epochs: int = 1\n    checkpoint: CheckpointConfig = field(default_factory=CheckpointConfig)\n    optim: OptimizerConfig = field(default_factory=OptimizerConfig)\n    rollout_n: int = MISSING            # 必须由采样配置覆盖"),
+      h("p",null,"两个字段用 ",h("code",null,"MISSING")," 标记为必填：",h("code",null,"strategy")," 与 ",h("code",null,"rollout_n"),"。",h("code",null,"MISSING")," 来自 OmegaConf，在 YAML 里写作 ",h("code",null,"???"),"，表示“无默认值，必须由上游提供”。",h("code",null,"__post_init__")," 会断言它们已被赋值，并校验 batch size 的互斥与可整除关系。",h("code",null,"validate(n_gpus, train_batch_size)")," 则在拿到运行期 GPU 数后再做一轮跨字段校验。"),
+      h(Code,null,"@dataclass\nclass FSDPActorConfig(ActorConfig):\n    strategy: str = \"fsdp\"\n    grad_clip: float = 1.0\n    fsdp_config: FSDPEngineConfig = field(default_factory=FSDPEngineConfig)\n    use_remove_padding: bool = False\n\n    def __post_init__(self):\n        super().__post_init__()\n        self.engine = self.fsdp_config   # 把具体引擎配置统一暴露为 self.engine\n        # 同步 strategy 到引擎配置, 使 engine_workers 选对 FSDP 版本\n        object.__setattr__(self.engine, \"strategy\", self.strategy)"),
+      h("p",null,"派生子类的设计要点：每个后端子类在 ",h("code",null,"__post_init__")," 里把自己专属的引擎配置（",h("code",null,"fsdp_config"),"、",h("code",null,"megatron"),"、",h("code",null,"veomni"),"）赋给统一的 ",h("code",null,"self.engine")," 字段。于是下游 worker 只需读 ",h("code",null,"config.engine"),"，无需知道当前是哪个后端。这是用配置层而非业务代码来吸收后端差异。"),
+      h("div",null,h(Src,{label:"ActorConfig",path:"verl/workers/config/actor.py",line:104}),h(Src,{label:"__post_init__ 校验",path:"verl/workers/config/actor.py",line:196}),h(Src,{label:"validate 运行期校验",path:"verl/workers/config/actor.py",line:222}),h(Src,{label:"FSDPActorConfig",path:"verl/workers/config/actor.py",line:287}),h(Src,{label:"McoreActorConfig",path:"verl/workers/config/actor.py",line:261}),h(Src,{label:"PolicyLossConfig",path:"verl/workers/config/actor.py",line:79}))
+    ];}},
+    {key:"critic",name:"critic",render:function(){return [
+      h("p",null,h("code",null,"CriticConfig")," 是价值网络的训练配置，结构与 ",h("code",null,"ActorConfig")," 平行，同样按后端派生出 ",h("code",null,"FSDPCriticConfig"),"、",h("code",null,"McoreCriticConfig")," 等子类，并各自实现 ",h("code",null,"validate(n_gpus, train_batch_size)"),"。仅当 ",h("code",null,"adv_estimator")," 需要价值估计（如 GAE）时才会创建 critic worker；GRPO 一类无需 critic。"),
+      h("p",null,"是否需要 critic 由 ",h("code",null,"need_critic(config)")," 判定（见 ",h("code",null,"trainer/ppo/utils.py"),"），其结果同时影响：(1) 是否实例化 ",h("code",null,"CriticConfig")," 并校验；(2) 是否把 ",h("code",null,"Role.Critic")," 注册进资源池映射。配置与资源分配在此处统一。"),
+      h("div",null,h(Src,{label:"CriticConfig",path:"verl/workers/config/critic.py",line:47}),h(Src,{label:"CriticConfig.validate",path:"verl/workers/config/critic.py",line:117}),h(Src,{label:"McoreCriticConfig",path:"verl/workers/config/critic.py",line:160}),h(Src,{label:"FSDPCriticConfig",path:"verl/workers/config/critic.py",line:188}),h(Src,{label:"critic/dp_critic.yaml",path:"verl/trainer/config/critic/dp_critic.yaml"}))
+    ];}},
+    {key:"ref",name:"ref",render:function(){return [
+      h("p",null,"参考策略（reference policy）配置较薄，主要复用 actor 的并行设置，只保留 log_prob 计算所需的少数字段（micro batch、动态分批、最大 token 数）。它没有优化器，因为参考模型不更新，只前向计算 KL 所需的对数概率。"),
+      h("p",null,"参考策略是否启用，取决于 ",h("code",null,"actor.use_kl_loss")," 或 ",h("code",null,"algorithm.use_kl_in_reward")," 是否为真（ppo_trainer.yaml 的注释已说明）。在统一模型引擎实现中，参考策略默认与 actor/rollout 融合在同一个 ",h("code",null,"ActorRolloutRefWorker")," 上（角色为 ",h("code",null,"Role.ActorRolloutRef"),"），仅当使用 LoRA 且需要独立 ref 模型时才分离。"),
+      h("div",null,h(Src,{label:"ref/ref.yaml",path:"verl/trainer/config/ref/ref.yaml"}),h(Src,{label:"ref/dp_ref.yaml",path:"verl/trainer/config/ref/dp_ref.yaml"}),h(Src,{label:"need_reference_policy",path:"verl/trainer/ppo/utils.py"}),h(Src,{label:"ppo_trainer.yaml ref 说明",path:"verl/trainer/config/ppo_trainer.yaml",line:19}))
+    ];}},
+    {key:"rollout",name:"rollout",render:function(){return [
+      h("p",null,h("code",null,"RolloutConfig")," 是推理与采样配置，定义在 ",h("code",null,"verl/workers/config/rollout.py"),"，对应 YAML 为 ",h("code",null,"rollout/rollout.yaml"),"。它是后端选择的关键所在："),
+      h(Code,null,"# rollout/rollout.yaml (节选)\n_target_: verl.workers.config.RolloutConfig\n\n# 推理后端: hf / vllm / sglang / trtllm, 必须显式指定\nname: ???\n\n# sync: LLM, async: AsyncLLM\nmode: async\n\n# KV cache 占用的 GPU 显存比例\ngpu_memory_utilization: 0.5\n\n# 张量并行规模 (对 hf 后端无效)\ntensor_model_parallel_size: 2\n\n# 验证阶段的采样参数\nval_kwargs:\n  _target_: verl.workers.config.SamplingConfig\n  temperature: 0\n  do_sample: False"),
+      h("p",null,h("code",null,"name")," 用 ",h("code",null,"???")," 标记为必填，它直接决定推理后端实例化哪个引擎类（vLLM / SGLang / TRT-LLM / HF）。",h("code",null,"tensor_model_parallel_size")," 等并行字段决定推理侧如何切分一个模型副本。",h("code",null,"val_kwargs")," 与 ",h("code",null,"multi_turn")," 等子节点各自带 ",h("code",null,"_target_"),"，被递归实例化为独立的 dataclass。第 8 课会展开 rollout 引擎的实现。"),
+      h("div",null,h(Src,{label:"RolloutConfig",path:"verl/workers/config/rollout.py",line:145}),h(Src,{label:"SamplingConfig",path:"verl/workers/config/rollout.py",line:39}),h(Src,{label:"MultiTurnConfig",path:"verl/workers/config/rollout.py",line:48}),h(Src,{label:"rollout/rollout.yaml",path:"verl/trainer/config/rollout/rollout.yaml",line:5}))
+    ];}},
+    {key:"reward",name:"reward",render:function(){return [
+      h("p",null,h("code",null,"RewardConfig")," 描述奖励计算：是用自定义奖励函数、还是部署奖励模型，以及奖励模型是否独占资源池。对应 YAML 为 ",h("code",null,"reward/reward.yaml"),"。"),
+      h(Code,null,"# reward/reward.yaml (节选)\n_target_: verl.workers.config.RewardConfig\n\n# 并行运行的 reward manager 数\nnum_workers: 8\n\n# 自定义奖励函数\ncustom_reward_function:\n  path: null\n  name: compute_score\n\n# 奖励模型 (可选), 支持判别式与生成式\nreward_model:\n  _target_: verl.workers.config.RewardModelConfig\n  enable: False\n  # 是否部署到独立资源池\n  enable_resource_pool: False\n  n_gpus_per_node: 8\n  nnodes: 0"),
+      h("p",null,h("code",null,"reward_model.enable_resource_pool")," 直接影响资源分配：若为真，主入口会为奖励模型单独申请一个 ",h("code",null,"reward_pool"),"，否则它与训练共用 ",h("code",null,"global_pool"),"。这是配置字段直接决定 GPU 物理布局的一个清晰例子，下一节展开。"),
+      h("div",null,h(Src,{label:"RewardConfig",path:"verl/workers/config/reward.py",line:94}),h(Src,{label:"RewardModelConfig",path:"verl/workers/config/reward.py",line:82}),h(Src,{label:"RewardManagerConfig",path:"verl/workers/config/reward.py",line:32}),h(Src,{label:"reward/reward.yaml",path:"verl/trainer/config/reward/reward.yaml",line:2}))
+    ];}}
+  ];
+  function GroupExplorer(){const [s,setS]=useState(0);const d=GROUPS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},GROUPS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 四、Hydra 组合与 OmegaConf 覆盖 =====
+  function HydraSection(){
+    const ref=useTypeset("hydra");
+    return h("div",{ref:ref},
+      h("p",null,"配置的入口是 ",h("code",null,"ppo_trainer.yaml"),"。它本身几乎不写具体数值，而是用 Hydra 的 ",h("code",null,"defaults")," 列表把各组的默认 YAML 拼接进来。理解这份 ",h("code",null,"defaults")," 列表，就理解了整棵配置树是如何长出来的。"),
+      h(Code,null,"# trainer/config/ppo_trainer.yaml\ndefaults:\n  - model_engine: dp\n  # <folder>@<挂载点>: <文件名>\n  - actor@actor_rollout_ref.actor: ${model_engine}_actor\n  - data@data: legacy_data\n  - ref@actor_rollout_ref.ref: ${model_engine}_ref\n  - rollout@actor_rollout_ref.rollout: rollout\n  - model@actor_rollout_ref.model: hf_model\n  - critic@critic: ${model_engine}_critic\n  - model@critic.model: hf_model\n  - reward@reward: reward\n  - algorithm@algorithm.rollout_correction: rollout_correction\n  - _self_   # 本文件的字段覆盖上面所有默认"),
+      h("h3",null,"defaults 列表怎么读"),
+      h("p",null,"每一项的语法是 ",h("code",null,"<目录名>@<挂载点>: <文件名>"),"。例如 ",h("code",null,"actor@actor_rollout_ref.actor: ${model_engine}_actor")," 的含义是：从 ",h("code",null,"trainer/config/actor/")," 目录取一个 YAML，挂到配置树的 ",h("code",null,"actor_rollout_ref.actor")," 节点上，文件名由插值 ",h("code",null,"${model_engine}")," 决定。当 ",h("code",null,"model_engine")," 取默认值 ",h("code",null,"dp")," 时，实际加载的是 ",h("code",null,"actor/dp_actor.yaml"),"。"),
+      h("p",null,"这种“目录即选项组”的设计是可组合性的来源：要把训练后端从 FSDP 换成 Megatron，只需在命令行写 ",h("code",null,"model_engine=megatron"),"，",h("code",null,"${model_engine}_actor")," 随之解析为 ",h("code",null,"megatron_actor"),"，",h("code",null,"critic")," 与 ",h("code",null,"ref")," 也一并切换。一个变量同时驱动多组配置的协同替换。"),
+      h(Code,null,"# actor/dp_actor.yaml 的 defaults: 进一步组合 optim 与 engine\ndefaults:\n  - ../optim@optim: fsdp        # 取 optim/fsdp.yaml\n  - ../engine@fsdp_config: fsdp # 取 engine/fsdp.yaml\n  - actor                       # 继承 actor/actor.yaml 的全部字段\n  - _self_\n\n_target_: verl.workers.config.FSDPActorConfig\nstrategy: fsdp"),
+      h("p",null,"组可嵌套：",h("code",null,"dp_actor.yaml")," 自己又有 ",h("code",null,"defaults"),"，把 ",h("code",null,"optim")," 与 ",h("code",null,"engine")," 两个子组拼进来，并继承基底 ",h("code",null,"actor.yaml")," 的字段后再覆盖 ",h("code",null,"strategy: fsdp"),"。",h("code",null,"_self_")," 永远放在列表末尾，表示“本文件显式写出的字段优先级最高，覆盖前面所有默认”。"),
+      h("h3",null,"OmegaConf 的插值与选择器"),
+      h("p",null,"配置树里大量出现 ",h("code",null,"${...}")," 语法，这是 OmegaConf 的插值（interpolation）。它让一处取值自动跟随另一处，避免重复与不一致。两种常见形式："),
+      h("ul",null,
+        h("li",null,h("strong",null,"直接引用"),"：",h("code",null,"default_local_dir: checkpoints/${trainer.project_name}/${trainer.experiment_name}")," 把检查点目录由项目名与实验名拼成，改一处即同步。"),
+        h("li",null,h("strong",null,"带默认的选择"),"：",h("code",null,"prompt_length: ${oc.select:data.max_prompt_length,512}")," 表示“若 ",h("code",null,"data.max_prompt_length")," 存在则取之，否则用 512”。",h("code",null,"oc.select")," 让 rollout 的提示长度默认跟随数据配置，又不强依赖其存在。")
+      ),
+      h("h3",null,"命令行覆盖"),
+      h("p",null,"Hydra 解析命令行参数为一组覆盖（override）。常见三种写法："),
+      h(Code,null,"# 1) 覆盖已有字段 (点号路径)\npython -m verl.trainer.main_ppo \\\n    actor_rollout_ref.actor.ppo_mini_batch_size=128 \\\n    actor_rollout_ref.rollout.name=vllm \\\n    algorithm.adv_estimator=grpo\n\n# 2) 切换整组默认 (选择不同 YAML)\n    model_engine=megatron\n\n# 3) 新增配置树中不存在的字段 (前缀 +)\n    +actor_rollout_ref.rollout.engine_kwargs.vllm.swap_space=16"),
+      h("p",null,"覆盖的优先级顺序为：dataclass 默认值 < ",h("code",null,"defaults")," 组合出的 YAML < ",h("code",null,"_self_")," 字段 < 命令行覆盖。这条顺序保证了“代码里的安全默认”在最底层，而“实验脚本的具体取值”在最上层，二者不会互相污染。"),
+      h("div",{className:"warn"},"覆盖一个不存在的字段时必须加 ",h("code",null,"+")," 前缀，否则 Hydra 报错（struct 模式默认禁止凭空新增键）。这是有意的保护：防止把 ",h("code",null,"ppo_mini_batch_size")," 误拼为 ",h("code",null,"ppo_mini_batchsize")," 却静默新增一个无人读取的键。"),
+      h("div",null,h(Src,{label:"ppo_trainer.yaml defaults",path:"verl/trainer/config/ppo_trainer.yaml",line:8}),h(Src,{label:"actor/dp_actor.yaml defaults",path:"verl/trainer/config/actor/dp_actor.yaml",line:8}),h(Src,{label:"model_engine/dp.yaml",path:"verl/trainer/config/model_engine/dp.yaml"}),h(Src,{label:"rollout.yaml oc.select 用例",path:"verl/trainer/config/rollout/rollout.yaml",line:27}),h(Ext,{href:"https://hydra.cc/docs/intro/"},"Hydra 文档"),h(Ext,{href:"https://omegaconf.readthedocs.io/"},"OmegaConf 文档"))
+    );
+  }
+
+  // ===== 五、_target_ 与 omega_conf_to_dataclass =====
+  function TargetSection(){
+    const ref=useTypeset("target");
+    return h("div",{ref:ref},
+      h("p",null,"经过 Hydra 组合与命令行覆盖，得到的是一棵 ",h("code",null,"DictConfig"),"。要在 worker 内部以类型化对象使用它，需要把 ",h("code",null,"DictConfig")," 子树转换为对应的 dataclass。桥梁是 ",h("code",null,"omega_conf_to_dataclass")," 与 YAML 中的 ",h("code",null,"_target_")," 标记。"),
+      h(Code,null,"# verl/utils/config.py\ndef omega_conf_to_dataclass(config, dataclass_type=None):\n    if not config:\n        return dataclass_type if dataclass_type is None else dataclass_type()\n    if not isinstance(config, DictConfig | ListConfig | dict | list):\n        return config\n\n    if dataclass_type is None:\n        # 未给类型时, 必须从 config 的 _target_ 推断, 走 hydra.instantiate\n        assert \"_target_\" in config\n        from hydra.utils import instantiate\n        return instantiate(config, _convert_=\"partial\")\n\n    if not is_dataclass(dataclass_type):\n        raise ValueError(f\"{dataclass_type} must be a dataclass\")\n    cfg = OmegaConf.create(config)\n    cfg_from_dataclass = OmegaConf.structured(dataclass_type)\n    # 让 cfg 覆盖 dataclass 的默认值, 再转为对象\n    cfg_merged = OmegaConf.merge(cfg_from_dataclass, cfg)\n    return OmegaConf.to_object(cfg_merged)"),
+      h("p",null,"函数有两条路径。其一，调用方显式传入 ",h("code",null,"dataclass_type"),"：先用 ",h("code",null,"OmegaConf.structured")," 从 dataclass 取一份带默认值的结构化配置，再让传入的 ",h("code",null,"cfg")," 覆盖之，最后 ",h("code",null,"to_object")," 转成实例。这一步会触发 dataclass 的 ",h("code",null,"__post_init__")," 校验。其二，不传类型：此时要求 ",h("code",null,"config")," 内含 ",h("code",null,"_target_"),"，交给 Hydra 的 ",h("code",null,"instantiate")," 按 ",h("code",null,"_target_")," 指定的全限定类名递归构造。"),
+      h("p",null,"这解释了为何 YAML 里随处可见 ",h("code",null,"_target_: verl.workers.config.RolloutConfig")," 之类的行：它声明了“这个子树应被实例化为哪个 dataclass”。例如 ",h("code",null,"ppo_trainer.yaml")," 的 algorithm 节点写明 ",h("code",null,"_target_: verl.trainer.config.AlgoConfig"),"，于是该子树可被自动转为 ",h("code",null,"AlgoConfig")," 实例。"),
+      h(Code,null,"# ppo_trainer.yaml: algorithm 节点的 _target_\nalgorithm:\n  _target_: verl.trainer.config.AlgoConfig\n  gamma: 1.0\n  adv_estimator: gae\n  kl_ctrl:\n    _target_: verl.trainer.config.KLControlConfig\n    type: fixed\n    kl_coef: 0.001"),
+      h("div",{className:"note"},"递归实例化的前提是每层子配置都自带 ",h("code",null,"_target_"),"。这正是 ",h("code",null,"BaseConfig")," 把 ",h("code",null,"_target_")," 设为基类字段的原因（第二节）：缺了它，内嵌的 ",h("code",null,"kl_ctrl")," 这类子配置就无法被递归构造为对应类型。"),
+      h("div",null,h(Src,{label:"omega_conf_to_dataclass",path:"verl/utils/config.py",line:23}),h(Src,{label:"ppo_trainer.yaml algorithm",path:"verl/trainer/config/ppo_trainer.yaml",line:59}),h(Src,{label:"trainer/config/__init__.py 导出",path:"verl/trainer/config/__init__.py",line:15}),h(Src,{label:"CheckpointConfig",path:"verl/trainer/config/config.py",line:24}))
+    );
+  }
+
+  // ===== 六、配置如何流入 main_ppo =====
+  function FlowSection(){
+    const ref=useTypeset("flow");
+    return h("div",{ref:ref},
+      h("p",null,"配置树构建完毕后，由 ",h("code",null,"main_ppo.py")," 接管。入口函数被 ",h("code",null,"@hydra.main")," 装饰，Hydra 据此自动完成组合、覆盖、注入。"),
+      h(Code,null,"# verl/trainer/main_ppo.py\n@hydra.main(config_path=\"config\", config_name=\"ppo_trainer\", version_base=None)\ndef main(config):\n    # 在 Ascend NPU 上自动把 trainer.device 设为 npu\n    auto_set_device(config)\n\n    validate_config(\n        config=config,\n        use_reference_policy=need_reference_policy(config),\n        use_critic=need_critic(config),\n    )\n\n    if config.trainer.use_v1:\n        run_ppo(config, task_runner_class=TaskRunnerV1)\n    else:\n        from verl.trainer.main_ppo_v0 import TaskRunner\n        run_ppo(config, task_runner_class=TaskRunner)"),
+      h("p",null,h("code",null,"config_name=\"ppo_trainer\"")," 指定根 YAML，",h("code",null,"config_path=\"config\"")," 指定其所在目录。装饰器执行后，",h("code",null,"config")," 已是完整组合并应用过命令行覆盖的 ",h("code",null,"DictConfig"),"。",h("code",null,"main")," 做三件事：按硬件自动校正设备、整树校验、按 ",h("code",null,"trainer.use_v1")," 选择 TaskRunner。"),
+      h("h3",null,"校验：把约束集中在一处"),
+      h("p",null,h("code",null,"validate_config")," 在 ",h("code",null,"verl/utils/config.py"),"，是配置流入业务前的最后一道关卡。它把跨组的整除约束、互斥项、弃用警告集中检查，使错误在训练启动前就暴露，而非在数小时后的某个 GPU 上崩溃。"),
+      h(Code,null,"# verl/utils/config.py: validate_config (节选)\nn_gpus = config.trainer.n_gpus_per_node * config.trainer.nnodes\n\nif not config.actor_rollout_ref.actor.use_dynamic_bsz:\n    if config.actor_rollout_ref.actor.strategy == \"megatron\":\n        model_parallel_size = (tp_size * pp_size)\n        assert n_gpus % (model_parallel_size * cp_size) == 0\n        minimal_bsz = megatron_dp * micro_bsz_per_gpu\n    else:\n        minimal_bsz = n_gpus\n    real_train_batch_size = config.data.train_batch_size * config.actor_rollout_ref.rollout.n\n    assert real_train_batch_size % minimal_bsz == 0\n\n# 触发 ActorConfig.__post_init__ 与 validate 的跨字段校验\nactor_config = omega_conf_to_dataclass(config.actor_rollout_ref.actor)\nactor_config.validate(n_gpus, config.data.train_batch_size, config.actor_rollout_ref.model)"),
+      h("p",null,"注意这里 ",h("code",null,"strategy == \"megatron\"")," 这一分支：训练后端的选择不仅决定加载哪份 YAML，还改变可整除性的计算方式（Megatron 需把 GPU 数按张量并行、流水并行、上下文并行的乘积切分后才得到数据并行规模）。配置字段与并行布局在此处直接关联。"),
+      h("h3",null,"从配置到资源池映射与后端选择"),
+      h("p",null,"真正把“配置数值”变成“GPU 物理布局与 worker 类型”的，是 ",h("code",null,"TaskRunner"),"（v0 路径在 ",h("code",null,"main_ppo_v0.py"),"）。它读配置，填两张表：",h("code",null,"role_worker_mapping")," 把角色映射到 Ray remote worker 类，",h("code",null,"mapping")," 把角色映射到资源池 id。"),
+      h(Code,null,"# verl/trainer/main_ppo_v0.py: TaskRunner\ndef add_actor_rollout_worker(self, config):\n    from verl.workers.engine_workers import ActorRolloutRefWorker\n    # 参考策略是否融合进同一 worker, 取决于是否用 LoRA + 独立 ref\n    if need_reference_policy(config) and not ref_in_actor:\n        role = Role.ActorRolloutRef\n    else:\n        role = Role.ActorRollout\n    self.role_worker_mapping[role] = ray.remote(ActorRolloutRefWorker)\n    self.mapping[role] = \"global_pool\"\n\ndef init_resource_pool_mgr(self, config):\n    global_pool_id = \"global_pool\"\n    resource_pool_spec = {\n        global_pool_id: [config.trainer.n_gpus_per_node] * config.trainer.nnodes,\n    }\n    if config.reward.reward_model.enable_resource_pool:\n        reward_pool = [config.reward.reward_model.n_gpus_per_node] * config.reward.reward_model.nnodes\n        resource_pool_spec[\"reward_pool\"] = reward_pool\n    return ResourcePoolManager(resource_pool_spec=resource_pool_spec, mapping=self.mapping)"),
+      h("p",null,"两条配置驱动的决策清晰可见。其一，",h("strong",null,"device mapping"),"：",h("code",null,"trainer.n_gpus_per_node")," 与 ",h("code",null,"trainer.nnodes")," 相乘得到总 GPU 数，",h("code",null,"global_pool")," 据此申请资源；若 ",h("code",null,"reward.reward_model.enable_resource_pool")," 为真，则额外切出 ",h("code",null,"reward_pool"),"，distillation 启用时还有 ",h("code",null,"teacher_pool"),"。这与第 3 课的 ",h("code",null,"ResourcePoolManager")," 与 ",h("code",null,"RayWorkerGroup")," 对接。"),
+      h("p",null,"其二，",h("strong",null,"后端选择"),"：worker 类本身（如 ",h("code",null,"ActorRolloutRefWorker"),"、",h("code",null,"TrainingWorker"),"）是统一的，具体走哪个训练后端由配置里的 ",h("code",null,"strategy")," 在 worker 内部分派；推理后端则由 ",h("code",null,"rollout.name")," 决定。换言之，verl 不为每个后端写一套入口，而是让同一套 worker 读配置后自行选择实现。这正是 HybridFlow“单一控制器编排、多后端可插拔”思想在配置层的体现。"),
+      h("div",null,h(Src,{label:"main_ppo.main",path:"verl/trainer/main_ppo.py",line:144}),h(Src,{label:"validate_config",path:"verl/utils/config.py",line:74}),h(Src,{label:"add_actor_rollout_worker",path:"verl/trainer/main_ppo_v0.py",line:46}),h(Src,{label:"init_resource_pool_mgr",path:"verl/trainer/main_ppo_v0.py",line:78}),h(Src,{label:"Role 枚举",path:"verl/trainer/ppo/utils.py",line:27}),h(Src,{label:"ResourcePoolManager",path:"verl/single_controller/ray/base.py",line:185}))
+    );
+  }
+
+  // ===== 七、文件清单 =====
+  const FILES=[
+    {n:"base_config.py",d:"全体配置类的基石。BaseConfig 继承 collections.abc.Mapping, 重写 __setattr__ 实现默认冻结 (FrozenInstanceError), 提供 get / __getitem__ / __iter__ / __len__ 的 dict 式接口, 并把 _target_ 设为基类字段以支持递归实例化。",links:[["BaseConfig","verl/base_config.py",22],["__setattr__","verl/base_config.py",33]]},
+    {n:"trainer/config/config.py",d:"通用结构化配置: CheckpointConfig (存/取内容、异步保存)、ProfileConfig (剖析的 rank 与步数区间)、BaseModelConfig (模型路径、override_config、trust_remote_code、lora)、ModuleConfig (动态模块加载)。",links:[["CheckpointConfig","verl/trainer/config/config.py",24],["ProfileConfig","verl/trainer/config/config.py",48],["BaseModelConfig","verl/trainer/config/config.py",67]]},
+    {n:"trainer/config/algorithm.py",d:"算法级配置: AlgoConfig (gamma/lam/adv_estimator/kl_penalty 等)、KLControlConfig (固定/自适应 KL)、FilterGroupsConfig (DAPO 过滤)、RolloutCorrectionConfig (训练-推理偏移修正, 含大量命名工厂方法)。",links:[["AlgoConfig","verl/trainer/config/algorithm.py",617],["KLControlConfig","verl/trainer/config/algorithm.py",24],["RolloutCorrectionConfig","verl/trainer/config/algorithm.py",60]]},
+    {n:"trainer/config/__init__.py",d:"把 config 与 algorithm 两个模块的导出汇总进包命名空间, 使 verl.trainer.config.AlgoConfig / CheckpointConfig 等可直接引用 (YAML 的 _target_ 即写全限定名)。",links:[["__all__ 汇总","verl/trainer/config/__init__.py",19]]},
+    {n:"trainer/config/ppo_trainer.yaml",d:"PPO 训练的根 YAML。defaults 列表组合 model_engine/actor/data/ref/rollout/model/critic/reward/algorithm 各组, 用 ${model_engine} 插值统一切换后端; 直接写出 algorithm、trainer、global_profiler、ray_kwargs 等节点。",links:[["defaults 列表","verl/trainer/config/ppo_trainer.yaml",8],["trainer 节点","verl/trainer/config/ppo_trainer.yaml",113]]},
+    {n:"workers/config/actor.py",d:"策略训练配置。ActorConfig 基类 (strategy/batch/clip/policy_loss/optim/checkpoint, MISSING 标记必填), 派生 FSDPActorConfig、McoreActorConfig、VeOmniActorConfig 等; __post_init__ 把后端引擎配置统一暴露为 self.engine, validate 做运行期校验。",links:[["ActorConfig","verl/workers/config/actor.py",104],["FSDPActorConfig","verl/workers/config/actor.py",287],["McoreActorConfig","verl/workers/config/actor.py",261]]},
+    {n:"workers/config/critic.py",d:"价值网络训练配置。CriticConfig 与 actor 平行, 派生 FSDPCriticConfig、McoreCriticConfig 等, 各自实现 validate(n_gpus, train_batch_size)。仅当优势估计需要价值 (如 GAE) 时才创建。",links:[["CriticConfig","verl/workers/config/critic.py",47],["FSDPCriticConfig","verl/workers/config/critic.py",188]]},
+    {n:"workers/config/rollout.py",d:"推理与采样配置。RolloutConfig (name 必填决定后端, mode/并行/显存/采样), 内嵌 SamplingConfig (val_kwargs)、MultiTurnConfig (多轮工具) 等带 _target_ 的子配置。",links:[["RolloutConfig","verl/workers/config/rollout.py",145],["SamplingConfig","verl/workers/config/rollout.py",39],["MultiTurnConfig","verl/workers/config/rollout.py",48]]},
+    {n:"workers/config/reward.py",d:"奖励计算配置。RewardConfig (num_workers、自定义奖励函数)、RewardModelConfig (奖励模型, enable_resource_pool 决定是否独占资源池)、RewardManagerConfig、SandboxFusionConfig (沙箱执行)。",links:[["RewardConfig","verl/workers/config/reward.py",94],["RewardModelConfig","verl/workers/config/reward.py",82]]},
+    {n:"utils/config.py",d:"配置工具。omega_conf_to_dataclass 把 DictConfig 转 dataclass (显式类型或按 _target_ 递归实例化); validate_config 集中校验跨组约束 (GPU 整除、batch 互斥、弃用警告)。",links:[["omega_conf_to_dataclass","verl/utils/config.py",23],["validate_config","verl/utils/config.py",74]]},
+    {n:"trainer/main_ppo.py",d:"PPO 入口。@hydra.main 装饰 main, 注入组合好的 DictConfig; 调 auto_set_device、validate_config, 再按 trainer.use_v1 选择 TaskRunner 经 run_ppo 提交到 Ray。",links:[["main","verl/trainer/main_ppo.py",144],["run_ppo","verl/trainer/main_ppo.py",33]]},
+    {n:"trainer/main_ppo_v0.py",d:"v0 任务运行器。TaskRunner 读配置填 role_worker_mapping 与资源池 mapping, init_resource_pool_mgr 据 trainer.n_gpus_per_node/nnodes 与 reward/distillation 的资源池开关构建 ResourcePoolManager, 把配置转化为 GPU 物理布局。",links:[["add_actor_rollout_worker","verl/trainer/main_ppo_v0.py",46],["init_resource_pool_mgr","verl/trainer/main_ppo_v0.py",78]]}
+  ];
+  function FilesSection(){
+    return h("div",null,
+      h("p",null,"本课覆盖的文件按“基石 → 结构化定义 → YAML 组合 → 转换与校验 → 流入入口”的顺序排列。点开 ",h("code",null,"Src")," 看真实源码行。"),
+      h("div",{className:"linkgrid"},FILES.map(function(u,i){return h("div",{className:"linkcard",key:i},
+        h("div",{className:"lt"},h("code",null,u.n)),
+        h("div",{className:"ld"},u.d),
+        h("div",null,u.links.map(function(l,j){return h(Src,{key:j,label:l[0],path:l[1],line:l[2]});})));}))
+      ,
+      h("div",{className:"note"},"各组还有按后端区分的 YAML 变体 (actor/megatron_actor.yaml、critic/megatron_critic.yaml、engine/fsdp.yaml 与 engine/megatron.yaml 等), 它们的字段在第 6 课 (训练引擎) 与第 8 课 (rollout) 处结合具体实现展开。本课只需理解 ${model_engine} 如何统一切换它们。")
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"Hydra 文档",d:"defaults 组合、命令行覆盖、配置组与插值",href:"https://hydra.cc/docs/intro/"},
+    {t:"OmegaConf 文档",d:"DictConfig、插值 ${...}、oc.select、structured config",href:"https://omegaconf.readthedocs.io/"},
+    {t:"Hydra 实例化",d:"_target_ 与 instantiate 的递归对象构造",href:"https://hydra.cc/docs/advanced/instantiate_objects/overview/"},
+    {t:"ppo_trainer.yaml（本机）",d:"PPO 根配置, defaults 与各节点",href:srcUrl("verl/trainer/config/ppo_trainer.yaml",8)},
+    {t:"base_config.py（本机）",d:"BaseConfig 冻结 dataclass 基石",href:srcUrl("verl/base_config.py",22)},
+    {t:"omega_conf_to_dataclass（本机）",d:"DictConfig 到 dataclass 的转换桥梁",href:srcUrl("verl/utils/config.py",23)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:4}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 4 课 / 共 12 · 配置体系"),
+          h("h1",null,"配置体系"),
+          h("p",{className:"lead"},"verl 把数以百计的训练超参组织成一棵可组合、可覆盖、类型安全的配置树。本课自底向上讲清五件事：base_config.py 的冻结 dataclass 基石、trainer/config 下 actor/critic/ref/rollout/reward/algorithm 各组结构化配置、Hydra 的 defaults 组合与 OmegaConf 的插值与命令行覆盖、_target_ 与 omega_conf_to_dataclass 如何把配置树转为类型化对象, 以及配置如何流入 main_ppo 并最终决定资源池映射与各 worker 的后端选择。"),
+          h("div",{className:"note"},"覆盖范围: ",h("code",null,"base_config.py")," 基类、",h("code",null,"trainer/config/")," 的 config / algorithm / 各组 YAML、",h("code",null,"workers/config/")," 的 actor / critic / rollout / reward、",h("code",null,"utils/config.py")," 的转换与校验、",h("code",null,"main_ppo.py")," 与 ",h("code",null,"main_ppo_v0.py")," 的流入。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部权威文档, 蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/verl")," 源码行 (Python 包在 verl/verl)。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"动机"),
+          h("h2",null,"为什么需要一套配置体系"),
+          h(WhySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"base_config.py"),
+          h("h2",null,"BaseConfig：冻结 dataclass 的基石"),
+          h(BaseConfigSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"workers/config · trainer/config"),
+          h("h2",null,"结构化配置类：各组字段"),
+          h("p",null,"verl 把配置按职责切成若干组, 每组一个 dataclass 家族。点 Tab 逐组查看真实字段与 Src 行。这些类是配置树叶子的类型, 也是 worker 内部读取配置的契约。"),
+          h(GroupExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"Hydra · OmegaConf"),
+          h("h2",null,"YAML 组合与命令行覆盖"),
+          h(HydraSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"_target_ · omega_conf_to_dataclass"),
+          h("h2",null,"从配置树到类型化对象"),
+          h(TargetSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"main_ppo"),
+          h("h2",null,"配置如何流入并决定布局"),
+          h(FlowSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"文件清单"),
+          h("h2",null,"本课文件：每个一句话角色"),
+          h(FilesSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档, 能把 Hydra 的组合机制与 OmegaConf 的插值语义补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"两层结构, 各司其职"),"：外层 Hydra + OmegaConf 负责组合 YAML 与命令行覆盖, 产物是 DictConfig; 内层 BaseConfig dataclass 负责类型化、冻结与校验。",h("code",null,"omega_conf_to_dataclass")," 是两层之间的桥梁。"),
+            h("li",null,h("strong",null,"默认冻结以防静默错误"),"：",h("code",null,"BaseConfig")," 重写 ",h("code",null,"__setattr__")," 使字段构造后不可改, 确需可变者经 ",h("code",null,"_mutable_fields")," 显式声明; 同时继承 Mapping 保留 dict 式访问以兼容既有代码。"),
+            h("li",null,h("strong",null,"目录即选项组, 一个变量驱动协同切换"),"：",h("code",null,"defaults")," 列表以 ",h("code",null,"<目录>@<挂载点>: <文件>")," 拼接各组, ",h("code",null,"${model_engine}")," 一处取值同时切换 actor / critic / ref 的后端 YAML; ",h("code",null,"_self_")," 与命令行覆盖给出清晰的优先级阶梯。"),
+            h("li",null,h("strong",null,"_target_ 支撑递归实例化"),"：YAML 子树自带 ",h("code",null,"_target_")," 全限定类名, 使内嵌子配置 (如 ",h("code",null,"kl_ctrl"),") 能被逐层构造为对应 dataclass; ",h("code",null,"oc.select")," 让默认值跨节点跟随而不强依赖。"),
+            h("li",null,h("strong",null,"配置直接决定布局与后端"),"：",h("code",null,"validate_config")," 集中校验跨组约束; ",h("code",null,"TaskRunner")," 据 ",h("code",null,"n_gpus_per_node")," / ",h("code",null,"nnodes")," 与资源池开关构建 ",h("code",null,"ResourcePoolManager"),", 据 ",h("code",null,"strategy")," / ",h("code",null,"rollout.name")," 在统一 worker 内分派后端。配置是 HybridFlow 可插拔思想的承载层。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"verl-lesson-03-single-controller.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 3 课：single controller 混合控制器")),
+            h("a",{href:"verl-lesson-05-core-algos.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 5 课：RL 数学 core_algos"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

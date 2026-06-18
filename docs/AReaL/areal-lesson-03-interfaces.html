@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 逐文件精读 · 第 3 课：抽象基类</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:830px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .mgroup{margin:14px 0;}
+    .mgroup h4{margin-bottom:6px;}
+    .mrow{display:grid;grid-template-columns:minmax(220px,260px) 1fr;gap:12px;padding:6px 0;border-bottom:1px solid #1c2530;font-size:12.5px;align-items:baseline;}
+    .mrow .ml a{margin:0;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:820px){h1{font-size:32px;}.mrow{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 3 课</p><h1>抽象基类</h1><p>能访问 CDN 时切换为交互版。本课讲 engine_api.py（TrainEngine / InferenceEngine）、workflow_api.py、scheduler_api.py、reward_api.py 的全部接口方法。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const AREAL="vscode://file/Users/xinyu/Code/Agentic-RL/AReaL/";
+  function srcUrl(p,l){return AREAL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Protocol","Literal","Optional","Callable","str","int","float","bool","dict","list","tuple","Tensor","torch","ModelRequest","ModelResponse","WeightUpdateMeta","InferenceEngine","TrainEngine","Future"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","areal-lesson-01-foundations.html"],[2,"数据契约","areal-lesson-02-contracts.html"],[3,"抽象基类","areal-lesson-03-interfaces.html"],[4,"RL 数学原语","areal-lesson-04-rl-math.html"],[5,"数据与奖励","areal-lesson-05-data-reward.html"],[6,"模型层","areal-lesson-06-models.html"],[7,"训练引擎","areal-lesson-07-train-engine.html"],[8,"推理引擎","areal-lesson-08-inference-engine.html"],[9,"Workflow","areal-lesson-09-workflow.html"],[10,"Trainer","areal-lesson-10-trainer.html"],[11,"编排运行时","areal-lesson-11-orchestration.html"],[12,"进阶与收尾","areal-lesson-12-advanced.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"areal-course-index.html"},"AReaL",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":(L[2]==="#"?"lchip todo":"lchip done");return L[2]==="#"?h("span",{key:L[0],className:cls},L[0]+" "+L[1]):h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // 接口方法浏览器数据：文件 -> 类 -> 分组方法
+  const IFACES={
+    train:{file:"areal/api/engine_api.py",cls:"TrainEngine",line:32,
+      intro:"训练后端的抽象基类。FSDP / Megatron / Archon 各自实现它，算法层只调这些方法，不感知底层分片。",
+      groups:[
+        {g:"生命周期与分布式",ms:[["create_process_group",33,"建分布式通信组"],["initialize",44,"加载模型、初始化分布式环境"],["initialized",144,"是否已初始化（property）"],["data_parallel_group",59,"DP 通信组（property）"],["is_data_parallel_head",106,"是否 DP 头节点"],["destroy",141,"释放 GPU 资源"]]},
+        {g:"前向 / 训练 / 评测",ms:[["train",156,"切训练模式"],["train_batch",363,"前向+反向+optimizer step，返回统计"],["eval_batch",401,"仅前向评测（no_grad）"],["forward_batch",440,"无梯度前向，返回 logprob/value"],["forward_backward_batch",338,"micro-batch 前反向流水"]]},
+        {g:"优化器",ms:[["optimizer_zero_grad",313,"清梯度"],["optimizer_step",318,"一步优化，返回 grad_norm/lr"],["lr_scheduler_step",329,"推进学习率"]]},
+        {g:"权重与版本",ms:[["update_weights",175,"把权重推给推理引擎（阻塞）"],["connect_engine",185,"在线训练时连接推理引擎"],["set_version",269,"设当前权重版本"],["get_version",280,"取版本"]]},
+        {g:"存取与卸载",ms:[["save",291,"存权重与优化器状态"],["load",302,"加载"],["onload",502,"CPU→GPU"],["offload",506,"GPU→CPU"]]},
+        {g:"rollout 与观测",ms:[["rollout_batch",197,"离线整批 rollout"],["prepare_batch",232,"带 staleness 的在线取批"],["export_stats",486,"导出统计（跨 DP all-reduce）"],["get_device_stats",510,"显存快照"]]}
+      ]},
+    infer:{file:"areal/api/engine_api.py",cls:"InferenceEngine",line:547,
+      intro:"推理后端的抽象基类。SGLang / vLLM 各自实现它，封装成异步生成器。注意权重更新方法返回 Future（非阻塞）。",
+      groups:[
+        {g:"生命周期与服务",ms:[["initialize",548,"起后台线程做异步分布式推理"],["workflow_executor",579,"返回 WorkflowExecutor（property）"],["launch_server",584,"子进程拉起本地推理服务"],["teardown_server",616,"关闭服务"],["destroy",563,"释放资源"]]},
+        {g:"生成",ms:[["agenerate",620,"异步生成一条 ModelResponse（async）"]]},
+        {g:"提交 / 等待（异步 rollout）",ms:[["submit",720,"提交任务，返回 task_id"],["wait",769,"等够 count 条已接受轨迹"],["wait_for_task",798,"等指定 task_id"],["rollout_batch",826,"整批提交并等全部"],["prepare_batch",869,"带 staleness 的在线取批（首调缓存生成器）"]]},
+        {g:"权重更新（返回 Future）",ms:[["init_weights_update_group",635,"建权重更新进程组"],["update_weights_from_distributed",666,"NCCL 广播接收（非阻塞）"],["update_weights_from_disk",685,"从磁盘加载（非阻塞）"],["set_version",700,"设版本"],["get_version",710,"取版本"]]},
+        {g:"暂停 / 恢复 / 卸载",ms:[["pause_generation",930,"权重更新期间暂停生成"],["continue_generation",937,"恢复生成"],["pause",941,"暂停任务提交"],["resume",948,"恢复提交"],["offload",952,"GPU→CPU"],["onload",956,"CPU→GPU"]]},
+        {g:"观测",ms:[["export_stats",966,"导出 workflow 标量指标"]]}
+      ]},
+    workflow:{file:"areal/api/workflow_api.py",cls:"RolloutWorkflow",line:14,
+      intro:"任务层接口。一个 episode 怎么跑由它定义。返回值有三种：轨迹 dict、None（拒绝该轨迹）、或 OpenAI 兼容的逐 token 结构。换任务只改 workflow。",
+      groups:[
+        {g:"RolloutWorkflow（abc）",ms:[["arun_episode",16,"跑一个 episode，返回轨迹 dict | None | 逐token结构（async）"]]},
+        {g:"AgentWorkflow（已弃用）",ms:[["run",77,"旧 agent 接口；现已改为鸭子类型：任何带 async run(data,**kw) 的对象都可"]]},
+        {g:"类型与编排",ms:[["WorkflowLike",110,"联合类型：实例 / 类 / import 路径字符串 / 任意带 run 的对象"]]}
+      ]},
+    sched:{file:"areal/api/scheduler_api.py",cls:"Scheduler",line:43,
+      intro:"集群编排接口。管理 worker 进程的生命周期、资源分配、以及对远端引擎的 RPC 调用。Local / Ray / Slurm 各自实现。",
+      groups:[
+        {g:"数据结构",ms:[["Worker",14,"一个 worker：id / ip / worker_ports / engine_ports"],["Job",36,"一个角色作业：role / replicas / tasks / scheduling_strategy"]]},
+        {g:"worker 生命周期",ms:[["n_gpus_per_node",51,"每节点 GPU 数（property）"],["create_workers",57,"创建并启动 worker，返回 id 列表"],["get_workers",84,"等 worker 就绪，返回 Worker 对象"],["delete_workers",114,"优雅停止（reverse_order 保护 TCPStore 持有者）"],["fork_workers",144,"从已有 worker fork 新的"]]},
+        {g:"引擎 RPC",ms:[["create_engine",181,"在远端 worker 上按 import 字符串实例化引擎（async）"],["set_worker_env",226,"建引擎前设环境变量（async）"],["call_engine",239,"同步调用引擎方法（数据面）"],["async_call_engine",285,"异步调用（并发场景）"]]}
+      ]},
+    reward:{file:"areal/api/reward_api.py",cls:"reward 契约",line:40,
+      intro:"奖励函数契约。模块级 reward_fn 是建议模板（无强制签名）；AsyncRewardWrapper 把同步 reward 包成带超时、重试、进程池的异步调用。",
+      groups:[
+        {g:"模板",ms:[["reward_fn",40,"建议签名：(prompt, completions, prompt_ids, completion_ids, **kw) -> float"]]},
+        {g:"AsyncRewardWrapper",ms:[["AsyncRewardWrapper",62,"包同步 reward：超时 15s、重试 3 次、ProcessPoolExecutor"],["__call__",141,"异步调用，最终超时返回 0（async）"]]}
+      ]}
+  };
+  const TAB_ORDER=[["train","TrainEngine"],["infer","InferenceEngine"],["workflow","RolloutWorkflow"],["sched","Scheduler"],["reward","Reward"]];
+
+  function MethodBrowser(){
+    const [k,setK]=useState("train");const d=IFACES[k];
+    return h("div",null,
+      h("div",{className:"tabstrip"},TAB_ORDER.map(function(t){return h("div",{key:t[0],className:"tab"+(t[0]===k?" active":""),onClick:function(){setK(t[0]);}},t[1]);})),
+      h("div",{className:"card"},
+        h("div",{className:"card-title"},h("span",{className:"pill purple"},"abc"),h("code",null,d.file.split("/").pop()+":"+d.line+" · "+d.cls)),
+        h("p",{style:{marginTop:8}},d.intro),
+        d.groups.map(function(grp,gi){return h("div",{key:gi,className:"mgroup"},
+          h("h4",null,grp.g),
+          grp.ms.map(function(m,mi){return h("div",{key:mi,className:"mrow"},
+            h("div",{className:"ml"},h(Src,{label:m[0]+":"+m[1],path:d.file,line:m[1]})),
+            h("div",null,m[2]));
+          })
+        );}),
+        h("div",{style:{marginTop:8}},h(Src,{label:"打开整文件",path:d.file,line:d.line}))
+      )
+    );
+  }
+
+  function RationaleMath(){const ref=useTypeset("rat");
+    return h("div",{ref:ref},
+      h("p",null,"为什么整层都是抽象基类，而不直接写实现？因为算法迭代频繁、系统层稳定。把两者用接口隔开，换推理后端（SGLang↔vLLM）、换训练后端（FSDP↔Megatron）时，算法代码一行都不用动。形式化地说，算法依赖的是抽象 ",h("code",null,"E"),"，而非具体实现 ",h("code",null,"E_{fsdp}, E_{megatron}"),"："),
+      h(Formula,{cap:"依赖倒置：算法只依赖抽象"},"$$ \\text{PPOActor} \\;\\longrightarrow\\; \\text{TrainEngine (abc)} \\;\\longleftarrow\\; \\{\\,\\text{FSDPEngine},\\ \\text{MegatronEngine},\\ \\text{ArchonEngine}\\,\\} $$"),
+      h("p",null,"AReaL 的代码规范明确要求：组合优于继承，继承层级不超过两层，少用 mixin。所以 PPOActor 不是去继承某个引擎，而是 ",h("strong",null,"持有")," 一个 TrainEngine 实例（组合）。WorkflowExecutor 也是这样：它是一个具体编排类，持有 InferenceEngine 与 StalenessManager，而不是继承它们。"),
+      h(Code,null,"class PPOActor:\n    def __init__(self, config, engine: TrainEngine):  # 组合：持有，不继承\n        self.engine = engine\n\n    def update(self, data):\n        return self.engine.train_batch(data, loss_fn=ppo_actor_loss_fn)"),
+      h("div",{className:"note"},"InferenceEngine 的并发接口 submit/wait 背后是一个具体的编排者 WorkflowExecutor（在 ",h("code",null,"areal/infra/workflow_executor.py:746"),"），它管理任务分发、staleness、轨迹校验与结果过滤。第 9、11 课会展开。"),
+      h("div",null,h(Src,{label:"WorkflowExecutor",path:"areal/infra/workflow_executor.py",line:746}),h(Src,{label:"AReaL code-style 规范",path:".claude/rules/code-style.md",line:null}))
+    );
+  }
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:3}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 3 课 / 共 12 · api/ 接口骨架"),
+          h("h1",null,"抽象基类：每个后端都要填的那张骨架"),
+          h("p",{className:"lead"},"第 2 课定了大家说的“词”（数据契约），这一课定“句法”：TrainEngine、InferenceEngine、RolloutWorkflow、Scheduler 四张抽象基类，规定了每个后端必须提供哪些方法、什么签名。算法层只对着这些抽象编程，于是换后端不动算法。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"areal/api/engine_api.py"),"（TrainEngine@32、InferenceEngine@547）、",h("code",null,"workflow_api.py"),"、",h("code",null,"scheduler_api.py"),"、",h("code",null,"reward_api.py"),"。下面是接口方法浏览器，点 Tab 切换四张抽象基类，每个方法都可点开源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"接口浏览器"),
+          h("h2",null,"四张抽象基类的全部方法"),
+          h(MethodBrowser)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"设计出发点"),
+          h("h2",null,"为什么这一整层是抽象"),
+          h(RationaleMath)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"接口即契约"),"：TrainEngine 与 InferenceEngine 把“训练后端”“推理后端”收成两张方法表，任何实现填满即可替换。"),
+            h("li",null,h("strong",null,"非阻塞与阻塞分清"),"：推理侧权重更新返回 Future，生成是 async；训练侧 update_weights 阻塞。异步 RL 的时序正确性从签名就开始约束。"),
+            h("li",null,h("strong",null,"组合优于继承"),"：算法持有引擎、编排者持有引擎，继承不超过两层。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"areal-lesson-02-contracts.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 2 课：数据契约与配置")),
+            h("a",{href:"areal-course-index.html"},h("div",{className:"faint"},"下一课（待建） →"),h("strong",null,"第 4 课：RL 数学原语"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

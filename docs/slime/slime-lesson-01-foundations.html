@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>slime 逐文件精读 · 第 1 课：地基与双引擎全局观</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 1 课</p><h1>地基与双引擎全局观</h1><p>能访问 CDN 时切换为交互版。本课讲清 slime 的设计哲学（Megatron 训练 + SGLang rollout + Data Buffer 三者同流），两个训练入口 train.py 与 train_async.py 的同步与异步骨架，Ray 作为编排基座的角色，以及 slime/utils 下的非 RL 工具箱。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const SLIME="vscode://file/Users/xinyu/Code/Agentic-RL/slime/";
+  function srcUrl(p,l){return SLIME+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","Sample","Args","RolloutController","RolloutManager","RayTrainGroup","RayActor","SglangEngine","Box","ray","asyncio","Timer","ParamInfo","RolloutBatch"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与双引擎","slime-lesson-01-foundations.html"],[2,"统一配置","slime-lesson-02-config.html"],[3,"RL 数学原语","slime-lesson-03-rl-math.html"],[4,"数据与 Buffer","slime-lesson-04-data-buffer.html"],[5,"Megatron 后端","slime-lesson-05-megatron.html"],[6,"SGLang 后端","slime-lesson-06-sglang.html"],[7,"权重同步","slime-lesson-07-weight-sync.html"],[8,"Rollout 与异步","slime-lesson-08-rollout-async.html"],[9,"Agent 层","slime-lesson-09-agent.html"],[10,"Ray 编排","slime-lesson-10-orchestration.html"],[11,"miles 增量","slime-lesson-11-miles-delta.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"slime-course-index.html"},"slime",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 设计哲学：双引擎全局观 =====
+  function PhilosophySection(){
+    return h("div",null,
+      h("p",null,"读 slime 之前，先建立一张全局图。slime 是一个面向强化学习扩展（RL scaling）的大模型后训练框架，把两件事放进同一套数据流里：用 ",h("strong",{className:"hl-purple"},"Megatron-Core")," 做训练（参数更新），用 ",h("strong",{className:"hl-teal"},"SGLang")," 做 rollout（推理与采样），中间用 ",h("strong",{className:"hl-amber"},"Data Buffer")," 作为桥接模块管理 prompt 初始化、自定义数据与生成方法。三者共用同一条 training / rollout / Data Buffer 路径，不退化成彼此割裂的训练器、推理服务与 agent 框架的堆叠。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"training"),"Megatron"),
+          h("p",null,"主训练流程。从 Data Buffer 读取数据，训练结束后把更新后的参数同步给 rollout 模块。第 5 课展开五维并行与权重转换。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"rollout"),"SGLang + router"),
+          h("p",null,"生成新数据（含奖励、verifier 输出）并写入 Data Buffer。自定义 generate 函数可在外层包多轮循环、工具调用、环境/沙箱交互与基于 verifier 的奖励。第 6、8 课展开。")
+        )
+      ),
+      h("p",null,"slime 之所以被称为经过大规模训练检验（battle-tested）的框架，是因为它是 ",h(Ext,{href:"https://z.ai/blog/glm-5.2"},"GLM-5.2"),"、GLM-5.1、GLM-5、GLM-4.x 系列模型背后的 RL 框架，验证的是完整的后训练循环，而非孤立的示例脚本。除 GLM 系列外，它还支持 Qwen3.x、DeepSeek V3 系列与 Llama 3。"),
+      h("h3",null,"四条设计主线（为什么这么设计）"),
+      h("ul",null,
+        h("li",null,h("strong",null,"原生参数透传（native pass-through）"),"：slime 直接读取 Megatron 参数，因此 Megatron 侧的并行、优化器、checkpoint、模型选项无需包装代码即可使用；已安装 SGLang 的每一个参数都能通过加 ",h("code",null,"--sglang-")," 前缀使用，例如把 ",h("code",null,"--mem-fraction-static")," 作为 ",h("code",null,"--sglang-mem-fraction-static")," 传入。这样上游引擎的新优化能直接获得，而不必在 slime 内部再加一层抽象。"),
+        h("li",null,h("strong",null,"刻意只选一个 rollout 后端"),"：多后端框架往往要在若干推理引擎的公共子集上做抽象，从而掩盖各引擎最强的能力。slime 选择只深度优化 SGLang，于是能直接使用 SGLang 特有的服务、路由、缓存、PD 分离与权重同步行为，而不是把多个推理引擎压成一个最小公共抽象。"),
+        h("li",null,h("strong",null,"数据生成自由度最大化"),"：数学、代码、检索、工具、沙箱、verifier、环境、多智能体系统与长程 agentic 工作流，都作为数据生成或奖励工作流接入，不会派生（fork）训练内核。第 9 课展开 Agent 层。"),
+        h("li",null,h("strong",null,"以正确性为先"),"：RL 的 bug 往往是静默的。slime 保持数据流显式，支持独立的 rollout-only 与 train-only 调试路径，并把可复现性、容错、追踪、性能剖析与 CI 作为一等工程目标。")
+      ),
+      h("div",{className:"note"},"本课只建立全局观与读地基文件。Megatron 后端见第 5 课、SGLang 后端见第 6 课、权重同步见第 7 课、rollout 与异步见第 8 课、Agent 层见第 9 课、Ray 完整编排（含 ",h("code",null,"ray/rollout.py")," 控制器）见第 10 课。"),
+      h("div",null,h(Src,{label:"README.md（设计哲学）",path:"README.md"}),h(Src,{label:"README_zh.md",path:"README_zh.md"}),h(Src,{label:"架构图 imgs/arch.png",path:"imgs/arch.png"}),h(Ext,{href:"https://thudm.github.io/slime/"},"slime 官方文档"),h(Ext,{href:"https://lmsys.org/blog/2025-07-09-slime/"},"slime 愿景博客"))
+    );
+  }
+
+  // ===== 两个入口骨架：同步 vs 异步 =====
+  const ENTRY=[
+    {key:"common",name:"两者共享的前半段",render:function(){return [
+      h("p",null,"两个入口（",h("code",null,"train.py")," 与 ",h("code",null,"train_async.py"),"）的开头几乎一致：配置日志、用 Ray 分配 GPU 的 placement group、创建 rollout manager（内部含 SGLang 引擎）、创建 actor 与可选的 critic 训练组，然后把 actor 权重推一次给 rollout。差别只在主循环。"),
+      h(Code,null,"# train.py / train_async.py 的共同前半段\nconfigure_logger()\npgs = create_placement_groups(args)            # Ray 分配 GPU\ninit_tracking(args)\n# 先建 rollout manager 才能据此算出 num_rollout\nrollout_manager, num_rollout_per_epoch = create_rollout_manager(args, pgs[\"rollout\"])\n# 建 actor 与可选 critic 训练组\nactor_model, critic_model = create_training_models(args, pgs, rollout_manager)\n# 权重加载后总是先推一次给 rollout, 保证推理侧与训练侧一致\nactor_model.update_weights()"),
+      h("p",null,"这里出现的三个工厂函数都在 ",h("code",null,"slime/ray/placement_group.py")," 里：",h("code",null,"create_placement_groups")," 按 actor/rollout 是否共置（colocate）、是否仅调试某一侧来决定 GPU 布局；",h("code",null,"create_rollout_manager")," 启动 SGLang 服务并据此回填 ",h("code",null,"num_rollout"),"；",h("code",null,"create_training_models")," 通过 ",h("code",null,"RayTrainGroup")," 在 placement group 上分配 actor/critic 的 Ray actor。"),
+      h("div",null,h(Src,{label:"create_placement_groups",path:"slime/ray/placement_group.py",line:120}),h(Src,{label:"create_rollout_manager",path:"slime/ray/placement_group.py",line:215}),h(Src,{label:"create_training_models",path:"slime/ray/placement_group.py",line:151}))
+    ];}},
+    {key:"sync",name:"同步循环 train.py",render:function(){return [
+      h("p",null,"同步循环按 rollout_id 顺序推进，每一步严格串行：生成 rollout 数据 → 训练一步 → 把新权重同步回 rollout。下一步的生成必须等当前步的训练与权重同步完成后才开始，因此训练用的永远是最新一版（on-policy）权重生成的数据。"),
+      h(Code,null,"# train.py 主循环 (略作精简)\nfor rollout_id in range(args.start_rollout_id, args.num_rollout):\n    if args.eval_interval is not None and rollout_id == 0 and not args.skip_eval_before_train:\n        ray.get(rollout_manager.eval.remote(rollout_id))\n\n    # 1) 生成本步 rollout 数据\n    rollout_data_ref = ray.get(rollout_manager.generate.remote(rollout_id))\n\n    # 2) 训练一步 (actor, 可选 critic)\n    if args.use_critic:\n        value_refs = critic_model.async_train(rollout_id, rollout_data_ref)\n        ...\n    else:\n        ray.get(actor_model.async_train(rollout_id, rollout_data_ref))\n\n    if should_run_periodic_action(rollout_id, args.save_interval, num_rollout_per_epoch, args.num_rollout):\n        save(rollout_id)\n\n    # 3) 把训练后的权重同步给 rollout\n    actor_model.update_weights()\n\n    if should_run_periodic_action(rollout_id, args.eval_interval, num_rollout_per_epoch):\n        ray.get(rollout_manager.eval.remote(rollout_id))"),
+      h("p",null,"同步循环也是 colocate（actor 与 rollout 共用同一批 GPU）模式的默认路径：rollout 与训练交替占用显存，靠 ",h("code",null,"offload"),"/",h("code",null,"onload")," 在两者之间切换。",h("code",null,"should_run_periodic_action")," 统一判断本步是否触发 eval/save（按 interval 或 epoch 边界，最后一步强制触发）。"),
+      h("div",null,h(Src,{label:"train.py · train()",path:"train.py",line:9}),h(Src,{label:"主循环",path:"train.py",line:63}),h(Src,{label:"generate 调用",path:"train.py",line:67}),h(Src,{label:"update_weights",path:"train.py",line:89}),h(Src,{label:"should_run_periodic_action",path:"slime/utils/misc.py",line:75}))
+    ];}},
+    {key:"async",name:"异步循环 train_async.py",render:function(){return [
+      h("p",null,"异步循环的核心改动是把“下一步的生成”提前发起：在处理第 ",h("code",null,"rollout_id")," 步训练之前，就先对第 ",h("code",null,"rollout_id+1")," 步调用 ",h("code",null,"generate.remote(...)")," 拿到一个 future，让生成与训练重叠进行。这样训练就不必干等生成，吞吐显著提高，代价是训练用的数据可能由上一版（或更旧）权重生成，即 off-policy。"),
+      h(Code,null,"# train_async.py: 不支持 colocate\nassert not args.colocate, \"Colocation is not supported for async training.\"\n...\n# 先发起第一步的生成\nrollout_data_next_future = rollout_manager.generate.remote(args.start_rollout_id)\nfor rollout_id in range(args.start_rollout_id, args.num_rollout):\n    # 取回上一次发起的生成结果\n    if rollout_data_next_future is not None:\n        rollout_data_curr_ref = ray.get(rollout_data_next_future)\n\n    # 提前发起下一步的生成 (与本步训练重叠)\n    if rollout_id + 1 < args.num_rollout:\n        rollout_data_next_future = rollout_manager.generate.remote(rollout_id + 1)\n\n    # 用当前数据训练一步\n    ray.get(actor_model.async_train(rollout_id, rollout_data_curr_ref))\n    ...\n    # 按 update_weights_interval 周期性同步权重\n    if (rollout_id + 1) % args.update_weights_interval == 0:\n        # 同步权重前先把在途生成取回, 避免在生成中途更新权重\n        rollout_data_curr_ref = ray.get(x) if (x := rollout_data_next_future) is not None else None\n        rollout_data_next_future = None\n        actor_model.update_weights()"),
+      h("p",null,"两个关键细节：第一，异步模式断言 ",h("code",null,"not args.colocate"),"，因为生成与训练要同时占 GPU，必须各自独占一组卡（disaggregated）；第二，权重不再每步都同步，而是按 ",h("code",null,"update_weights_interval")," 周期同步，且同步前必须把在途的生成 future 取回，防止在一次生成的中途替换权重而产生数据版本混乱。"),
+      h(Formula,{cap:"异步带来的权重陈旧度（staleness）：训练所用数据由 k 步之前的权重生成"},"$$ s = \\theta_{\\text{train}} - \\theta_{\\text{gen}} \\le \\text{update\\_weights\\_interval} $$"),
+      h("p",null,"上式只是一个直觉性的说明：",h("code",null,"update_weights_interval")," 越大，重叠收益越高，但训练数据相对当前策略越陈旧，算法上需要重要性采样修正（第 3 课的 RL 数学原语处理）。完全异步（fully async）模式可让陈旧度进一步放宽，见 ",h("code",null,"examples/fully_async"),"。"),
+      h("div",null,h(Src,{label:"train_async.py · train()",path:"train_async.py",line:10}),h(Src,{label:"提前发起生成",path:"train_async.py",line:39}),h(Src,{label:"周期同步权重",path:"train_async.py",line:69}),h(Src,{label:"colocate 断言",path:"train_async.py",line:11}))
+    ];}}
+  ];
+  function EntryExplorer(){const [s,setS]=useState(0);const d=ENTRY[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},ENTRY.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== Ray 作编排基座 =====
+  function RaySection(){
+    return h("div",null,
+      h("p",null,"slime 把 ",h("strong",null,"Ray actor")," 作为编排基座。原因有三：其一，训练（Megatron 进程组）与推理（SGLang 服务）天然是跨进程、跨节点的多组件系统，Ray 提供统一的远程调用与对象传递；其二，",h("code",null,"placement group")," 能把一组 GPU bundle 锁定，再按物理拓扑（节点 IP、GPU id）排序，使逻辑 rank 尽量落在物理相邻、走更快互联的卡上；其三，Ray 的 named/detached actor 适合承载长生命周期的服务（如 SGLang 引擎、HTTP POST 分发器、全局锁）。"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"RayActor 基类"),
+          h("p",null,h("code",null,"RayActor")," 是所有训练/服务 actor 的极薄基类，只提供两件事：探测本节点 IP 与一段连续空闲端口（用于建立 torch 分布式的 master 地址），以及读回已记录的 ",h("code",null,"master_addr/master_port"),"。各具体 actor（如训练 worker、SGLang server）在它之上扩展。"),
+          h(Code,null,"class RayActor:\n    @staticmethod\n    def _get_current_node_ip_and_free_port(start_port=10000, consecutive=1):\n        return get_current_node_ip(), get_free_port(start_port=start_port, consecutive=consecutive)\n\n    def get_master_addr_and_port(self):\n        return self.master_addr, self.master_port"),
+          h("div",null,h(Src,{label:"RayActor",path:"slime/ray/ray_actor.py",line:4}))
+        ),
+        h("div",null,
+          h("h4",null,"ray/utils.py 的编排工具"),
+          h("ul",null,
+            h("li",null,h("code",null,"NOSET_VISIBLE_DEVICES_ENV_VARS_LIST"),"：枚举各类加速器（CUDA/ROCm/Ascend/HPU/Neuron/TPU/oneAPI）的 ",h("code",null,"RAY_EXPERIMENTAL_NOSET_*")," 变量，让 slime 自己管理可见设备而非交给 Ray。"),
+            h("li",null,h("code",null,"add_default_ray_env_vars"),"：把默认环境变量（如关闭 ",h("code",null,"RAY_USE_UVLOOP"),"，规避 uvloop 集成导致的间歇性异步 actor 问题）并入用户的 env_vars。"),
+            h("li",null,h("code",null,"Lock"),"：一个最小的 Ray 远程互斥锁 actor，rollout manager 用它在并发操作（如权重更新与生成）之间串行化。"),
+            h("li",null,h("code",null,"get_physical_gpu_id"),"：读当前 CUDA 设备的 UUID，用于权重同步时建立物理 GPU 映射。")),
+          h("div",null,h(Src,{label:"add_default_ray_env_vars",path:"slime/ray/utils.py",line:32}),h(Src,{label:"Lock",path:"slime/ray/utils.py",line:47}),h(Src,{label:"NOSET_VISIBLE_DEVICES 列表",path:"slime/ray/utils.py",line:16}))
+        )
+      ),
+      h("p",null,"placement group 的实现要点：",h("code",null,"_create_placement_group")," 申请 ",h("code",null,"num_gpus")," 个 ",h("code",null,"{GPU:1, CPU:1}")," bundle（PACK 策略），轮询等待调度就绪（等待期间周期性打印已注册/可用 GPU 数，便于观察 autoscaler 拉起节点），再用临时 ",h("code",null,"InfoActor")," 收集每个 bundle 的 (节点 IP, GPU id) 并按物理拓扑排序，得到逻辑索引到物理 GPU 的稳定映射。",h("code",null,"create_training_models")," 在此之上用 ",h("code",null,"RayTrainGroup")," 分配 actor/critic 训练组（每个 actor 占 0.4 GPU 以便共置）。"),
+      h("div",{className:"note"},"完整的 rollout 编排控制器 ",h("code",null,"slime/ray/rollout.py")," 里的 ",h("code",null,"RolloutManager")," 与 ",h("code",null,"RolloutServer/ServerGroup")," 是第 10 课的主题；本课只需知道它由 ",h("code",null,"create_rollout_manager")," 创建，并对外暴露 ",h("code",null,"generate"),"/",h("code",null,"eval"),"/",h("code",null,"offload")," 等远程方法。",h("code",null,"RayTrainGroup")," 的 ",h("code",null,"async_train"),"/",h("code",null,"update_weights")," 等方法在第 5、7 课展开。"),
+      h("div",null,h(Src,{label:"_create_placement_group",path:"slime/ray/placement_group.py",line:42}),h(Src,{label:"RayTrainGroup",path:"slime/ray/actor_group.py",line:10}),h(Src,{label:"async_train",path:"slime/ray/actor_group.py",line:126}),h(Src,{label:"update_weights",path:"slime/ray/actor_group.py",line:150}),h(Src,{label:"RolloutManager（第10课）",path:"slime/ray/rollout.py",line:420}),h(Ext,{href:"https://docs.ray.io/"},"Ray 文档"))
+    );
+  }
+
+  // ===== utils 非 RL 工具箱 =====
+  const UTILS=[
+    {n:"logging_utils.py",d:"统一配置标准库 logging 的格式与级别（configure_logger，含文件名:行号），并封装 wandb / TensorBoard 的初始化、记录与收尾（init_tracking / log / finish_tracking）。",links:[["configure_logger","slime/utils/logging_utils.py",12],["init_tracking","slime/utils/logging_utils.py",27]]},
+    {n:"timer.py",d:"单例 Timer（基于 SingletonMeta）累计各阶段耗时，提供 timer 装饰器与上下文管理器、inverse_timer（临时停表）、with_defer（finally 延迟回调）。rank 0 在 start/end 时打印耗时。",links:[["Timer","slime/utils/timer.py",15],["timer","slime/utils/timer.py",55]]},
+    {n:"async_utils.py",d:"在后台线程里跑一个常驻 asyncio 事件循环（AsyncLoopThread），run(coro) 把协程调度上去并阻塞等待结果。让同步代码能调用异步的 HTTP/rollout 接口。",links:[["AsyncLoopThread","slime/utils/async_utils.py",8],["run","slime/utils/async_utils.py",34]]},
+    {n:"distributed_utils.py",d:"分布式底座：init/get_gloo_group 维护一个 Gloo 组；init_process_group 复制自 PyTorch 以允许创建多个主组（含 2.6 起 pg_options→backend_options 的版本兼容）；distributed_masked_whiten 跨进程组做带掩码的全局白化（advantage 归一化会用到）。",links:[["init_process_group","slime/utils/distributed_utils.py",38],["distributed_masked_whiten","slime/utils/distributed_utils.py",94]]},
+    {n:"http_utils.py",d:"rollout 侧的 HTTP 通信：端口探测（is_port_available/find_available_port）、主机 IP 解析（get_host_info，UDP 探测优先、支持 IPv6）、带重试的异步 post/get、可选的基于 Ray 的分布式 POST 分发（每节点多个 _HttpPosterActor）、启动 sglang-router。",links:[["post","slime/utils/http_utils.py",291],["get_host_info","slime/utils/http_utils.py",42],["init_http_client","slime/utils/http_utils.py",213]]},
+    {n:"memory_utils.py",d:"显存工具：clear_memory（synchronize + gc + empty_cache，可选清主机内存）、available_memory 汇总 GPU 与主机的 total/free/allocated/reserved、print_memory 在各 rank 打印带标签的显存快照。",links:[["clear_memory","slime/utils/memory_utils.py",11],["print_memory","slime/utils/memory_utils.py",41]]},
+    {n:"misc.py",d:"杂项地基：load_function 按字符串路径动态导入函数（自定义 rollout/reward 接口的入口）、SingletonMeta 单例元类、should_run_periodic_action（eval/save 周期判断）、Box 单值容器、group_by 与 chunk_named_params_by_size（按字节大小分桶，权重同步用）。",links:[["load_function","slime/utils/misc.py",7],["should_run_periodic_action","slime/utils/misc.py",75],["chunk_named_params_by_size","slime/utils/misc.py",124]]},
+    {n:"types.py",d:"核心数据契约：Sample 描述一条 rollout 样本（prompt/tokens/response/reward/loss_mask/status/spec_info 等，含 to_dict/from_dict 序列化），ParamInfo 描述一个待同步参数的元信息，RolloutBatch 是沿 rollout→训练路径传递的 dict 批次类型。",links:[["Sample","slime/utils/types.py",9],["ParamInfo","slime/utils/types.py",188],["RolloutBatch","slime/utils/types.py",200]]},
+    {n:"profile_utils.py",d:"性能与显存剖析：TrainProfiler 在指定 profile_target 上挂 torch.profiler 与显存历史记录；_TorchMemoryProfiler 注册 OOM observer 在显存耗尽时自动 dump 快照；可选 memray 后端。",links:[["TrainProfiler","slime/utils/profile_utils.py",13],["_TorchMemoryProfiler","slime/utils/profile_utils.py",103]]}
+  ];
+  function UtilsSection(){
+    return h("div",null,
+      h("p",null,"slime/utils/ 是跨领域的非 RL 工具箱。下面逐个说明它们的真实角色（点开看 ",h("code",null,"Src")," 源码行）。RL 相关的 ",h("code",null,"ppo_utils.py"),"、",h("code",null,"seqlen_balancing.py"),"、",h("code",null,"mask_utils.py"),"、",h("code",null,"dp_schedule.py"),"、",h("code",null,"routing_replay.py")," 属于第 3 课（RL 数学原语），",h("code",null,"arguments.py")," 属于第 2 课（统一配置），此处只作前置说明，不展开。"),
+      h("div",{className:"linkgrid"},UTILS.map(function(u,i){return h("div",{className:"linkcard",key:i},
+        h("div",{className:"lt"},h("code",null,u.n)),
+        h("div",{className:"ld"},u.d),
+        h("div",null,u.links.map(function(l,j){return h(Src,{key:j,label:l[0],path:l[1],line:l[2]});})));}))
+      ,
+      h("div",{className:"note"},"观测性三件套 ",h("code",null,"trace_utils.py"),"、",h("code",null,"wandb_utils.py"),"、",h("code",null,"tensorboard_utils.py")," 负责追踪与实验记录，放到后续观测性专题讲。",h("code",null,"logging_utils.py")," 的 ",h("code",null,"init_tracking")," 即是它们的统一入口。")
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"Ray 文档",d:"actor、placement group、调度与对象传递",href:"https://docs.ray.io/"},
+    {t:"SGLang 文档",d:"slime 唯一的 rollout 后端，参数透传的来源",href:"https://docs.sglang.ai/"},
+    {t:"Megatron-Core 文档",d:"slime 的训练后端，参数直接透传",href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},
+    {t:"GLM-5.2 博客",d:"slime 检验自此类前沿模型的完整后训练",href:"https://z.ai/blog/glm-5.2"},
+    {t:"slime 官方文档",d:"快速上手、用法、进阶与开发者指南",href:"https://thudm.github.io/slime/"},
+    {t:"slime 愿景博客",d:"SGLang-Native 后训练框架的设计动机",href:"https://lmsys.org/blog/2025-07-09-slime/"},
+    {t:"快速上手（本机）",d:"docs/en/get_started/quick_start.md",href:srcUrl("docs/en/get_started/quick_start.md",null)},
+    {t:"用法文档（本机）",d:"docs/en/get_started/usage.md",href:srcUrl("docs/en/get_started/usage.md",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:1}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 1 课 / 共 11 · 地基与全局观"),
+          h("h1",null,"地基与双引擎全局观"),
+          h("p",{className:"lead"},"这是全系列的校准课，先把 slime 的全貌讲清：Megatron 训练 + SGLang rollout + Data Buffer 同流的设计哲学，两个训练入口 train.py（同步）与 train_async.py（异步）的骨架与对比，Ray 作为编排基座的角色，以及 slime/utils 下的非 RL 工具箱。读完这一课，后续每一课都能在这张全局图上找到自己的位置。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"README.md")," 设计哲学、",h("code",null,"train.py")," + ",h("code",null,"train_async.py")," 入口、",h("code",null,"slime/ray/")," 的 ray_actor / utils / placement_group、",h("code",null,"slime/utils/")," 的非 RL 工具。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/slime")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"README · 设计哲学"),
+          h("h2",null,"双引擎全局观：先看见整个系统"),
+          h(PhilosophySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"train.py · train_async.py"),
+          h("h2",null,"两个入口骨架：同步 vs 异步"),
+          h("p",null,"slime 有两个训练入口，共享前半段的初始化，只在主循环上分叉。点 Tab 切换：先看共享部分，再对比同步与异步循环。这组对比是全课程的基础，后续所有内容都建立在它之上。"),
+          h(EntryExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime/ray"),
+          h("h2",null,"Ray 作编排基座"),
+          h(RaySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime/utils（非 RL 部分）"),
+          h("h2",null,"非 RL 工具箱：每个文件一句话"),
+          h(UtilsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"读地基时配合这些文档，能把 Ray / SGLang / Megatron 的角色与 slime 的设计动机补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"一条数据流，两个引擎"),"：Megatron 训练、SGLang rollout、Data Buffer 桥接同流，而非割裂堆叠。这是理解 slime 的总纲。"),
+            h("li",null,h("strong",null,"原生透传胜过再造抽象"),"：Megatron 参数直接读、SGLang 参数加 ",h("code",null,"--sglang-")," 前缀透传；刻意只选 SGLang 一个 rollout 后端，以直接使用其最强能力。"),
+            h("li",null,h("strong",null,"同步与异步只差主循环"),"：train.py 串行（生成→训练→同步权重，可 colocate），train_async.py 提前发起下一步生成以重叠训练（必须 disaggregated，按 ",h("code",null,"update_weights_interval")," 周期同步），代价是数据陈旧度。"),
+            h("li",null,h("strong",null,"Ray 是编排基座"),"：placement group 锁 GPU 并按物理拓扑排序，RayActor/Lock 等承载跨进程组件；完整 rollout 控制器留到第 10 课。"),
+            h("li",null,h("strong",null,"utils 是与 RL 解耦的地基"),"：日志、计时、异步循环、分布式组、HTTP、显存、动态导入、数据契约（Sample/RolloutBatch），后续每一课都会反复用到。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"slime-course-index.html"},h("div",{className:"faint"},"← 课程总览"),h("strong",null,"slime · 逐文件精读")),
+            h("a",{href:"slime-lesson-02-config.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 2 课：统一配置层"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

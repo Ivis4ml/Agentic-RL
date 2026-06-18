@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 逐文件精读 · 第 11 课：编排运行时</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .flow{display:grid;gap:8px;margin:14px 0;}
+    .flowstep{display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--panel);}
+    .flowstep .n{font-family:var(--mono);color:var(--amber);font-weight:800;font-size:13px;}
+    .flowstep .ft{color:var(--ink);font-weight:650;font-size:13.5px;}
+    .flowstep .fd{color:var(--muted);font-size:12.5px;margin-top:2px;}
+    .filegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin:16px 0;}
+    .filechip{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:9px 11px;cursor:pointer;transition:all .12s;}
+    .filechip:hover{border-color:var(--line-2);background:var(--panel-2);}.filechip.active{border-color:var(--teal);background:#0e2120;}
+    .filechip .fn{font-family:var(--mono);font-size:12px;color:var(--ink);}.filechip .tag{font-size:10px;color:var(--faint);margin-top:2px;}
+    .detail{border:1px solid var(--line-2);background:var(--panel-2);border-radius:12px;padding:18px 20px;margin-top:6px;min-height:150px;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}.linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 11 课</p><h1>编排运行时</h1><p>能访问 CDN 时切换为交互版。本课详细讲 single-controller over RPC、RTensor、scheduler/launcher、controller、data-service 微服务。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const AREAL="vscode://file/Users/xinyu/Code/Agentic-RL/AReaL/";
+  function srcUrl(p,l){return AREAL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Protocol","RTensor","Worker","Job","Scheduler","TrainController","torch","dict","list","int","float","bool","str","Future","Queue"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","areal-lesson-01-foundations.html"],[2,"数据契约","areal-lesson-02-contracts.html"],[3,"抽象基类","areal-lesson-03-interfaces.html"],[4,"RL 数学原语","areal-lesson-04-rl-math.html"],[5,"数据与奖励","areal-lesson-05-data-reward.html"],[6,"模型层","areal-lesson-06-models.html"],[7,"训练引擎","areal-lesson-07-train-engine.html"],[8,"推理引擎","areal-lesson-08-inference-engine.html"],[9,"Workflow","areal-lesson-09-workflow.html"],[10,"Trainer","areal-lesson-10-trainer.html"],[11,"编排运行时","areal-lesson-11-orchestration.html"],[12,"进阶与收尾","areal-lesson-12-advanced.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"areal-course-index.html"},"AReaL",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":(L[2]==="#"?"lchip todo":"lchip done");return L[2]==="#"?h("span",{key:L[0],className:cls},L[0]+" "+L[1]):h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  function ModelsSection(){
+    return h("div",null,
+      h("p",null,"分布式训练有两种执行模型。理解 AReaL 走哪条，是读懂这一层的前提。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill"},"SPMD"),"单程序多数据"),
+          h("p",null,"每张卡跑同一份脚本（",h("code",null,"torchrun")," 那种），launcher 只负责把进程起起来，进程间靠 NCCL 自己通信。简单，但算法逻辑分散在每个 rank 上，难以集中调度与异步。")),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"single-controller"),"单控制器"),
+          h("p",null,"一个 controller 进程持有全部算法逻辑（PPOActorController 等），通过 RPC 把方法调用扇出到 N 个 engine worker。算法只写一遍、集中编排，天然适配异步 rollout 与训练分离。AReaL 的主路径。"))
+      ),
+      h("div",{className:"note"},"出发点：异步 RL 要让训练和采样在不同 GPU 上独立推进、由一个大脑协调。SPMD 很难表达“controller 决定何时取批、何时更新权重”。single-controller 把编排集中，代价是要自己造一套高效的 RPC 与张量搬运（下一节）。AReaL 也保留 SPMD launcher 作为兼容路径。"),
+      h("div",null,h(Src,{label:"Scheduler 抽象（第3课）",path:"areal/api/scheduler_api.py",line:43}),h(Src,{label:"TrainController",path:"areal/infra/controller/train_controller.py",line:174}))
+    );
+  }
+
+  function RPCSection(){const ref=useTypeset("rpc");
+    const steps=[
+      ["1","controller 发起调用","TrainController.call_engine('train_batch', batch)。先把 batch 里的张量做 RTensor.remotize：不把张量塞进 HTTP body，而是存在发送端、只发一个惰性引用（shard_id + node_addr）。"],
+      ["2","数据切分","_dispatch_tensors 用 balanced_greedy_partition 按 token 数把轨迹均衡切到各 DP 组，避免某 DP rank 等最慢 rank。"],
+      ["3","HTTP POST /call","只把（序列化的参数 + RTensor 引用）发给每个 DP 组的 head worker。带版本号、方法名、重试（指数退避）。"],
+      ["4","worker 取张量","engine_blueprint 的 call_engine 收到后 RTensor.localize：按 shard_id 批量从发送端 /data/batch 拉张量（每批最多 32 个），客户端 fetch buffer 缓存去重。"],
+      ["5","SPMD 广播","head rank 用 broadcast_tensor_container 经 context_and_model_parallel_group（NCCL）把数据广播给同组其它 rank。于是 HTTP 只发到 head，TP/CP rank 靠 NCCL 拿数据。"],
+      ["6","engine thread 串行执行","每个 worker 有一个 daemon 线程用 Queue 串行跑所有 engine 操作。因为 NCCL 集合通信必须各 rank 同序发起，绝不能并发。_submit_to_engine_thread 入队并阻塞等 Future。"],
+      ["7","回传结果","结果序列化经 HTTP 返回 controller，_merge_tensors 按 group_indices 把各 DP 组结果还原成原始轨迹顺序。"]
+    ];
+    return h("div",{ref:ref},
+      h("p",null,"single-controller 的关键工程是：controller 一次方法调用，怎么高效地把数据送到几十张卡上执行。AReaL 的答案是 ",h("strong",null,"RTensor 惰性搬运 + SPMD-over-RPC 广播 + engine thread 串行化"),"。七步："),
+      h("div",{className:"flow"},steps.map(function(s,i){return h("div",{className:"flowstep",key:i},h("div",{className:"n"},s[0]),h("div",null,h("div",{className:"ft"},s[1]),h("div",{className:"fd"},s[2])));})),
+      h(Formula,{cap:"为什么广播：controller→集群带宽从 O(world_size) 降到 O(dp_size)"},"$$ \\text{HTTP 量}: \\;O(N_{\\text{world}}) \\;\\xrightarrow{\\text{只发 DP head}}\\; O(N_{\\text{dp}}), \\quad \\text{组内用 NCCL 广播} $$"),
+      h("div",{className:"split"},
+        h("div",null,h(Code,null,"# engine_blueprint.call_engine_method (worker 侧)\nargs   = RTensor.localize(raw_args)      # 按引用批量拉张量\nkwargs = RTensor.localize(raw_kwargs)\nif _should_broadcast_payload(method):\n    args   = broadcast_tensor_container(args,\n                group=engine.context_and_model_parallel_group)   # NCCL\n    kwargs = broadcast_tensor_container(kwargs, group=...)\nresult = _submit_to_engine_thread(method, ...)   # 串行 engine thread"),
+          h("div",null,h(Src,{label:"call_engine_method",path:"areal/infra/rpc/guard/engine_blueprint.py",line:412}),h(Src,{label:"SPMD broadcast",path:"areal/infra/rpc/guard/engine_blueprint.py",line:477}))),
+        h("div",null,h(Code,null,"# rtensor.py: 惰性引用而非内联张量\nclass RTensor:\n    @staticmethod\n    def remotize(obj, node_addr):    # 张量 -> 引用(存发送端)\n        ...\n    @staticmethod\n    def localize(obj):               # 引用 -> 张量(批量拉取+缓存)\n        ...\n# HttpRTensorBackend: /data/batch 最多 32 shard/请求, fetch buffer 去重"),
+          h("div",null,h(Src,{label:"RTensor",path:"areal/infra/rpc/rtensor.py",line:372}),h(Src,{label:"remotize / localize",path:"areal/infra/rpc/rtensor.py",line:392}),h(Src,{label:"HttpRTensorBackend",path:"areal/infra/rpc/rtensor.py",line:88})))
+      ),
+      h("div",{className:"note"},"engine thread 是容易忽略但很关键的细节：分布式引擎里所有 NCCL 操作必须严格同序。用单线程 Queue 串行化 engine 调用，保证每个 rank 发起集合通信的顺序一致，否则会死锁或数值错乱。"),
+      h("div",null,h(Src,{label:"engine thread",path:"areal/infra/rpc/guard/engine_blueprint.py",line:114}),h(Src,{label:"_dispatch / _merge",path:"areal/infra/controller/train_controller.py",line:76}),h(Ext,{href:"https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/"},"NCCL"))
+    );
+  }
+
+  const SCHED=[
+    {key:"local",name:"Local",render:function(){return [
+      h("p",null,"单机调度。每个 worker 是一个 ",h("code",null,"subprocess.Popen")," 子进程，GPU 轮询分配（",h("code",null,"_gpu_counter % n_gpus"),"），起 RPC guard 服务，轮询 ",h("code",null,"/health")," 等就绪，把地址写进 name_resolve（第 1 课）供 controller 发现。端口冲突自动重试 3 次（指数退避）。colocation 时复用目标角色的 worker（同卡共置训练与推理）。"),
+      h("div",null,h(Src,{label:"LocalScheduler",path:"areal/infra/scheduler/local.py",line:92}),h(Src,{label:"create_workers",path:"areal/infra/scheduler/local.py",line:629}),h(Src,{label:"GPU 轮询分配",path:"areal/infra/scheduler/local.py",line:203}))
+    ];}},
+    {key:"ray",name:"Ray",render:function(){return [
+      h("p",null,"弹性集群调度。worker 是 Ray actor 而非子进程，RPC 走 Ray 的 actor remote call（",h("code",null,"ray.get"),"），RTensor 也有 RayRTensorBackend 用 ",h("code",null,"ray.put/ray.get")," 走 Ray object store 搬张量。适合弹性、跨节点、需要 actor 生命周期管理的实验。"),
+      h("div",null,h(Src,{label:"RayScheduler",path:"areal/infra/scheduler/ray.py",line:58}),h(Src,{label:"RayRTensorBackend",path:"areal/infra/rpc/rtensor.py",line:273}),h(Ext,{href:"https://docs.ray.io/"},"Ray 文档"))
+    ];}},
+    {key:"slurm",name:"Slurm",render:function(){return [
+      h("p",null,"裸机 HPC 集群首选。通过 sbatch/srun 把作业提交到 Slurm 队列，按节点/GPU 分配，容器化执行。launcher 负责把 controller 与各角色 worker 拼成 Slurm 作业脚本。生产大规模训练的标准路径。"),
+      h("div",null,h(Src,{label:"SlurmScheduler",path:"areal/infra/scheduler/slurm.py",line:1}),h(Src,{label:"slurm launcher",path:"areal/infra/launcher/slurm.py",line:1}),h(Ext,{href:"https://slurm.schedmd.com/documentation.html"},"Slurm 文档"))
+    ];}}
+  ];
+  function SchedExplorer(){const [s,setS]=useState(0);const d=SCHED[s];
+    return h("div",null,
+      h("div",{className:"tabstrip"},SCHED.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{className:"card"},d.render()));
+  }
+
+  function ControllerSection(){
+    return h("div",null,
+      h("p",null,"controller 是 single-controller 模型的大脑。第 10 课的 ",h("code",null,"PPOActorController")," 就继承自 ",h("code",null,"TrainController"),"：它持有一组 engine worker，把算法的每个方法（train_batch、compute_logp...）通过 RPC 扇出到所有 DP rank，再把结果合并。"),
+      h("ul",null,
+        h("li",null,h("strong",null,"_dispatch_tensors"),"：按 token 数 balanced_greedy_partition 把轨迹切到各 DP 组，记下 group_indices。"),
+        h("li",null,h("strong",null,"call_engine"),"：scheduler.call_engine 向各 worker POST，DP head 内部 SPMD 广播（上一节）。"),
+        h("li",null,h("strong",null,"_merge_tensors"),"：按 group_indices 把各 DP 组返回的结果还原成原始顺序。")),
+      h("p",null,h("code",null,"RolloutController")," 是推理侧的对应物，编排 rollout worker。这一层让第 10 课的 PPOTrainer 写起来像单机：",h("code",null,"self.actor.train_batch(batch)")," 背后是一次跨集群的 RPC 扇出。"),
+      h("div",null,h(Src,{label:"TrainController",path:"areal/infra/controller/train_controller.py",line:174}),h(Src,{label:"_dispatch_tensors",path:"areal/infra/controller/train_controller.py",line:76}),h(Src,{label:"_merge_tensors",path:"areal/infra/controller/train_controller.py",line:154}),h(Src,{label:"RolloutController",path:"areal/infra/controller/rollout_controller.py",line:72}),h(Src,{label:"PPOActorController（第10课）",path:"areal/trainer/ppo/actor.py",line:368}))
+    );
+  }
+
+  const AUX=[
+    {n:"data_service/",tag:"数据微服务",role:"把数据加载从训练里解耦成独立微服务（FastAPI）：gateway 是入口（注册数据集、取样本批、推进 epoch），router 把请求分发到 worker，worker 在本地跑 workflow 产数据，controller 协调分布，guard 管生命周期，rdataset 是远程数据集句柄。适合 agent/在线数据的大规模场景。",syms:[["gateway create_gateway_app","areal/infra/data_service/gateway/app.py",78],["router app","areal/infra/data_service/router/app.py",1],["worker app","areal/infra/data_service/worker/app.py",1],["rdataset","areal/infra/data_service/rdataset.py",1]]},
+    {n:"async_task_runner.py",tag:"异步任务运行器",role:"WorkflowExecutor（第8课）背后的引擎：一个后台线程跑 uvloop 事件循环，把异步 workflow 协程并发跑起来，结果经线程安全 Queue 回传。让同步的训练主循环能驱动异步 rollout。",syms:[["AsyncTaskRunner","areal/infra/async_task_runner.py",73],["_run_thread (uvloop)","areal/infra/async_task_runner.py",281]]},
+    {n:"dist_rollout.py",tag:"分布式 rollout 协调",role:"跨 DP rank 协调 rollout：all-gather 各 rank 的轨迹、用 FFD/KK 重新均衡（第4课装箱）、再广播给 context/model 并行组。保证训练批在各 rank 上负载均衡。",syms:[["DistRolloutCoordinator","areal/infra/dist_rollout.py",97],["redistribute_trajectories","areal/infra/dist_rollout.py",29]]},
+    {n:"sandbox/",tag:"代码执行沙箱",role:"工具调用 / 代码奖励用的隔离执行环境。DaytonaRunner 封装 Daytona SDK，起临时沙箱 VM 跑模型生成的代码，捕获 stdout/stderr 算 reward。把不可信代码执行和训练进程隔离。",syms:[["DaytonaRunner","areal/infra/sandbox/runner.py",102],["sandbox client","areal/infra/sandbox/_client.py",1]]},
+    {n:"rpc/rpc_server.py",tag:"worker 入口",role:"每个 worker 进程的入口：起一个 Flask app，注册 data_blueprint（张量存取 /data/*）与 engine_blueprint（create_engine / call_engine）。python -m areal.infra.rpc.rpc_server 拉起一个带 RPC guard 的 worker。",syms:[["main","areal/infra/rpc/rpc_server.py",33],["register data/engine bp","areal/infra/rpc/rpc_server.py",54]]}
+  ];
+  function AuxBrowser(){const [s,setS]=useState(0);const d=AUX[s];
+    return h("div",null,
+      h("div",{className:"filegrid"},AUX.map(function(x,i){return h("div",{key:i,className:"filechip"+(i===s?" active":""),onClick:function(){setS(i);}},h("div",{className:"fn"},x.n),h("div",{className:"tag"},x.tag));})),
+      h("div",{className:"detail"},
+        h("div",{className:"card-title"},h("span",{className:"pill teal"},"infra"),h("code",null,d.n)),
+        h("p",{style:{marginTop:8}},d.role),
+        h("div",null,d.syms.map(function(sy,i){return h(Src,{key:i,label:sy[0],path:sy[1],line:sy[2]});})))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"Ray 文档",d:"actor 模型与弹性调度",href:"https://docs.ray.io/"},
+    {t:"Slurm 文档",d:"HPC 作业调度 sbatch/srun",href:"https://slurm.schedmd.com/documentation.html"},
+    {t:"FastAPI 文档",d:"data-service 微服务框架",href:"https://fastapi.tiangolo.com/"},
+    {t:"NCCL 文档",d:"SPMD 广播用的集合通信",href:"https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/"}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:11}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 11 课 / 共 12 · infra/"),
+          h("h1",null,"编排运行时：一个大脑驱动整片集群"),
+          h("p",{className:"lead"},"前面每个引擎都假设“有人会调用我的方法”。这一层就是那个调用者。AReaL 走 single-controller 模型：一个 controller 持有全部算法，通过自研的高效 RPC 把方法扇出到几十张卡上的 engine worker。本课详细讲这套 RPC（RTensor 惰性搬运、SPMD-over-RPC 广播、engine thread 串行化）、scheduler/launcher 三后端、controller 的 dispatch/merge、以及解耦的 data-service 微服务。约 60 个文件，是全系列最偏系统工程的一课。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"infra/scheduler/"),"、",h("code",null,"infra/launcher/"),"、",h("code",null,"infra/rpc/"),"（rtensor、guard）、",h("code",null,"infra/controller/"),"、",h("code",null,"infra/data_service/"),"、",h("code",null,"async_task_runner · dist_rollout · sandbox"),"。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部文档。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"执行模型"),
+          h("h2",null,"SPMD vs single-controller"),
+          h(ModelsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"rpc · 核心"),
+          h("h2",null,"一次 RPC 调用怎么走完七步"),
+          h(RPCSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"scheduler / launcher"),
+          h("h2",null,"三种调度后端"),
+          h("p",null,"同一个 Scheduler 抽象（第 3 课），三种实现。点 Tab 切换。"),
+          h(SchedExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"controller"),
+          h("h2",null,"Controller：让跨集群调用像单机"),
+          h(ControllerSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"data_service + 辅助"),
+          h("h2",null,"解耦的数据面与辅助设施"),
+          h("p",null,"点击查看每个组件的角色。"),
+          h(AuxBrowser)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部文档"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:"ext",href:L.href,target:"_blank",rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"single-controller 集中编排"),"：算法写一遍，controller 通过 RPC 扇出到全集群，天然适配异步训练/采样分离。"),
+            h("li",null,h("strong",null,"RTensor 惰性搬运"),"：RPC 只发引用不发张量，worker 按需批量拉取 + 缓存去重，省带宽。"),
+            h("li",null,h("strong",null,"SPMD-over-RPC"),"：HTTP 只到 DP head，组内用 NCCL 广播，带宽从 O(world) 降到 O(dp)。"),
+            h("li",null,h("strong",null,"engine thread 串行化"),"：单线程 Queue 保证 NCCL 集合通信各 rank 同序。"),
+            h("li",null,h("strong",null,"三后端一抽象"),"：Local/Ray/Slurm 实现同一 Scheduler，换集群不动算法。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"areal-lesson-10-trainer.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 10 课：Trainer")),
+            h("a",{href:"areal-course-index.html"},h("div",{className:"faint"},"下一课（待建） →"),h("strong",null,"第 12 课：进阶与收尾"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 第 10 课：Agent Loop（Agentic RL）</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 10 课</p><h1>Agent Loop（Agentic RL）</h1><p>能访问 CDN 时切换为交互版。本课讲清 verl 的 Agent Loop：如何驱动一次多轮、带工具调用的 agent rollout，异步并发地与第 9 课的推理服务交互，产出可训练轨迹（token 序列加 response_mask）；single_turn 与 tool_agent 两种循环的区别；工具解析与注册执行；以及 reward_loop 的异步奖励计算。它也是承载 tau2 类任务的位置。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const VERL="vscode://file/Users/xinyu/Code/Agentic-RL/verl/";
+  function srcUrl(p,l){return VERL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","DataProto","WorkerGroup","ResourcePool","RayWorkerGroup","AgentLoop","AgentLoopBase","AgentLoopWorker","AgentLoopManager","AgentLoopOutput","AgentState","AgentData","ToolAgentLoop","SingleTurnAgentLoop","ToolParser","FunctionCall","FunctionTool","BaseTool","ToolResponse","TokenOutput","LLMServerClient","RewardLoopWorker","RewardLoopManager","TensorDict","np","ray","asyncio","Enum","BaseModel","Image"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与HybridFlow","verl-lesson-01-foundations.html"],[2,"DataProto","verl-lesson-02-dataproto.html"],[3,"混合控制器","verl-lesson-03-single-controller.html"],[4,"配置","verl-lesson-04-config.html"],[5,"RL数学","verl-lesson-05-core-algos.html"],[6,"训练引擎","verl-lesson-06-engines.html"],[7,"Workers","verl-lesson-07-workers.html"],[8,"Rollout","verl-lesson-08-rollout.html"],[9,"异步服务","verl-lesson-09-async-server.html"],[10,"Agent Loop","verl-lesson-10-agent-loop.html"],[11,"异步训练","verl-lesson-11-async-train.html"],[12,"Trainer与端到端","verl-lesson-12-trainer-e2e.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"verl-course-index.html"},"verl",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 全局观：Agent Loop 在 verl 中的位置 =====
+  function OverviewSection(){
+    return h("div",null,
+      h("p",null,"第 8 课讲了 rollout 引擎如何生成一段回复，第 9 课讲了如何把推理引擎封装为 OpenAI 兼容的异步服务（async server），并通过 ",h("code",null,"LLMServerClient")," 做负载均衡与同会话粘连（sticky session）。本课要解决的问题是：当一个任务不是单轮问答，而是 ",h("strong",{className:"hl-amber"},"多轮对话加工具调用")," 的 agentic 过程时，谁来驱动这个过程？谁来决定何时停止、何时执行工具、把工具的返回拼回上下文继续生成？答案就是 ",h("strong",{className:"hl-teal"},"Agent Loop"),"。"),
+      h("p",null,"Agent Loop 是一个协程（coroutine）驱动的抽象层。它接受一条样本的初始消息，反复地与推理服务交互（生成、解析工具调用、执行工具、把工具响应拼回），直到达到终止条件，最后输出一条 ",h("strong",null,"可直接用于训练的轨迹"),"：扁平的 token 序列加上一个 ",h("code",null,"response_mask"),"（标记哪些 token 是模型生成的、哪些是工具返回的环境观测）。这个 mask 是 agentic RL 的关键，因为策略梯度只应施加于模型自己生成的 token，而不应施加于环境塞回来的观测 token。"),
+      h(Formula,{cap:"response_mask 的作用：只有模型生成 token（mask=1）参与策略损失，工具/观测 token（mask=0）被排除"},"$$ \\mathcal{L}(\\theta)=-\\frac{1}{\\sum_t m_t}\\sum_{t} m_t\\, A_t\\,\\log \\pi_\\theta(y_t\\mid y_{<t}),\\quad m_t\\in\\{0,1\\} $$"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"协程并发"),"为什么是 async"),
+          h("p",null,"一个批次里有成百上千条独立轨迹，每条都在反复等待推理服务返回。若串行执行，GPU 推理服务会大量空转。verl 把每条轨迹封装为一个 ",h("code",null,"asyncio")," 任务，用 ",h("code",null,"asyncio.gather")," 并发跑，让推理服务始终保持高占用，这是吞吐的来源。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"可替换"),"框架而非内核"),
+          h("p",null,"verl 把 ",h("code",null,"AgentLoopManager")," 定位为一个具体实现，源码注释明确指出它可被其他 agent 框架（如 NVIDIA Nemo-Gym、AWS Bedrock AgentCore、SWE-agent）整体替换。换言之，agentic 逻辑是数据生成层，不派生（fork）训练内核。这与你们 tau2 类工作的接入方式直接相关。")
+        )
+      ),
+      h("p",null,"本课聚焦 ",h("code",null,"verl/experimental/agent_loop/")," 与 ",h("code",null,"verl/tools/"),"、",h("code",null,"verl/experimental/reward_loop/")," 三个目录。读完后，你应能完整复述一条 agentic 轨迹从初始 prompt 到训练样本的每一步。"),
+      h("div",null,
+        h(Src,{label:"agent_loop.py（本课核心，1170 行）",path:"verl/experimental/agent_loop/agent_loop.py",line:1}),
+        h(Src,{label:"模块说明（可替换框架）",path:"verl/experimental/agent_loop/agent_loop.py",line:14}),
+        h(Src,{label:"__init__.py 导出",path:"verl/experimental/agent_loop/__init__.py",line:15})
+      )
+    );
+  }
+
+  // ===== 三层结构：Manager / Worker / Loop =====
+  function LayersSection(){
+    return h("div",null,
+      h("p",null,"Agent Loop 子系统有三层，自上而下分别是 ",h("strong",{className:"hl-amber"},"Manager"),"、",h("strong",{className:"hl-teal"},"Worker")," 与 ",h("strong",{className:"hl-green"},"Loop"),"。理解这三层的职责划分是读懂全部 1170 行的前提。"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"① AgentLoopManager（单控制器侧）"),
+          h("p",null,h("code",null,"AgentLoopManager")," 运行在单控制器进程里，是 rollout 的对外入口。它创建一组 ",h("code",null,"AgentLoopWorker")," Ray actor（按节点轮询调度，每节点尽量均摊），并在 ",h("code",null,"generate_sequences")," 里把一个大 batch 切成若干 chunk 分发给各 worker，再把结果用 ",h("code",null,"DataProto.concat")," 拼回，统计性能指标。"),
+          h(Code,null,"async def generate_sequences(self, prompts: DataProto):\n    chunkes = prompts.chunk(len(self.agent_loop_workers))\n    outputs = await asyncio.gather(*[\n        worker.generate_sequences.remote(chunk)\n        for worker, chunk in zip(\n            self.agent_loop_workers, chunkes, strict=True)\n    ])\n    output = DataProto.concat(outputs)\n    # 收集每条轨迹的 metrics 汇总为 timing\n    metrics = [o.meta_info.pop('metrics') for o in outputs]\n    timing = self._performance_metrics(metrics, output)\n    output.meta_info = {'timing': timing, **outputs[0].meta_info}\n    return output"),
+          h("div",null,h(Src,{label:"AgentLoopManager",path:"verl/experimental/agent_loop/agent_loop.py",line:1054}),h(Src,{label:"_init_agent_loop_workers",path:"verl/experimental/agent_loop/agent_loop.py",line:1089}),h(Src,{label:"generate_sequences",path:"verl/experimental/agent_loop/agent_loop.py",line:1113}))
+        ),
+        h("div",null,
+          h("h4",null,"② AgentLoopWorker（Ray actor）"),
+          h("p",null,h("code",null,"AgentLoopWorker")," 是一个 Ray remote actor，承载一个 chunk 内全部样本的并发执行。它在构造时一次性加载工具（",h("code",null,"load_all_tools"),"）、tokenizer/processor、注册自定义 agent loop 实现、初始化追踪配置。它的 ",h("code",null,"generate_sequences")," 为 chunk 内每条样本建一个 ",h("code",null,"asyncio")," 任务，并发运行，再统一做后处理（padding、奖励、teacher logprobs）。"),
+          h(Code,null,"async def generate_sequences(self, batch: DataProto):\n    # 为每条样本建一个并发任务\n    tasks = []\n    for i in range(len(batch)):\n        kwargs = {k: v[i] for k, v in\n                  batch.non_tensor_batch.items() if k != '__do_sample__'}\n        tasks.append(asyncio.create_task(\n            self._run_agent_loop(\n                sample_sampling_params, trajectory_info[i],\n                trace=trace_this_sample, **kwargs)))\n    outputs = await asyncio.gather(*tasks)\n    return self._postprocess(outputs, ...)"),
+          h("div",null,h(Src,{label:"AgentLoopWorker.__init__",path:"verl/experimental/agent_loop/agent_loop.py",line:404}),h(Src,{label:"generate_sequences",path:"verl/experimental/agent_loop/agent_loop.py",line:474}),h(Src,{label:"_run_agent_loop",path:"verl/experimental/agent_loop/agent_loop.py",line:568}))
+        )
+      ),
+      h("h4",null,"③ AgentLoopBase（单条轨迹的协程）"),
+      h("p",null,h("code",null,"AgentLoopBase")," 是单条轨迹逻辑的抽象基类。它持有一份 ",h("code",null,"server_manager")," （即 ",h("code",null,"LLMServerClient"),"，第 9 课）、tokenizer、processor、数据集类，并定义了若干公共辅助方法：",h("code",null,"process_multi_modal_info")," 抽取图像/视频/音频，",h("code",null,"apply_chat_template")," 把消息列表套上聊天模板并 tokenize，唯一的抽象方法是 ",h("code",null,"run(sampling_params, **kwargs)"),"，子类必须实现它，返回一个 ",h("code",null,"AgentLoopOutput"),"。"),
+      h("p",null,"子类用装饰器 ",h("code",null,"@register(agent_name)")," 注册到一个全局表 ",h("code",null,"_agent_loop_registry"),"。注册值是一个 ",h("code",null,"hydra")," 实例化配置（",h("code",null,'{"_target_": fqdn}'),"），运行时由 ",h("code",null,"hydra.utils.instantiate")," 按样本的 ",h("code",null,"agent_name")," 字段动态构造对应的 loop 实例。这就是为什么同一个 batch 里不同样本可以走不同的 agent loop。"),
+      h(Code,null,"def register(agent_name: str):\n    def decorator(subclass: type[AgentLoopBase]):\n        fqdn = f'{subclass.__module__}.{subclass.__qualname__}'\n        _agent_loop_registry[agent_name] = {'_target_': fqdn}\n        return subclass\n    return decorator\n\n@register('single_turn_agent')\nclass SingleTurnAgentLoop(AgentLoopBase): ...\n\n@register('tool_agent')\nclass ToolAgentLoop(AgentLoopBase): ..."),
+      h("div",{className:"note"},"样本通过 ",h("code",null,"non_tensor_batch['agent_name']")," 选择 loop。若样本没有该字段，",h("code",null,"generate_sequences")," 会回填 ",h("code",null,"config.agent.default_agent_loop"),"（默认 ",h("code",null,"single_turn_agent"),"）。数据预处理脚本里写 ",h("code",null,'"agent_name": "tool_agent"')," 即可把该样本指向工具循环。"),
+      h("div",null,h(Src,{label:"AgentLoopBase",path:"verl/experimental/agent_loop/agent_loop.py",line:195}),h(Src,{label:"run（抽象方法）",path:"verl/experimental/agent_loop/agent_loop.py",line:362}),h(Src,{label:"register",path:"verl/experimental/agent_loop/agent_loop.py",line:383}),h(Src,{label:"default_agent_loop 回填",path:"verl/experimental/agent_loop/agent_loop.py",line:517}),h(Src,{label:"AgentLoopConfig",path:"verl/workers/config/rollout.py",line:72}))
+    );
+  }
+
+  // ===== AgentLoopOutput 数据契约 =====
+  function OutputSection(){
+    return h("div",null,
+      h("p",null,"无论是哪种 loop，它的产物都是 ",h("code",null,"AgentLoopOutput"),"（一个 pydantic 模型）。这是 agentic rollout 与训练之间的数据契约，必须看清它的每个字段。"),
+      h(Code,null,"class AgentLoopOutput(BaseModel):\n    prompt_ids: list[int]        # 初始 prompt token\n    response_ids: list[int]      # 响应 token：含 LLM 生成 + 工具返回 token\n    response_mask: list[int]     # 1=LLM 生成, 0=工具返回/观测 token\n    response_logprobs: Optional[list[float]] = None\n    multi_modal_data: Optional[dict[str, Any]] = None\n    reward_score: Optional[float] = None   # 整条轨迹的奖励\n    num_turns: int = 0           # 对话轮数（含 user/assistant/tool）\n    metrics: AgentLoopMetrics    # 生成耗时、工具耗时、抢占次数等\n    extra_fields: dict[str, Any] = {}      # 动态扩展（turn_scores 等）"),
+      h("p",null,"注意 ",h("code",null,"response_ids")," 与 ",h("code",null,"response_mask")," 一一对应、长度相等。对一条多轮轨迹，它们的结构如源码注释所示："),
+      h(Code,null,"# 多轮对话下 responses 的结构\nresponses:     |<- LLM 生成 ->|<- tool_calls ->|<- LLM 生成 ->|<- padding ->|\nresponse_mask: | 1, 1, ..., 1 | 0, 0, ..., 0 | 1, 1, ..., 1 | 0, 0, ..., 0 |"),
+      h("p",null,"模型在第一轮生成若干 token（mask=1），随后 agent loop 执行工具，把工具返回的文本 tokenize 后拼进 ",h("code",null,"response_ids")," 并打 mask=0（这些是环境观测，不应学习），接着模型基于新上下文继续生成（mask=1），如此往复。",h("code",null,"reward_score")," 是整条轨迹的标量奖励，在 ",h("code",null,"as_dict")," 中被放进 ",h("code",null,"rm_scores")," 的最后一个有效位置（稀疏奖励，只在序列末端给分）。"),
+      h("div",{className:"warn"},h("strong",null,"为何 mask 如此重要："),"如果把工具返回的 token 也当作模型生成来训练，等价于让策略去模仿环境的输出，这会污染梯度。response_mask 把环境观测从策略损失中剔除，是多轮 RL 正确性的根本前提。第 5 课的 RL 数学在计算 advantage 与 policy loss 时都以此 mask 为准。"),
+      h("div",null,h(Src,{label:"AgentLoopOutput",path:"verl/experimental/agent_loop/agent_loop.py",line:89}),h(Src,{label:"as_dict（转训练张量）",path:"verl/experimental/agent_loop/agent_loop.py",line:115}),h(Src,{label:"_InternalAgentLoopOutput（已 padding）",path:"verl/experimental/agent_loop/agent_loop.py",line:149}),h(Src,{label:"AgentLoopMetrics",path:"verl/experimental/agent_loop/agent_loop.py",line:80}))
+    );
+  }
+
+  // ===== 两种 loop 对比 =====
+  const LOOPS=[
+    {key:"single",name:"SingleTurnAgentLoop",render:function(){return [
+      h("p",null,"最朴素的 loop，只做一次对话补全（chat completion），不带工具、不多轮。它的 ",h("code",null,"run")," 流程清晰可读："),
+      h("ol",null,
+        h("li",null,"从 ",h("code",null,"kwargs['raw_prompt']")," 取消息列表，抽取多模态输入。"),
+        h("li",null,"用 ",h("code",null,"apply_chat_template")," 套模板并 tokenize 得到 ",h("code",null,"prompt_ids"),"。"),
+        h("li",null,"调用 ",h("code",null,"server_manager.generate(...)")," 一次性生成响应（这是与第 9 课 async server 的唯一交互点）。"),
+        h("li",null,"全部响应 token 的 mask 设为 1（没有任何工具/观测 token），打包成 ",h("code",null,"AgentLoopOutput"),"，",h("code",null,"num_turns=2"),"（user + assistant）。")
+      ),
+      h(Code,null,"@register('single_turn_agent')\nclass SingleTurnAgentLoop(AgentLoopBase):\n    @rollout_trace_op\n    async def run(self, sampling_params, **kwargs):\n        messages = list(kwargs['raw_prompt'])\n        multi_modal_data = await self.process_multi_modal_info(messages)\n        prompt_ids = await self.apply_chat_template(messages, ...)\n        with simple_timer('generate_sequences', metrics):\n            output: TokenOutput = await self.server_manager.generate(\n                request_id=uuid4().hex, prompt_ids=prompt_ids,\n                sampling_params=sampling_params, ...)\n        response_mask = [1] * len(output.token_ids)   # 全部是 LLM 生成\n        return AgentLoopOutput(\n            prompt_ids=prompt_ids,\n            response_ids=output.token_ids[:self.response_length],\n            response_mask=response_mask[:self.response_length],\n            num_turns=2, metrics=metrics, ...)"),
+      h("p",null,"它的存在价值：覆盖纯数学、纯代码这类单轮可判定任务；同时作为最小参考实现，向 ",h("code",null,"tool_agent")," 提供 schema 一致性（结尾也写空的 ",h("code",null,"turn_scores"),"/",h("code",null,"tool_rewards"),"，保证后续 batch 拼接时字段稳定）。"),
+      h("div",null,h(Src,{label:"SingleTurnAgentLoop",path:"verl/experimental/agent_loop/single_turn_agent_loop.py",line:29}),h(Src,{label:"run",path:"verl/experimental/agent_loop/single_turn_agent_loop.py",line:38}),h(Src,{label:"TokenOutput",path:"verl/workers/rollout/replica.py",line:39}))
+    ];}},
+    {key:"tool",name:"ToolAgentLoop",render:function(){return [
+      h("p",null,h("code",null,"ToolAgentLoop")," 是一个 ReAct 风格的状态机，驱动多轮工具调用。与单轮版的根本区别在于：它在 ",h("strong",null,"生成")," 和 ",h("strong",null,"工具执行")," 之间反复切换，并把每一步的 token 与 mask 累积到 ",h("code",null,"AgentData")," 这个状态容器里。"),
+      h("p",null,"它用一个显式状态机来管理流程，四个状态：",h("code",null,"PENDING"),"（准备 prompt）、",h("code",null,"GENERATING"),"（生成并检查工具调用）、",h("code",null,"PROCESSING_TOOLS"),"（并发执行工具、拼回响应）、",h("code",null,"TERMINATED"),"（结束）。"),
+      h(Code,null,"state = AgentState.PENDING\nwhile state != AgentState.TERMINATED:\n    if state == AgentState.PENDING:\n        state = await self._handle_pending_state(agent_data, sampling_params)\n    elif state == AgentState.GENERATING:\n        state = await self._handle_generating_state(agent_data, sampling_params)\n    elif state == AgentState.PROCESSING_TOOLS:\n        state = await self._handle_processing_tools_state(agent_data)"),
+      h("p",null,"为什么用显式状态机而非递归或 while-True 加 break？因为 agentic 流程有多个不同性质的终止条件（响应超长、达到最大助手轮数、达到最大用户轮数、模型不再发起工具调用），用状态机把生成后判断与工具执行后判断分离，逻辑边界清晰，也便于将来插入新状态（例如人类介入、子 agent 调用）。"),
+      h("h4",null,"GENERATING 状态：生成并解析工具调用"),
+      h("p",null,"该状态先把工具解析器要求的停止 token（如果有）注入 ",h("code",null,"sampling_params"),"，再调 ",h("code",null,"server_manager.generate"),"。生成完毕后把响应 token 追加进 ",h("code",null,"prompt_ids"),"（作为下一轮的上下文）、把对应 mask 设为 1，然后用 ",h("code",null,"tool_parser.extract_tool_calls")," 从响应里抽工具调用。有工具调用就转 ",h("code",null,"PROCESSING_TOOLS"),"，否则 ",h("code",null,"TERMINATED"),"。"),
+      h(Code,null,"agent_data.assistant_turns += 1\nagent_data.response_ids = output.token_ids\nagent_data.prompt_ids += agent_data.response_ids     # 拼进上下文\nagent_data.response_mask += [1] * len(agent_data.response_ids)  # LLM 生成\nif len(agent_data.response_mask) >= self.response_length:\n    return AgentState.TERMINATED\nif self.max_assistant_turns and agent_data.assistant_turns >= self.max_assistant_turns:\n    return AgentState.TERMINATED\n_, agent_data.tool_calls = await self.tool_parser.extract_tool_calls(\n    agent_data.response_ids, tools)\nreturn AgentState.PROCESSING_TOOLS if agent_data.tool_calls else AgentState.TERMINATED"),
+      h("h4",null,"PROCESSING_TOOLS 状态：并发执行并把观测拼回"),
+      h("p",null,"取前 ",h("code",null,"max_parallel_calls")," 个工具调用，用 ",h("code",null,"asyncio.gather")," 并发执行，把每个工具的文本响应组装成 ",h("code",null,"role: tool")," 的消息，再用 ",h("code",null,"apply_chat_template")," tokenize 为 ",h("code",null,"response_ids"),"，",h("strong",{className:"hl-red"},"打 mask=0"),"（环境观测，不学习），拼回 ",h("code",null,"prompt_ids"),"，",h("code",null,"user_turns += 1"),"，回到 ",h("code",null,"GENERATING"),"。"),
+      h(Code,null,"agent_data.prompt_ids += response_ids            # 工具返回也拼进上下文\nagent_data.response_mask += [0] * len(response_ids)  # 但 mask=0, 不参与策略损失\nagent_data.user_turns += 1\nreturn AgentState.GENERATING"),
+      h("p",null,"工具执行委托给 ",h("code",null,"_call_tool"),"，它分派两种工具契约：无生命周期的 ",h("code",null,"FunctionTool")," 直接 ",h("code",null,"call(args)"),"；有生命周期的 ",h("code",null,"BaseTool")," 子类走 ",h("code",null,"create → execute → release"),"（在 ",h("code",null,"finally")," 中释放实例）。工具响应过长时按 ",h("code",null,"tool_response_truncate_side"),"（左/右/中）截断。下一节展开工具体系。"),
+      h("div",null,h(Src,{label:"ToolAgentLoop",path:"verl/experimental/agent_loop/tool_agent_loop.py",line:100}),h(Src,{label:"AgentState",path:"verl/experimental/agent_loop/tool_agent_loop.py",line:49}),h(Src,{label:"AgentData",path:"verl/experimental/agent_loop/tool_agent_loop.py",line:56}),h(Src,{label:"run（状态机）",path:"verl/experimental/agent_loop/tool_agent_loop.py",line:125}),h(Src,{label:"_handle_generating_state",path:"verl/experimental/agent_loop/tool_agent_loop.py",line:222}),h(Src,{label:"_handle_processing_tools_state",path:"verl/experimental/agent_loop/tool_agent_loop.py",line:287}),h(Src,{label:"_call_tool",path:"verl/experimental/agent_loop/tool_agent_loop.py",line:406}))
+    ];}}
+  ];
+  function LoopExplorer(){const [s,setS]=useState(0);const d=LOOPS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},LOOPS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== tool_parser =====
+  function ParserSection(){
+    return h("div",null,
+      h("p",null,"模型并不直接调用工具，它只是按某种文本格式把工具调用写在输出里（例如 Qwen 系列用 ",h("code",null,"<tool_call>{...}</tool_call>")," 包裹一段 JSON）。",h("code",null,"tool_parser.py")," 的职责就是把这些文本片段解析回结构化的 ",h("code",null,"FunctionCall(name, arguments)"),"。不同模型家族的格式不同，因此 verl 提供一个可注册的解析器体系。"),
+      h(Code,null,"class ToolParser(ABC):\n    _registry: dict[str, type['ToolParser']] = {}\n    @abstractmethod\n    async def extract_tool_calls(self, responses_ids, tools=None) -> tuple[str, list[FunctionCall]]:\n        ...\n    @classmethod\n    def get_tool_parser(cls, name, tokenizer):\n        return cls._registry[name](tokenizer)\n    @classmethod\n    def register(cls, name):   # 装饰器注册\n        def decorator(subclass): cls._registry[name] = subclass; return subclass\n        return decorator"),
+      h("p",null,"内置四种解析器，由 ",h("code",null,"rollout.multi_turn.format")," 选择（默认 ",h("code",null,"hermes"),"）："),
+      h("div",{className:"linkgrid"},
+        h("div",{className:"linkcard"},h("div",{className:"lt"},h("code",null,"hermes")),h("div",{className:"ld"},"Qwen3 等。正则匹配 <tool_call>...</tool_call>，内部为 JSON。"),h(Src,{label:"HermesToolParser",path:"verl/experimental/agent_loop/tool_parser.py",line:94})),
+        h("div",{className:"linkcard"},h("div",{className:"lt"},h("code",null,"qwen3_coder")),h("div",{className:"ld"},"Qwen3-Coder 的 XML 风格 <function=...><parameter=...>，带类型转换。"),h(Src,{label:"Qwen3XMLToolParser",path:"verl/experimental/agent_loop/tool_parser.py",line:187})),
+        h("div",{className:"linkcard"},h("div",{className:"lt"},h("code",null,"gpt-oss")),h("div",{className:"ld"},"OpenAI harmony 格式，先剥离思维链通道再匹配 to=functions.* 调用。"),h(Src,{label:"GptOssToolParser",path:"verl/experimental/agent_loop/tool_parser.py",line:130})),
+        h("div",{className:"linkcard"},h("div",{className:"lt"},h("code",null,"gemma4")),h("div",{className:"ld"},"Gemma4 不在工具调用后发 EOS，需用 stop_token_ids 强制停止。"),h(Src,{label:"Gemma4ToolParser",path:"verl/experimental/agent_loop/tool_parser.py",line:361}))
+      ),
+      h("h4",null,"stop_token_ids 的设计动机"),
+      h("p",null,"有的模型（如 Qwen3）在发出一次工具调用后自然产生 EOS，生成自动停下，解析器即可介入。但有的模型（如 Gemma4）发完 ",h("code",null,"<tool_call|>")," 仍会继续生成而不发 EOS。若不干预，模型会自顾自地幻想工具的返回结果，使工具执行失去意义。因此这类解析器把闭合 token 声明为 ",h("code",null,"stop_token_ids"),"，在 ",h("code",null,"GENERATING")," 状态注入采样参数，强制生成在每次工具调用后停下，交还控制权给 agent loop 真正去执行工具。"),
+      h(Code,null,"@property\ndef stop_token_ids(self) -> list[int]:\n    # Gemma4 不在 <tool_call|> 后发 EOS, 需显式停止以便 loop 执行工具\n    return [self._stop_token_id]\n\n# 在 _handle_generating_state 中注入:\nif self.tool_parser.stop_token_ids:\n    stop_token_ids = list(set((sampling_params.get('stop_token_ids') or [])\n                              + self.tool_parser.stop_token_ids))\n    sampling_params = {**sampling_params, 'stop_token_ids': stop_token_ids}"),
+      h("div",{className:"note"},"解析器的 ",h("code",null,"extract_tool_calls")," 返回 ",h("code",null,"(content, function_calls)"),"。它对模型输出做宽容解析：JSON 失败、参数类型不符时降级为字符串并记日志，而非直接报错，因为模型输出本就不保证合法。",h("code",null,"qwen3_coder")," 解析器在转换参数类型时刻意用 ",h("code",null,"ast.literal_eval")," 而非 ",h("code",null,"eval"),"，因为参数来自不可信的模型输出，",h("code",null,"eval")," 会带来任意代码执行风险。"),
+      h("div",null,h(Src,{label:"FunctionCall",path:"verl/experimental/agent_loop/tool_parser.py",line:32}),h(Src,{label:"ToolParser 基类",path:"verl/experimental/agent_loop/tool_parser.py",line:45}),h(Src,{label:"stop_token_ids（基类默认空）",path:"verl/experimental/agent_loop/tool_parser.py",line:52}),h(Src,{label:"ast.literal_eval 安全注释",path:"verl/experimental/agent_loop/tool_parser.py",line:284}),h(Ext,{href:"https://cookbook.openai.com/articles/openai-harmony"},"OpenAI harmony 格式"))
+    );
+  }
+
+  // ===== verl/tools 工具体系 =====
+  function ToolsSection(){
+    return h("div",null,
+      h("p",null,"解析出 ",h("code",null,"FunctionCall")," 之后，谁来真正执行它？这是 ",h("code",null,"verl/tools/")," 的职责。verl 提供两类工具契约，分别面向不同的复杂度。"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"BaseTool：有生命周期的有状态工具"),
+          h("p",null,h("code",null,"BaseTool")," 面向需要按轨迹维护状态的工具（例如一个需要 ground truth 才能打分的校验器、一个需要会话的沙箱）。它定义五个方法：",h("code",null,"get_openai_tool_schema")," 返回 OpenAI 格式 schema、",h("code",null,"create")," 为一条轨迹创建实例、",h("code",null,"execute")," 执行并返回 ",h("code",null,"(ToolResponse, reward, metrics)"),"、",h("code",null,"calc_reward")," 计算工具级奖励、",h("code",null,"release")," 释放实例。"),
+          h(Code,null,"class BaseTool:\n    def __init__(self, config, tool_schema):\n        self.tool_schema = tool_schema or self.get_openai_tool_schema()\n        self.name = self.tool_schema.function.name\n    async def create(self, instance_id=None, **kwargs): ...\n    async def execute(self, instance_id, parameters, **kwargs\n        ) -> tuple[ToolResponse, float, dict]: ...\n    async def release(self, instance_id, **kwargs): ..."),
+          h("div",null,h(Src,{label:"BaseTool",path:"verl/tools/base_tool.py",line:24}),h(Src,{label:"execute",path:"verl/tools/base_tool.py",line:62}))
+        ),
+        h("div",null,
+          h("h4",null,"FunctionTool：无状态的函数工具"),
+          h("p",null,h("code",null,"FunctionTool")," 面向简单的纯函数工具。用 ",h("code",null,"@function_tool")," 装饰一个带 Google 风格 docstring 和类型注解的 Python 函数，verl 通过 ",h("code",null,"transformers.utils.get_json_schema")," 自动推断 OpenAI schema，无需手写。它没有生命周期，调用时直接 ",h("code",null,"call(args)"),"。"),
+          h(Code,null,"@function_tool                # 或 @function_tool('web_search')\ndef web_search(query: str) -> str:\n    '''Search the web.\n    Args:\n        query: the search query.\n    '''\n    return do_search(query)\n# 注册到 FUNCTION_TOOL_REGISTRY, schema 自动从签名+docstring 推断"),
+          h("div",null,h(Src,{label:"FunctionTool",path:"verl/tools/function_tool.py",line:45}),h(Src,{label:"function_tool 装饰器",path:"verl/tools/function_tool.py",line:67}),h(Src,{label:"normalize_function_tool_return",path:"verl/tools/function_tool.py",line:213}))
+        )
+      ),
+      h("h4",null,"注册与加载"),
+      h("p",null,"两类工具由 ",h("code",null,"load_all_tools")," 统一加载，在 ",h("code",null,"AgentLoopWorker")," 构造时调用一次（每个 worker 只加载一次，所有轨迹共享 ",h("code",null,"self.tools"),"）。",h("code",null,"BaseTool")," 子类从 yaml 配置（",h("code",null,"tool_config_path"),"）按类名动态导入并实例化；",h("code",null,"FunctionTool")," 从 Python 文件（",h("code",null,"function_tool_path"),"）执行并收集装饰器注册的工具。两者的名字必须全局唯一，否则报错。"),
+      h(Code,null,"def load_all_tools(tool_config_path, function_tool_path):\n    native_tools = initialize_tools_from_config(tool_config_path) if tool_config_path else []\n    function_tools = load_function_tools_from_path(function_tool_path) if function_tool_path else []\n    # 检查跨两个来源的名字冲突\n    if function_tools and native_tools:\n        existing = {t.name for t in native_tools}\n        collisions = sorted(t.name for t in function_tools if t.name in existing)\n        if collisions:\n            raise ValueError(f'Function tool name(s) {collisions} collide ...')\n    return native_tools + function_tools"),
+      h("p",null,"工具的返回类型 ",h("code",null,"ToolResponse")," 支持 ",h("code",null,"text"),"、",h("code",null,"image"),"、",h("code",null,"video")," 三种内容。文本工具返回字符串即可（",h("code",null,"normalize_function_tool_return")," 会归一为 ",h("code",null,"(ToolResponse, reward, metrics)")," 三元组）；多模态工具返回图像列表，会在 ",h("code",null,"PROCESSING_TOOLS")," 状态被拼成结构化消息并要求底座为 VLM。工具调用的整体 schema（即对模型可见的工具列表）由 ",h("code",null,"tool_schemas")," 携带，注入 ",h("code",null,"apply_chat_template")," 的 ",h("code",null,"tools=")," 参数，使模型在 prompt 里看到可用工具。"),
+      h("div",{className:"note"},"工具体系当前仅保留 ",h("code",null,"native")," 类型（",h("code",null,"ToolType")," 枚举，MCP 工具已暂时移除）。一个真实示例见教程里的 ",h("code",null,"SandboxTool"),"：它继承 ",h("code",null,"BaseTool"),"，",h("code",null,"execute")," 把代码 POST 到沙箱服务执行并返回 stdout/stderr。这正是把环境作为外部服务接入的典型形态。"),
+      h("div",null,h(Src,{label:"load_all_tools",path:"verl/tools/tool_registry.py",line:83}),h(Src,{label:"initialize_tools_from_config",path:"verl/tools/tool_registry.py",line:55}),h(Src,{label:"ToolType",path:"verl/tools/tool_registry.py",line:36}),h(Src,{label:"ToolResponse",path:"verl/tools/schemas.py",line:98}),h(Src,{label:"OpenAIFunctionToolSchema",path:"verl/tools/schemas.py",line:52}),h(Src,{label:"SandboxTool 示例",path:"examples/tutorial/agent_loop_get_started/sandbox.py",line:22}),h(Src,{label:"AgentLoopWorker 加载工具",path:"verl/experimental/agent_loop/agent_loop.py",line:436}))
+    );
+  }
+
+  // ===== reward_loop =====
+  function RewardSection(){
+    return h("div",null,
+      h("p",null,"轨迹生成完毕后，需要为它打一个标量奖励。verl 把奖励计算单独抽成 ",h("code",null,"verl/experimental/reward_loop/"),"，并设计为可与 rollout 并行：当奖励是规则式或带独立资源池的奖励模型时，奖励 worker 句柄会传给 agent loop worker，每条轨迹一生成完就立刻异步打分，而不必等整个 batch 都生成完。这样把奖励计算的耗时藏进 rollout 的耗时里。"),
+      h("h4",null,"在 agent loop 内触发：_compute_score"),
+      h("p",null,h("code",null,"AgentLoopWorker._compute_score")," 在每条轨迹后处理时被调用。若该 worker 持有 ",h("code",null,"reward_loop_worker_handles")," 且该轨迹尚无奖励，它会把轨迹组装成一个 ",h("code",null,"DataProto"),"，随机选一个 reward worker，远程调用 ",h("code",null,"compute_score.remote(data)"),"，把返回的 ",h("code",null,"reward_score")," 写回 ",h("code",null,"output.reward_score"),"。"),
+      h(Code,null,"async def _compute_score(self, outputs, kwargs):\n    enable_async_reward = self.reward_loop_worker_handles is not None\n    final_output = outputs[-1]\n    if final_output.reward_score is None and enable_async_reward:\n        with simple_timer('compute_score', timing):\n            data = DataProto(batch=..., non_tensor_batch=...)\n            handle = random.choice(self.reward_loop_worker_handles)\n            result = await handle.compute_score.remote(data)\n            final_output.reward_score = result['reward_score']\n            final_output.extra_fields['reward_extra_info'] = result['reward_extra_info']"),
+      h("h4",null,"三种奖励来源"),
+      h("p",null,h("code",null,"RewardLoopWorker.compute_score")," 按配置分派三条路径："),
+      h("ol",null,
+        h("li",null,h("strong",null,"用户自定义奖励函数"),"：若配置了 ",h("code",null,"custom_reward_function.path"),"，直接走 ",h("code",null,"reward_manager.run_single(data)"),"。这是最灵活的路径，自定义函数内部还可向 reward model router 发请求。"),
+        h("li",null,h("strong",null,"规则式奖励"),"：未配置自定义函数且未启用 reward model，用默认的 ",h("code",null,"default_compute_score"),"（按 ",h("code",null,"data_source")," 选具体打分逻辑，如 gsm8k 抽取数值比对）。"),
+        h("li",null,h("strong",null,"判别式奖励模型（disrm）"),"：启用了 reward model 时，把 prompt 与响应拼成 RM 输入，POST 给 RM 服务（vLLM 的 ",h("code",null,"classify")," 或 SGLang 的 ",h("code",null,"v1/embeddings")," 端点），取出标量分。生成式奖励模型（genrm）必须经由自定义函数处理。")
+      ),
+      h(Code,null,"async def compute_score(self, data: DataProto) -> dict:\n    if self.config.reward.custom_reward_function.path is not None:\n        return await self.reward_manager.run_single(data)        # 路径 1\n    else:\n        if self.config.reward.reward_model.enable:\n            return await self.compute_score_disrm(data[-1:])     # 路径 3\n        else:\n            return await self.reward_manager.run_single(data)    # 路径 2"),
+      h("h4",null,"reward_manager 与 router"),
+      h("p",null,h("code",null,"RewardManagerBase")," 定义统一接口 ",h("code",null,"run_single(data)"),"，子类（",h("code",null,"naive"),"、",h("code",null,"dapo"),"、",h("code",null,"gdpo"),"、",h("code",null,"remote"),"、",h("code",null,"limited")," 等）按算法需要实现具体逻辑，用 ",h("code",null,"@register(name)")," 注册。",h("code",null,"NaiveRewardManager.run_single")," 解码响应、取 ",h("code",null,"ground_truth")," 与 ",h("code",null,"extra_info"),"（含工具透传的 ",h("code",null,"tool_extra_fields")," 与 ",h("code",null,"num_turns"),"），调用 ",h("code",null,"compute_score")," 得到分数与 ",h("code",null,"reward_extra_info"),"。"),
+      h("p",null,h("code",null,"router/")," 下的 ",h("code",null,"NaiveRouter")," 是一个最小的 FastAPI 异步负载均衡代理，把奖励/分类请求转发给最空闲的 RM worker（按在途请求数选择），带重试与回退。这与第 9 课推理服务的负载均衡是同一思路，只是服务对象从生成模型换成了奖励模型。"),
+      h("div",{className:"warn"},h("strong",null,"何时返回 worker 句柄："),h("code",null,"RewardLoopManager.reward_loop_worker_handles")," 仅在无 reward model，或 reward model 有独立资源池时返回非空，因为只有这两种情形奖励计算能真正与 rollout 并行。否则返回 ",h("code",null,"None"),"，奖励改在主训练流程中计算（见第 12 课）。这是把奖励耗时藏进 rollout 的前提条件。"),
+      h("div",null,h(Src,{label:"_compute_score（loop 内触发）",path:"verl/experimental/agent_loop/agent_loop.py",line:849}),h(Src,{label:"RewardLoopWorker",path:"verl/experimental/reward_loop/reward_loop.py",line:93}),h(Src,{label:"compute_score 分派",path:"verl/experimental/reward_loop/reward_loop.py",line:145}),h(Src,{label:"compute_score_disrm",path:"verl/experimental/reward_loop/reward_loop.py",line:231}),h(Src,{label:"RewardLoopManager.handles",path:"verl/experimental/reward_loop/reward_loop.py",line:293}),h(Src,{label:"RewardManagerBase",path:"verl/experimental/reward_loop/reward_manager/base.py",line:34}),h(Src,{label:"NaiveRewardManager.run_single",path:"verl/experimental/reward_loop/reward_manager/naive.py",line:34}),h(Src,{label:"NaiveRouter",path:"verl/experimental/reward_loop/router/naive_router.py",line:82}))
+    );
+  }
+
+  // ===== 端到端：一条轨迹的完整流程 =====
+  function PipelineSection(){
+    return h("div",null,
+      h("p",null,"把前面各层串起来，一条 agentic 轨迹从初始 prompt 到训练样本的完整流程如下。这是本课最该记住的一张流程图。"),
+      h("ol",null,
+        h("li",null,h("strong",null,"分发"),"：训练主流程调用 ",h("code",null,"AgentLoopManager.generate_sequences(prompts)"),"，把 batch 切 chunk 分给各 ",h("code",null,"AgentLoopWorker"),"。"),
+        h("li",null,h("strong",null,"建任务"),"：worker 为 chunk 内每条样本建一个 ",h("code",null,"asyncio")," 任务，按 ",h("code",null,"agent_name")," 用 hydra 实例化对应 loop（",h("code",null,"single_turn_agent")," 或 ",h("code",null,"tool_agent")," 或自定义）。"),
+        h("li",null,h("strong",null,"准备 prompt"),"：loop 从 ",h("code",null,"raw_prompt")," 取消息，抽多模态数据，",h("code",null,"apply_chat_template")," 加工具 schema 得到 ",h("code",null,"prompt_ids"),"。"),
+        h("li",null,h("strong",null,"生成"),"：调 ",h("code",null,"server_manager.generate(...)"),"，异步并发地命中第 9 课的推理服务，拿回 ",h("code",null,"TokenOutput"),"；响应 token 追加上下文并打 mask=1。"),
+        h("li",null,h("strong",null,"解析工具调用"),"：",h("code",null,"tool_parser.extract_tool_calls")," 从响应里抽出 ",h("code",null,"FunctionCall")," 列表。无调用则转步骤 8。"),
+        h("li",null,h("strong",null,"执行工具"),"：",h("code",null,"_call_tool")," 并发执行（",h("code",null,"FunctionTool.call")," 或 ",h("code",null,"BaseTool.create/execute/release"),"），得到 ",h("code",null,"ToolResponse"),"。"),
+        h("li",null,h("strong",null,"拼回观测"),"：工具响应组装为 ",h("code",null,"role: tool")," 消息，tokenize 后拼进上下文并打 ",h("strong",{className:"hl-red"},"mask=0"),"，回到步骤 4。"),
+        h("li",null,h("strong",null,"终止"),"：响应超长 / 达到最大轮数 / 模型不再调用工具，循环结束，产出 ",h("code",null,"AgentLoopOutput"),"（",h("code",null,"prompt_ids"),"、",h("code",null,"response_ids"),"、",h("code",null,"response_mask"),"、",h("code",null,"num_turns")," 等）。"),
+        h("li",null,h("strong",null,"打分"),"：",h("code",null,"_compute_score")," 异步调 reward worker，把 ",h("code",null,"reward_score")," 写回。"),
+        h("li",null,h("strong",null,"后处理"),"：",h("code",null,"_agent_loop_postprocess")," 对 prompt 左 padding、response 右 padding、构造 ",h("code",null,"attention_mask"),"/",h("code",null,"position_ids"),"，",h("code",null,"_postprocess")," 把 chunk 内所有轨迹拼成一个 ",h("code",null,"DataProto"),"（含 ",h("code",null,"rm_scores"),"、",h("code",null,"__num_turns__")," 等），返回给训练流程。")
+      ),
+      h(Code,null,"# 一条轨迹的张量化结果 (单样本视角)\nprompts:        [0,0,0,0, p1,p2,p3,p4]          # 左 padding\nresponses:      [r1,r2,r3, t1,t2, r4,r5, 0,0]    # 右 padding\nresponse_mask:  [ 1, 1, 1,  0, 0,  1, 1, 0,0]    # t* 是工具观测, mask=0\nattention_mask: [0,0,0,0, 1,1,1,1, 1,1,1,1,1,1,1,0,0]\nposition_ids:   [0,0,0,0, 0,1,2,3, 4,5,6,7,8,9,10,0,0]\nrm_scores:      [............................, S]  # 奖励放在末端有效位"),
+      h("p",null,"至此，agentic rollout 的产物已与普通单轮 rollout 的 ",h("code",null,"DataProto")," 完全同构，下游的 advantage 计算、policy loss、optimizer step（第 5、6 课）无需区分它是不是 agentic 轨迹，只要尊重 ",h("code",null,"response_mask")," 即可。这正是 verl 把 agentic 逻辑限制在数据生成层、不污染训练内核的体现。"),
+      h("div",null,h(Src,{label:"_agent_loop_postprocess（padding）",path:"verl/experimental/agent_loop/agent_loop.py",line:634}),h(Src,{label:"_pad_token_ids",path:"verl/experimental/agent_loop/agent_loop.py",line:603}),h(Src,{label:"_postprocess（拼 batch）",path:"verl/experimental/agent_loop/agent_loop.py",line:938}),h(Src,{label:"get_trajectory_info",path:"verl/experimental/agent_loop/agent_loop.py",line:1032}))
+    );
+  }
+
+  // ===== tau2 类任务的承载 =====
+  function Tau2Section(){
+    return h("div",null,
+      h("p",null,h("strong",null,"明确一点："),"verl 核心仓库不包含 tau-bench / tau2。它没有内置的航空、零售、电信等领域环境，也没有内置的双 agent（用户模拟器 + 助手）评测脚本。这是设计取舍：verl 把自己定位为训练框架，把具体任务/环境留给使用方接入。"),
+      h("p",null,"那么 tau2 类任务（多轮工具调用、需要领域数据库/策略约束、奖励来自任务完成判定）在 verl 里如何承载？答案是：",h("strong",{className:"hl-teal"},"用 agent_loop 加自定义 tools/env"),"。具体有两种接入形态，可组合使用："),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"形态 A"),"环境作为工具"),
+          h("p",null,"把 tau2 的每个领域 API（查询订单、修改预订、检索知识库等）实现为一个 ",h("code",null,"BaseTool")," 子类或 ",h("code",null,"@function_tool")," 函数。模型通过工具调用与环境交互，",h("code",null,"execute")," 内部读写领域数据库或调外部服务。",h("code",null,"tool_agent")," 状态机天然驱动这一多轮过程。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"形态 B"),"自定义 AgentLoop"),
+          h("p",null,"若 tau2 的控制流更复杂（例如需要用户模拟器作为第二个 LLM、需要按策略文档检查每一步合法性），可以写一个继承 ",h("code",null,"AgentLoopBase")," 的自定义 loop，用 ",h("code",null,"@register('tau2_agent')")," 注册，在 ",h("code",null,"run")," 内自由编排：调主模型、调用户模拟器、查策略、累积 ",h("code",null,"response_mask"),"。")
+        )
+      ),
+      h("p",null,"接入步骤："),
+      h("ol",null,
+        h("li",null,"写工具（",h("code",null,"BaseTool")," 子类或 ",h("code",null,"@function_tool")," 函数），把 tau2 的领域 API 与数据库封装进去。无状态查询用 function tool，需要按轨迹维护会话状态（如同一用户的多次操作）用 BaseTool 的 ",h("code",null,"create/execute/release"),"。"),
+        h("li",null,"在数据预处理时为每条样本写 ",h("code",null,'"agent_name": "tool_agent"'),"（或你的自定义 agent 名），并在 ",h("code",null,"extra_info.tools_kwargs")," 里放每个工具的 ",h("code",null,"create_kwargs"),"（例如该样本的 ground truth、初始数据库状态）。"),
+        h("li",null,"在配置里设 ",h("code",null,"rollout.multi_turn.tool_config_path")," / ",h("code",null,"function_tool_path")," 指向你的工具，设 ",h("code",null,"format")," 匹配模型的工具调用格式，设 ",h("code",null,"max_assistant_turns")," 等多轮上限。"),
+        h("li",null,"奖励：把 tau2 的任务完成判定写成 ",h("code",null,"custom_reward_function"),"（在 reward manager 的 ",h("code",null,"run_single")," 路径里被调用），它能读到 ",h("code",null,"num_turns"),"、",h("code",null,"tool_extra_fields")," 等信息来判定是否达成目标、是否违反策略。也可把奖励放在 ",h("code",null,"tool_rewards")," 里逐步给（step reward）。")
+      ),
+      h(Code,null,"# 数据预处理：把一条 tau2 样本指向 tool_agent (参考 gsm8k_tool_agent_loop.py)\ndata = {\n    'data_source': 'tau2_retail',\n    'agent_name': 'tool_agent',\n    'prompt': [{'role': 'system', 'content': policy_doc},\n               {'role': 'user',   'content': user_request}],\n    'reward_model': {'style': 'rule', 'ground_truth': task_goal},\n    'extra_info': {\n        'index': idx,\n        'need_tools_kwargs': True,\n        'tools_kwargs': {\n            'get_order': {'create_kwargs': {'db_snapshot': snapshot}},\n            'modify_booking': {'create_kwargs': {'db_snapshot': snapshot}},\n        },\n    },\n}"),
+      h("div",{className:"note"},"对照 ",h("code",null,"examples/data_preprocess/gsm8k_tool_agent_loop.py"),"：它就是把 gsm8k 样本写成 ",h("code",null,"agent_name='tool_agent'"),"、配 ",h("code",null,"calc_gsm8k_reward")," 工具的 ",h("code",null,"create_kwargs={'ground_truth': solution}"),"。tau2 类任务的接入与此同构，区别只在工具更多、奖励判定更复杂。环境本身可以是进程内的 Python 对象，也可以是一个独立的 HTTP 服务（像 ",h("code",null,"SandboxTool")," 那样 POST 调用），由工具的 ",h("code",null,"execute")," 决定。"),
+      h("div",null,h(Src,{label:"tool_selection（按样本筛工具）",path:"verl/experimental/agent_loop/tool_agent_loop.py",line:150}),h(Src,{label:"tools_kwargs 取用",path:"verl/experimental/agent_loop/tool_agent_loop.py",line:137}),h(Src,{label:"gsm8k tool agent 预处理",path:"examples/data_preprocess/gsm8k_tool_agent_loop.py",line:62}),h(Ext,{href:"https://github.com/sierra-research/tau-bench"},"tau-bench"),h(Ext,{href:"https://www.swebench.com/"},"SWE-bench"))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"SGLang 文档",d:"多轮 RL、工具调用、function calling 后端",href:"https://docs.sglang.ai/"},
+    {t:"tau-bench",d:"双 agent（用户模拟器+助手）工具调用基准；verl 不内置，需自接入",href:"https://github.com/sierra-research/tau-bench"},
+    {t:"SWE-bench",d:"软件工程 agent 基准，agent loop 可替换为 SWE-agent",href:"https://www.swebench.com/"},
+    {t:"OpenAI harmony 格式",d:"gpt-oss 工具调用与思维链通道的文本格式",href:"https://cookbook.openai.com/articles/openai-harmony"},
+    {t:"agent loop 教程（本机）",d:"examples/tutorial/agent_loop_get_started",href:srcUrl("examples/tutorial/agent_loop_get_started/agent_loop_tutorial.ipynb",null)},
+    {t:"agent_loop.py（本机）",d:"本课核心源码, 1170 行",href:srcUrl("verl/experimental/agent_loop/agent_loop.py",1)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:10}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 10 课 / 共 12 · Agentic RL"),
+          h("h1",null,"Agent Loop（Agentic RL）"),
+          h("p",{className:"lead"},"这一课讲清 verl 如何把多轮对话加工具调用的 agent 过程变成可训练的轨迹。我们自底向上读 agent_loop.py（1170 行）：AgentLoop 三层结构（Manager / Worker / Loop）、single_turn 与 tool_agent 两种循环、tool_parser 如何解析模型输出的工具调用、verl/tools 下工具如何注册与执行、reward_loop 的异步奖励计算。最后用编号步骤讲透一条 agentic 轨迹从 prompt 到训练样本的完整流程，并说明 tau2 类任务在 verl 里的承载方式。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"verl/experimental/agent_loop/")," 全部（agent_loop / single_turn / tool_agent / tool_parser / utils）、",h("code",null,"verl/tools/")," 全部（base_tool / function_tool / tool_registry / schemas）、",h("code",null,"verl/experimental/reward_loop/")," 的 worker / manager / reward_manager / router。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/verl")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"全局观"),
+          h("h2",null,"Agent Loop 在 verl 中的位置"),
+          h(OverviewSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"agent_loop.py · 结构"),
+          h("h2",null,"三层结构：Manager / Worker / Loop"),
+          h(LayersSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"AgentLoopOutput"),
+          h("h2",null,"数据契约：token 序列与 response_mask"),
+          h(OutputSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"single_turn vs tool_agent"),
+          h("h2",null,"两种循环：单轮补全与 ReAct 状态机"),
+          h("p",null,"点 Tab 切换两种 loop。单轮版是最小参考实现，工具版是带状态机的多轮驱动器。理解二者的区别，是理解整个 agentic rollout 的核心。"),
+          h(LoopExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"tool_parser.py"),
+          h("h2",null,"工具解析：从文本到结构化调用"),
+          h(ParserSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"verl/tools"),
+          h("h2",null,"工具体系：注册、加载与执行"),
+          h(ToolsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"verl/experimental/reward_loop"),
+          h("h2",null,"异步奖励：与 rollout 并行打分"),
+          h(RewardSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"端到端"),
+          h("h2",null,"一条 agentic 轨迹的完整流程"),
+          h(PipelineSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"tau2 类任务"),
+          h("h2",null,"在 verl 里承载 tau2 类任务"),
+          h(Tau2Section)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档，能把工具调用格式、多轮 RL 后端、以及 agent 基准的接入方式补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"agentic 逻辑是数据生成层，不污染训练内核"),"：Agent Loop 产出的 ",h("code",null,"DataProto")," 与普通 rollout 同构，下游训练只需尊重 ",h("code",null,"response_mask"),"。",h("code",null,"AgentLoopManager")," 被设计为可整体替换（Nemo-Gym / SWE-agent 等）。"),
+            h("li",null,h("strong",null,"response_mask 是多轮 RL 的正确性根本"),"：模型生成 token 打 mask=1、工具/观测 token 打 mask=0，确保策略梯度只施加于模型自己的输出，不去模仿环境。"),
+            h("li",null,h("strong",null,"三层职责清晰"),"：Manager 切分分发（单控制器）、Worker 并发承载一个 chunk（Ray actor）、Loop 驱动单条轨迹（协程）。每条轨迹是一个 ",h("code",null,"asyncio")," 任务，靠并发保持推理服务高占用。"),
+            h("li",null,h("strong",null,"tool_agent 用显式状态机"),"：PENDING / GENERATING / PROCESSING_TOOLS / TERMINATED 把生成后判断与工具执行后判断分离，便于扩展；解析器的 ",h("code",null,"stop_token_ids")," 解决了不发 EOS 的模型会幻想工具结果的问题。"),
+            h("li",null,h("strong",null,"工具与奖励都可注册、可异步"),"：工具分 ",h("code",null,"BaseTool"),"（有生命周期）与 ",h("code",null,"FunctionTool"),"（无状态自动推断 schema）；奖励经 reward_loop 在轨迹生成完即异步打分，把奖励耗时藏进 rollout。"),
+            h("li",null,h("strong",null,"tau2 类任务的承载方式"),"：verl 不内置 tau-bench，用 agent_loop 加自定义 tools/env 接入。环境可作为进程内对象或外部 HTTP 服务，奖励经 ",h("code",null,"custom_reward_function")," 判定，数据预处理用 ",h("code",null,"agent_name")," 与 ",h("code",null,"tools_kwargs")," 指定。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"verl-lesson-09-async-server.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 9 课：Async 推理服务与 server 模式")),
+            h("a",{href:"verl-lesson-11-async-train.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 11 课：异步训练范式"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

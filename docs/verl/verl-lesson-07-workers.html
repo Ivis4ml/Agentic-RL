@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 第 7 课：Workers 与角色</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 7 课</p><h1>Workers 与角色</h1><p>能访问 CDN 时切换为交互版。本课讲清 verl 如何把第 6 课的训练引擎包装成可被单控制器编排的 Ray worker：TrainingWorker 作为引擎外壳，ActorRolloutRefWorker 作为同一组 GPU 上承载 actor、rollout 与 ref 的共置 worker，以及 @register 注解的 dispatch 模式如何决定数据切分与收集。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const VERL="vscode://file/Users/xinyu/Code/Agentic-RL/verl/";
+  function srcUrl(p,l){return VERL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","DataProto","WorkerGroup","ResourcePool","RayWorkerGroup","AgentLoop","TrainingWorker","ActorRolloutRefWorker","Worker","BaseEngine","BaseRollout","TensorDict","Dispatch","Role","EngineRegistry","TrainingWorkerConfig","Timer","DistProfiler","DistProfilerExtension","RayClassWithInitArgs"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与HybridFlow","verl-lesson-01-foundations.html"],[2,"DataProto","verl-lesson-02-dataproto.html"],[3,"混合控制器","verl-lesson-03-single-controller.html"],[4,"配置","verl-lesson-04-config.html"],[5,"RL数学","verl-lesson-05-core-algos.html"],[6,"训练引擎","verl-lesson-06-engines.html"],[7,"Workers","verl-lesson-07-workers.html"],[8,"Rollout","verl-lesson-08-rollout.html"],[9,"异步服务","verl-lesson-09-async-server.html"],[10,"Agent Loop","verl-lesson-10-agent-loop.html"],[11,"异步训练","verl-lesson-11-async-train.html"],[12,"Trainer与端到端","verl-lesson-12-trainer-e2e.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"verl-course-index.html"},"verl",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 概览：worker 这一层在做什么 =====
+  function OverviewSection(){
+    return h("div",null,
+      h("p",null,"回顾前几课的分工：第 3 课讲了单控制器（single controller），即一个驱动进程通过 ",h("code",null,"RayWorkerGroup")," 用一行远程调用驱动一整组 GPU worker，并由 ",h("code",null,"@register")," 的 dispatch 模式决定数据如何切分到各 worker、各 worker 的返回如何收集回来；第 6 课讲了 ",h("strong",{className:"hl-purple"},"训练引擎（BaseEngine）"),"，它把 FSDP、Megatron、VeOmni 等后端的前向、反向、优化器步、权重导出等统一为一套与后端无关的接口。"),
+      h("p",null,"本课的 ",h("strong",{className:"hl-teal"},"workers")," 层正是连接这两者的中间层。它要回答一个具体问题：单控制器手里拿到的是一组逻辑上的 GPU 进程，每个进程内部跑着一个训练引擎，那么如何把引擎的能力以远程方法的形式暴露给控制器，并标注每个方法应当采用哪种 dispatch 模式？答案就是用 ",h("code",null,"Worker")," 的子类把引擎包起来，在每个对外方法上加 ",h("code",null,"@register"),"。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"承重文件"),"engine_workers.py"),
+          h("p",null,h("code",null,"TrainingWorker")," 把单个训练引擎包成一个 Ray worker；",h("code",null,"ActorRolloutRefWorker")," 把 actor 引擎、可选 ref 引擎与 rollout 引擎共置（colocate）在同一组 GPU 上，并对外暴露 ",h("code",null,"generate"),"、",h("code",null,"compute_log_prob"),"、",h("code",null,"update_actor")," 等方法。"),
+          h("div",null,h(Src,{label:"engine_workers.py",path:"verl/workers/engine_workers.py"}))
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"角色枚举"),"Role"),
+          h("p",null,"控制器侧用 ",h("code",null,"Role")," 枚举区分 actor、rollout、critic、ref、reward model、teacher 等角色，再用 ",h("code",null,"role_worker_mapping")," 把每个角色对应到一个具体 worker 类与一个资源池。同一个 worker 类可承担多种角色。"),
+          h("div",null,h(Src,{label:"Role",path:"verl/trainer/ppo/utils.py",line:27}))
+        )
+      ),
+      h("div",{className:"note"},"一个值得注意的设计转折：在 verl 的早期版本里，actor、critic、reward model 各有独立的 worker 类（如 ",h("code",null,"CriticWorker"),"、",h("code",null,"RewardModelWorker"),"），且每个后端再分一份（FSDP 一份、Megatron 一份）。在本仓库的统一引擎版本中，这些类被合并：凡是需要训练或前向的角色，统一由 ",h("code",null,"TrainingWorker")," 承载，后端由 ",h("code",null,"config.*.strategy")," 在引擎内部选择；rollout 角色则由 ",h("code",null,"ActorRolloutRefWorker")," 内部持有的 ",h("code",null,"BaseRollout")," 承载。因此本课不再有逐后端的 worker 类，而只有按职责划分的两个核心 worker。"),
+      h("p",null,"用一句话概括本课的设计主线：",h("strong",null,"worker 是引擎到控制器之间的薄适配层，它的唯一职责是把引擎方法重新暴露为带 dispatch 注解的远程方法，并在需要时把多个引擎共置在一组进程里。"))
+    );
+  }
+
+  // ===== @register 与 dispatch 模式 =====
+  function DispatchSection(){
+    return h("div",null,
+      h("p",null,"理解 worker 层之前，必须先理解 ",h("code",null,"@register")," 注解。它本身不执行任何分布式逻辑，只是把一对元信息（dispatch 模式、execute 模式、是否阻塞）挂到方法对象上，供 ",h("code",null,"RayWorkerGroup")," 在生成代理方法时读取。换言之，worker 类里的方法体写的是“在单个进程里要做什么”，而 ",h("code",null,"@register")," 声明的是“控制器调用它时，数据如何在 world_size 个进程之间分发与收集”。"),
+      h(Code,null,"# single_controller/base/decorator.py\ndef register(dispatch_mode=Dispatch.ALL_TO_ALL, execute_mode=Execute.ALL, blocking=True, materialize_futures=True):\n    _check_dispatch_mode(dispatch_mode=dispatch_mode)\n    _check_execute_mode(execute_mode=execute_mode)\n\n    def decorator(func):\n        @wraps(func)\n        def inner(*args, **kwargs):\n            if materialize_futures:\n                args, kwargs = _materialize_futures(*args, **kwargs)\n            return func(*args, **kwargs)\n        # 把 dispatch/execute/blocking 作为属性挂到方法上, 供 WorkerGroup 读取\n        attrs = {\"dispatch_mode\": dispatch_mode, \"execute_mode\": execute_mode, \"blocking\": blocking}\n        setattr(wrapper, MAGIC_ATTR, attrs)\n        return wrapper\n    return decorator"),
+      h("p",null,"每种 dispatch 模式在 ",h("code",null,"DISPATCH_MODE_FN_REGISTRY")," 里登记了一对函数：",h("code",null,"dispatch_fn")," 把控制器传入的参数转换成长度等于 world_size 的列表（每个元素发给一个 worker），",h("code",null,"collect_fn")," 把各 worker 的返回聚合成单个结果。下面的 Tab 逐个解释 worker 层用到的几种模式。点开看它们的真实定义。"),
+      h(DispatchExplorer),
+      h("div",{className:"note"},"完整的 dispatch/collect 机制（参数如何被 ",h("code",null,"parallel_put")," 放进 Ray 对象库、返回如何被拼接回 ",h("code",null,"DataProto"),"）属于第 3 课。本课只需建立一个判据：看一个 worker 方法的 ",h("code",null,"@register")," 注解，就能知道控制器调用它时数据是被复制还是被切分、返回是被全收集还是只取主 rank。")
+    );
+  }
+  const DISPATCH=[
+    {key:"o2a",name:"ONE_TO_ALL",render:function(){return [
+      h("p",null,h("code",null,"Dispatch.ONE_TO_ALL")," 表示把同一份参数原样广播给所有 worker，每个 worker 收到完全相同的输入。它用于不需要按数据并行切分的控制性方法，例如 ",h("code",null,"to(device)"),"（统一加载或卸载到设备）、",h("code",null,"set_loss_fn"),"、",h("code",null,"reset"),"、",h("code",null,"save_checkpoint"),"、",h("code",null,"load_checkpoint"),"、",h("code",null,"init_model"),"。这些方法要么没有逐样本数据，要么需要每个进程都执行一遍（如保存各自的模型分片）。"),
+      h(Code,null,"# dispatch_one_to_all: 把每个参数复制 world_size 份\ndef dispatch_one_to_all(worker_group, *args, **kwargs):\n    args = tuple([arg] * worker_group.world_size for arg in args)\n    kwargs = {k: [v] * worker_group.world_size for k, v in kwargs.items()}\n    return args, kwargs"),
+      h("div",null,h(Src,{label:"dispatch_one_to_all",path:"verl/single_controller/base/decorator.py",line:120}),h(Src,{label:"DISPATCH_MODE_FN_REGISTRY",path:"verl/single_controller/base/decorator.py",line:308}))
+    ];}},
+    {key:"nd",name:"make_nd_compute_dataproto_dispatch_fn",render:function(){return [
+      h("p",null,"这是 worker 层数据计算方法的主力模式，也是本课最重要的一种。它不是预定义枚举，而是一个工厂函数，按 ",h("code",null,"mesh_name")," 生成一对 dispatch/collect 函数。其核心思想是：每个 worker 进程在初始化时已经向自己登记了在某个命名网格（mesh）下的数据并行 rank（",h("code",null,"dp_rank"),"）以及是否为该网格的输出收集 rank（",h("code",null,"is_collect"),"）。dispatch 时按 ",h("code",null,"dp_rank")," 把一个批次切成 dp_size 份再分发，collect 时只从 ",h("code",null,"is_collect")," 为真的进程取回结果。"),
+      h("p",null,"为什么需要按 mesh 命名？因为同一个共置 worker 内部可能有多个并行结构不同的引擎：actor 引擎有自己的张量并行/流水并行布局，ref 引擎可能不同，rollout 引擎又是另一套。每套布局对应一个网格，数据切分必须按调用的方法所属的网格来做。",h("code",null,"compute_log_prob")," 用 actor 网格，",h("code",null,"compute_ref_log_prob")," 用 ref 网格。"),
+      h(Code,null,"# 工厂: 按 mesh_name 生成延迟查询的 dispatch/collect 对\ndef make_nd_compute_dataproto_dispatch_fn(mesh_name):\n    return {\n        \"dispatch_fn\": partial(dispatch_lazy_compute_data_proto, mesh_name),\n        \"collect_fn\": partial(collect_lazy_compute_data_proto, mesh_name),\n    }\n\n# 切分: 先按 dp_size 拆 DataProto, 再按每个进程的 dp_rank 取对应分片\ndef dispatch_nd_compute(dp_rank_mapping, dp_size, worker_group, *args, **kwargs):\n    for i in range(worker_group.world_size):\n        local_dp_rank = dp_rank_mapping[i]\n        transformed_args.append(arg[local_dp_rank])   # 同一 dp 组内的进程拿同一份分片"),
+      h("div",null,h(Src,{label:"make_nd_compute_dataproto_dispatch_fn",path:"verl/single_controller/base/decorator.py",line:300}),h(Src,{label:"dispatch_nd_compute",path:"verl/single_controller/base/decorator.py",line:202}),h(Src,{label:"collect_nd_compute",path:"verl/single_controller/base/decorator.py",line:236}))
+    ];}},
+    {key:"dp",name:"DP_COMPUTE / ALL_TO_ALL",render:function(){return [
+      h("p",null,h("code",null,"Dispatch.DP_COMPUTE")," 与其变体按数据并行 rank 切分，是命名网格模式出现前的更简单形式：它假设整个 worker group 就是一个一维数据并行组，把批次平均切成 world_size 份。",h("code",null,"execute_checkpoint_engine")," 即用此模式。",h("code",null,"Dispatch.ALL_TO_ALL")," 则不做切分也不做广播，把参数原样传给每个 worker（与 ONE_TO_ALL 的区别在于它不复制，常用于参数本身已经是列表的场景），是 ",h("code",null,"register")," 的默认值。"),
+      h("p",null,"理解这一层级关系有助于阅读源码：早期 worker 普遍使用 ",h("code",null,"DP_COMPUTE_PROTO"),"（按数据并行切分 ",h("code",null,"DataProto"),"），而本仓库的统一引擎 worker 改用命名网格模式，因为一个进程可能同时参与 actor、ref、train 等多个网格，单一的全局数据并行 rank 已不足以描述切分方式。"),
+      h("div",null,h(Src,{label:"dispatch_dp_compute",path:"verl/single_controller/base/decorator.py",line:148}),h(Src,{label:"dispatch_all_to_all",path:"verl/single_controller/base/decorator.py",line:130}),h(Src,{label:"Dispatch 枚举",path:"verl/single_controller/base/decorator.py",line:26}))
+    ];}}
+  ];
+  function DispatchExplorer(){const [s,setS]=useState(1);const d=DISPATCH[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},DISPATCH.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== TrainingWorker: 把引擎包成 worker =====
+  function TrainingWorkerSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"TrainingWorker")," 是最基础的角色 worker，它继承自 ",h("code",null,"Worker"),"（提供 rank、world_size、master 地址等分布式元信息）与 ",h("code",null,"DistProfilerExtension"),"（提供性能剖析接口）。它的构造函数做三件事：初始化 Ray 进程组，从配置里读出引擎/优化器/检查点配置，然后用 ",h("code",null,"EngineRegistry.new(...)")," 实例化一个具体的训练引擎。引擎的后端由 ",h("code",null,"engine_config.strategy")," 决定，这正是第 6 课讲的引擎注册表机制。"),
+      h(Code,null,"# engine_workers.py\nclass TrainingWorker(Worker, DistProfilerExtension):\n    \"\"\"TrainingWorker provides a Tinker-like API as a RayWorkerGroup to a single controller.\"\"\"\n\n    def __init__(self, config: TrainingWorkerConfig):\n        Worker.__init__(self)\n        from verl.workers.engine import BaseEngine, EngineRegistry\n        initialize_global_process_group_ray(timeout_second=None)\n        ...\n        # 按 model_type + strategy 从注册表里取出并实例化引擎\n        self.engine: BaseEngine = EngineRegistry.new(\n            model_type=self.config.model_type,\n            backend=self.engine_config.strategy,\n            model_config=self.model_config,\n            engine_config=self.engine_config,\n            optimizer_config=self.optimizer_config,\n            checkpoint_config=self.checkpoint_config,\n        )\n        # 关键: 向自己登记在 'train' 网格下的 dp_rank 与是否为收集 rank\n        self._register_dispatch_collect_info(\n            mesh_name=\"train\",\n            dp_rank=self.engine.get_data_parallel_rank(),\n            is_collect=self.engine.is_mp_src_rank_with_outputs(),\n        )"),
+      h("p",null,"构造函数结尾的 ",h("code",null,"_register_dispatch_collect_info")," 是 worker 与 dispatch 机制衔接的关键。它把引擎报告的两条信息记到 worker 自身：第一，本进程在数据并行维度上属于哪个 ",h("code",null,"dp_rank"),"（决定它应当收到哪一份数据分片）；第二，本进程是否是模型并行组里负责输出的源 rank（",h("code",null,"is_mp_src_rank_with_outputs"),"，决定 collect 时是否从它取回结果）。张量并行组内只有一个进程产出完整输出，其余进程的返回为 ",h("code",null,"None"),"，因此 collect 时必须只收集源 rank。"),
+      h("h3",null,"对外暴露的引擎方法"),
+      h("p",null,"在引擎之上，",h("code",null,"TrainingWorker")," 用 ",h("code",null,"@register")," 暴露一组方法。按 dispatch 模式可分两类。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"ONE_TO_ALL"),"控制类"),
+          h("ul",null,
+            h("li",null,h("code",null,"to(device, model, optimizer, grad)"),"：手动控制把模型/优化器/梯度加载到设备或卸载到 CPU，用于共置时在训练与推理之间腾挪显存。"),
+            h("li",null,h("code",null,"set_loss_fn(loss_fn)"),"：注入损失函数。"),
+            h("li",null,h("code",null,"reset()"),"：初始化或重置引擎状态。"),
+            h("li",null,h("code",null,"save_checkpoint / load_checkpoint"),"：每个进程保存或加载自己的分片。")),
+          h("div",null,h(Src,{label:"to",path:"verl/workers/engine_workers.py",line:150}),h(Src,{label:"reset",path:"verl/workers/engine_workers.py",line:164}),h(Src,{label:"save_checkpoint",path:"verl/workers/engine_workers.py",line:425}))
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"nd_compute"),"数据计算类"),
+          h("ul",null,
+            h("li",null,h("code",null,"train_batch(data)"),"：在一个 mini-batch 上跑前向、反向并优化一步，返回 loss 与指标。"),
+            h("li",null,h("code",null,"train_mini_batch(data)"),"：把一个批次切成多个 mini-batch、跑多个 epoch，内部循环调用 ",h("code",null,"train_batch"),"。"),
+            h("li",null,h("code",null,"infer_batch(data)"),"：只做前向（如计算 log_prob 或 value），不更新参数。")),
+          h("div",null,h(Src,{label:"train_batch",path:"verl/workers/engine_workers.py",line:323}),h(Src,{label:"train_mini_batch",path:"verl/workers/engine_workers.py",line:233}),h(Src,{label:"infer_batch",path:"verl/workers/engine_workers.py",line:380}))
+        )
+      ),
+      h("p",null,"数据计算类方法的注解都是 ",h("code",null,"@register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name=\"train\"), blocking=False)"),"。",h("code",null,"blocking=False")," 表示控制器发起调用后立即拿到 future 而不阻塞，可与其它工作重叠，这是异步训练能重叠生成与计算的底层支撑。注意这些方法体内部并不亲自做数据切分，切分已经由 dispatch 在控制器侧完成，方法收到的 ",h("code",null,"data")," 已是本进程应处理的那一份。"),
+      h(Code,null,"@register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name=\"train\"), blocking=False)\n@DistProfiler.annotate(color=\"red\", role=\"train_batch\")\ndef train_batch(self, data: TensorDict) -> TensorDict:\n    assert self.loss_fn is not None\n    with self.engine.train_mode(...), Timer(name=\"train_batch\", logger=None) as timer:\n        output = self.engine.train_batch(data, loss_function=self.loss_fn)\n    # 只有模型并行组的源 rank 产出完整输出, 其余返回 None\n    if self.engine.is_mp_src_rank_with_outputs():\n        final_output = self._postprocess_output(output, ...).cpu()\n    else:\n        final_output = None\n    return final_output"),
+      h("div",{className:"note"},"为什么 critic 也用 ",h("code",null,"TrainingWorker"),"？因为 critic（价值模型）与 actor 的差别只在于模型头与损失函数：critic 输出标量价值、用价值损失训练。在统一引擎设计下，这些差别全部进入配置（critic 使用 ",h("code",null,"model_type=\"value_model\"")," 与 ",h("code",null,"value_loss"),"），worker 本身无需改动。控制器在 ",h("code",null,"trainer_base")," 里直接用 ",h("code",null,"TrainingWorker")," 注册 critic 角色，再 ",h("code",null,"set_loss_fn(value_loss)"),"。"),
+      h("div",null,h(Src,{label:"TrainingWorker",path:"verl/workers/engine_workers.py",line:76}),h(Src,{label:"EngineRegistry.new",path:"verl/workers/engine/base.py",line:362}),h(Src,{label:"is_mp_src_rank_with_outputs",path:"verl/workers/engine/base.py",line:217}),h(Src,{label:"critic 注册（用 TrainingWorker）",path:"verl/trainer/ppo/v1/trainer_base.py",line:176}))
+    );
+  }
+
+  // ===== ActorRolloutRefWorker: 共置 worker =====
+  function HybridSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"ActorRolloutRefWorker")," 是 verl 中最具特色的 worker，也是 HybridFlow 论文中“共置（colocate）”思想的直接体现。它在同一组 GPU 进程里同时承载三个角色：",h("strong",{className:"hl-red"},"actor")," 训练引擎、",h("strong",{className:"hl-teal"},"rollout")," 推理引擎、可选的 ",h("strong",{className:"hl-amber"},"ref")," 参考策略引擎。具体承载哪些角色由构造参数 ",h("code",null,"role")," 字符串决定。"),
+      h(Code,null,"# engine_workers.py\nclass ActorRolloutRefWorker(Worker, DistProfilerExtension):\n    \"\"\"Hybrid worker that includes actor model, rollout and optional ref model.\"\"\"\n    actor_worker_cls = TrainingWorker\n    ref_worker_cls = TrainingWorker\n\n    def __init__(self, config, role, distillation_config=None, **kwargs):\n        Worker.__init__(self)\n        self.role = role\n        assert self.role in [\"actor\", \"rollout\", \"ref\", \"actor_rollout\", \"actor_rollout_ref\"]\n        self._is_actor   = self.role in [\"actor\", \"actor_rollout\", \"actor_rollout_ref\"]\n        self._is_rollout = self.role in [\"rollout\", \"actor_rollout\", \"actor_rollout_ref\"]\n        self._is_ref     = self.role in [\"ref\", \"actor_rollout_ref\"]"),
+      h("p",null,"这里有一个重要观察：",h("code",null,"actor_worker_cls = TrainingWorker"),"。也就是说，共置 worker 内部的 actor 与 ref 不是另写一套训练逻辑，而是直接复用上一节的 ",h("code",null,"TrainingWorker")," 作为内嵌组件。共置 worker 自己只负责三件事：在 ",h("code",null,"init_model")," 里按角色构建这些内嵌引擎、把内嵌引擎的网格信息转嫁到自己身上、把内嵌引擎的方法重新封装成带正确 dispatch 注解的对外方法。"),
+      h("h3",null,"为什么要共置：显存与权重同步"),
+      h("p",null,"把 actor 与 rollout 放在同一组 GPU 上的根本动机是显存复用与权重同步成本。在同步 RL 训练里，一步内先用当前策略采样（rollout），再用采样数据更新策略（actor train），两个阶段在时间上互斥。若它们共用同一组卡，则训练时让 rollout 进入睡眠（释放 KV 缓存与权重显存），采样时让 actor 卸载到 CPU，两者轮流占用显存，避免为推理与训练各留一份昂贵的 GPU。更关键的是，",h("strong",null,"共置使得训练后的新权重可以在进程内直接传给 rollout 引擎"),"，无需跨节点的网络传输。"),
+      h(Formula,{cap:"共置下一步内的显存占用上界（任一时刻只有一侧驻留权重）"},"$$ M_{\\text{peak}} \\approx \\max\\big(M_{\\text{actor}}^{\\text{train}},\\; M_{\\text{rollout}}^{\\text{infer}}\\big) \\;\\ll\\; M_{\\text{actor}}^{\\text{train}} + M_{\\text{rollout}}^{\\text{infer}} $$"),
+      h("p",null,"上式说明：共置把显存峰值从两侧之和降为两侧之大者。代价是两阶段无法并行，因此共置主要用于同步训练；异步训练需要生成与训练同时进行，会改用分离（disaggregated）部署，actor 与 rollout 各占独立的卡，权重同步则改走检查点引擎做跨进程传输。这一对比是第 11 课异步训练的核心。"),
+      h("h3",null,"init_model：按角色装配内嵌引擎"),
+      h("p",null,h("code",null,"init_model")," 是 ",h("code",null,"ONE_TO_ALL")," 方法（每个进程都要建自己的引擎分片），它按 ",h("code",null,"role")," 顺序装配 ref、actor、rollout 与检查点引擎。其中每装配一个训练引擎，就调用一次 ",h("code",null,"set_dispatch_collect")," 把该引擎的网格信息（在 ",h("code",null,"ref")," 或 ",h("code",null,"actor")," 网格下的 dp_rank 与 collect 标志）合并到共置 worker 自身，使得后续对 ",h("code",null,"compute_ref_log_prob"),"、",h("code",null,"compute_log_prob")," 的调用能各自按正确的网格切分数据。"),
+      h(Code,null,"@register(dispatch_mode=Dispatch.ONE_TO_ALL)\ndef init_model(self):\n    model_config = omega_conf_to_dataclass(self.config.model)\n    # 1. 构建 ref 引擎 (若角色含 ref)\n    if \"ref\" in self.role:\n        self.ref = self.ref_worker_cls(config=ref_training_config)\n        self.ref.reset()\n        self.set_dispatch_collect(mesh_name=\"ref\", **self.ref.get_dispatch_collect())\n    # 2. 构建 actor 引擎 (若角色含 actor) 并注入 ppo_loss\n    if \"actor\" in self.role:\n        self.loss_fn = partial(ppo_loss, config=actor_config)\n        self.actor = self.actor_worker_cls(config=actor_training_config)\n        self.actor.reset()\n        self.actor.set_loss_fn(self.loss_fn)\n        self.set_dispatch_collect(mesh_name=\"actor\", **self.actor.get_dispatch_collect())\n    # 3. 构建 rollout 引擎 (若角色含 rollout)\n    if \"rollout\" in self.role:\n        rollout_cls = get_rollout_class(rollout_config.name, rollout_config.mode)\n        self.rollout = rollout_cls(config=rollout_config, model_config=model_config, device_mesh=...)\n    # 4. 构建检查点引擎 (用于权重同步)\n    if \"actor\" in self.role:\n        self.checkpoint_engine = CheckpointEngineRegistry.new(backend, ...)"),
+      h("div",{className:"note"},"为什么 ref 经常与 actor 共置而不是单列一个角色？因为参考策略只在 KL 惩罚里被用作前向（不训练），且它与 actor 共享同一份模型结构。把 ref 折入 ",h("code",null,"actor_rollout_ref")," 角色可省去一组独立 GPU。只有在使用 LoRA、ref 需要的是“未加 LoRA 的基座”时，才会把 ref 拆成独立角色（见 ",h("code",null,"main_ppo")," 中按 LoRA 决定角色为 ",h("code",null,"ActorRolloutRef")," 还是 ",h("code",null,"ActorRollout")," 的逻辑）。"),
+      h("div",null,h(Src,{label:"ActorRolloutRefWorker",path:"verl/workers/engine_workers.py",line:434}),h(Src,{label:"init_model",path:"verl/workers/engine_workers.py",line:502}),h(Src,{label:"按角色判定 _is_actor/_is_rollout/_is_ref",path:"verl/workers/engine_workers.py",line:455}),h(Src,{label:"main_ppo 按 LoRA 选角色",path:"verl/trainer/main_ppo_v0.py",line:59}))
+    );
+  }
+
+  // ===== 共置 worker 对外的角色方法 =====
+  function MethodsSection(){
+    return h("div",null,
+      h("p",null,"装配好内嵌引擎后，",h("code",null,"ActorRolloutRefWorker")," 对控制器暴露一组角色方法。每个方法都很薄：它选取正确的内嵌引擎、转调其方法、把结果搬到 CPU 后返回。真正的计算逻辑全在内嵌的 ",h("code",null,"TrainingWorker")," 与 ",h("code",null,"BaseRollout")," 里。下面逐一说明四个核心方法，并强调它们各自的 dispatch 注解。"),
+      h(Code,null,"# 计算 actor 的 log_prob: 用 actor 网格切分\n@register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name=\"actor\"))\n@DistProfiler.annotate(color=\"blue\", role=\"actor_compute_log_prob\")\ndef compute_log_prob(self, data: TensorDict) -> TensorDict:\n    output = self.actor.infer_batch(data)\n    return output.cpu() if output is not None else None\n\n# 计算 ref 的 log_prob: 用 ref 网格切分\n@register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name=\"ref\"))\n@DistProfiler.annotate(color=\"olive\", role=\"ref_compute_log_prob\")\ndef compute_ref_log_prob(self, data: TensorDict) -> TensorDict:\n    output = self.ref.infer_batch(data=data)\n    return output.cpu() if output is not None else None\n\n# 更新 actor 参数: 用 actor 网格切分, blocking=False 以便重叠\n@register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name=\"actor\"))\n@DistProfiler.annotate(color=\"red\", role=\"actor_update\")\ndef update_actor(self, data: TensorDict) -> TensorDict:\n    output = self.actor.train_mini_batch(data=data)\n    return output.cpu() if output is not None else None"),
+      h("p",null,"注意三者的网格选择：",h("code",null,"compute_log_prob")," 与 ",h("code",null,"update_actor")," 都用 ",h("code",null,"actor")," 网格，因为它们操作的是 actor 引擎；",h("code",null,"compute_ref_log_prob")," 用 ",h("code",null,"ref")," 网格。这正是命名网格模式存在的理由：同一个进程里 actor 与 ref 的并行布局可能不同，数据切分必须各按各的网格。这种区分对调用方完全透明，控制器只是调用 ",h("code",null,"actor_rollout_wg.compute_log_prob(data)"),"，切分细节由注解自动处理。"),
+      h("h3",null,"generate 与 update_weights"),
+      h("p",null,"rollout 相关方法是这个共置 worker 的另一半。",h("code",null,"generate_sequences")," 类方法转调内嵌的 ",h("code",null,"self.rollout")," 引擎做采样，属于第 8 课 Rollout 引擎的主题。",h("code",null,"update_weights")," 则把训练后的新权重传给 rollout 引擎，它是一个 ",h("code",null,"async")," 方法（",h("code",null,"blocking=False"),"），并按部署模式分两条路径。"),
+      h(Code,null,"@register(dispatch_mode=Dispatch.ONE_TO_ALL, blocking=False)\nasync def update_weights(self, global_steps=None, mode=\"auto\"):\n    effective_mode = mode if mode != \"auto\" else self.config.rollout.checkpoint_engine.backend\n    # 路径 A: 分离部署 (异步训练)：只经检查点引擎跨进程发送权重\n    if effective_mode != \"naive\":\n        per_tensor_param, _ = self.actor.engine.get_per_tensor_param()\n        await self.checkpoint_engine.send_weights(per_tensor_param, global_steps=global_steps)\n        return\n    # 路径 B: 共置部署 (同步训练)：进程内直接把权重灌给 rollout\n    if self.config.rollout.free_cache_engine:\n        await self.rollout.resume(tags=[\"weights\"])          # 唤醒 rollout 的权重显存\n    per_tensor_param, peft_config = self.actor.engine.get_per_tensor_param(...)\n    await self.rollout.update_weights(per_tensor_param, peft_config=peft_config, ...)\n    if self.actor.engine.is_param_offload_enabled:\n        self.actor.engine.to(\"cpu\", model=True, optimizer=False, grad=False)  # actor 让出显存\n    if self.config.rollout.free_cache_engine:\n        await self.rollout.resume(tags=[\"kv_cache\"])          # 唤醒 rollout 的 KV 缓存"),
+      h("p",null,h("code",null,"update_weights")," 集中体现了共置的价值：在路径 B（同步、共置）下，权重从 actor 引擎用 ",h("code",null,"get_per_tensor_param")," 逐张量导出后，在同一进程内直接交给 rollout 引擎，全程没有网络传输；其间还编排了 rollout 的睡眠与唤醒（先 resume 权重显存、灌入后让 actor 卸载到 CPU、再 resume KV 缓存），把两侧的显存占用错开。路径 A（分离、异步）则只能经检查点引擎做跨进程的权重发送。权重同步的完整机制属于第 8 课与第 11 课，此处先看清 worker 层在其中的编排职责。"),
+      h("div",{className:"note"},"还有两个与权重相关的细节方法：",h("code",null,"load_checkpoint")," 与 ",h("code",null,"save_checkpoint")," 都断言 ",h("code",null,"\"actor\" in self.role"),"（只有 actor 角色需要持久化训练状态），并转调内嵌 actor 的对应方法；",h("code",null,"execute_checkpoint_engine")," 用 ",h("code",null,"DP_COMPUTE")," 模式按数据并行 rank 在各进程上执行检查点引擎的任意方法。"),
+      h("div",null,h(Src,{label:"compute_log_prob",path:"verl/workers/engine_workers.py",line:644}),h(Src,{label:"compute_ref_log_prob",path:"verl/workers/engine_workers.py",line:637}),h(Src,{label:"update_actor",path:"verl/workers/engine_workers.py",line:652}),h(Src,{label:"update_weights",path:"verl/workers/engine_workers.py",line:669}),h(Src,{label:"execute_checkpoint_engine",path:"verl/workers/engine_workers.py",line:751}))
+    );
+  }
+
+  // ===== 角色全景与编排 =====
+  function RolesSection(){
+    return h("div",null,
+      h("p",null,"前面分别讲了两个 worker 类。现在从控制器的视角把所有角色串起来。控制器在 ",h("code",null,"trainer_base")," 里维护两张表：",h("code",null,"role_worker_mapping")," 把 ",h("code",null,"Role")," 枚举映射到 worker 类，",h("code",null,"mapping")," 把 ",h("code",null,"Role")," 映射到资源池名。建组时，控制器为每个资源池用 ",h("code",null,"create_colocated_worker_cls")," 把该池上的多个角色类融合成一个 worker 类，再用一个 ",h("code",null,"RayWorkerGroup")," 在该池上拉起进程，最后 ",h("code",null,"spawn")," 出各角色对应的工作组句柄。"),
+      h("div",{className:"linkgrid"},
+        h("div",{className:"linkcard"},h("div",{className:"lt"},"actor / actor_rollout / actor_rollout_ref"),h("div",{className:"ld"},"由 ActorRolloutRefWorker 承载。内部 actor 引擎是 TrainingWorker；对外暴露 generate、compute_log_prob、update_actor、update_weights。"),h("div",null,h(Src,{label:"ActorRolloutRefWorker",path:"verl/workers/engine_workers.py",line:434}))),
+        h("div",{className:"linkcard"},h("div",{className:"lt"},"critic"),h("div",{className:"ld"},"直接由 TrainingWorker 承载，model_type=value_model，损失为 value_loss。与 actor 共用同一套训练引擎与方法。"),h("div",null,h(Src,{label:"critic 注册",path:"verl/trainer/main_ppo_v0.py",line:68}))),
+        h("div",{className:"linkcard"},h("div",{className:"lt"},"ref（参考策略）"),h("div",{className:"ld"},"通常折入 actor_rollout_ref 角色，由共置 worker 内的 ref 引擎（TrainingWorker）承载，只做前向算 KL 用的 log_prob。"),h("div",null,h(Src,{label:"compute_ref_log_prob",path:"verl/workers/engine_workers.py",line:637}))),
+        h("div",{className:"linkcard"},h("div",{className:"lt"},"reward model"),h("div",{className:"ld"},"本版本默认不再用独立的奖励模型 worker 类，而是注册到资源池后由 reward loop 管理；规则型奖励则由 reward_manager 处理。"),h("div",null,h(Src,{label:"reward model 资源池",path:"verl/trainer/main_ppo_v0.py",line:113}),h(Src,{label:"reward_manager 注册表",path:"verl/workers/reward_manager/registry.py",line:24}))),
+        h("div",{className:"linkcard"},h("div",{className:"lt"},"teacher model（蒸馏）"),h("div",{className:"ld"},"用于 on-policy 蒸馏的教师模型服务，作为一个角色登记到资源池，由多教师模型管理器拉起。"),h("div",null,h(Src,{label:"teacher 资源池",path:"verl/trainer/main_ppo_v0.py",line:125}))),
+        h("div",{className:"linkcard"},h("div",{className:"lt"},"Role 枚举与字符串"),h("div",{className:"ld"},"Role 枚举与 _get_role_string 把枚举映射成 worker 内部判定 _is_actor/_is_ref 用的角色字符串（如 actor_rollout_ref）。"),h("div",null,h(Src,{label:"Role._get_role_string",path:"verl/trainer/ppo/utils.py",line:45})))
+      ),
+      h(Code,null,"# trainer_base.py: 为每个资源池融合角色类并建组\nfor resource_pool, class_dict in self.resource_pool_to_cls.items():\n    if not class_dict:\n        continue\n    worker_dict_cls = create_colocated_worker_cls(class_dict=class_dict)   # 同池多角色融成一个类\n    wg_dict = RayWorkerGroup(resource_pool=resource_pool, ray_cls_with_init=worker_dict_cls, **wg_kwargs)\n    spawn_wg = wg_dict.spawn(prefix_set=class_dict.keys())                 # 按角色名拆出工作组句柄\n    all_wg.update(spawn_wg)\n# 之后控制器即可: self.actor_rollout_wg.init_model(); self.critic_wg.set_loss_fn(value_loss)"),
+      h("p",null,"由此可见，角色不是 worker 类的硬编码属性，而是“worker 类 + 角色字符串 + 资源池”三者在控制器侧的组合。同一个 ",h("code",null,"ActorRolloutRefWorker")," 类，传入 ",h("code",null,"role=\"actor_rollout_ref\"")," 就同时是 actor、rollout 与 ref；传入 ",h("code",null,"role=\"rollout\"")," 就只做采样。这种以配置驱动角色的设计，使得同步训练（共置）与异步训练（分离）能复用同一套 worker 代码，差别仅在角色划分与资源池分配。"),
+      h("div",null,h(Src,{label:"_setup 建组流程",path:"verl/trainer/ppo/v1/trainer_base.py",line:152}),h(Src,{label:"actor 角色注册",path:"verl/trainer/ppo/v1/trainer_base.py",line:160}),h(Ext,{href:"https://arxiv.org/abs/2409.19256"},"HybridFlow 论文"))
+    );
+  }
+
+  // ===== Tinker 变体 =====
+  function TinkerSection(){
+    return h("div",null,
+      h("p",null,"最后看一个变体，理解 worker 层的可扩展性。",h("code",null,"engine_workers_tinker.py")," 提供了一套 Tinker 风格的细粒度训练原语。标准的 ",h("code",null,"TrainingWorker.train_batch")," 把清梯度、前向反向、优化器步打包在一次调用里；",h("code",null,"TinkerTrainingWorker")," 则把它们拆成 ",h("code",null,"optimizer_zero_grad"),"、",h("code",null,"forward_backward"),"、",h("code",null,"optimizer_step")," 三个独立的远程方法，让调用方能在多次前向反向之间手动控制梯度累积与参数更新的时机。对应地，",h("code",null,"TinkerActorRolloutRefWorker")," 把 ",h("code",null,"actor_worker_cls")," 换成 ",h("code",null,"TinkerTrainingWorker")," 并转发这三个方法。"),
+      h("p",null,"这个变体之所以只需几十行，正是因为 worker 层足够薄：它无需重写引擎，只是用不同的 dispatch 注解把引擎已有的 ",h("code",null,"forward_backward_batch"),"、",h("code",null,"optimizer_step"),"、",h("code",null,"optimizer_zero_grad")," 重新暴露成更细的远程方法。同理，",h("code",null,"experimental/separation")," 下的 ",h("code",null,"DetachActorWorker")," 通过继承 ",h("code",null,"ActorRolloutRefWorker")," 增加把模型在 CPU 与 GPU 之间分离/恢复的方法，用于异步分离部署。这些都印证了本课的主线：worker 是适配层，扩展靠继承与重新注解，而非改动引擎。"),
+      h("div",null,h(Src,{label:"TinkerTrainingWorker",path:"verl/workers/engine_workers_tinker.py",line:24}),h(Src,{label:"forward_backward",path:"verl/workers/engine_workers_tinker.py",line:37}),h(Src,{label:"TinkerActorRolloutRefWorker",path:"verl/workers/engine_workers_tinker.py",line:100}),h(Src,{label:"DetachActorWorker",path:"verl/experimental/separation/engine_workers.py",line:36}),h(Ext,{href:"https://thinkingmachines.ai/tinker/"},"Tinker API"))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"HybridFlow 论文",d:"verl 的论文, 单控制器 + 多控制器混合编程模型与共置设计",href:"https://arxiv.org/abs/2409.19256"},
+    {t:"Ray 文档",d:"actor、placement group、远程方法调用与对象传递",href:"https://docs.ray.io/"},
+    {t:"Tinker API",d:"engine_workers_tinker 模仿的细粒度训练原语风格",href:"https://thinkingmachines.ai/tinker/"},
+    {t:"engine_workers.py（本机）",d:"本课承重文件, TrainingWorker 与 ActorRolloutRefWorker",href:srcUrl("verl/workers/engine_workers.py",null)},
+    {t:"decorator.py（本机）",d:"@register 与全部 dispatch/collect 函数",href:srcUrl("verl/single_controller/base/decorator.py",null)},
+    {t:"trainer_base.py（本机）",d:"角色到 worker 类的映射与建组流程",href:srcUrl("verl/trainer/ppo/v1/trainer_base.py",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:7}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 7 课 / 共 12 · Workers 与角色"),
+          h("h1",null,"Workers 与角色"),
+          h("p",{className:"lead"},"这一课把第 6 课的训练引擎与第 3 课的单控制器接到一起。核心是两个 worker：TrainingWorker 把单个引擎包成可被 RayWorkerGroup 编排的 Ray worker；ActorRolloutRefWorker 把 actor、rollout 与可选 ref 共置在同一组 GPU 上，对外暴露 generate、compute_log_prob、update_actor、update_weights 等方法。贯穿全课的是 @register 的 dispatch 模式，它决定每个方法被调用时数据如何切分与收集。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"verl/workers/engine_workers.py")," 的 TrainingWorker 与 ActorRolloutRefWorker、",h("code",null,"verl/workers/engine_workers_tinker.py")," 变体、",h("code",null,"verl/single_controller/base/decorator.py")," 的 @register 与 dispatch 模式、",h("code",null,"verl/trainer/ppo/utils.py")," 的 Role 枚举、",h("code",null,"trainer_base.py")," 的角色建组流程。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/verl")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"概览"),
+          h("h2",null,"worker 这一层在做什么"),
+          h(OverviewSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"single_controller/base/decorator.py"),
+          h("h2",null,"@register 与 dispatch 模式：数据如何切分"),
+          h(DispatchSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"engine_workers.py · TrainingWorker"),
+          h("h2",null,"TrainingWorker：把引擎包成 worker"),
+          h(TrainingWorkerSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"engine_workers.py · ActorRolloutRefWorker"),
+          h("h2",null,"共置 worker：actor + rollout + ref 同组 GPU"),
+          h(HybridSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"对外角色方法"),
+          h("h2",null,"compute_log_prob / update_actor / update_weights"),
+          h(MethodsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"角色全景"),
+          h("h2",null,"角色到 worker 的映射与编排"),
+          h(RolesSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"engine_workers_tinker.py · separation"),
+          h("h2",null,"变体：worker 是薄适配层，扩展靠继承"),
+          h(TinkerSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档阅读，能把单控制器、共置设计与 dispatch 机制的来龙去脉补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"worker 是引擎到控制器的薄适配层"),"：方法体写“单进程做什么”，",h("code",null,"@register")," 的 dispatch 模式声明“控制器调用时数据如何切分与收集”。两者分离是这一层的总纲。"),
+            h("li",null,h("strong",null,"统一引擎使角色合并"),"：凡需训练或前向的角色（actor、critic、ref）统一由 ",h("code",null,"TrainingWorker")," 承载，后端由 ",h("code",null,"strategy")," 在引擎内部选择，不再有逐后端、逐角色的 worker 类。"),
+            h("li",null,h("strong",null,"共置降低显存与同步成本"),"：",h("code",null,"ActorRolloutRefWorker")," 把 actor、rollout、ref 放在同组 GPU，显存峰值取两侧之大者，权重更新可在进程内直接传递，无需网络传输。"),
+            h("li",null,h("strong",null,"命名网格区分并行布局"),"：",h("code",null,"compute_log_prob")," 用 actor 网格、",h("code",null,"compute_ref_log_prob")," 用 ref 网格，同一进程内不同引擎的数据切分各按各的网格，对调用方透明。"),
+            h("li",null,h("strong",null,"角色由配置组合而成"),"：角色 = worker 类 + 角色字符串 + 资源池，同步（共置）与异步（分离）复用同一套 worker 代码；Tinker 与 separation 变体通过继承与重新注解扩展，不动引擎。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"verl-lesson-06-engines.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 6 课：训练引擎抽象与多后端")),
+            h("a",{href:"verl-lesson-08-rollout.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 8 课：Rollout 引擎与多推理后端"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

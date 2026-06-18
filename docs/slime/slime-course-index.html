@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>slime 逐文件精读 · 课程总览</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent 420px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.88em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    main{max-width:1000px;margin:0 auto;padding:64px 28px 90px;}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 12px;}
+    h1{font-size:46px;line-height:1.08;margin:0 0 18px;letter-spacing:-.01em;}
+    .lead{font-size:17px;color:#c4ced9;max-width:780px;}p{color:var(--muted);}
+    .stat-row{display:flex;gap:30px;flex-wrap:wrap;margin:26px 0 8px;}
+    .stat .v{font-size:26px;font-weight:850;color:var(--amber);}.stat .l{color:var(--faint);font-size:12px;font-family:var(--mono);}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:30px;}
+    .lcard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:16px 18px;display:block;position:relative;}
+    .lcard.done:hover{border-color:var(--teal);background:var(--panel-2);}
+    .lcard.todo{opacity:.62;}
+    .lcard .num{font-family:var(--mono);font-size:12px;color:var(--faint);}
+    .lcard .t{font-weight:750;color:var(--ink);font-size:17px;margin:3px 0 5px;}
+    .lcard .d{color:var(--muted);font-size:13px;}
+    .lcard .files{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:8px;}
+    .badge{position:absolute;top:14px;right:16px;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--faint);}
+    .badge.done{color:var(--teal);border-color:#265450;background:#0e2120;}
+    .note{border-left:3px solid var(--amber);padding:6px 16px;margin:24px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    h2{font-size:24px;margin:40px 0 10px;}
+    @media(max-width:760px){.grid{grid-template-columns:1fr;}h1{font-size:34px;}}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+  const h=React.createElement;
+  const LESSONS=[
+    [1,"地基与双引擎全局观","设计哲学（Megatron 训练 + SGLang 推理 + Data Buffer 同一路径、参数原生透传、单推理后端深耕）、目录地图、train.py / train_async.py 两个入口骨架、Ray 为何作编排基座，以及 utils 的非 RL 工具。","train.py · train_async.py · ray/ray_actor · utils 纯工具","slime-lesson-01-foundations.html"],
+    [2,"统一配置层","utils/arguments.py（2014 行的统一配置）、eval_config，以及 slime 的核心设计：Megatron 参数直接透传、SGLang 参数加 --sglang- 前缀透传，不再叠一层抽象。","utils/arguments · eval_config · backends/*/arguments","slime-lesson-02-config.html"],
+    [3,"RL 数学原语","ppo_utils 的 GRPO/PPO/GSPO/CISPO 损失、优势估计、KL；seqlen_balancing 的 FFD 装箱；mask_utils；dp_schedule；routing_replay（R3 路由重放）。含完整数学。","utils/ppo_utils · seqlen_balancing · mask_utils · routing_replay","slime-lesson-03-rl-math.html"],
+    [4,"数据与 Data Buffer","data_source 与 utils/data 的数据流、slime_plugins/rollout_buffer 的数据缓冲与自定义数据生成接口、filter_hub 的动态采样过滤、rm_hub 的各奖励模型。","rollout/data_source · rollout_buffer · filter_hub · rm_hub","slime-lesson-04-data-buffer.html"],
+    [5,"训练后端：Megatron","backends/megatron_utils：actor、loss（1246 行）、model、model_provider、cp_utils、fp8 kernel 与 int4 QAT、checkpoint、megatron_to_hf 各模型权重转换。信息量最大的一课。","backends/megatron_utils/*","slime-lesson-05-megatron.html"],
+    [6,"推理后端：SGLang","backends/sglang_utils：sglang_engine（671 行）、server_control、sglang_config、external、arguments；SGLang server 启停、router 与 PD（prefill/decode）分离。","backends/sglang_utils/*","slime-lesson-06-sglang.html"],
+    [7,"权重同步","update_weight 的多种策略：from_disk、from_distributed、from_tensor、distributed_delta、hf_weight_iterator（bridge/direct）；reloadable_process_group、tensor_backper。异步效率的核心之一。","backends/megatron_utils/update_weight/*","slime-lesson-07-weight-sync.html"],
+    [8,"Rollout 与三种异步范式","sglang_rollout、fully_async_rollout、sglang_streaming_rollout（流式部分 rollout）、sft_rollout、on_policy_distillation、sleep_rollout、forge_load。同步 vs 全异步 vs 流式部分 rollout 的对比。","rollout/*","slime-lesson-08-rollout-async.html"],
+    [9,"Agent 层（Agentic RL）","slime/agent：trajectory（轨迹与分支管理）、sandbox、adapters（openai/anthropic/common，把推理引擎包成商用 API）、harness（claude_code/codex，把成熟 agent harness 直接当环境）、parsing。","slime/agent/*","slime-lesson-09-agent.html"],
+    [10,"Ray 编排与端到端","slime/ray：rollout.py（1434 行的 rollout 控制器）、actor_group、placement_group（colocate vs 解耦放置）、train_actor；examples 串讲（tau-bench / coding_agent_rl-swe / search-r1 / retool / multi_agent / strands）；trace/profile/health/wandb。","slime/ray/* · examples/*","slime-lesson-10-orchestration.html"],
+    [11,"miles 增量章节","miles 作为 slime 的 fork，相对 slime 的 delta：router（R3 路由重放服务化）、true_on_policy、统一 FP8 量化、INT4 W4A16 QAT 全栈、MrlX 多智能体协同演化。讲清 GLM 团队用 slime、蚂蚁/InfiX 把它 fork 成 miles 的取舍。","miles/router · true_on_policy · 低精度 · MrlX","slime-lesson-11-miles-delta.html"]
+  ];
+  function App(){
+    return h("main",null,
+      h("p",{className:"kicker"},"slime · 逐文件精读 · 自底向上 · GLM-5.2 背后的训练框架"),
+      h("h1",null,"从地基到全貌，逐文件读懂 slime"),
+      h("p",{className:"lead"},"slime 是 THUDM 的 RL 后训练框架，也是 GLM-5.2 / 5.1 / 5 / 4.x 系列背后的真实训练框架（Megatron 训练 + SGLang 推理）。本系列按依赖顺序自底向上，把 slime 仓库的 284 个 Python 文件分成 10 课，外加一节 miles 增量章。每读一个文件，它依赖的东西你都已经懂了。承重文件深讲（数学 + 代码 + 设计出发点 + vscode 源码行），其余每个文件至少一句话角色，做到完整覆盖。"),
+      h("div",{className:"stat-row"},
+        h("div",{className:"stat"},h("div",{className:"v"},"284"),h("div",{className:"l"},"仓库内 .py 文件")),
+        h("div",{className:"stat"},h("div",{className:"v"},"~57k"),h("div",{className:"l"},"代码行")),
+        h("div",{className:"stat"},h("div",{className:"v"},"10+1"),h("div",{className:"l"},"依赖阶梯课程 + miles 增量")),
+        h("div",{className:"stat"},h("div",{className:"v"},"11"),h("div",{className:"l"},"已就绪"))),
+      h("div",{className:"note"},"阅读建议：按 1 → 11 顺序读。蓝色 ",h("code",null,"›_ 文件:行号")," 标签会用 vscode://file 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/slime")," 对应源码行（第 11 课指向 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/miles"),"）。全部 11 课已就绪，可按 1 到 11 顺序通读。"),
+      h("h2",null,"课程列表"),
+      h("div",{className:"grid"},LESSONS.map(function(L){
+        const done=L[4]!=="#";
+        const inner=[
+          h("span",{key:"b",className:"badge"+(done?" done":"")},done?"已就绪":"规划中"),
+          h("div",{key:"n",className:"num"},"第 "+L[0]+" 课"),
+          h("div",{key:"t",className:"t"},L[1]),
+          h("div",{key:"d",className:"d"},L[2]),
+          h("div",{key:"f",className:"files"},L[3])
+        ];
+        return done?h("a",{key:L[0],className:"lcard done",href:L[4]},inner):h("div",{key:L[0],className:"lcard todo"},inner);
+      })),
+      h("h2",null,"相关页面"),
+      h("p",null,h("a",{href:"../AReaL/areal-course-index.html"},"AReaL 逐文件精读 · 课程总览"),"：同系列的 AReaL 全异步框架精读（12 课）。后续还将产出 verl、Polar（ProRL-Agent-Server）的逐文件课程，以及面向长程 Agentic RL / 动态环境 / 异步效率的五框架大横评。")
+    );
+  }
+  window.addEventListener("load",function(){if(window.React&&window.ReactDOM){ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));}});
+  </script>
+</body>
+</html>

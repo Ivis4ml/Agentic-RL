@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Polar 逐文件精读 · 第 3 课：Gateway 节点与 proxy</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 3 课</p><h1>Gateway 节点与 proxy</h1><p>能访问 CDN 时切换为交互版。本课讲清 Polar 的 Gateway 层：GatewayNodeManager 的 INIT/READY/RUN/POSTRUN 生命周期、FastAPI server 如何接收 dispatch 并把 proxy 暴露给 agent、SGLangClient 如何坐在 agent 进程与推理服务之间拦截 completion 并捕获生成、以及 session / storage / completion_writer / detection 如何协同记录补全以供轨迹重建。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const POLAR="vscode://file/Users/xinyu/Code/Agentic-RL/ProRL-Agent-Server/";
+  function srcUrl(p,l){return POLAR+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","str","Path","Sample","Args","RolloutController","RolloutManager","RolloutPipeline","Runtime","BaseRuntime","Harness","BaseHarness","Trajectory","GatewayNodeManager","GatewayExecutionTimeout","SessionDispatcher","ManagedSession","SessionStage","DispatcherSnapshot","SGLangClient","UpstreamError","UpstreamHTTPError","SessionRegistry","SessionInfo","SessionStore","CompletionWriter","CompletionRecord","CompletionSession","APIType","RuntimeSpec","ExecInput","AgentRunResult","SessionDispatchRequest","SessionResult","SessionStatus","StageTimer","EvalResult","EvaluatorSpec","StrategySpec","asyncio","httpx","FastAPI","Request","JSONResponse","StreamingResponse"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","polar-lesson-01-foundations.html"],[2,"Agent与Harness","polar-lesson-02-agent-harness.html"],[3,"Gateway","polar-lesson-03-gateway.html"],[4,"协议变换","polar-lesson-04-transform.html"],[5,"Runtime池化","polar-lesson-05-runtime.html"],[6,"Rollout服务","polar-lesson-06-rollout-server.html"],[7,"轨迹与评估","polar-lesson-07-trajectory.html"],[8,"slime集成","polar-lesson-08-slime-bridge.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"polar-course-index.html"},"Polar",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 全局观：Gateway 是什么 =====
+  function OverviewSection(){
+    return h("div",null,
+      h("p",null,"Gateway 是 Polar 的工作主机层。",h("strong",{className:"hl-teal"},"rollout server")," 把一个个 rollout 会话（session）派发到各个 Gateway 节点，每个节点在自身进程内承担一条会话的完整生命周期：准备 ",h("strong",{className:"hl-amber"},"runtime"),"（沙箱执行环境，第 5 课）、运行 ",h("strong",{className:"hl-purple"},"agent harness"),"（被测的真实 agent，第 2 课）、把 agent 对模型的每一次调用经由 ",h("strong",{className:"hl-blue"},"proxy")," 转发到 SGLang 并记录下来、据此构建 ",h("strong",{className:"hl-green"},"trajectory"),"（轨迹，第 7 课），最后调用 evaluator 给出奖励，再把结果回送给 rollout server。"),
+      h("p",null,"这一层的核心设计意图是：让被训练的 agent 以为自己在对接一个普通的模型 API（Anthropic / OpenAI / Google 任意家），而 Gateway 在不改动 agent 代码的前提下，把这些调用统一改写成对内部 SGLang 服务的请求，并把生成内容截留下来供训练使用。换言之，Gateway 是一个对 agent 透明、对训练侧可观测的中间代理。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"server.py"),"HTTP 服务面"),
+          h("p",null,"FastAPI 应用。对 rollout server 暴露会话管理端点（dispatch / 状态 / 取消），对 agent 暴露 OpenAI/Anthropic/Google 兼容的 proxy 端点，对训练桥暴露 pause/resume 控制端点。"),
+          h("div",null,h(Src,{label:"server.py · app",path:"src/polar/gateway/server.py",line:195}),h(Src,{label:"proxy_request",path:"src/polar/gateway/server.py",line:609}))
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"node.py"),"执行生命周期"),
+          h("p",null,"GatewayNodeManager 承载单个节点的全部会话执行逻辑：注册与心跳、四阶段调度回调（INIT/RUN/POSTRUN）、轨迹构建与评估、统一执行预算与超时。"),
+          h("div",null,h(Src,{label:"GatewayNodeManager",path:"src/polar/gateway/node.py",line:47}),h(Src,{label:"_handle_run",path:"src/polar/gateway/node.py",line:305}))
+        )
+      ),
+      h("p",null,"目录里的其余文件各司其职，可先建立一张索引（下文逐一展开）："),
+      h("ul",null,
+        h("li",null,h("code",null,"dispatcher.py"),"：把一条会话推过 INIT → READY → RUNNING → POSTRUN 四阶段，每个阶段一个独立的 worker 池。"),
+        h("li",null,h("code",null,"proxy.py"),"：直连 SGLang 的 httpx 客户端 SGLangClient，含 pause/resume 生成的并发门。"),
+        h("li",null,h("code",null,"session.py"),"：会话注册表 SessionRegistry（状态与活跃度记账）与会话 id 解析。"),
+        h("li",null,h("code",null,"storage.py"),"：内存中的补全记录存储 SessionStore（轨迹构建的权威数据源）。"),
+        h("li",null,h("code",null,"completion_writer.py"),"：后台把补全记录异步写入磁盘，永不阻塞 proxy 热路径。"),
+        h("li",null,h("code",null,"detection.py"),"：从请求路径/头部/体识别 API 族（Anthropic/OpenAI/Google）。"),
+        h("li",null,h("code",null,"transform/"),"：各 API 族的请求与响应变换器，是第 4 课的主题。")
+      ),
+      h("div",{className:"note"},"读图顺序建议：先看本课第二节的 ",h("strong",null,"四阶段调度模型"),"（dispatcher），它定义了会话在节点内的状态机；再看第三节 ",h("strong",null,"node 主流程"),"（INIT/RUN/POSTRUN 三个回调如何填充该状态机）；然后第四节 ",h("strong",null,"proxy 与 server"),"（agent 调用如何被拦截、改写、记录）；最后第五节看 ",h("strong",null,"session/storage/completion_writer/detection")," 四个支撑模块。"),
+      h("div",null,h(Src,{label:"gateway/README.md",path:"src/polar/gateway/README.md"}))
+    );
+  }
+
+  // ===== dispatcher 四阶段 =====
+  const STAGES=[
+    {key:"why",name:"为什么要分阶段",render:function(){return [
+      h("p",null,"一条会话的耗时分布极不均衡：runtime 启动可能要拉起一个容器并执行 prepare 脚本（INIT，重 I/O）；agent 执行可能跑很久且占满模型并发（RUNNING，重计算）；轨迹构建与评估、teardown 则相对短（POSTRUN）。如果用单一并发上限管理全部会话，要么 INIT 阶段把启动并发挤爆，要么 RUNNING 阶段把模型并发挤爆。"),
+      h("p",null,"dispatcher 的解法是把生命周期切成四个阶段，每个阶段配一个独立的 worker 池，三个上限互不干扰：",h("code",null,"max_init_workers")," 控制同时准备 runtime 的数量、",h("code",null,"max_run_workers")," 控制同时运行 agent 的数量、",h("code",null,"max_postrun_workers")," 控制同时收尾的数量。READY 是一个中间停靠态：会话已完成 INIT，正在等待一个空闲的运行槽。"),
+      h(Formula,{cap:"四阶段与各自的并发上限（READY 不消耗 worker，只在信号量上排队）"},"$$ \\text{INIT}_{\\le M_i} \\;\\to\\; \\text{READY}_{\\text{(等运行槽)}} \\;\\to\\; \\text{RUNNING}_{\\le M_r} \\;\\to\\; \\text{POSTRUN}_{\\le M_p} $$"),
+      h("p",null,"阶段枚举刻意保持精简：同一阶段内“排队”还是“执行中”由 ManagedSession 上的 ",h("code",null,"inflight")," 布尔位区分，因此 snapshot 能从 stage 与 inflight 两个字段推出六项队列/在途指标，供心跳上报与 ",h("code",null,"/health")," 暴露。"),
+      h("div",null,h(Src,{label:"SessionStage",path:"src/polar/gateway/dispatcher.py",line:31}),h(Src,{label:"ManagedSession",path:"src/polar/gateway/dispatcher.py",line:59}),h(Src,{label:"DispatcherSnapshot",path:"src/polar/gateway/dispatcher.py",line:38}),h(Src,{label:"snapshot()",path:"src/polar/gateway/dispatcher.py",line:179}))
+    ];}},
+    {key:"flow",name:"四阶段流转",render:function(){return [
+      h("p",null,"SessionDispatcher 在 ",h("code",null,"start()")," 时按三个上限各建一组常驻 worker 协程，分别消费 INIT、READY、POSTRUN 三个队列（RUNNING 没有独立队列，它由 READY 队列的消费者直接进入）。每个 worker 是一个 ",h("code",null,"while True")," 循环，从队列取会话 id，标记 inflight，触发对应阶段回调，再决定下一跳。"),
+      h(Code,null,"# dispatcher.py: 三类 worker 各自的主循环 (精简)\nasync def _init_worker(self):\n    while True:\n        item = await self._init_queue.get()\n        if item is _STOP: return\n        managed = await self._begin(session_id, SessionStage.INIT)\n        if not (managed.cancel_requested or managed.final_result is not None):\n            await self._safe_invoke(self.on_init, managed, SessionStage.INIT)\n        await self._finish_init(managed)   # → READY（等槽）或 POSTRUN\n\nasync def _run_worker(self):\n    while True:\n        item = await self._ready_queue.get()\n        managed = await self._begin(session_id, SessionStage.RUNNING, from_ready=True)\n        if not (managed.cancel_requested or managed.final_result is not None):\n            await self._safe_invoke(self.on_run, managed, SessionStage.RUNNING)\n        await self._transition_to_postrun(managed)  # 释放运行槽\n\nasync def _postrun_worker(self):\n    while True:\n        item = await self._postrun_queue.get()\n        managed = await self._begin(session_id, SessionStage.POSTRUN)\n        await self._safe_invoke(self.on_postrun, managed, SessionStage.POSTRUN)\n        async with self._lock:\n            self._sessions.pop(session_id, None)  # POSTRUN 总会运行，是会话的归宿"),
+      h("p",null,"三个回调（",h("code",null,"on_init"),"、",h("code",null,"on_run"),"、",h("code",null,"on_postrun"),"）由 GatewayNodeManager 在构造时注入，dispatcher 本身只负责状态机与并发，不关心回调具体做什么。这是一种关注点分离：调度逻辑与执行逻辑解耦，便于单独测试 dispatcher。"),
+      h("p",null,"注意 ",h("code",null,"_safe_invoke")," 会捕获回调中的异常并记录，但 POSTRUN 阶段总会执行，即使 INIT 或 RUN 失败也不例外。这保证了无论会话以何种方式结束，runtime 停止、目录清理、结果回送等收尾动作都有机会运行。"),
+      h("div",null,h(Src,{label:"start()",path:"src/polar/gateway/dispatcher.py",line:111}),h(Src,{label:"_init_worker",path:"src/polar/gateway/dispatcher.py",line:203}),h(Src,{label:"_run_worker",path:"src/polar/gateway/dispatcher.py",line:216}),h(Src,{label:"_postrun_worker",path:"src/polar/gateway/dispatcher.py",line:229}),h(Src,{label:"_safe_invoke",path:"src/polar/gateway/dispatcher.py",line:242}))
+    ];}},
+    {key:"slot",name:"运行槽与取消",render:function(){return [
+      h("p",null,"READY → RUNNING 的关键是一个信号量 ",h("code",null,"_ready_slots = Semaphore(max_run_workers)"),"。INIT 完成后，",h("code",null,"_finish_init")," 把会话置为 READY，然后调用 ",h("code",null,"_acquire_ready_slot")," 去抢一个运行槽；只有抢到槽才把会话放进 READY 队列让 run worker 取走。这样“正在运行的 agent 数量”被严格限制在 ",h("code",null,"max_run_workers"),"，与“正在准备 runtime 的数量”完全解耦。"),
+      h(Code,null,"# dispatcher.py: 抢运行槽时同时监听取消，避免取消被阻塞 (精简)\nasync def _acquire_ready_slot(self, managed):\n    if managed.cancel_event.is_set() or managed.final_result is not None:\n        return False\n    acquire_task = asyncio.create_task(self._ready_slots.acquire())\n    cancel_task = asyncio.create_task(managed.cancel_event.wait())\n    try:\n        done, _ = await asyncio.wait(\n            {acquire_task, cancel_task},\n            return_when=asyncio.FIRST_COMPLETED)\n    finally:\n        cancel_task.cancel()\n        if not acquire_task.done(): acquire_task.cancel()\n    # 若在取消的同时抢到了槽，必须归还，避免泄漏给后续会话\n    acquired = acquire_task in done and not acquire_task.cancelled() and acquire_task.exception() is None\n    if managed.cancel_event.is_set() or managed.final_result is not None:\n        if acquired: self._ready_slots.release()\n        return False\n    return acquired"),
+      h("p",null,"取消（",h("code",null,"cancel"),"）的处理很细致：若会话停在 READY 且未在途，要先释放它占住的运行槽，再转入 POSTRUN；若停在 INIT 队列里未在途，直接转 POSTRUN。无论哪种情况，只要 runtime 已创建就调用 ",h("code",null,"runtime.cancel()")," 中断在执行的命令。这一设计保证取消既能及时打断，又不会让信号量计数错乱。"),
+      h("div",{className:"note"},"这里用 ",h("code",null,"asyncio.wait(FIRST_COMPLETED)")," 让抢槽与取消相互竞速，是异步并发的常见技巧：避免一个会话在等待运行槽时无法响应取消请求。读 ",h(Ext,{href:"https://docs.python.org/3/library/asyncio-sync.html"},"asyncio 同步原语文档")," 有助于理解 Semaphore 与 Event 的语义。"),
+      h("div",null,h(Src,{label:"_finish_init",path:"src/polar/gateway/dispatcher.py",line:277}),h(Src,{label:"_acquire_ready_slot",path:"src/polar/gateway/dispatcher.py",line:320}),h(Src,{label:"cancel()",path:"src/polar/gateway/dispatcher.py",line:148}),h(Src,{label:"_transition_to_postrun",path:"src/polar/gateway/dispatcher.py",line:296}))
+    ];}}
+  ];
+  function StageExplorer(){const [s,setS]=useState(0);const d=STAGES[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},STAGES.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== node 主流程 =====
+  const NODE=[
+    {key:"dispatch",name:"接收派发 dispatch",render:function(){return [
+      h("p",null,"会话从 rollout server 经 ",h("code",null,"POST /sessions")," 到达，server 把 body 解析成 ",h("code",null,"SessionDispatchRequest")," 后调用 ",h("code",null,"node_manager.dispatch(...)"),"。dispatch 是会话进入节点的入口：它先确认这个 session id 从未被用过（rollout 会话 id 单次使用），随后把会话注册进 SessionRegistry、在 SessionStore 里建好元数据、创建一个临时会话目录与 artifacts 子目录，最后把封装好的 ManagedSession 投入 dispatcher 的 INIT 队列。"),
+      h(Code,null,"# node.py: dispatch() 入口 (精简)\nasync def dispatch(self, request: SessionDispatchRequest) -> None:\n    session_id = request.session_id\n    if self.session_registry.get(session_id) is not None:\n        raise ValueError(f\"session {session_id} already exists; \"\n                         \"rollout session IDs are single-use\")\n    session_dir = None\n    try:\n        info = self.session_registry.register(session_id, task_id=request.task_id,\n            registered=True, status=SessionStatus.REGISTERED, metadata=dict(request.metadata))\n        self.storage.ensure_session(info.session_id, model_requested=None, model_used=None,\n            api_type=None, task_id=info.task_id, created_at=info.created_at.isoformat(),\n            metadata=dict(request.metadata))\n        timer = StageTimer(); timer.mark(\"dispatch\", \"started\")\n        session_dir = Path(mkdtemp(prefix=f\"session-{session_id[:8]}-\", dir=self._session_base_dir))\n        artifacts_dir = session_dir / \"artifacts\"; artifacts_dir.mkdir()\n        (session_dir / \"logs\" / \"agent\").mkdir(parents=True, exist_ok=True)\n        await self._dispatcher.enqueue(ManagedSession(\n            request=request, timer=timer, session_dir=session_dir, artifacts_dir=artifacts_dir))\n    except Exception:\n        self.storage.delete_session(session_id); self.session_registry.remove(session_id)\n        if session_dir is not None:\n            await self._remove_session_dir_best_effort(session_dir, session_id)\n        raise"),
+      h("p",null,"dispatch 只负责登记与入队，并不等待会话执行完成，因此 server 能立刻返回一个 ",h("code",null,"SessionDispatchResponse")," ack。真正的执行在 dispatcher 的 worker 协程里异步进行，结果稍后通过 callback 回送。注意失败路径的清理：如果建目录或入队抛错，已写入的注册表项、存储项与目录都会被回滚，避免留下半初始化的会话。"),
+      h("p",null,"会话所需的全部信息都在 ",h("code",null,"SessionDispatchRequest")," 里：",h("code",null,"instruction"),"（给 agent 的任务指令）、",h("code",null,"runtime"),"（runtime 规格，缺省时用节点的 ",h("code",null,"default_runtime"),"）、",h("code",null,"agent"),"（harness 规格）、",h("code",null,"builder"),"（轨迹构建策略）、",h("code",null,"evaluator"),"（评估器规格）、",h("code",null,"callback_url"),"（结果回送地址）与 ",h("code",null,"remaining_timeout_seconds"),"（执行预算）。"),
+      h("div",null,h(Src,{label:"dispatch()",path:"src/polar/gateway/node.py",line:152}),h(Src,{label:"create_session (server)",path:"src/polar/gateway/server.py",line:523}),h(Src,{label:"SessionDispatchRequest",path:"src/polar/rollout/models.py",line:74}),h(Src,{label:"enqueue",path:"src/polar/gateway/dispatcher.py",line:139}))
+    ];}},
+    {key:"init",name:"INIT 准备 runtime",render:function(){return [
+      h("p",null,"INIT 回调 ",h("code",null,"_handle_init")," 是会话第一次真正干活的地方。它先用 ",h("code",null,"_start_execution_deadline")," 给整条会话设一个绝对截止时刻（基于事件循环时钟加上 ",h("code",null,"remaining_timeout_seconds"),"），之后所有阶段共享这一份执行预算。然后解析 runtime 规格、创建 runtime、启动它，再按 ",h("code",null,"spec.prepare")," 里列出的有序动作准备环境。"),
+      h(Code,null,"# node.py: _handle_init() (精简)\nasync def _handle_init(self, managed: ManagedSession) -> None:\n    request = managed.request\n    self._start_execution_deadline(managed)\n    managed.timer.mark(\"init\", \"started\")\n    try:\n        runtime_spec = self._resolve_runtime_spec(request)\n        runtime = create_runtime(runtime_spec, request.session_id, managed.session_dir)\n        managed.runtime = runtime\n        await self._await_with_budget(runtime.start(), managed)\n        await self._run_runtime_prepare(runtime, runtime_spec, request, managed)\n    except GatewayExecutionTimeout as exc:\n        managed.final_result = self._timeout_result(request, managed.timer, str(exc))\n    except Exception as exc:\n        if managed.cancel_requested:\n            logger.info(\"Initialization cancelled for session %s\", request.session_id)\n        else:\n            managed.final_result = self._error_result(request, managed.timer,\n                f\"runtime initialization failed: {exc}\")\n    finally:\n        managed.timer.mark(\"init\", \"finished\")"),
+      h("p",null,"prepare 动作是一个有序列表，支持 ",h("code",null,"upload_file"),"、",h("code",null,"upload_dir")," 与 ",h("code",null,"exec")," 三类：把本地文件/目录上传进 runtime，或在 runtime 内执行命令（例如安装依赖、克隆仓库）。每个 exec 都带上 Gateway 注入的环境变量与剩余预算，命令的 stdout/stderr 写进会话日志目录，便于事后排查。任意一步失败或超时都会让 INIT 失败，并把 ",h("code",null,"final_result")," 预置为错误/超时结果。"),
+      h("p",null,"INIT 设计上有意把失败“软化”：抛出的异常不会让会话崩溃，而是被转换成 ",h("code",null,"final_result"),"。dispatcher 在 INIT 回调返回后检查到 ",h("code",null,"final_result")," 非空，会跳过 RUNNING 直接进 POSTRUN，由 POSTRUN 负责回送这个错误结果。runtime 的并发准备能力在第 5 课展开。"),
+      h("div",null,h(Src,{label:"_handle_init",path:"src/polar/gateway/node.py",line:225}),h(Src,{label:"_resolve_runtime_spec",path:"src/polar/gateway/node.py",line:251}),h(Src,{label:"_run_runtime_prepare",path:"src/polar/gateway/node.py",line:260}),h(Src,{label:"_start_execution_deadline",path:"src/polar/gateway/node.py",line:906}))
+    ];}},
+    {key:"run",name:"RUN 执行 agent",render:function(){return [
+      h("p",null,"RUN 回调 ",h("code",null,"_handle_run")," 是会话的主体。它先（可选地）后台预热一个全新的评估器 runtime，再创建 agent harness、调用 ",h("code",null,"harness.setup(runtime)")," 把 agent 装进 runtime、用 ",h("code",null,"harness.run_steps(instruction)")," 取得要执行的命令序列、逐条执行、最后调用 ",h("code",null,"harness.postprocess(...)")," 收集产物。harness 的细节是第 2 课的内容，这里关注 Gateway 如何驱动它。"),
+      h(Code,null,"# node.py: _handle_run() (精简)\nasync def _handle_run(self, managed: ManagedSession) -> None:\n    request = managed.request\n    if managed.final_result is not None or managed.cancel_requested:\n        return\n    managed.timer.mark(\"run\", \"started\")\n    harness = None\n    try:\n        runtime = managed.runtime\n        if runtime is None: raise RuntimeError(\"runtime is required for execution\")\n        self._start_eval_prewarm(managed)              # 后台预热 eval runtime\n        harness = self._resolve_agent_harness(request)\n        await self._await_with_budget(harness.setup(runtime), managed)\n        steps = harness.run_steps(request.instruction)\n        env = self._runtime_env(request, managed, include_agent_env=True)\n        agent_result = await self._run_exec_inputs(runtime, steps, env, managed)\n        # postprocess 总会运行, 即便 agent 失败/超时也能收集产物\n        await self._await_with_budget(harness.postprocess(runtime, agent_result), managed)\n        managed.agent_result = agent_result\n    except GatewayExecutionTimeout as exc:\n        # 不设 final_result: 让 POSTRUN 用已截获的补全构建部分轨迹\n        managed.agent_result = AgentRunResult(status=\"timeout\", return_code=-1, error=str(exc))\n    except Exception as exc:\n        if not managed.cancel_requested:\n            managed.final_result = self._error_result(request, managed.timer,\n                f\"agent execution failed: {exc}\")\n    finally:\n        if harness is not None: managed.postrun_steps = harness.postrun_steps()\n        managed.timer.mark(\"run\", \"finished\")"),
+      h("p",null,"这里有一个重要的可观测性设计：agent 超时不会丢弃整条会话。超时只把 ",h("code",null,"agent_result")," 标为 timeout，而不设 ",h("code",null,"final_result"),"，于是 POSTRUN 仍会用此前 proxy 截获的补全去构建一条“部分轨迹”。对 RL 训练而言，一次未跑完的尝试也是有价值的样本（带相应奖励），不应直接丢失。"),
+      h("p",null,"agent 与 Gateway proxy 的连接全靠 ",h("code",null,"_runtime_env")," 注入的环境变量：它把 ",h("code",null,"ANTHROPIC_BASE_URL"),"、",h("code",null,"OPENAI_BASE_URL"),"、",h("code",null,"GOOGLE_API_URL")," 都指向 Gateway 自身的 URL，并把 ",h("strong",{className:"hl-amber"},"session_id 作为 API key")," 写入对应的 ",h("code",null,"*_API_KEY"),"。agent 用哪家 SDK 都行，请求最终都落到 Gateway 的 proxy 端点，而 Gateway 据 API key 反查这是哪条会话。"),
+      h(Code,null,"# node.py: _runtime_env() 把 agent 的模型调用导向 Gateway (节选)\nreturn {\n    \"ANTHROPIC_BASE_URL\": self.gateway_url,\n    \"ANTHROPIC_API_KEY\": request.session_id,        # session_id 即 API key\n    \"OPENAI_BASE_URL\": f\"{self.gateway_url.rstrip('/')}/v1\",\n    \"OPENAI_API_KEY\": request.session_id,\n    \"GOOGLE_API_URL\": self.gateway_url,\n    \"GOOGLE_API_KEY\": request.session_id,\n    \"SESSION_ID\": request.session_id, \"TASK_ID\": request.task_id,\n    \"SESSION_DIR\": session_dir, \"ARTIFACTS_DIR\": artifacts_dir,\n    ...\n}"),
+      h("div",null,h(Src,{label:"_handle_run",path:"src/polar/gateway/node.py",line:305}),h(Src,{label:"_run_exec_inputs",path:"src/polar/gateway/node.py",line:357}),h(Src,{label:"_runtime_env",path:"src/polar/gateway/node.py",line:744}),h(Src,{label:"_start_eval_prewarm",path:"src/polar/gateway/node.py",line:408}))
+    ];}},
+    {key:"postrun",name:"POSTRUN 构建与评估",render:function(){return [
+      h("p",null,"POSTRUN 回调 ",h("code",null,"_handle_postrun")," 是会话的归宿，无论前面成功还是失败都会执行。它的职责有四：构建结果（若前面没有预置错误结果，就构建轨迹并评估）、执行 harness 的收尾步骤、停止所有 runtime 并删除会话目录、把终态 SessionResult 回送给 rollout server。"),
+      h(Code,null,"# node.py: _build_session_result() 的核心三步 (精简)\nasync def _build_session_result(self, managed) -> SessionResult:\n    request = managed.request\n    agent_result = managed.agent_result\n    # 1) 构建轨迹: 从存储里取补全记录, 交给 builder 重建\n    self.session_registry.set_status(request.session_id, SessionStatus.BUILDING)\n    trajectory = await self._await_with_budget(\n        asyncio.to_thread(self._build_trajectory, request), managed)\n    # 失败/超时把 trajectory.status 改写为 ERROR / TIMEOUT, 但仍保留已截获内容\n    ...\n    # 2) 评估: 若配置了 evaluator, 跑评估给奖励\n    if request.evaluator is not None:\n        self.session_registry.set_status(request.session_id, SessionStatus.EVALUATING)\n        trajectory = await self._run_eval(request, trajectory,\n            agent_result=agent_result, managed=managed)\n    # 3) 打包终态结果\n    return SessionResult(session_id=request.session_id, task_id=request.task_id,\n        status=trajectory.status, trajectory=trajectory,\n        timing=managed.timer.to_session_timing(), node_id=self.node_id, ...)"),
+      h("p",null,"轨迹构建本身在 ",h("code",null,"_build_trajectory")," 里：它从 SessionStore 加载这条会话的 CompletionSession（即 proxy 一路截获的全部补全记录），交给请求指定的 builder（轨迹构建策略，第 7 课）重建出 Trajectory。这是 proxy 与轨迹之间的衔接点：proxy 负责“写”补全，builder 负责“读”补全并组装成训练样本。"),
+      h(Code,null,"# node.py: 轨迹构建从存储读补全, 交 builder 重建\ndef _build_trajectory(self, request: SessionDispatchRequest) -> Trajectory:\n    completion_session = self.storage.load_completion_session(request.session_id)\n    builder = self.builders.create(request.builder)\n    result = builder.build(completion_session)\n    if asyncio.iscoroutine(result):\n        trajectory = asyncio.run(result)\n    else:\n        trajectory = result\n    return Trajectory.model_validate(trajectory)"),
+      h("p",null,"评估在 ",h("code",null,"_run_eval")," 里：把 EvaluatorSpec 转成 StrategySpec、从注册表取出 evaluator、调用其 ",h("code",null,"evaluate(...)")," 得到 EvalResult，再由 ",h("code",null,"_merge_eval_result")," 把奖励写回轨迹的各条 trace。EvalResult 提供两种奖励：",h("code",null,"trace_rewards"),"（逐 trace，长度须与 trace 数一致，否则判错）或 ",h("code",null,"outcome_reward"),"（整条轨迹一个分数，广播到所有 trace）。这正是 RL 训练所需的奖励信号来源。"),
+      h("p",null,"收尾阶段还处理了 ",h("code",null,"refresh_runtime")," 的情形：某些评估需要一个干净、未被 agent 污染的 runtime，",h("code",null,"_start_eval_prewarm")," 在 RUN 阶段就后台并行地准备好了它，POSTRUN 在评估时直接取用；若评估不需要新 runtime，则在 teardown 时把预热任务排空并停止。最后，结果回送成功后调用 ",h("code",null,"clear_result_payload")," 释放重负载，只在注册表里保留状态与 task_id 供调试查询。"),
+      h("div",null,h(Src,{label:"_handle_postrun",path:"src/polar/gateway/node.py",line:496}),h(Src,{label:"_build_session_result",path:"src/polar/gateway/node.py",line:559}),h(Src,{label:"_build_trajectory",path:"src/polar/gateway/node.py",line:626}),h(Src,{label:"_run_eval",path:"src/polar/gateway/node.py",line:636}),h(Src,{label:"_merge_eval_result",path:"src/polar/gateway/node.py",line:701}),h(Src,{label:"_push_result",path:"src/polar/gateway/node.py",line:855}))
+    ];}},
+    {key:"budget",name:"统一执行预算",render:function(){return [
+      h("p",null,"一条会话只有一个时间预算 ",h("code",null,"remaining_timeout_seconds"),"，被 INIT/RUN/POSTRUN 三阶段共享。实现上，INIT 第一次进入时用 ",h("code",null,"_start_execution_deadline")," 把它换算成一个绝对截止时刻 ",h("code",null,"execution_deadline"),"（事件循环时钟），此后任何阶段调用 ",h("code",null,"_remaining_budget")," 都返回“截止时刻减去当前时刻”，到点即抛 ",h("code",null,"GatewayExecutionTimeout"),"。"),
+      h(Code,null,"# node.py: 统一预算与超时包装\ndef _remaining_budget(self, managed: ManagedSession) -> float:\n    deadline = managed.execution_deadline\n    if deadline is None:\n        raise RuntimeError(\"session execution deadline was not initialized\")\n    remaining = deadline - asyncio.get_running_loop().time()\n    if remaining <= 0:\n        raise GatewayExecutionTimeout(\"session execution timeout\")\n    return remaining\n\nasync def _await_with_budget(self, awaitable, managed):\n    try:\n        return await asyncio.wait_for(awaitable, timeout=self._remaining_budget(managed))\n    except asyncio.TimeoutError as exc:\n        raise GatewayExecutionTimeout(\"session execution timeout\") from exc"),
+      h("p",null,"所有可能长时间阻塞的等待（runtime 启动、prepare 的 exec、harness 的 setup/postprocess、轨迹构建、评估）都包在 ",h("code",null,"_await_with_budget")," 里，因此超时是“全程一把尺子”，而不是每个调用各设一个独立超时。这避免了各处超时叠加导致总耗时不可控的问题。"),
+      h("p",null,"超时的语义被区分得很细：INIT 超时 → 直接给超时结果；RUN 超时 → 保留已截获补全、构建部分轨迹；eval 超时 → 保留已构建轨迹但状态标 TIMEOUT。这种分级处理保证“尽可能多地留住有价值的数据”，与 RL 训练对样本利用率的需求一致。",h("code",null,"SGLangClient")," 内部另有一个 900 秒的 liveness 上限，防止某个卡死的 SGLang 把请求拖过会话截止时刻（见下一节）。"),
+      h("div",null,h(Src,{label:"_remaining_budget",path:"src/polar/gateway/node.py",line:883}),h(Src,{label:"_await_with_budget",path:"src/polar/gateway/node.py",line:892}),h(Src,{label:"GatewayExecutionTimeout",path:"src/polar/gateway/node.py",line:43}),h(Src,{label:"StageTimer",path:"src/polar/rollout/timer.py"}))
+    ];}}
+  ];
+  function NodeExplorer(){const [s,setS]=useState(0);const d=NODE[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},NODE.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== proxy 与 server =====
+  function ProxySection(){
+    return h("div",null,
+      h("p",null,"现在看 Gateway 最有特色的一环：proxy 如何坐在 agent 执行进程与推理服务之间。agent 在 runtime 里发出一个标准的 completion 请求（Anthropic、OpenAI 或 Google 格式），目的地是 Gateway 自身（由 RUN 阶段注入的 ",h("code",null,"*_BASE_URL")," 决定）。Gateway 的 catch-all POST 路由 ",h("code",null,"proxy_request")," 接住它，依次完成：识别 API 族、确认会话、变换成 SGLang 接受的 OpenAI 格式、注入要服务的模型名、转发到 SGLang、把生成内容记录进存储、再把响应变换回 agent 期望的格式返回。"),
+      h("h3",null,"proxy_request：拦截、改写、转发的主流程"),
+      h(Code,null,"# server.py: 兜底 POST 路由, 拦截 agent 的所有模型请求 (精简)\n@app.api_route(\"/{path:path}\", methods=[\"POST\"])\nasync def proxy_request(request: Request, path: str):\n    state = get_state()\n    body = await request.json()\n    headers = {k: v for k, v in request.headers.items()}\n    full_path = request.url.path\n    api_type = detect(full_path, headers, body)          # 1) 识别 API 族\n    session_id = _resolve_session_id(headers, body,      # 2) 确认会话 (API key=session_id)\n        query_session_id=request.query_params.get(\"session_id\") or request.query_params.get(\"key\"))\n    original_model = extract_model(api_type, body)\n    transformer = state.transform_manager.get(api_type)  # 3) 取对应变换器\n    session_info = state.session_registry.get(session_id)\n    # 4) 变换请求, 强制改写成本节点真正服务的模型\n    transformed_body = body.copy()\n    transformed_body[\"_polar_model_served\"] = state.node.model_served\n    openai_request = transformer.transform_request(transformed_body)\n    openai_request[\"model\"] = state.node.model_served\n    is_streaming = openai_request.get(\"stream\", False)\n    if is_streaming:\n        return await _handle_streaming(api_type, transformer, openai_request, body,\n            session_id, original_model=original_model, session_info=session_info)\n    return await _handle_non_streaming(api_type, transformer, openai_request, body,\n        session_id, original_model=original_model, session_info=session_info)"),
+      h("p",null,"几个设计要点：第一，",h("strong",null,"路由注入"),"：无论 agent 请求里写的是什么模型，Gateway 都把 ",h("code",null,"openai_request[\"model\"]")," 强制改成本节点真正服务的模型 ",h("code",null,"node.model_served"),"，从而把请求路由到正确的 SGLang 后端，agent 侧的模型名只作为 ",h("code",null,"model_requested")," 留档。第二，",h("strong",null,"会话归属"),"：proxy 通过 API key（即 session_id）或显式头部把这次调用归到某条会话，于是同一会话的多次调用能被聚合成一条轨迹。"),
+      h("h3",null,"非流式：转发后即记录"),
+      h("p",null,"非流式分支 ",h("code",null,"_handle_non_streaming")," 是最清晰的截留点：转发请求拿到完整响应后，立刻调用 ",h("code",null,"storage.save_message(...)")," 把“变换后的请求 + 原始请求 + 响应”作为一条补全记录写入存储，然后才把响应变换回 agent 格式返回。记录发生在返回 agent 之前，因此即使 agent 随后崩溃，这次生成也已被留存。"),
+      h(Code,null,"# server.py: 非流式分支 ·转发, 记录, 再返回 (精简)\nasync def _handle_non_streaming(api_type, transformer, openai_request,\n        original_request, session_id, *, original_model, session_info):\n    state = get_state()\n    try:\n        response = await state.sglang.completion(openai_request)   # 转发到 SGLang\n    except UpstreamError as exc:\n        return _upstream_error_response(api_type, exc)\n    state.storage.save_message(session_id, openai_request, response,   # 截留生成\n        original_request=original_request, model_requested=original_model,\n        model_used=openai_request[\"model\"], api_type=api_type.value,\n        task_id=session_info.task_id if session_info else None,\n        created_at=session_info.created_at.isoformat() if session_info else None,\n        metadata=_completion_metadata(session_info))\n    transformed = transformer.transform_response(response, original_request)\n    return JSONResponse(transformed)"),
+      h("div",{className:"note"},"流式分支 ",h("code",null,"_handle_streaming")," 做了一个务实的选择：先以非流式方式向 SGLang 取得完整响应并记录，再用 ",h("code",null,"_response_to_stream_chunk")," 把这份完整响应合成为一个 SSE chunk 流式吐给 agent。这样既满足 agent 对 SSE 流的期待，又能用一份完整、确定的响应去构建轨迹，避免流式分片重组带来的不确定性。",h(Src,{label:"_handle_streaming",path:"src/polar/gateway/server.py",line:703}),h(Src,{label:"_response_to_stream_chunk",path:"src/polar/gateway/server.py",line:770})),
+      h("h3",null,"SGLangClient：直连 SGLang 的客户端与生成门"),
+      h("p",null,"proxy 转发的实际执行者是 ",h("code",null,"SGLangClient"),"（",h("code",null,"proxy.py"),"），一个直连 SGLang OpenAI 兼容接口的 httpx 客户端。它的 ",h("code",null,"completion")," 方法把请求强制为非流式发往 ",h("code",null,"/v1/chat/completions"),"，并把传输层错误翻译成结构化的 ",h("code",null,"UpstreamHTTPError"),"/",h("code",null,"UpstreamTimeoutError"),"/",h("code",null,"UpstreamTransportError"),"，让 server 能据此回出对应 API 族的错误体。"),
+      h("p",null,"SGLangClient 还内置一个生成并发门：每次 completion 先 ",h("code",null,"_acquire_generation_slot")," 再放行，",h("code",null,"pause_generation")," 会拒绝新请求并等待在途请求排空，",h("code",null,"resume_generation")," 恢复。这正是训练侧在更新模型权重时所需的能力：先暂停生成、确认 SGLang 无在途请求、更新权重、再恢复，从而避免一次生成跨越权重更新而产生数据版本混乱。"),
+      h(Code,null,"# proxy.py: 暂停/恢复生成的并发门 (精简)\nasync def pause_generation(self, *, timeout_seconds: float = 300.0) -> dict[str, Any]:\n    async with self._generation_condition:\n        self._generation_paused = True\n        self._generation_condition.notify_all()\n        await asyncio.wait_for(\n            self._generation_condition.wait_for(lambda: self._inflight_generations == 0),\n            timeout=timeout_seconds)\n        return self.generation_status()"),
+      h("p",null,"这两个动作通过 server 的 ",h("code",null,"POST /admin/sglang/pause")," 与 ",h("code",null,"/admin/sglang/resume")," 端点暴露。训练桥 slime_bridge 在做权重更新前正是调用这两个端点（见 ",h("code",null,"_pause_gateway_generation"),"），形成训练与生成之间的协调。这条协调路径是第 8 课 slime 集成的重要一环。"),
+      h("div",null,h(Src,{label:"proxy_request",path:"src/polar/gateway/server.py",line:609}),h(Src,{label:"_handle_non_streaming",path:"src/polar/gateway/server.py",line:670}),h(Src,{label:"SGLangClient.completion",path:"src/polar/gateway/proxy.py",line:105}),h(Src,{label:"pause_generation",path:"src/polar/gateway/proxy.py",line:137}),h(Src,{label:"pause 端点 (server)",path:"src/polar/gateway/server.py",line:436}),h(Src,{label:"slime_bridge 调用",path:"src/slime_bridge/rollout.py",line:162}),h(Ext,{href:"https://docs.sglang.ai/"},"SGLang 文档")),
+      h("h3",null,"server 的其余端点：节点注册、健康、会话与事件"),
+      h("p",null,"server.py 不只有 proxy，它还组织了整个 Gateway 进程。",h("code",null,"_build_state")," 在启动时装配全部组件（SGLangClient、SessionStore、TransformManager、SessionRegistry、builder/evaluator 注册表、EventBus、GatewayNodeManager），FastAPI 的 lifespan 负责启动 completion_writer 与 node_manager、退出时收尾。node_manager 启动时会向 rollout server 注册并周期发送心跳（携带各阶段队列/在途指标），让 rollout server 据此做容量感知的调度。"),
+      h("ul",null,
+        h("li",null,h("code",null,"POST /sessions"),"：兼具 dispatch（body 含 ",h("code",null,"agent"),"+",h("code",null,"session_id")," 时）与轻量 create（仅建会话元数据）两种语义。"),
+        h("li",null,h("code",null,"GET /sessions/{id}")," / ",h("code",null,"DELETE /sessions/{id}"),"：查询会话状态（含终态结果）/ 取消会话。"),
+        h("li",null,h("code",null,"GET /health"),"：汇总节点 id、SGLang 健康、各阶段指标与可用容量，是心跳与监控的数据源。"),
+        h("li",null,h("code",null,"GET /events"),"：SSE 事件流；",h("code",null,"_wrap_registry_for_events")," 包装注册表的 set_status/set_result，使会话状态变化实时推送到 EventBus。"),
+        h("li",null,h("code",null,"GET /sessions/{id}/completions"),"：暴露某会话当前的内存补全记录，便于调试观察 proxy 截留了什么。")
+      ),
+      h("div",null,h(Src,{label:"_build_state",path:"src/polar/gateway/server.py",line:81}),h(Src,{label:"_lifespan",path:"src/polar/gateway/server.py",line:181}),h(Src,{label:"_register_with_rollout_server",path:"src/polar/gateway/node.py",line:114}),h(Src,{label:"_heartbeat_loop",path:"src/polar/gateway/node.py",line:133}),h(Src,{label:"health 端点",path:"src/polar/gateway/server.py",line:409}),h(Src,{label:"_wrap_registry_for_events",path:"src/polar/gateway/server.py",line:127}),h(Ext,{href:"https://docs.aiohttp.org/"},"aiohttp 文档"))
+    );
+  }
+
+  // ===== 四个支撑模块 =====
+  const SUPPORT=[
+    {n:"session.py ·会话注册表与 id 解析",d:"SessionRegistry 是线程安全的内存注册表，记录每条会话的状态、task_id、创建/活跃时间与终态结果。它支撑两个面向：对 rollout server 的状态查询（active_sessions / active_status_counts），以及 proxy 侧的会话归属解析。resolve_session_id 按优先级从显式头部/查询参数/请求体里取 session_id，取不到则回退到 API key，再取不到才新建一条会话；这正是“API key 即 session_id”约定的解析端。clean_session_id 用正则约束 id 字符集，防止恶意 id 被用作存储路径。clear_result_payload 在结果回送后释放重负载，避免长运行进程内存无界增长。",links:[["SessionRegistry","src/polar/gateway/session.py",61],["resolve_session_id","src/polar/gateway/session.py",215],["extract_api_key","src/polar/gateway/session.py",194],["clean_session_id","src/polar/gateway/session.py",27]]},
+    {n:"storage.py ·补全记录存储",d:"SessionStore 是内存中的补全记录权威源，按 session_id 聚合所有 CompletionRecord。save_message 在 proxy 每次拿到响应后被调用，把变换后请求、原始请求与响应封成一条记录追加进会话，并把元数据（task_id / 模型名 / api_type）合并入会话状态。load_completion_session 在 POSTRUN 被调用，返回类型化的 CompletionSession 供 builder 重建轨迹。注意 save_message 在写完内存后，才把记录交给 completion_writer 异步写盘：内存副本始终是权威的，磁盘只是旁路留档。",links:[["SessionStore","src/polar/gateway/storage.py",28],["save_message","src/polar/gateway/storage.py",78],["load_completion_session","src/polar/gateway/storage.py",149],["ensure_session","src/polar/gateway/storage.py",54]]},
+    {n:"completion_writer.py ·异步写盘",d:"CompletionWriter 是每进程一个的后台 asyncio 任务，从有界队列取出补全记录，按 task_<id>/sessions/<session_id>/completions/<NNNN>-<id>.json 的路径逐条写盘。它的设计铁律是绝不阻塞 proxy 热路径：enqueue 是非阻塞的，队列满则丢弃并告警（内存副本仍在，不影响轨迹构建）；超大字段先被 _truncate_value 截断到字节预算内，避免单条记录撑爆磁盘。enqueue 用 loop.call_soon_threadsafe 让同步的 save_message 调用方也能安全入队。",links:[["CompletionWriter","src/polar/gateway/completion_writer.py",88],["enqueue","src/polar/gateway/completion_writer.py",129],["_drain","src/polar/gateway/completion_writer.py",194],["_write_to_disk","src/polar/gateway/completion_writer.py",209]]},
+    {n:"detection.py ·API 族识别",d:"detect 按“路径 → 头部 → 请求体”的优先级判断这次调用属于哪个 API 族：路径含 /v1/messages 判为 Anthropic、/v1/chat/completions 判为 OpenAI Chat、/v1/responses 判为 OpenAI Responses、generateContent 判为 Google；路径不明确时看 anthropic-version 头部，再看请求体里是否有 contents / input+instructions 等结构性特征，最终默认 OpenAI Chat。识别结果决定 proxy 取哪个 transformer，是协议变换（第 4 课）的入口判据。extract_model 据 API 族从请求体取模型名留作 model_requested。",links:[["APIType","src/polar/gateway/detection.py",9],["detect","src/polar/gateway/detection.py",16],["extract_model","src/polar/gateway/detection.py",44]]}
+  ];
+  function SupportSection(){
+    return h("div",null,
+      h("p",null,"proxy 截留补全、node 据补全构建轨迹，这条数据流由四个支撑模块串起来。下面逐个说明它们在数据流中的位置（点 ",h("code",null,"Src")," 看源码行）。"),
+      h("div",{className:"linkgrid"},SUPPORT.map(function(u,i){return h("div",{className:"linkcard",key:i},
+        h("div",{className:"lt"},u.n),
+        h("div",{className:"ld"},u.d),
+        h("div",null,u.links.map(function(l,j){return h(Src,{key:j,label:l[0],path:l[1],line:l[2]});})));}))
+      ,
+      h("div",{className:"note"},"数据流闭式回顾：agent 发请求 → ",h("code",null,"detect")," 识别 API 族 → ",h("code",null,"resolve_session_id")," 据 API key 确认会话 → transformer 改写 → ",h("code",null,"SGLangClient.completion")," 转发 → ",h("code",null,"storage.save_message")," 写内存（并旁路 ",h("code",null,"completion_writer")," 写盘）→ POSTRUN 时 ",h("code",null,"load_completion_session")," 取回 → builder 重建轨迹 → evaluator 给奖励。proxy 写、builder 读，存储是二者的衔接面。")
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"SGLang 文档",d:"Gateway 转发的目标推理服务，OpenAI 兼容接口",href:"https://docs.sglang.ai/"},
+    {t:"aiohttp 文档",d:"异步 HTTP 服务与客户端的通用概念参考",href:"https://docs.aiohttp.org/"},
+    {t:"FastAPI 文档",d:"server.py 的 Web 框架：路由、依赖、StreamingResponse",href:"https://fastapi.tiangolo.com/"},
+    {t:"httpx 文档",d:"SGLangClient 与 node 控制客户端使用的异步 HTTP 库",href:"https://www.python-httpx.org/"},
+    {t:"asyncio 同步原语",d:"dispatcher 用到的 Semaphore / Event / Condition / wait",href:"https://docs.python.org/3/library/asyncio-sync.html"},
+    {t:"node.py（本机）",d:"GatewayNodeManager 完整生命周期实现",href:srcUrl("src/polar/gateway/node.py",null)},
+    {t:"server.py（本机）",d:"FastAPI app 与 proxy 端点",href:srcUrl("src/polar/gateway/server.py",null)},
+    {t:"gateway/README.md（本机）",d:"Gateway 职责与 pause/resume 说明",href:srcUrl("src/polar/gateway/README.md",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:3}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 3 课 / 共 8 · Gateway 节点与 proxy"),
+          h("h1",null,"Gateway 节点与 proxy"),
+          h("p",{className:"lead"},"这一课讲清 Polar 的工作主机层：一条 rollout 会话如何在单个 Gateway 节点内走完 INIT/READY/RUN/POSTRUN 四阶段，FastAPI server 如何接收派发并把 OpenAI/Anthropic/Google 兼容的 proxy 暴露给被测 agent，proxy 如何坐在 agent 进程与 SGLang 之间拦截、改写、转发 completion 并截留生成内容，以及 session / storage / completion_writer / detection 四个支撑模块如何把截留的补全串成可供轨迹重建的数据流。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"node.py"),"（生命周期）、",h("code",null,"server.py"),"（HTTP 服务与 proxy 端点）、",h("code",null,"dispatcher.py"),"（四阶段调度）、",h("code",null,"proxy.py"),"（SGLangClient）、",h("code",null,"session.py")," / ",h("code",null,"storage.py")," / ",h("code",null,"completion_writer.py")," / ",h("code",null,"detection.py"),"。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机 ",h("code",null,"ProRL-Agent-Server")," 源码行。runtime 见第 5 课、agent harness 见第 2 课、协议变换见第 4 课、轨迹与评估见第 7 课、rollout server 见第 6 课、slime 集成见第 8 课。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"全局观"),
+          h("h2",null,"Gateway 是对 agent 透明、对训练可观测的中间代理"),
+          h(OverviewSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"dispatcher.py"),
+          h("h2",null,"四阶段调度模型：会话在节点内的状态机"),
+          h("p",null,"先理解会话在单个节点内的状态机。dispatcher 把生命周期切成四个阶段、各配独立 worker 池，是后续 node 主流程的承载结构。点 Tab 依次看：为什么分阶段、四阶段如何流转、运行槽与取消如何协同。"),
+          h(StageExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"node.py"),
+          h("h2",null,"GatewayNodeManager 主流程：填充状态机的三个回调"),
+          h("p",null,"dispatcher 提供状态机，GatewayNodeManager 提供填充状态机的回调逻辑。点 Tab 依次看：接收派发、INIT 准备 runtime、RUN 执行 agent、POSTRUN 构建与评估、贯穿三阶段的统一执行预算。"),
+          h(NodeExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"server.py · proxy.py"),
+          h("h2",null,"proxy 与 server：拦截、改写、转发、截留"),
+          h(ProxySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"session · storage · completion_writer · detection"),
+          h("h2",null,"四个支撑模块：把截留的补全串成数据流"),
+          h(SupportSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档理解 Gateway 用到的 Web 与异步基建，以及它转发的目标推理服务。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"对 agent 透明、对训练可观测"),"：Gateway 注入 ",h("code",null,"*_BASE_URL")," 与 ",h("code",null,"*_API_KEY"),"（API key 即 session_id），让被测 agent 以为在对接普通模型 API，而 Gateway 在不改 agent 代码的前提下把调用统一改写到内部 SGLang，并把生成截留供训练。"),
+            h("li",null,h("strong",null,"四阶段隔离并发"),"：INIT/READY/RUNNING/POSTRUN 各配独立 worker 池与上限，准备 runtime、运行 agent、收尾互不挤占；READY 用信号量限制并发运行数；阶段内排队/在途由 ",h("code",null,"inflight")," 一个布尔位区分。"),
+            h("li",null,h("strong",null,"一把尺子的执行预算"),"：会话开始即设绝对截止时刻，所有长等待经 ",h("code",null,"_await_with_budget")," 共享同一预算；INIT/RUN/eval 超时被分级处理，尽量留住已截获的补全去构建部分轨迹。"),
+            h("li",null,h("strong",null,"proxy 写、builder 读，存储是衔接面"),"：proxy 在返回 agent 之前先 ",h("code",null,"save_message")," 截留生成；POSTRUN 用 ",h("code",null,"load_completion_session")," 取回交 builder 重建轨迹，再由 evaluator 把奖励写回 trace。"),
+            h("li",null,h("strong",null,"热路径绝不阻塞"),"：completion_writer 异步写盘、队满即弃且内存副本权威；SGLangClient 的 pause/resume 生成门让训练侧能在更新权重时安全地停顿生成，是与 slime 集成（第 8 课）协调的接口。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"polar-lesson-02-agent-harness.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 2 课：Agent 与 Harness 层")),
+            h("a",{href:"polar-lesson-04-transform.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 4 课：协议变换 transform"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Polar Agent 采样的具体算法实现</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#0a0d11;--bg-1:#10141b;--bg-2:#161b24;--bg-3:#1d2330;
+  --ink:#e9ecf1;--ink-dim:#9aa3b2;--ink-faint:#69727f;
+  --line:rgba(233,236,241,.10);--line-strong:rgba(233,236,241,.18);
+  --polar:#5ccede;--polar-bright:#8fe3f0;--polar-soft:rgba(92,206,222,.12);
+  --amber:#e7a865;--amber-bright:#f4be7e;
+  --good:#86d792;--mask0:#5a626f;
+  --r:14px;--maxw:1040px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:78px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk','PingFang SC','Noto Sans SC',system-ui,sans-serif;font-size:16.5px;line-height:1.74;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-gradient(900px 600px at 80% -10%,rgba(92,206,222,.10),transparent 60%),radial-gradient(800px 600px at 0% 110%,rgba(231,168,101,.06),transparent 55%),var(--bg)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;background-image:linear-gradient(rgba(233,236,241,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(233,236,241,.02) 1px,transparent 1px);background-size:46px 46px;mask-image:radial-gradient(circle at 60% 20%,#000,transparent 92%)}
+h1,h2,h3,h4{font-family:'Fraunces',Georgia,serif;font-weight:600;line-height:1.12;letter-spacing:-.01em}
+code,kbd,.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+::selection{background:var(--polar);color:#0a0d11}
+
+/* nav */
+.topnav{position:sticky;top:0;z-index:50;background:rgba(10,13,17,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topnav .inner{max-width:var(--maxw);margin:0 auto;padding:11px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.topnav .logo{font-family:'Fraunces',serif;font-weight:900;font-size:16px;white-space:nowrap}
+.topnav .logo b{color:var(--polar)}
+.topnav .pills{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+.topnav a{text-decoration:none;color:var(--ink-dim);font-size:12.5px;padding:5px 9px;border-radius:7px;font-family:'JetBrains Mono',monospace;transition:.15s}
+.topnav a:hover{background:var(--bg-2);color:var(--ink)}
+.topnav a.active{color:var(--polar);background:var(--polar-soft)}
+.scheme{display:flex;align-items:center;gap:7px}
+.scheme select{background:var(--bg-2);color:var(--ink);border:1px solid var(--line-strong);border-radius:8px;padding:6px 8px;font-size:11.5px;font-family:'JetBrains Mono',monospace}
+.scheme label{font-size:10.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace}
+
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px}
+section{padding:64px 0 8px;scroll-margin-top:64px}
+section+section{border-top:1px solid var(--line)}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--polar)}
+.kicker .num{color:var(--ink-faint);margin-right:8px}
+h2.sec{font-size:clamp(25px,3.6vw,36px);margin:.3em 0 .15em}
+.lead{color:var(--ink-dim);font-size:16.5px;max-width:760px}
+p{margin:.78em 0}.muted{color:var(--ink-dim)}.faint{color:var(--ink-faint)}
+strong,b{color:#fff;font-weight:700}
+.reveal{opacity:0;transform:translateY(16px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+
+/* hero */
+.hero{padding-top:54px}
+.hero h1{font-size:clamp(32px,5.5vw,58px);font-weight:900;margin:.2em 0 .1em;letter-spacing:-.02em}
+.hero h1 .c{color:var(--polar)}
+.thesis{border:1px solid var(--line-strong);border-left:3px solid var(--polar);border-radius:12px;background:linear-gradient(180deg,var(--polar-soft),transparent);padding:18px 22px;margin-top:22px;font-size:16px}
+.thesis b{color:var(--polar-bright)}
+
+/* panels */
+.panel{border:1px solid var(--line-strong);border-radius:var(--r);background:var(--bg-1);padding:20px 22px;margin-top:20px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:740px){.grid2{grid-template-columns:1fr}}
+.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid var(--line-strong);color:var(--ink-dim)}
+.tag.p{color:var(--polar);border-color:rgba(92,206,222,.4);background:var(--polar-soft)}
+.tag.a{color:var(--amber);border-color:rgba(231,168,101,.4);background:rgba(231,168,101,.1)}
+.cap{font-size:13px;color:var(--ink-faint);margin-top:9px}
+
+/* code */
+pre.code{background:#070a0e;border:1px solid var(--line-strong);border-radius:10px;padding:15px 17px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.65;color:#cdd5e1;margin-top:14px;position:relative}
+pre.code .cm{color:var(--ink-faint)}
+pre.code .kw{color:var(--polar-bright)}
+pre.code .st{color:var(--amber-bright)}
+pre.code .fn{color:#c6a6f0}
+pre.code .hl{background:rgba(92,206,222,.12);display:inline-block;width:100%;border-left:2px solid var(--polar);margin-left:-17px;padding-left:15px}
+.codecap{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;margin-top:14px}
+
+/* code links */
+.codelink{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--polar-bright);background:rgba(92,206,222,.08);border:1px solid rgba(92,206,222,.22);padding:2px 8px;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:.14s;line-height:1.5}
+.codelink::after{content:"↗";font-size:10px;opacity:.6}
+.codelink:hover{background:rgba(92,206,222,.2);border-color:var(--polar)}
+.codelinks{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
+
+/* toggle (普通 vs agent) */
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:10px;overflow:hidden;margin-top:6px}
+.seg button{background:var(--bg-2);color:var(--ink-dim);border:none;padding:9px 18px;font-family:'JetBrains Mono',monospace;font-size:13px;cursor:pointer;transition:.15s}
+.seg button.on{background:var(--polar);color:#0a0d11;font-weight:700}
+.cmp{margin-top:16px}
+.cmp .pane{display:none}.cmp .pane.on{display:block;animation:rise .4s ease}
+
+/* token chips */
+.lanes{margin-top:16px}
+.lane{display:flex;align-items:center;gap:10px;margin:8px 0;flex-wrap:wrap}
+.lane .ll{flex:0 0 92px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);text-align:right}
+.toks{display:flex;gap:4px;flex-wrap:wrap}
+.tok{font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:3px 8px;border-radius:6px;border:1px solid var(--line-strong);white-space:nowrap}
+.tok.prompt{background:rgba(233,236,241,.05);color:var(--ink-dim)}
+.tok.samp{background:rgba(92,206,222,.16);border-color:var(--polar);color:var(--polar-bright)}
+.tok.inter{background:repeating-linear-gradient(45deg,rgba(90,98,111,.18),rgba(90,98,111,.18) 5px,transparent 5px,transparent 10px);border-color:var(--mask0);color:var(--ink-dim)}
+.tok.eot{background:rgba(231,168,101,.18);border-color:var(--amber);color:var(--amber-bright)}
+.maskrow{display:flex;gap:4px;flex-wrap:wrap}
+.mbit{width:30px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;border-radius:4px;padding:1px 0}
+.mbit.one{background:rgba(92,206,222,.2);color:var(--polar-bright)}
+.mbit.zero{background:rgba(90,98,111,.2);color:var(--ink-faint)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--ink-dim)}
+.legend span{display:flex;align-items:center;gap:6px}.legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
+.btn{cursor:pointer;border:1px solid var(--polar);background:var(--polar-soft);color:var(--polar);padding:8px 15px;border-radius:9px;font-family:'JetBrains Mono',monospace;font-size:12.5px;transition:.15s;user-select:none}
+.btn:hover{background:rgba(92,206,222,.2)}
+.btn.g{border-color:var(--line-strong);background:var(--bg-2);color:var(--ink)}
+.ctl{display:flex;gap:9px;align-items:center;margin-top:14px;flex-wrap:wrap}
+
+/* dl */
+.dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin-top:12px;font-size:14px}
+.dl dt{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--polar);white-space:nowrap}
+.dl dd{margin:0;color:var(--ink-dim)}
+.eqbox{background:var(--bg-1);border:1px solid var(--line-strong);border-radius:12px;padding:16px 18px;margin-top:14px;overflow-x:auto}
+.note{border:1px solid var(--line-strong);border-left:3px solid var(--amber);border-radius:10px;background:rgba(231,168,101,.06);padding:13px 16px;margin-top:16px;font-size:14px}
+.note b{color:var(--amber-bright)}
+.core{border:1px solid rgba(92,206,222,.35);border-radius:14px;padding:20px;background:linear-gradient(180deg,rgba(92,206,222,.07),transparent);position:relative;margin-top:24px}
+.core::before{content:"核心";position:absolute;top:-11px;left:16px;background:var(--polar);color:#0a0d11;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:7px;letter-spacing:.08em}
+.core h4{margin:2px 0 0;font-size:18px}
+.foot{max-width:var(--maxw);margin:0 auto;padding:40px 28px 80px;color:var(--ink-faint);font-size:13px;border-top:1px solid var(--line)}
+.step-ind{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--polar)}
+.badge{font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 11px;border-radius:8px;border:1px solid;display:inline-block}
+.badge.ok{color:var(--polar);border-color:rgba(92,206,222,.5);background:var(--polar-soft)}
+.badge.trunc{color:var(--amber);border-color:rgba(231,168,101,.5);background:rgba(231,168,101,.1)}
+.badge.fail{color:#e2685f;border-color:rgba(226,104,95,.5);background:rgba(226,104,95,.12)}
+.badge.ph{color:var(--ink-faint);border-color:var(--line-strong);background:var(--bg-2)}
+.tok.cut{background:rgba(231,168,101,.12);border-color:var(--amber);color:var(--amber-bright);border-style:dashed}
+.tok.dead{opacity:.55;text-decoration:line-through}
+.tok.tool{background:rgba(134,215,146,.12);border-color:rgba(134,215,146,.45);color:var(--good)}
+.impact{border-left:3px solid var(--polar);padding:11px 15px;margin-top:14px;font-size:14px;color:var(--ink-dim);background:var(--bg-2);border-radius:0 8px 8px 0}
+.impact.fail{border-left-color:#e2685f}.impact.trunc{border-left-color:var(--amber)}.impact.ph{border-left-color:var(--ink-faint)}
+.envgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:740px){.envgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="inner">
+    <span class="logo">Polar · <b>Agent 采样算法</b></span>
+    <nav class="pills" id="pills">
+      <a href="#contrast">00 对照</a>
+      <a href="#proxy">01 拦截</a>
+      <a href="#tito">02 TITO</a>
+      <a href="#merge">03 拼接</a>
+      <a href="#mask">04 loss_mask</a>
+      <a href="#fail">05 状态/占位</a>
+      <a href="#grpo">06 组归一化</a>
+      <a href="#all">07 全流程</a>
+      <a href="#claude">08 Claude</a>
+    </nav>
+    <div class="scheme">
+      <label>源码↗</label>
+      <select id="schemeSel">
+        <option value="vscode">VS Code</option>
+        <option value="cursor">Cursor</option>
+        <option value="file">浏览器</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <section class="hero" id="top">
+    <span class="kicker reveal">ProRL-Agent-Server / Polar · 采样到训练样本</span>
+    <h1 class="reveal" style="animation-delay:.08s">从一个<span class="c">黑盒 agent</span>，<br/>拿出干净的<span class="c">token 级</span>训练数据</h1>
+    <p class="lead reveal" style="animation-delay:.16s">本页专门拆解一句话背后的具体算法实现。普通 RL 直接调模型就能拿到 token 级数据；而真实 agent 不可控、说方言、多轮、还会失败。Polar 用六个环节把这个难题解决，每一环都给出真实代码与可点击的源码位置。</p>
+    <div class="thesis reveal" style="animation-delay:.24s">
+      <b>跑它</b> + <b>proxy 拦截</b> + <b>从推理服务器取精确 token 与 logprob（TITO，不重新分词）</b> + <b>只在真正采样出的助手 token 上算梯度</b> + <b>用状态和占位保住 GRPO 组完整</b>。
+    </div>
+  </section>
+
+  <!-- 00 CONTRAST -->
+  <section id="contrast">
+    <span class="kicker"><span class="num">00</span>对照</span>
+    <h2 class="sec">普通 RL 采样 vs 对 agent 采样</h2>
+    <p class="lead">先看清差距在哪。切换两种模式：</p>
+    <div class="seg" id="cmpSeg">
+      <button class="on" data-c="plain">普通 RL（直接调模型）</button>
+      <button data-c="agent">对真实 agent 采样</button>
+    </div>
+    <div class="cmp" id="cmpBody">
+      <div class="pane on" data-c="plain">
+        <div class="panel" style="margin-top:0">
+          <p class="muted" style="margin-top:0">你完全控制生成循环。一次调用，token 与 logprob 直接返回，无需重建。</p>
+          <pre class="code"><span class="cm"># 概念化：标准单轮 / 多轮由你自己写的 workflow 控制</span>
+resp = engine.<span class="kw">agenerate</span>(prompt_token_ids)
+resp.<span class="kw">output_token_ids</span>   <span class="cm"># 模型采样出的 token，精确</span>
+resp.<span class="kw">output_logprobs</span>    <span class="cm"># 每个 token 的 logprob，精确</span>
+<span class="cm"># 直接拼成训练样本：prompt + response，loss_mask 你说了算</span></pre>
+          <p class="cap">token 级数据是采样的副产品，天然就有，分词也由你统一掌控。</p>
+        </div>
+      </div>
+      <div class="pane" data-c="agent">
+        <div class="panel" style="margin-top:0">
+          <p class="muted" style="margin-top:0">你只能把现成 agent（Claude Code / Codex…）跑起来观察。四件事全被打破：</p>
+          <div class="dl">
+            <dt class="p">不控制循环</dt><dd>agent 自己决定发什么 prompt、调什么工具、走几轮，你无法直接命令模型生成。</dd>
+            <dt class="p">说方言</dt><dd>agent 发的是 Anthropic / OpenAI / Google 的高层 messages，不是 token；分词在推理服务器内部发生。</dd>
+            <dt class="p">多轮</dt><dd>一次任务 = 多次独立 LLM 调用，要拼回一条连续的训练序列。</dd>
+            <dt class="p">会失败</dt><dd>超时、报错、截断、空输出都可能发生，还不能破坏 GRPO 组结构。</dd>
+          </div>
+          <p class="cap" style="margin-top:14px">下面六节，就是 Polar 逐一解决这四点的具体算法。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 PROXY -->
+  <section id="proxy">
+    <span class="kicker"><span class="num">01</span>跑它 + proxy 拦截</span>
+    <h2 class="sec">透明代理：一个 catch-all 端点</h2>
+    <p class="lead">agent 的 SDK 以为在调真实 API。Polar 把环境变量里的 base_url 指向网关，于是所有 LLM 调用都落到一个万能 POST 端点上被拦截。算法很直接：识别方言 → 翻成 OpenAI → 调 SGLang → 捕获记录 → 翻回原方言。</p>
+    <pre class="code"><span class="cm"># 精简自 gateway/server.py:proxy_request（catch-all）</span>
+<span class="kw">@app.api_route</span>(<span class="st">"/{path:path}"</span>, methods=[<span class="st">"POST"</span>])
+<span class="kw">async def</span> proxy_request(request, path):
+    body      = <span class="kw">await</span> request.json()
+    api_type  = <span class="kw">detect</span>(full_path, headers, body)        <span class="cm"># 识别方言: anthropic / openai_* / google</span>
+    session_id = _resolve_session_id(headers, body)        <span class="cm"># API key 即 session_id，给请求打标签</span>
+    transformer = state.transform_manager.<span class="kw">get</span>(api_type)
+<span class="hl">    openai_request = transformer.transform_request(body)   <span class="cm"># 方言 → OpenAI Chat 规范</span></span>
+<span class="hl">    openai_request[<span class="st">"model"</span>] = state.node.model_served   <span class="cm"># 保留原请求名，实际换成 served 模型</span></span>
+    <span class="cm"># 非流式路径</span>
+    response = <span class="kw">await</span> state.sglang.completion(openai_request)
+<span class="hl">    state.storage.save_message(session_id, openai_request, response, ...)  <span class="cm"># 捕获 → CompletionRecord</span></span>
+    <span class="kw">return</span> JSONResponse(transformer.transform_response(response, original_request))  <span class="cm"># 翻回原方言</span></pre>
+    <div class="note"><b>流式的悖论：</b>很多 agent 要流式，但训练需要<strong>完整</strong>回复才能捕获全部 token。解法：对 SGLang 强制发<strong>非流式</strong>（<code class="mono">stream=False</code>）拿到完整结果，再切成分块逐个回吐给 agent，对端无感。</div>
+    <div class="codelinks">
+      <a class="codelink" data-path="ProRL-Agent-Server/src/polar/gateway/server.py" data-line="608">proxy_request:608</a>
+      <a class="codelink" data-path="ProRL-Agent-Server/src/polar/gateway/server.py" data-line="703">_handle_streaming:703</a>
+      <a class="codelink" data-path="ProRL-Agent-Server/src/polar/gateway/detection.py" data-line="16">detect:16</a>
+      <a class="codelink" data-path="ProRL-Agent-Server/src/polar/gateway/storage.py" data-line="28">SessionStore:28</a>
+    </div>
+  </section>
+
+  <!-- 02 TITO -->
+  <section id="tito">
+    <span class="kicker"><span class="num">02</span>取精确 token 与 logprob</span>
+    <h2 class="sec">TITO：不重新分词，向服务器要 token</h2>
+    <p class="lead">这是整条流程最核心的一点。训练用的 token 必须等于采样时模型实际见过、产出的 token。若拿 agent 看到的文本重新分词，BPE 会漂移，训练分布就偏离采样分布，梯度是错的。Polar 因此直接从推理服务器的返回里取 token id 与 logprob。</p>
+    <pre class="code"><span class="cm"># 精简自 trajectory/builder/record_utils.py:build_trace_from_completion</span>
+<span class="hl">prompt_ids = first_choice.get(<span class="st">"input_token_ids"</span>) <span class="kw">or</span> response.get(<span class="st">"prompt_token_ids"</span>)</span>
+response_ids = _extract_response_ids(response, first_choice)
+<span class="kw">return</span> Trace(
+    prompt_ids       = prompt_ids,
+    response_ids     = response_ids,
+<span class="hl">    loss_mask        = [1] * len(response_ids),        <span class="cm"># 采样出的 token 默认全部可训练</span></span>
+    response_logprobs= _extract_response_logprobs(first_choice),  <span class="cm"># logprobs.content[]</span>
+    finish_reason    = first_choice.get(<span class="st">"finish_reason"</span>),
+)
+
+<span class="cm"># 取 response token：优先 token_ids，否则从 logprobs 的 token_id 重建</span>
+<span class="kw">def</span> _extract_response_ids(response, choice):
+    token_ids = choice.get(<span class="st">"token_ids"</span>, response.get(<span class="st">"token_ids"</span>))
+    <span class="kw">if</span> isinstance(token_ids, list): <span class="kw">return</span> token_ids
+    content = choice[<span class="st">"logprobs"</span>][<span class="st">"content"</span>]              <span class="cm"># 兜底</span>
+    <span class="kw">return</span> [item[<span class="st">"token_id"</span>] <span class="kw">for</span> item <span class="kw">in</span> content]</pre>
+    <div class="note"><b>为什么要给 SGLang 打补丁：</b>标准 OpenAI 接口不稳定返回 <code class="mono">input_token_ids</code> 和完整的逐 token logprob。<code class="mono">scripts/patch/patch_sglang.sh</code> 让服务器在回复里带上 <strong>prompt token ids</strong> 与 <strong>每个生成 token 的 logprob</strong>，TITO 才成立。</div>
+    <div class="codelinks">
+      <a class="codelink" data-path="ProRL-Agent-Server/src/polar/trajectory/builder/record_utils.py" data-line="54">build_trace_from_completion:54</a>
+      <a class="codelink" data-path="ProRL-Agent-Server/src/polar/trajectory/builder/record_utils.py" data-line="11">_extract_response_ids:11</a>
+      <a class="codelink" data-path="ProRL-Agent-Server/src/polar/trajectory/models.py" data-line="89">Trace 模型:89</a>
+    </div>
+  </section>
+
+  <!-- 03 MERGE -->
+  <section id="merge">
+    <span class="kicker"><span class="num">03</span>多轮拼接 · prefix-merging</span>
+    <h2 class="sec">把 N 次调用拼回一条序列，且不引入分词漂移</h2>
+    <p class="lead">一次 agent 运行发了多次请求。第 i+1 次的 prompt 通常恰好是「第 i 次的 prompt + 模型回复 + 工具结果等插入段」。prefix-merging 用严格的 token 前缀不变式把它们拼成一条，且对每一段精确区分"采样体"与"插入段"。</p>
+
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
+        <h3 style="font-size:18px;margin:0">交互示例：逐步拼接一条多轮轨迹</h3>
+        <span class="step-ind" id="mergeStep"></span>
+      </div>
+      <p class="muted" style="font-size:14px">两轮对话：第 1 轮模型采样出 <code class="mono">a₁ a₂ ⟨eot⟩</code> 后调用工具；第 2 轮在工具结果后采样出 <code class="mono">b₁ ⟨eot⟩</code>。点"下一步"观察合并流如何长出来。</p>
+
+      <div class="lanes" id="mergeInputs"></div>
+      <hr style="border:none;border-top:1px dashed var(--line);margin:16px 0"/>
+      <div class="lanes">
+        <div class="lane"><div class="ll">合并流</div><div class="toks" id="mergeStream"></div></div>
+        <div class="lane"><div class="ll">loss_mask</div><div class="maskrow" id="mergeMask"></div></div>
+      </div>
+      <div class="ctl">
+        <span class="btn" id="mergeNext">下一步 ›</span>
+        <span class="btn g" id="mergeReset">↺ 重置</span>
+        <span class="muted" id="mergeDesc" style="font-size:13px"></span>
+      </div>
+      <div class="legend">
+        <span><i class="tok prompt" style="width:14px;height:14px;padding:0"></i>prompt（不训练）</span>
+        <span><i class="tok samp" style="width:14px;height:14px;padding:0"></i>采样体（loss_mask=1，真实 logprob）</span>
+        <span><i class="tok inter" style="width:14px;height:14px;padding:0"></i>插入段（loss_mask=0，规范分词）</span>
+        <span><i class="tok eot" style="width:14px;height:14px;padding:0"></i>⟨eot⟩ 采样结束符（训练，兼作切分点）</span>
+      </div>
+    </div>
+
+    <h3 style="font-size:18px;margin-top:26px">算法两阶段</h3>
+    <div class="grid2">
+      <div class="panel" style="margin-top:0">
+        <span class="tag p">阶段一 · 分组</span>
+        <p class="muted" style="font-size:14px">用消息级 key 做 O(1) 索引找候选链，再用<strong>严格 token 前缀检查</strong>定夺：<code class="mono">C_{k+1}.prompt_ids</code> 必须以 <code class="mono">C_k.prompt_ids</code> 开头。不满足就另起一条链，绝不污染已有链。</p>
+      </div>
+      <div class="panel" style="margin-top:0">
+        <span class="tag p">阶段二 · 拼接</span>
+        <p class="muted" style="font-size:14px">采样体取<strong>原始</strong> <code class="mono">response_ids</code>（真实 logprob，绝不 decode→encode）；插入段取下一次 <code class="mono">prompt_ids</code> 的规范分词，用 <code class="mono">⟨eot⟩</code> 定位切分点，<code class="mono">loss_mask=0</code>。</p>
+      </div>
+    </div>
+    <pre class="code"><span class="cm"># 精简自 prefix_merging.py:_finalize_chain（拼接核心）</span>
+canonical_tail = Ci.prompt_ids[len(prev_prompt_ids):]      <span class="cm"># = [前一轮助手体 + 插入段] 的规范分词</span>
+<span class="hl">interstitial   = slice_interstitial(canonical_tail, prev_raw_response, eot_id)  <span class="cm"># 找 ⟨eot⟩，其后即插入段</span></span>
+stream_ids += interstitial;       loss_mask += [0]*len(interstitial)   <span class="cm"># 插入段：不训练</span>
+<span class="hl">stream_ids += Ci.response_ids;    loss_mask += [1]*len(Ci.response_ids)  <span class="cm"># 采样体：训练 + 真实 logprob</span></span></pre>
+    <div class="codelinks">
+      <a class="codelink" data-path="ProRL-Agent-Server/src/polar/trajectory/builder/prefix_merging.py" data-line="152">PrefixMergingBuilder.build:152</a>
+      <a class="codelink" data-path="ProRL-Agent-Server/src/polar/trajectory/builder/prefix_merging.py" data-line="220">_finalize_chain:220</a>
+      <a class="codelink" data-path="ProRL-Agent-Server/src/polar/trajectory/builder/prefix_merging.py" data-line="352">_slice_interstitial:352</a>
+      <a class="codelink" data-path="ProRL-Agent-Server/src/polar/trajectory/builder/prefix_merging.py" data-line="422">_pop_compatible_chain:422</a>
+    </div>
+  </section>
+
+  <!-- 04 MASK -->
+  <section id="mask">
+    <span class="kicker"><span class="num">04</span>只在采样 token 上算梯度</span>
+    <h2 class="sec">loss_mask 与 logprob 的强校验</h2>
+    <p class="lead">合并流里只有 agent <strong>真正采样出</strong>的助手 token 该进梯度。这个 0/1 不是靠"看角色 / 匹配文本"猜的，而是由 token 流结构直接确定的，分三层生成。</p>
+
+    <div class="panel">
+      <span class="tag p">loss_mask 的三层生成谱系</span>
+      <div class="dl">
+        <dt class="p">① 诞生</dt><dd>每条 completion 归一化时，response 的每个 token 默认置 1（<code class="mono">[1]*len(response_ids)</code>）。语义：从服务器取回的 response token 就是模型<strong>采样出</strong>的，理应全可训练。prompt 不在 mask 范围内。</dd>
+        <dt class="p">② 拼接重写</dt><dd>prefix-merging 逐段拼：采样体段沿用该 completion 的 mask（全 1）；<strong>插入段</strong>（工具结果 + 模板 glue，取自下一次 prompt 的规范分词，用 ⟨eot⟩ 切出）显式置 0。</dd>
+        <dt class="p">③ 兜底校验</dt><dd>转 Sample 时：失败 / 中止轨迹整条清零；强校验 mask 长度 = response 长度、可训练位必有 logprob；Trace 模型层再校验值只能是 0 / 1。</dd>
+      </div>
+      <pre class="code"><span class="cm"># ① record_utils.py:74 — 诞生：采样出的 token 默认全部可训练</span>
+loss_mask = [1] * len(response_ids)
+
+<span class="cm"># ② prefix_merging.py:_finalize_chain — 拼接时逐段写</span>
+<span class="hl">loss_mask += [0] * len(interstitial)        <span class="cm"># 插入段：工具结果/模板 glue，不训练</span></span>
+<span class="hl">loss_mask += [1] * len(Ci.response_ids)     <span class="cm"># 采样体：模型真正生成，训练</span></span>
+
+<span class="cm"># ③ adapter.py:129 — 失败兜底</span>
+<span class="kw">if</span> status <span class="kw">in</span> (ABORTED, FAILED):
+    loss_mask = [0] * len(response_ids)     <span class="cm"># 整条不训练</span></pre>
+      <div class="codelinks">
+        <a class="codelink" data-path="ProRL-Agent-Server/src/polar/trajectory/builder/record_utils.py" data-line="74">record_utils.py:74 · 诞生</a>
+        <a class="codelink" data-path="ProRL-Agent-Server/src/polar/trajectory/builder/prefix_merging.py" data-line="384">_append_response_tokens:384</a>
+        <a class="codelink" data-path="ProRL-Agent-Server/src/polar/trajectory/models.py" data-line="104">Trace 校验:104</a>
+      </div>
+    </div>
+
+    <p class="muted" style="font-size:14px;margin-top:18px">下面是 adapter 转 Sample 时的校验细节，保证不放过悄悄错位的数据：</p>
+    <pre class="code"><span class="cm"># 精简自 slime_bridge/adapter.py:_build_sample / _extract_rollout_log_probs</span>
+tokens   = prompt_ids + response_ids
+trainable = status <span class="kw">not in</span> (ABORTED, FAILED)
+<span class="kw">if not</span> trainable:  loss_mask = [0] * len(response_ids)   <span class="cm"># 失败轨迹整条不训练</span>
+
+<span class="cm"># 校验逐 token：可训练位必须有 logprob，长度必须匹配</span>
+<span class="kw">if</span> len(logprobs) != response_len:
+    <span class="kw">raise</span> RolloutLogprobError(<span class="st">"logprob 长度与 response 不匹配"</span>)
+<span class="kw">for</span> pos, (entry, m) <span class="kw">in</span> enumerate(zip(logprobs, loss_mask)):
+<span class="hl">    <span class="kw">if</span> m <span class="kw">and</span> <span class="st">"logprob"</span> <span class="kw">not in</span> entry:
+        <span class="kw">raise</span> RolloutLogprobError(<span class="st">"可训练 token 缺 logprob"</span>)   <span class="cm"># 宁可报错也不训脏数据</span></span></pre>
+    <div class="dl">
+      <dt class="p">loss_mask=1</dt><dd>模型采样出的助手 token，进梯度，并提供 <code class="mono">rollout_log_probs</code>（行为策略 logprob，供重要性比值用）。</dd>
+      <dt class="p">loss_mask=0</dt><dd>prompt、工具结果、插入段、为拼接复制的规范 token，不进梯度。</dd>
+    </div>
+    <div class="codelinks">
+      <a class="codelink" data-path="ProRL-Agent-Server/src/slime_bridge/adapter.py" data-line="85">_build_sample:85</a>
+      <a class="codelink" data-path="ProRL-Agent-Server/src/slime_bridge/adapter.py" data-line="260">_extract_rollout_log_probs:260</a>
+      <a class="codelink" data-path="ProRL-Agent-Server/src/slime_bridge/adapter.py" data-line="303">_loss_mask_from_trace:303</a>
+    </div>
+  </section>
+
+  <!-- 05 FAIL -->
+  <section id="fail">
+    <span class="kicker"><span class="num">05</span>状态与占位</span>
+    <h2 class="sec">采样会失败，但 GRPO 组不能塌</h2>
+    <p class="lead">一组是同一道题的 num_samples 次独立运行。其中任何一次都可能超时、报错、截断、空输出。Polar 用状态标记 + 全掩码占位，保证训练侧拿到的组结构始终完整。</p>
+    <div class="grid2">
+      <div class="panel" style="margin-top:0">
+        <span class="tag p">状态映射</span>
+        <pre class="code" style="margin-top:10px"><span class="cm"># adapter._sample_status</span>
+TIMEOUT          → ABORTED
+ERROR / error    → FAILED
+finish==<span class="st">"length"</span>  → TRUNCATED
+否则             → COMPLETED</pre>
+        <p class="cap">ABORTED / FAILED 的 trace 会把 loss_mask 整条清零。</p>
+      </div>
+      <div class="panel" style="margin-top:0">
+        <span class="tag p">占位保组</span>
+        <p class="muted" style="font-size:14px">若一个 Session 的 Trace <strong>全部</strong>不可用（空 token 或超 max_tokens 被丢），发一个全掩码占位 Sample，让该组样本数不错位，其余样本照常训练。</p>
+        <pre class="code" style="margin-top:6px"><span class="cm"># _build_dummy_sample</span>
+Sample(tokens=[0,0], loss_mask=[0],
+       status=ABORTED,
+<span class="hl">       remove_sample=True)        <span class="cm"># 零梯度、零 KL、零 TIS</span></span></pre>
+      </div>
+    </div>
+    <div class="codelinks">
+      <a class="codelink" data-path="ProRL-Agent-Server/src/slime_bridge/adapter.py" data-line="249">_sample_status:249</a>
+      <a class="codelink" data-path="ProRL-Agent-Server/src/slime_bridge/adapter.py" data-line="179">_build_dummy_sample:179</a>
+    </div>
+
+    <h3 style="font-size:18px;margin-top:26px">交互演示：三种异常情形的 token 通道</h3>
+    <p class="muted" style="font-size:14px">切换看每种情形下的 token、loss_mask、状态，以及对训练与 GRPO 组的下游影响。</p>
+    <div class="panel">
+      <div class="seg" id="failSeg">
+        <button class="on" data-f="trunc">截断 (length)</button>
+        <button data-f="fail">失败 · 中止</button>
+        <button data-f="ph">全丢 → 占位</button>
+      </div>
+      <div class="lanes" style="margin-top:16px">
+        <div class="lane"><div class="ll">tokens</div><div class="toks" id="failToks"></div></div>
+        <div class="lane"><div class="ll">loss_mask</div><div class="maskrow" id="failMask"></div></div>
+        <div class="lane"><div class="ll">status</div><div id="failBadge"></div></div>
+      </div>
+      <div class="impact" id="failImpact"></div>
+      <div class="legend">
+        <span><i class="tok prompt" style="width:14px;height:14px;padding:0"></i>prompt</span>
+        <span><i class="tok samp" style="width:14px;height:14px;padding:0"></i>采样体（mask=1）</span>
+        <span><i class="tok cut" style="width:14px;height:14px;padding:0"></i>截断处（无 ⟨eot⟩）</span>
+        <span><i class="tok dead" style="width:14px;height:14px;padding:0;background:rgba(226,104,95,.12);border-color:rgba(226,104,95,.4)"></i>清零（mask=0）</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 GRPO -->
+  <section id="grpo">
+    <span class="kicker"><span class="num">06</span>组内相对优势归一化</span>
+    <h2 class="sec">GRPO 归一化，并把失败排除出基线</h2>
+    <p class="lead">奖励由 evaluator 给出后，在训练器侧的后处理钩子里做组内归一化。同一 Session 的多个 Trace 共享 <code class="mono">(group_index, index)</code>，被当作一条轨迹（每组取一次奖励）。失败/中止轨迹不进均值与方差，避免"agent 出错"被当成"奖励=0"污染存活样本。</p>
+    <div class="eqbox" data-tex>
+      $$ \hat{A}_i=\frac{r_i-\operatorname{mean}\big(\{r_j\}_{j\in\text{valid}}\big)}{\operatorname{std}\big(\{r_j\}_{j\in\text{valid}}\big)+\varepsilon},\qquad \hat{A}_{i}=0\ \text{若 }i\ \text{失败} $$
+    </div>
+    <pre class="code"><span class="cm"># 精简自 reward_post_process.py:post_process_rewards（每组）</span>
+valid_mask = [<span class="kw">not</span> failed[k] <span class="kw">for</span> k <span class="kw">in</span> keys]      <span class="cm"># 失败/中止轨迹标 False</span>
+vals       = tensor([reward[k] <span class="kw">for</span> k <span class="kw">in</span> keys])
+<span class="hl">vals = vals - vals[valid_mask].mean()                <span class="cm"># 只用有效轨迹算均值</span></span>
+<span class="kw">if</span> std_norm:
+    vals = vals / (vals[valid_mask].std() + 1e-6)    <span class="cm"># GRPO 可选除方差</span>
+<span class="hl">vals = vals * valid_mask                             <span class="cm"># 失败轨迹优势归零</span></span></pre>
+    <p class="cap">退化情形：每条轨迹只有一个 Trace 时，自动收敛为标准 GRPO 组归一化，无需特判。</p>
+    <div class="codelinks">
+      <a class="codelink" data-path="ProRL-Agent-Server/src/slime_bridge/reward_post_process.py" data-line="34">post_process_rewards:34</a>
+      <a class="codelink" data-path="ProRL-Agent-Server/src/slime_bridge/reward_post_process.py" data-line="95">_is_failed_trajectory:95</a>
+    </div>
+  </section>
+
+  <!-- 07 ALL -->
+  <section id="all">
+    <span class="kicker"><span class="num">07</span>全流程</span>
+    <h2 class="sec">一段伪代码串起整条流程</h2>
+    <p class="lead">从提交一组任务，到拿回可训练、已归一化的样本。</p>
+    <pre class="code"><span class="cm"># Polar agent 采样全流程（伪代码）</span>
+<span class="kw">for</span> sample_i <span class="kw">in</span> range(num_samples):              <span class="cm"># 一组 = 同一道题跑 num_samples 次</span>
+    runtime = prepare_runtime()                  <span class="cm"># INIT：容器（可复用预热）</span>
+    harness = create_harness(agent_spec)         <span class="cm"># 注入 base_url → 指向代理</span>
+    <span class="kw">while</span> agent_running:                          <span class="cm"># RUNNING：跑它</span>
+        req  = agent.next_llm_call()             <span class="cm"># agent 自己决定</span>
+<span class="hl">        resp = proxy.intercept(req)              <span class="cm"># 01 拦截：转 OpenAI → SGLang → 转回</span></span>
+<span class="hl">        storage.save(CompletionRecord(req, resp))  <span class="cm"># 含精确 token + logprob</span></span>
+    <span class="cm"># POSTRUN：</span>
+<span class="hl">    traces = PrefixMergingBuilder.build(session) <span class="cm"># 02+03 TITO + 多轮拼接</span></span>
+    reward = evaluator.evaluate(traces)          <span class="cm"># 跑测试等，给奖励</span>
+    <span class="kw">for</span> trace <span class="kw">in</span> traces:
+<span class="hl">        sample = to_slime_sample(trace)          <span class="cm"># 04 loss_mask + logprob 校验</span></span>
+        <span class="kw">if</span> sample.empty: sample = dummy_placeholder()  <span class="cm"># 05 占位保组</span>
+        group.append(sample)
+
+<span class="hl">rewards = group_normalize(group, exclude_failed=True)  <span class="cm"># 06 GRPO 组归一化</span></span>
+<span class="kw">return</span> group                                    <span class="cm"># → 训练器（tokens, loss_mask, rollout_log_probs, 归一化 reward）</span></pre>
+
+    <div class="core">
+      <h4>一句话</h4>
+      <p>把"对一个不可控、说方言、多轮、还会失败的黑盒 agent 采样"，拆解为：<b>跑它</b>（harness 运行）、<b>拦截</b>（proxy 捕获每次调用）、<b>取精确 token</b>（TITO，不重新分词）、<b>拼接</b>（prefix-merging 区分采样体与插入段）、<b>只训采样 token</b>（loss_mask + logprob 校验）、<b>保住组</b>（状态/占位 + 排除失败的组归一化）。每一步都只信推理服务器给出的精确 token，绝不在文本层重新分词，从而保证采样分布等于训练分布。</p>
+    </div>
+  </section>
+
+  <!-- 08 CLAUDE CODE -->
+  <section id="claude">
+    <span class="kicker"><span class="num">08</span>实例</span>
+    <h2 class="sec">以 Claude Code 为环境，走一遍</h2>
+    <p class="lead">把前面六环落到一个真实 agent 上。Claude Code 说 Anthropic 方言、要求流式、自带多轮工具调用，Polar 不改它一行代码，只靠环境变量与代理把它变成 RL 环境。</p>
+
+    <div class="panel">
+      <span class="tag p">① 任务提交 · TaskRequest</span>
+      <pre class="code"><span class="cm"># 训练器提交一组任务（num_samples 次独立运行 = 一个 GRPO 组）</span>
+{
+  <span class="st">"instruction"</span>: <span class="st">"修复 utils.py 里的除零 bug，并让 test_utils.py 通过"</span>,
+  <span class="st">"num_samples"</span>: 8,
+  <span class="st">"agent"</span>: { <span class="st">"harness"</span>: <span class="st">"claude_code"</span>, <span class="st">"model_name"</span>: <span class="st">"qwen/qwen3-coder"</span> },
+  <span class="st">"builder"</span>:   { <span class="st">"strategy"</span>: <span class="st">"prefix_merging"</span> },
+  <span class="st">"evaluator"</span>: { <span class="st">"strategy"</span>: <span class="st">"test_on_output"</span>,
+                <span class="st">"config"</span>: { <span class="st">"test_command"</span>: <span class="st">"python3 -m pytest test_utils.py"</span> } }
+}</pre>
+      <p class="cap">harness=<code class="mono">claude_code</code> → API 方言 <code class="mono">anthropic</code>，<code class="mono">require_streaming=true</code>，CLI 版本 <code class="mono">@anthropic-ai/claude-code@2.1.116</code>。</p>
+    </div>
+
+    <div class="envgrid">
+      <div class="panel">
+        <span class="tag p">② 环境注入（agent 浑然不觉）</span>
+        <pre class="code"><span class="cm"># node.py:_runtime_env — 所有方言的 base_url 指向网关</span>
+ANTHROPIC_BASE_URL = <span class="st">"http://gateway:8100"</span>   <span class="cm"># 不是 api.anthropic.com</span>
+ANTHROPIC_API_KEY  = session_id            <span class="cm"># 用 key 给请求打会话标签</span>
+<span class="cm"># claude_code.py 还把模型别名全钉到 served 模型，</span>
+<span class="cm"># 并关掉对 api.anthropic.com 的杂项流量</span>
+CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = <span class="st">"1"</span></pre>
+      </div>
+      <div class="panel">
+        <span class="tag p">③ 启动命令（run_steps）</span>
+        <pre class="code"><span class="cm"># claude_code.py:run_steps — 非交互、流式 JSON 输出</span>
+claude --verbose <span class="hl">--output-format=stream-json</span> \
+       --dangerously-skip-permissions \
+       --model qwen/qwen3-coder \
+       -p <span class="st">"修复 utils.py …"</span></pre>
+        <p class="cap" style="margin-top:8px">Claude Code 像往常一样跑：自己读文件、改代码、跑测试，发出一串 Anthropic Messages 请求。</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <span class="tag p">④ 方言转换 · Anthropic ↔ OpenAI</span>
+      <p class="muted" style="font-size:14px">每次 Messages 请求经代理：<code class="mono">AnthropicTransformer.transform_request</code> 把它翻成 OpenAI Chat（<code class="mono">system</code> 转成一条 message、去掉 Claude Code 计费头、默认 <code class="mono">max_tokens=4096</code>），换成 served 模型转发 SGLang；因为要捕获完整数据，对 SGLang 强制<strong>非流式</strong>，再把回复转回 Anthropic 格式并<strong>切成流式分块</strong>回吐给 Claude Code。捕获的 <code class="mono">CompletionRecord</code> 里存的是 OpenAI 规范请求 + 带 token_ids/logprobs 的 SGLang 回复，所以 trace 是 token 精确的。</p>
+      <div class="codelinks">
+        <a class="codelink" data-path="ProRL-Agent-Server/src/polar/agent/harnesses/claude_code.py" data-line="14">claude_code.py:14</a>
+        <a class="codelink" data-path="ProRL-Agent-Server/src/polar/gateway/transform/anthropic.py" data-line="270">anthropic.py:transform_request:270</a>
+        <a class="codelink" data-path="ProRL-Agent-Server/src/polar/gateway/node.py" data-line="744">node.py:_runtime_env:744</a>
+        <a class="codelink" data-path="ProRL-Agent-Server/src/polar/gateway/detection.py" data-line="16">detect:16</a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
+        <span class="tag p">⑤ 多轮拼接演示 · 一次 Claude Code rollout</span>
+        <span class="step-ind" id="claudeStep"></span>
+      </div>
+      <p class="muted" style="font-size:14px">三轮工具调用：读文件 → 改代码 → 收尾。点"下一步"看合并流如何长出来。本轮来源：<span id="claudeSrc" style="color:var(--polar-bright)"></span></p>
+      <div class="lanes">
+        <div class="lane"><div class="ll">合并流</div><div class="toks" id="claudeStream"></div></div>
+        <div class="lane"><div class="ll">loss_mask</div><div class="maskrow" id="claudeMask"></div></div>
+      </div>
+      <div class="ctl">
+        <span class="btn" id="claudeNext">下一步 ›</span>
+        <span class="btn g" id="claudeReset">↺ 重置</span>
+        <span class="muted" id="claudeDesc" style="font-size:13px"></span>
+      </div>
+      <div class="legend">
+        <span><i class="tok prompt" style="width:14px;height:14px;padding:0"></i>prompt（系统+任务）</span>
+        <span><i class="tok samp" style="width:14px;height:14px;padding:0"></i>Claude 采样体（mask=1）</span>
+        <span><i class="tok tool" style="width:14px;height:14px;padding:0"></i>tool_use（采样，mask=1）</span>
+        <span><i class="tok inter" style="width:14px;height:14px;padding:0"></i>tool_result 插入段（mask=0）</span>
+      </div>
+      <p class="cap">注意：Claude 的 <code class="mono">tool_use</code>（决定调哪个工具、传什么参数）是它<strong>采样出</strong>的，loss_mask=1，要训练；而 <code class="mono">tool_result</code>（环境返回）是插入段，loss_mask=0，不训练。这正是"只在真正采样出的助手 token 上算梯度"。</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="foot">
+  本页为基于 ProRL-Agent-Server 源码的算法讲解，行号经核对。代码片段为便于阅读做了精简，逻辑忠于源码，完整实现以链接文件为准。公式由 KaTeX 渲染，需联网。
+</div>
+
+<script>
+/* code links */
+const BASE='/Users/xinyu/Code/Agentic-RL';
+let SCHEME='vscode';
+function href(path,line){const abs=BASE+'/'+path;return SCHEME==='file'?'file://'+abs:SCHEME+'://file'+abs+(line?(':'+line):'');}
+function wire(root){(root||document).querySelectorAll('a.codelink').forEach(a=>{a.href=href(a.dataset.path,a.dataset.line);a.title=a.dataset.path+(a.dataset.line?(' : '+a.dataset.line):'');if(SCHEME==='file')a.target='_blank';else a.removeAttribute('target');});}
+(function(){const s=document.getElementById('schemeSel');s.value=SCHEME;s.addEventListener('change',()=>{SCHEME=s.value;wire();});})();
+
+/* contrast toggle */
+(function(){
+  const seg=document.getElementById('cmpSeg'),body=document.getElementById('cmpBody');
+  seg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    [...seg.children].forEach(x=>x.classList.toggle('on',x===b));
+    body.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.dataset.c===b.dataset.c));
+  });
+})();
+
+/* prefix-merging stepper */
+(function(){
+  // tokens: each = {t:label, c:class}
+  const P=[{t:'sys',c:'prompt'},{t:'usr',c:'prompt'},{t:'…',c:'prompt'}];
+  const R1=[{t:'a₁',c:'samp'},{t:'a₂',c:'samp'},{t:'⟨eot⟩',c:'eot'}];
+  const I1=[{t:'tool',c:'inter'},{t:'res',c:'inter'},{t:'⟨gen⟩',c:'inter'}];
+  const R2=[{t:'b₁',c:'samp'},{t:'⟨eot⟩',c:'eot'}];
+  const STEPS=[
+    {desc:'起点：仅 C₁ 的 prompt（系统+用户），全部不训练。',stream:P.map(x=>({...x})),addmask:0},
+    {desc:'C₁ 采样体 a₁ a₂ ⟨eot⟩ 加入，loss_mask=1，带真实 logprob。',stream:P.concat(R1),samp:R1.length},
+    {desc:'C₂.prompt = P+R1+插入段。前缀检查通过；⟨eot⟩ 后是插入段（工具结果/glue），loss_mask=0。',stream:P.concat(R1,I1),inter:I1.length},
+    {desc:'C₂ 采样体 b₁ ⟨eot⟩ 加入，loss_mask=1。合并流完成：P | R1 | 插入段 | R2。',stream:P.concat(R1,I1,R2),samp2:R2.length}
+  ];
+  let s=0;
+  const inputs=document.getElementById('mergeInputs'),streamEl=document.getElementById('mergeStream'),
+        maskEl=document.getElementById('mergeMask'),desc=document.getElementById('mergeDesc'),ind=document.getElementById('mergeStep');
+  function chips(arr){return arr.map(x=>`<span class="tok ${x.c}">${x.t}</span>`).join('');}
+  function renderInputs(){
+    inputs.innerHTML=
+      `<div class="lane"><div class="ll">C₁ prompt</div><div class="toks">${chips(P)}</div></div>`+
+      `<div class="lane"><div class="ll">C₁ 采样</div><div class="toks">${chips(R1)}</div></div>`+
+      `<div class="lane"><div class="ll">C₂ prompt</div><div class="toks">${chips(P.concat(R1,I1))}</div></div>`+
+      `<div class="lane"><div class="ll">C₂ 采样</div><div class="toks">${chips(R2)}</div></div>`;
+  }
+  function render(){
+    const st=STEPS[s];
+    streamEl.innerHTML=chips(st.stream);
+    maskEl.innerHTML=st.stream.map(x=>{const m=(x.c==='samp'||x.c==='eot')?1:0; return `<span class="mbit ${m?'one':'zero'}">${m}</span>`;}).join('');
+    desc.textContent=st.desc; ind.textContent=`步骤 ${s+1} / ${STEPS.length}`;
+  }
+  document.getElementById('mergeNext').onclick=()=>{s=(s+1)%STEPS.length;render();};
+  document.getElementById('mergeReset').onclick=()=>{s=0;render();};
+  renderInputs(); render();
+})();
+
+/* shared chip helpers */
+function _chips(arr){return arr.map(x=>`<span class="tok ${x.c}">${x.t}</span>`).join('');}
+function _maskbits(arr){return arr.map(x=>{const m=(x.c==='samp'||x.c==='eot'||x.c==='tool')?1:0;return `<span class="mbit ${m?'one':'zero'}">${m}</span>`;}).join('');}
+
+/* failure / truncation demo */
+(function(){
+  const FAIL={
+    trunc:{toks:[{t:'sys',c:'prompt'},{t:'usr',c:'prompt'},{t:'修',c:'samp'},{t:'复',c:'samp'},{t:'代',c:'samp'},{t:'码…',c:'cut'}],mask:[0,0,1,1,1,1],badge:['TRUNCATED','trunc'],
+      imp:['trunc','<b>仍然训练。</b> finish_reason==length，状态 TRUNCATED 不在 (ABORTED, FAILED) 内，已采样出的 token 仍是 on-policy 数据，loss_mask 保持 1，只是回答没说完。若后面还有轮，prefix-merging 的 _slice_interstitial 会把规范 ⟨eot⟩ 并入插入段以闭合该轮。']},
+    fail:{toks:[{t:'sys',c:'prompt'},{t:'usr',c:'prompt'},{t:'修',c:'dead'},{t:'复',c:'dead'}],mask:[0,0,0,0],badge:['FAILED / ABORTED','fail'],
+      imp:['fail','<b>整条不训练。</b> agent 报错→FAILED，超时→ABORTED。adapter 把 loss_mask 整条清零（[0]*len）。在 reward_post_process 里该轨迹被排除出组内均值/方差，避免"出错"被当成"奖励=0"污染存活样本的优势。']},
+    ph:{toks:[{t:'0',c:'dead'},{t:'0',c:'dead'}],mask:[0],badge:['ABORTED · placeholder','ph'],
+      imp:['ph','<b>占位保组。</b> 一个 Session 的 Trace 全部不可用（空 token 或超 max_tokens）时，发一个全掩码占位 Sample：tokens=[0,0]、loss_mask=[0]、remove_sample=True。零梯度、零 KL，只为让该组样本数不错位，其余样本照常训练。']}
+  };
+  const seg=document.getElementById('failSeg'),toks=document.getElementById('failToks'),mask=document.getElementById('failMask'),
+        badge=document.getElementById('failBadge'),imp=document.getElementById('failImpact');
+  function show(f){
+    const d=FAIL[f];
+    toks.innerHTML=_chips(d.toks);
+    mask.innerHTML=d.mask.map(m=>`<span class="mbit ${m?'one':'zero'}">${m}</span>`).join('');
+    badge.innerHTML=`<span class="badge ${d.badge[1]}">${d.badge[0]}</span>`;
+    imp.className='impact '+d.imp[0]; imp.innerHTML=d.imp[1];
+    [...seg.children].forEach(b=>b.classList.toggle('on',b.dataset.f===f));
+  }
+  seg.addEventListener('click',e=>{const b=e.target.closest('button');if(b)show(b.dataset.f);});
+  show('trunc');
+})();
+
+/* claude code multi-turn stepper */
+(function(){
+  const P=[{t:'sys',c:'prompt'},{t:'usr·任务',c:'prompt'}];
+  const T1=[{t:'读',c:'samp'},{t:'文件',c:'samp'},{t:'⟨tool:bash⟩',c:'tool'},{t:'⟨eot⟩',c:'samp'}];
+  const I1=[{t:'tool_result',c:'inter'},{t:'⟨gen⟩',c:'inter'}];
+  const T2=[{t:'改',c:'samp'},{t:'代码',c:'samp'},{t:'⟨tool:edit⟩',c:'tool'},{t:'⟨eot⟩',c:'samp'}];
+  const I2=[{t:'edit_ok',c:'inter'},{t:'⟨gen⟩',c:'inter'}];
+  const T3=[{t:'完成',c:'samp'},{t:'✓',c:'samp'},{t:'⟨eot⟩',c:'samp'}];
+  const CS=[
+    {src:'prompt（系统+任务）',desc:'起点：系统与任务 prompt，不训练。',stream:P.slice()},
+    {src:'C₁ 采样体 + tool_use(bash)',desc:'第 1 轮：Claude 读文件，采样出 bash 工具调用。采样体（含 tool_use 与 ⟨eot⟩）loss_mask=1。',stream:P.concat(T1)},
+    {src:'插入段（bash 结果）',desc:'工具结果回填，取自第 2 次请求 prompt 的规范分词，loss_mask=0。',stream:P.concat(T1,I1)},
+    {src:'C₂ 采样体 + tool_use(edit)',desc:'第 2 轮：Claude 改代码，采样出 edit 工具调用。loss_mask=1。',stream:P.concat(T1,I1,T2)},
+    {src:'插入段（edit 结果）',desc:'edit 结果回填，loss_mask=0。',stream:P.concat(T1,I1,T2,I2)},
+    {src:'C₃ 采样体（收尾）',desc:'第 3 轮：Claude 给出最终回答，finish=stop。整条轨迹 COMPLETED。',stream:P.concat(T1,I1,T2,I2,T3)}
+  ];
+  let s=0;
+  const stream=document.getElementById('claudeStream'),mask=document.getElementById('claudeMask'),
+        ind=document.getElementById('claudeStep'),desc=document.getElementById('claudeDesc'),src=document.getElementById('claudeSrc');
+  function render(){const st=CS[s];stream.innerHTML=_chips(st.stream);mask.innerHTML=_maskbits(st.stream);
+    desc.textContent=st.desc;src.textContent=st.src;ind.textContent=`步骤 ${s+1} / ${CS.length}`;}
+  document.getElementById('claudeNext').onclick=()=>{s=(s+1)%CS.length;render();};
+  document.getElementById('claudeReset').onclick=()=>{s=0;render();};
+  render();
+})();
+
+/* scroll spy */
+(function(){
+  const links=[...document.querySelectorAll('#pills a')];
+  const map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[e.target.id];if(a)a.classList.add('active');}});},{rootMargin:'-40% 0px -55% 0px'});
+  document.querySelectorAll('section[id]').forEach(x=>obs.observe(x));
+})();
+
+/* katex + wire on load */
+function typeset(el){if(window.renderMathInElement){try{renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});}catch(e){}}}
+window.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('[data-tex]').forEach(typeset);wire();});
+window.addEventListener('load',()=>{document.querySelectorAll('[data-tex]').forEach(typeset);wire();});
+</script>
+</body>
+</html>

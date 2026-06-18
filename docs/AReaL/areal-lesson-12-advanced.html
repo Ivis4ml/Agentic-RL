@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 逐文件精读 · 第 12 课：进阶与收尾</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}
+    table.matrix{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+    table.matrix th,table.matrix td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;}
+    table.matrix th{color:var(--faint);font-family:var(--mono);font-size:10.5px;text-transform:uppercase;background:#0f1620;}
+    table.matrix td{color:var(--muted);}table.matrix tr:last-child td{border-bottom:0;}table.matrix code{white-space:nowrap;}
+    .filegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin:16px 0;}
+    .filechip{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:9px 11px;cursor:pointer;transition:all .12s;}
+    .filechip:hover{border-color:var(--line-2);background:var(--panel-2);}.filechip.active{border-color:var(--teal);background:#0e2120;}
+    .filechip .fn{font-family:var(--mono);font-size:12px;color:var(--ink);}.filechip .tag{font-size:10px;color:var(--faint);margin-top:2px;}
+    .detail{border:1px solid var(--line-2);background:var(--panel-2);border-radius:12px;padding:18px 20px;margin-top:6px;min-height:150px;}
+    .recap{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px;}
+    .rcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:11px 14px;display:block;}
+    .rcard:hover{border-color:var(--teal);background:var(--panel-2);}
+    .rcard .rn{font-family:var(--mono);font-size:11px;color:var(--amber);}
+    .rcard .rt{font-weight:700;color:var(--ink);font-size:14px;margin:2px 0 3px;}
+    .rcard .rd{color:var(--muted);font-size:12px;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}.linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.recap{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 12 课</p><h1>进阶与收尾</h1><p>能访问 CDN 时切换为交互版。本课讲 Archon PyTorch-native 引擎、三套微服务、examples 入口与算法矩阵，并回顾全部 12 课。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const AREAL="vscode://file/Users/xinyu/Code/Agentic-RL/AReaL/";
+  function srcUrl(p,l){return AREAL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","PPOTrainer","GRPOConfig","RolloutWorkflow","torch","dict","list","int","float","bool","str"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","areal-lesson-01-foundations.html"],[2,"数据契约","areal-lesson-02-contracts.html"],[3,"抽象基类","areal-lesson-03-interfaces.html"],[4,"RL 数学原语","areal-lesson-04-rl-math.html"],[5,"数据与奖励","areal-lesson-05-data-reward.html"],[6,"模型层","areal-lesson-06-models.html"],[7,"训练引擎","areal-lesson-07-train-engine.html"],[8,"推理引擎","areal-lesson-08-inference-engine.html"],[9,"Workflow","areal-lesson-09-workflow.html"],[10,"Trainer","areal-lesson-10-trainer.html"],[11,"编排运行时","areal-lesson-11-orchestration.html"],[12,"进阶与收尾","areal-lesson-12-advanced.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"areal-course-index.html"},"AReaL",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":(L[2]==="#"?"lchip todo":"lchip done");return L[2]==="#"?h("span",{key:L[0],className:cls},L[0]+" "+L[1]):h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  function ArchonSection(){
+    return h("div",null,
+      h("p",null,"第 7 课讲了 FSDP2 与 Megatron。Archon 是 ",h("code",null,"experimental/")," 里的第三个训练后端：纯 PyTorch-native，把 ",h("code",null,"torch.compile"),"、FP8（linear 与 experts 都能量化）、专家并行 EP 等前沿能力完全握在自己手里，不依赖 Megatron-Core。同样实现第 3 课的 TrainEngine 接口，所以算法层照样不感知。"),
+      h("table",{className:"matrix"},
+        h("thead",null,h("tr",null,h("th",null,"后端"),h("th",null,"何时用"),h("th",null,"关键能力"))),
+        h("tbody",null,
+          h("tr",null,h("td",null,h("strong",{className:"hl-teal"},"FSDP2")),h("td",null,"默认、快速迭代、中小模型"),h("td",null,"ZeRO-3 分片、TP、上手快、PyTorch 原生")),
+          h("tr",null,h("td",null,h("strong",{className:"hl-purple"},"Megatron")),h("td",null,"大模型、流水并行 PP、成熟 MoE"),h("td",null,"五维并行 TP/PP/CP/EP/ETP、生产验证充分")),
+          h("tr",null,h("td",null,h("strong",{className:"hl-amber"},"Archon")),h("td",null,"PyTorch-native 实验、激进 FP8/EP"),h("td",null,"torch.compile、FP8 linear+experts、EP、kernel 完全可控")))),
+      h(Code,null,"# archon_engine.py: 初始化时挂 FP8\nif self.config.archon.fp8_config.enabled:\n    from areal.experimental.models.archon.fp8 import enable_fp8_linear, enable_fp8_experts\n    enable_fp8_linear(self.model, exclude_fqns=set(fp8_cfg.exclude_modules), use_triton=...)\n    if fp8_cfg.include_experts:\n        enable_fp8_experts(self.model, use_triton=fp8_cfg.use_triton)\n# 之后 parallelize + torch.compile, 各 rank barrier 同步"),
+      h("div",{className:"note"},"出发点：FSDP/Megatron 是“拿来即用”的成熟方案，Archon 是“想自己掌控编译与量化路径”的实验场。三者同接口，印证了第 3 课抽象的价值：加一个全新后端，算法、trainer、推理侧零改动。它配套自己的 weight_sync 与 checkpoint。"),
+      h("div",null,h(Src,{label:"ArchonEngine",path:"areal/experimental/engine/archon_engine.py",line:147}),h(Src,{label:"ArchonPPOActor",path:"areal/experimental/engine/archon_engine.py",line:1400}),h(Src,{label:"archon_weight_sync",path:"areal/experimental/engine/archon_weight_sync.py",line:1}),h(Src,{label:"AReaL Archon 文档",path:"docs/en/tutorial/archon.md",line:null}))
+    );
+  }
+
+  const SERVICES=[
+    {n:"inference_service",tag:"推理微服务",role:"比直连 SGLang/vLLM（第 8 课）更解耦的版本：把推理后端封装成独立服务集群，gateway 暴露统一接口，router 分发，worker 持有 SGLang/vLLM 后端，data_proxy 在背后捕获 token/logprob。适合推理与训练彻底分离、独立扩缩容。",syms:[["inference backend","areal/experimental/inference_service/backend.py",1],["inf_bridge","areal/experimental/inference_service/inf_bridge.py",1]]},
+    {n:"agent_service",tag:"Agent 微服务",role:"agentic RL 的核心设施：起一个 OpenAI 兼容的 gateway，外部 agent 框架（第 9 课的 openai/anthropic/langchain）把 base_url 指过来照常调，data_proxy 在背后把每轮交互的 token/logprob/version 抓成可训练轨迹。protocol.py 定义协议，bridge 翻译。",syms:[["protocol","areal/experimental/agent_service/protocol.py",1],["gateway bridge","areal/experimental/agent_service/gateway/bridge.py",1]]},
+    {n:"data_service",tag:"数据微服务（第 11 课）",role:"把数据加载解耦成微服务（gateway/router/worker/controller/guard）。第 11 课已详讲。三套服务共享同一套 gateway→router→worker + guard 生命周期 + data_proxy 的模板。",syms:[["data gateway","areal/infra/data_service/gateway/app.py",78]]},
+    {n:"共享模板",tag:"微服务骨架",role:"三套服务用同一套骨架：gateway（FastAPI 入口）、router（按负载/亲和分发）、worker（干实际活）、guard（健康检查与生命周期）、controller（协调）、data_proxy（数据/会话代理，捕获训练信号）。理解一套就理解三套。",syms:[["agent_service controller","areal/experimental/agent_service/controller/controller.py",1],["inference_service router","areal/experimental/inference_service/router/app.py",1]]}
+  ];
+  function ServiceBrowser(){const [s,setS]=useState(1);const d=SERVICES[s];
+    return h("div",null,
+      h("div",{className:"filegrid"},SERVICES.map(function(x,i){return h("div",{key:i,className:"filechip"+(i===s?" active":""),onClick:function(){setS(i);}},h("div",{className:"fn"},x.n),h("div",{className:"tag"},x.tag));})),
+      h("div",{className:"detail"},
+        h("div",{className:"card-title"},h("span",{className:"pill teal"},"experimental"),h("code",null,d.n)),
+        h("p",{style:{marginTop:8}},d.role),
+        h("div",null,d.syms.map(function(sy,i){return h(Src,{key:i,label:sy[0],path:sy[1],line:sy[2]});})))
+    );
+  }
+
+  function ExamplesSection(){
+    return h("div",null,
+      h("p",null,"前 11 课造的所有东西，最终凝结成一个十几行的训练脚本。这就是用户真正的起点：加载 config（第 2 课）、准备数据集（第 5 课）、把 workflow（第 9 课）交给 PPOTrainer（第 10 课）跑起来。"),
+      h(Code,null,"# examples/countdown/train.py 的核心\nfrom areal import PPOTrainer\nfrom areal.api.cli_args import GRPOConfig, load_expr_config\n\ndef main(args):\n    config, _ = load_expr_config(args, GRPOConfig)          # 第2课: 配置\n    train_dataset = load_dataset(path='json', split='train',\n                                 data_files=config.train_dataset.path)  # 第5课\n    with PPOTrainer(config, train_dataset=train_dataset) as trainer:    # 第10课\n        trainer.train(\n            workflow='examples.countdown.train.CountDownWorkflow',      # 第9课\n            workflow_kwargs=dict(gconfig=config.gconfig, tokenizer=config.tokenizer_path),\n        )"),
+      h("p",null,"算法与后端全在 YAML 里切换，无需改代码。",h("code",null,"examples/math/")," 一个目录就摆出了整个算法与后端矩阵："),
+      h("table",{className:"matrix"},
+        h("thead",null,h("tr",null,h("th",null,"维度"),h("th",null,"配置里能选的"))),
+        h("tbody",null,
+          h("tr",null,h("td",null,h("strong",null,"RL 算法")),h("td",null,"GRPO · PPO · DAPO · GSPO · SAPO · REINFORCE · RLOO · DrGRPO · M2PO · LitePPO（gsm8k_*.yaml）")),
+          h("tr",null,h("td",null,h("strong",null,"训练后端")),h("td",null,"FSDP（默认）· Megatron · Archon FP8 · +LoRA · +MoE · NPU · CPU")),
+          h("tr",null,h("td",null,h("strong",null,"任务范例")),h("td",null,"math · countdown · tir(工具) · multi_turn_math · vlm · search_agent · distillation · tau2 · terminal_bench")))),
+      h("div",{className:"note"},"换算法 = 换 config 的 loss 类型与超参；换后端 = 换 backend 字符串；换任务 = 换 workflow 与 dataset。代码主体不动。这就是前 11 课所有抽象边界的最终回报。"),
+      h("div",null,h(Src,{label:"countdown/train.py",path:"examples/countdown/train.py",line:79}),h(Src,{label:"gsm8k_grpo.yaml",path:"examples/math/gsm8k_grpo.yaml",line:null}),h(Src,{label:"gsm8k_rl.py",path:"examples/math/gsm8k_rl.py",line:null}),h(Src,{label:"AReaL quickstart",path:"docs/en/tutorial/quickstart.md",line:null}))
+    );
+  }
+
+  const RECAP=[
+    [1,"地基","日志、名字解析、确定性种子、按字符串导入、设备抽象。被一切依赖。"],
+    [2,"数据契约","io_struct 数据结构、alloc_mode 并行策略、cli_args 配置层级。大家说的同一种语言。"],
+    [3,"抽象基类","TrainEngine/InferenceEngine/Workflow/Scheduler 四张接口。换后端不动算法的根。"],
+    [4,"RL 数学原语","取 logprob、KL、优势归一化、PPO/GSPO/SAPO/critic 损失、装箱。算法心脏。"],
+    [5,"数据与奖励","数据集 loader、分布式 dataloader、可验证奖励。训练的原料。"],
+    [6,"模型层","tree attention（祖先掩码+三后端）、Ulysses 序列并行、架构适配。省算力的 kernel。"],
+    [7,"训练引擎","FSDP2 ZeRO-3、Megatron 五维并行、FP8、跨分片梯度裁剪。"],
+    [8,"推理引擎","SGLang/vLLM 封装、agenerate 六步、逐 token 版本、权重接收、staleness。"],
+    [9,"Workflow","RLVR/多轮/agent 把样本变成轨迹。任务与训练系统的边界。"],
+    [10,"Trainer","PPOTrainer 主循环把九课串成一次训练步；四范式共用引擎。"],
+    [11,"编排运行时","single-controller over RPC、RTensor、SPMD 广播、scheduler 三后端。"],
+    [12,"进阶收尾","Archon 第三后端、三套微服务、examples 入口、全课收官。"]
+  ];
+  function Recap(){
+    return h("div",{className:"recap"},RECAP.map(function(r){
+      return h("a",{key:r[0],className:"rcard",href:LESSONS[r[0]-1][2]},
+        h("div",{className:"rn"},"第 "+r[0]+" 课 · "+r[1]),
+        h("div",{className:"rd"},r[2]));
+    }));
+  }
+
+  const DOCLINKS=[
+    {t:"AReaL Archon 教程（本机）",d:"docs/en/tutorial/archon.md",href:srcUrl("docs/en/tutorial/archon.md",null)},
+    {t:"AReaL agentic RL（本机）",d:"docs/en/tutorial/agentic_rl.md",href:srcUrl("docs/en/tutorial/agentic_rl.md",null)},
+    {t:"AReaL online proxy（本机）",d:"docs/en/tutorial/online_proxy.md",href:srcUrl("docs/en/tutorial/online_proxy.md",null)},
+    {t:"AReaL quickstart（本机）",d:"docs/en/tutorial/quickstart.md",href:srcUrl("docs/en/tutorial/quickstart.md",null)},
+    {t:"torch.compile",d:"Archon 编译路径",href:"https://docs.pytorch.org/docs/stable/torch.compiler.html"},
+    {t:"HelixRL · 自己搭框架",d:"与本系列互补：从零搭一个 RL 框架",href:"helixrl-from-scratch.html"}
+  ];
+  function ToolsDocs(){
+    return h("div",null,
+      h("p",null,h("code",null,"tools/")," 是开发与性能设施：",h("code",null,"profile_fsdp.py · profile_archon.py · profile_engines.py")," 做引擎性能剖析，",h("code",null,"validate_installation.py")," 校验环境，",h("code",null,"perf_trace_converter.py · plot_session_trace.py")," 处理 perf tracer 输出（配合第 1 课的 perf_tracer）。"),
+      h("div",null,h(Src,{label:"profile_fsdp",path:"areal/tools/profile_fsdp.py",line:null}),h(Src,{label:"profile_archon",path:"areal/tools/profile_archon.py",line:null}),h(Src,{label:"validate_installation",path:"areal/tools/validate_installation.py",line:null})),
+      h("h4",{style:{marginTop:18}},"文档地图"),
+      h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":(L.href.indexOf("http")===0?"ext":"src"),href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+    );
+  }
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:12}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 12 课 / 共 12 · experimental + tools + examples"),
+          h("h1",null,"进阶与收尾：前沿、入口、与全课总览"),
+          h("p",{className:"lead"},"最后一课讲三件事。其一，experimental/ 的前沿：Archon PyTorch-native 引擎（第三个训练后端）与三套微服务。其二，examples/：前 11 课的一切如何凝结成一个十几行就能跑的训练脚本。其三，回顾全部 12 课，确认你已经能自底向上读懂整个 AReaL。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"experimental/engine (Archon)"),"、",h("code",null,"experimental/{inference,agent}_service"),"、",h("code",null,"tools/"),"、",h("code",null,"examples/"),"、",h("code",null,"docs/"),"。微服务按架构成组讲，不逐行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"experimental/engine"),
+          h("h2",null,"Archon：第三个训练后端"),
+          h(ArchonSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"experimental/*_service"),
+          h("h2",null,"三套微服务：一套骨架"),
+          h("p",null,"把推理、agent、数据各自做成可独立扩缩容的微服务，共享 gateway/router/worker/guard 模板。点击查看。"),
+          h(ServiceBrowser)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"examples"),
+          h("h2",null,"一切凝结成十几行训练脚本"),
+          h(ExamplesSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"tools + docs"),
+          h("h2",null,"性能设施与文档地图"),
+          h(ToolsDocs)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"全课收官"),
+          h("h2",null,"12 课回顾：你现在能读懂整个 AReaL"),
+          h("p",null,"自底向上的依赖阶梯，每一层都建立在前面之上。点任一课回到对应页面。"),
+          h(Recap),
+          h("div",{className:"note",style:{marginTop:18}},"402 个文件、107k 行，拆成 12 层后，主线其实很清晰：契约与接口先行（1-3），算法与数据是纯函数（4-5），模型与引擎是可换的计算后端（6-8），workflow 与 trainer 把它们组装成训练步（9-10），编排层让一个大脑驱动整片集群（11），experimental 是前沿试验田（12）。想反过来自己搭一个，去看 ",h("a",{href:"helixrl-from-scratch.html"},"HelixRL · 从 AReaL 到你自己的 RL 训练框架"),"。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层与整门课的主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"同接口、多实现，贯穿始终"),"：Archon 作为第三训练后端再次印证第 3 课抽象的价值。"),
+            h("li",null,h("strong",null,"微服务化是规模与解耦的方向"),"：推理/agent/数据各自成服务，共享一套 gateway/router/worker 骨架。"),
+            h("li",null,h("strong",null,"复杂度收敛到 config"),"：换算法/后端/任务只改配置与 workflow，训练脚本十几行不变。"),
+            h("li",null,h("strong",null,"读懂 AReaL = 读懂这 12 层的依赖关系"),"，而非记住 402 个文件。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"areal-lesson-11-orchestration.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 11 课：编排运行时")),
+            h("a",{href:"areal-course-index.html"},h("div",{className:"faint"},"全部完成 ✓"),h("strong",null,"返回课程总览"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

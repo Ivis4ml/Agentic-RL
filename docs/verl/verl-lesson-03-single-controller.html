@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 第 3 课：single controller 混合控制器</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 3 课</p><h1>single controller 混合控制器</h1><p>能访问 CDN 时切换为交互版。本课讲清 verl（HybridFlow）最具区分度的设计：单控制器（single controller）如何用一个驱动进程（driver）像调用本地对象一样调用一整组分布在多张 GPU 上的 worker。核心机制是 Worker 基类、WorkerGroup 与 ResourcePool 抽象、@register 装饰器与 dispatch / execute / collect 三段式，以及 RayWorkerGroup 如何用 Ray actor 实现这一切并把多个角色共置（colocate）到同一组 GPU。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const VERL="vscode://file/Users/xinyu/Code/Agentic-RL/verl/";
+  function srcUrl(p,l){return VERL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global","nonlocal"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","str","DataProto","DataProtoFuture","BatchData","WorkerGroup","RayWorkerGroup","ResourcePool","RayResourcePool","Worker","WorkerHelper","ClassWithInitArgs","RayClassWithInitArgs","Dispatch","Execute","DynamicEnum","FunctionType","PlacementGroup","ActorHandle","ray","TensorDict"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与HybridFlow","verl-lesson-01-foundations.html"],[2,"DataProto","verl-lesson-02-dataproto.html"],[3,"混合控制器","verl-lesson-03-single-controller.html"],[4,"配置","verl-lesson-04-config.html"],[5,"RL数学","verl-lesson-05-core-algos.html"],[6,"训练引擎","verl-lesson-06-engines.html"],[7,"Workers","verl-lesson-07-workers.html"],[8,"Rollout","verl-lesson-08-rollout.html"],[9,"异步服务","verl-lesson-09-async-server.html"],[10,"Agent Loop","verl-lesson-10-agent-loop.html"],[11,"异步训练","verl-lesson-11-async-train.html"],[12,"Trainer与端到端","verl-lesson-12-trainer-e2e.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"verl-course-index.html"},"verl",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 设计动机：为什么需要单控制器 =====
+  function MotivationSection(){
+    return h("div",null,
+      h("p",null,"RLHF 类训练涉及多个模型（actor、critic、reference、reward）与多种工作负载（推理生成、对数概率计算、价值估计、参数更新），每个模型自身又跨多张 GPU 做张量并行（TP）、流水并行（PP）、数据并行（DP）等多维切分。如何编写这样一个程序，是 verl 与多数框架分道扬镳之处。",h(Ext,{href:"https://arxiv.org/abs/2409.19256"},"HybridFlow 论文")," 把可选的两类编程模型说清楚："),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill red"},"multi-controller"),"SPMD 多控制器"),
+          h("p",null,"传统做法：每个 GPU 上跑同一份脚本（single program multiple data），脚本内部直接写并行原语（all-reduce、send/recv）。优点是计算密集部分高效；缺点是把多个模型、多种数据流编排进一份对称脚本极其复杂，控制流（什么时候生成、什么时候训练、数据如何在模型之间流动）与计算混在一起，难以维护与扩展。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"single-controller"),"单控制器"),
+          h("p",null,"verl 的选择：用一个中心化的驱动进程（driver）表达整个 RL 算法的控制流，把每一组并行 worker 抽象成一个可以被本地调用的对象。driver 写出来的代码近似单机伪代码：",h("code",null,"gen = actor_rollout_wg.generate_sequences(batch)"),"，背后自动完成数据切分、并行下发、结果聚合。")
+        )
+      ),
+      h("p",null,"HybridFlow 的关键洞察是：",h("strong",null,"把控制流（control flow）与计算流（computation flow）解耦"),"。控制流由单个 driver 用单控制器风格表达，清晰、易读、易改；计算流仍由各 worker 内部以多控制器（SPMD）方式高效执行。两者通过一组分发协议（dispatch protocol）粘合。本课要讲清的就是这层粘合机制的全部实现。"),
+      h(Formula,{cap:"单控制器编程模型：driver 看到的是 g，实际执行的是 N 个 worker 上的 f 复合上数据切分 D 与聚合 C"},"$$ g(x) \\;=\\; C\\Big(\\,\\big[\\,f(d_i)\\,\\big]_{i=0}^{N-1}\\Big),\\qquad (d_0,\\dots,d_{N-1}) = D(x) $$"),
+      h("p",null,"其中 $D$ 是 dispatch（把输入按某种策略切成 $N$ 份），每个 worker 在第 $i$ 份上执行同一个方法 $f$（execute），$C$ 是 collect（把 $N$ 份输出聚合回一个对象）。driver 只写 $g$，框架自动补上 $D$、并行的 $f$ 与 $C$。这正是 ",h("code",null,"@register")," 装饰器所声明的内容。"),
+      h("div",{className:"note"},"本课只讲 ",h("code",null,"verl/single_controller/")," 这一层抽象本身，以及它的 Ray 实现。具体的 worker 业务逻辑（actor 如何更新、rollout 如何生成）在第 6、7、8 课；driver 端的完整 PPO 训练循环在第 12 课；它处理的数据对象 ",h("code",null,"DataProto")," 已在第 2 课讲过，本课假定读者已理解 ",h("code",null,"DataProto")," 的 ",h("code",null,"chunk"),"/",h("code",null,"concat"),"/",h("code",null,"padding"),"。"),
+      h("div",null,h(Src,{label:"single_controller/base/decorator.py",path:"verl/single_controller/base/decorator.py"}),h(Src,{label:"base/worker.py",path:"verl/single_controller/base/worker.py"}),h(Src,{label:"base/worker_group.py",path:"verl/single_controller/base/worker_group.py"}),h(Src,{label:"ray/base.py",path:"verl/single_controller/ray/base.py"}),h(Ext,{href:"https://arxiv.org/abs/2409.19256"},"HybridFlow 论文"),h(Ext,{href:"https://docs.ray.io/en/latest/ray-core/actors.html"},"Ray Actors"))
+    );
+  }
+
+  // ===== Worker 基类 =====
+  function WorkerSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"Worker")," 是每个 GPU 进程内运行的基类。它的职责是从环境变量重建一份分布式元信息（rank、world_size、master 地址端口、local rank），并据此配置好设备可见性与 torch 分布式初始化所需的上下文。这是单控制器的“多控制器内核”一侧：driver 不直接操作 rank，但 worker 进程内部仍然是标准的 SPMD 程序，需要知道自己是第几号、总共几号。"),
+      h("h3",null,"从环境变量重建身份"),
+      h("p",null,"为什么是环境变量而不是构造参数？因为 worker 是由 Ray 在远端进程里实例化的，driver 无法在构造时直接传入“你是 rank 3”。verl 的做法是：创建 actor 时把 ",h("code",null,"WORLD_SIZE"),"、",h("code",null,"RANK"),"、",h("code",null,"MASTER_ADDR"),"、",h("code",null,"MASTER_PORT")," 等通过 Ray 的 ",h("code",null,"runtime_env.env_vars")," 注入进程，",h("code",null,"Worker.__init__")," 再从 ",h("code",null,"os.environ")," 读回来。这样 worker 代码与 torchrun 启动的 SPMD 程序看到的环境一致，可以复用标准的 ",h("code",null,"torch.distributed")," 初始化路径。"),
+      h(Code,null,"# verl/single_controller/base/worker.py\nclass Worker(WorkerHelper):\n    def __init__(self, cuda_visible_devices=None) -> None:\n        import os\n        self._setup_env_cuda_visible_devices()         # 处理 CUDA/HIP/ROCR 可见设备\n\n        world_size = int(os.environ[\"WORLD_SIZE\"])     # 由 RayWorkerGroup 注入\n        rank = int(os.environ[\"RANK\"])\n        self._rank = rank\n        self._world_size = world_size\n\n        master_addr = os.environ[\"MASTER_ADDR\"]        # rank 0 探测出的主地址\n        master_port = os.environ[\"MASTER_PORT\"]\n        local_world_size = int(os.getenv(\"LOCAL_WORLD_SIZE\", \"1\"))\n        local_rank = int(os.getenv(\"LOCAL_RANK\", \"0\"))\n\n        store = {\"_world_size\": world_size, \"_rank\": rank,\n                 \"_local_world_size\": local_world_size, \"_local_rank\": local_rank,\n                 \"_master_addr\": master_addr, \"_master_port\": master_port}\n        self._configure_with_store(store=store)        # 写回 os.environ, 供 torch.distributed 使用\n        self.__dispatch_dp_rank = {}                   # 每个 mesh 上本 rank 的 dp_rank\n        self.__collect_dp_rank = {}                    # 每个 mesh 上本 rank 是否参与 collect"),
+      h("p",null,"几处值得注意的设计："),
+      h("ul",null,
+        h("li",null,h("code",null,"_setup_env_cuda_visible_devices")," 统一处理 NVIDIA（CUDA）、AMD（HIP/ROCR）等异构加速器的可见设备变量，把它们规整到 ",h("code",null,"CUDA_VISIBLE_DEVICES"),"。当 Ray 设置了 ",h("code",null,"RAY_EXPERIMENTAL_NOSET_*_VISIBLE_DEVICES")," 时，由 verl 自己根据 Ray 分配的加速器 id 设置 ",h("code",null,"LOCAL_RANK")," 并调用 ",h("code",null,"set_device"),"。"),
+        h("li",null,h("code",null,"_configure_with_store")," 把这些元信息写回 ",h("code",null,"os.environ"),"，使后续 ",h("code",null,"torch.distributed.init_process_group")," 能直接读取标准变量。它只处理 ",h("code",null,"env_keys()")," 列出的白名单键，避免污染整个环境。"),
+        h("li",null,h("code",null,"rank")," 与 ",h("code",null,"world_size")," 以只读属性暴露，worker 业务代码以此判断自己在并行组里的位置（例如只在 rank 0 上保存 checkpoint）。")
+      ),
+      h("h3",null,"WorkerHelper：探测主地址与空闲端口"),
+      h("p",null,"分布式初始化需要一个“主节点地址 + 端口”作为集合点（rendezvous）。",h("code",null,"WorkerHelper")," 提供 ",h("code",null,"get_available_master_addr_port"),"：在 Ray 模式下用 ",h("code",null,"ray.util.get_node_ip_address()")," 取本节点 IP，再 ",h("code",null,"bind((\"\", 0))")," 让操作系统分配一个空闲端口。通常由 rank 0 worker 调用此方法，driver 拿到结果后把同一组 ",h("code",null,"MASTER_ADDR/MASTER_PORT")," 注入到所有 worker。"),
+      h(Code,null,"# verl/single_controller/base/worker.py\nclass WorkerHelper:\n    @staticmethod\n    def _get_node_ip():\n        if os.getenv(\"WG_BACKEND\", None) == \"ray\":\n            return ray.util.get_node_ip_address()\n        raise NotImplementedError(\"WG_BACKEND now just support ray mode.\")\n\n    @staticmethod\n    def _get_free_port():\n        with socket.socket() as sock:\n            sock.bind((\"\", 0))\n            return sock.getsockname()[1]\n\n    def get_available_master_addr_port(self):\n        return self._get_node_ip().strip(\"[]\"), str(self._get_free_port())"),
+      h("h3",null,"mesh 与 dp_rank：为 N 维并行准备的分发信息"),
+      h("p",null,"现代 verl 不再假定 worker 只有一个简单的数据并行维度。一个 worker 可能同时属于多个并行网格（device mesh），例如 actor 训练用一套 TP×PP×DP 切分、rollout 推理用另一套。每个 worker 在初始化时调用 ",h("code",null,"_register_dispatch_collect_info(mesh_name, dp_rank, is_collect)")," 登记：在名为 ",h("code",null,"mesh_name")," 的网格上，本 rank 的数据并行序号是 ",h("code",null,"dp_rank"),"，并且是否是该 dp 组里负责把结果交回 driver 的那个 rank（",h("code",null,"is_collect"),"）。"),
+      h("p",null,"这是 N 维分发（",h("code",null,"DP_COMPUTE_PROTO")," 的进阶版本）的基础：driver 在切分数据时，需要知道每个 worker 该拿哪一份（按 dp_rank），在聚合时需要知道哪些 worker 的输出是“代表作”而非冗余副本（同一个 dp 组里 TP/PP 的多个 rank 持有相同输出，只能收一次）。这两类信息分别通过 ",h("code",null,"_query_dispatch_info")," 与 ",h("code",null,"_query_collect_info")," 由 driver 懒查询，它们本身就用 ",h("code",null,"@register(dispatch_mode=Dispatch.ONE_TO_ALL)")," 装饰，即向所有 worker 广播查询、收回每个 rank 的回答。"),
+      h(Code,null,"# verl/single_controller/base/worker.py\n@register(dispatch_mode=Dispatch.ONE_TO_ALL)\ndef _query_dispatch_info(self, mesh_name: str):\n    # 每个 rank 返回自己在该 mesh 上的 dp_rank\n    assert mesh_name in self.__dispatch_dp_rank\n    return self.__dispatch_dp_rank[mesh_name]\n\n@register(dispatch_mode=Dispatch.ONE_TO_ALL)\ndef _query_collect_info(self, mesh_name: str):\n    return self.query_collect_info(mesh_name)   # 本 rank 是否参与 collect"),
+      h("div",{className:"note"},"具体业务 worker（如 ",h("code",null,"TrainingWorker"),"、",h("code",null,"ActorRolloutRefWorker"),"）继承 ",h("code",null,"Worker")," 并在 ",h("code",null,"__init__")," 里调用 ",h("code",null,"_register_dispatch_collect_info(mesh_name=\"train\", dp_rank=engine.get_data_parallel_rank(), is_collect=engine.is_mp_src_rank_with_outputs())"),"，把引擎实际的并行布局登记进来。这些 worker 是第 6、7 课的主题。"),
+      h("div",null,
+        h(Src,{label:"Worker.__init__",path:"verl/single_controller/base/worker.py",line:181}),
+        h(Src,{label:"WorkerHelper",path:"verl/single_controller/base/worker.py",line:50}),
+        h(Src,{label:"_register_dispatch_collect_info",path:"verl/single_controller/base/worker.py",line:86}),
+        h(Src,{label:"_query_dispatch_info",path:"verl/single_controller/base/worker.py",line:102}),
+        h(Src,{label:"_configure_with_store",path:"verl/single_controller/base/worker.py",line:283}),
+        h(Src,{label:"rank / world_size 属性",path:"verl/single_controller/base/worker.py",line:310}),
+        h(Src,{label:"业务侧登记示例 TrainingWorker",path:"verl/workers/engine_workers.py",line:137})
+      )
+    );
+  }
+
+  // ===== ResourcePool 与 WorkerGroup 抽象 =====
+  function PoolGroupSection(){
+    return h("div",null,
+      h("p",null,"在 worker 之上，有两个相互配合的抽象：",h("strong",{className:"hl-amber"},"ResourcePool")," 描述“有哪些 GPU、按节点如何分布”，",h("strong",{className:"hl-teal"},"WorkerGroup")," 描述“在这些 GPU 上运行的一组同类 worker，以及如何对它们整体调用方法”。二者都在 ",h("code",null,"base/")," 里给出与后端无关的抽象基类，Ray 实现在 ",h("code",null,"ray/base.py")," 里继承它们。"),
+      h("h3",null,"ResourcePool：进程在节点上的分布"),
+      h("p",null,"ResourcePool 的内部状态极简：一个列表 ",h("code",null,"_store"),"，第 $k$ 个元素表示第 $k$ 个节点上要放多少个进程（GPU）。例如 ",h("code",null,"[8, 8]")," 表示两节点各 8 卡，",h("code",null,"world_size")," 即 16。它再据此推导出每个进程的 ",h("code",null,"local_world_size")," 与 ",h("code",null,"local_rank")," 列表，这些是把全局 rank 映射到“某节点上的第几张卡”所必需的。"),
+      h(Code,null,"# verl/single_controller/base/worker_group.py\nclass ResourcePool:\n    def __init__(self, process_on_nodes=None, max_colocate_count=10, n_gpus_per_node=8):\n        self._store = process_on_nodes or []        # 例如 [8, 8] 表示两节点各 8 进程\n        self.max_colocate_count = max_colocate_count  # 单 bundle 上最多共置几个 WorkerGroup\n        self.n_gpus_per_node = n_gpus_per_node\n\n    @property\n    def world_size(self):\n        return sum(self._store)                     # 总进程数 = 各节点之和\n\n    def local_rank_list(self) -> list[int]:\n        # 把每个节点展开成 0..(k-1), 拼接成全局的 local_rank 序列\n        nested = [[i for i in range(lws)] for lws in self._store]\n        return [item for row in nested for item in row]"),
+      h("p",null,h("code",null,"max_colocate_count")," 是共置的关键参数：它表示同一个 GPU bundle 上最多允许几个 WorkerGroup 并存。在 ",h("code",null,"_create_worker")," 里，每个 worker 申请的 GPU 配额是 ",h("code",null,"1 / max_colocate_count"),"，于是同一张物理卡可以容纳多个不同角色的 worker。FSDP 后端常用 ",h("code",null,"max_colocate_count=1")," 把所有角色合并进一个 WorkerGroup；Megatron 后端则可用较大值为不同模型分配独立 WorkerGroup。"),
+      h("h3",null,"WorkerGroup：把一组 worker 当作一个对象"),
+      h("p",null,"WorkerGroup 持有一个 worker 列表（",h("code",null,"_workers"),"），它的 ",h("code",null,"world_size")," 就是 ",h("code",null,"len(self._workers)"),"。它本身不知道 worker 是 Ray actor 还是别的什么，这层留给子类。基类提供两件通用能力：存活性检查（后台线程轮询，发现 worker 掉线就向主线程发 ",h("code",null,"SIGABRT")," 触发快速失败）；以及最重要的 ",h("code",null,"_bind_worker_method"),"，即把被 ",h("code",null,"@register")," 标记的 worker 方法，逐一“安装”到 WorkerGroup 实例上，成为可由 driver 直接调用的同名方法。"),
+      h(Code,null,"# verl/single_controller/base/worker_group.py · _bind_worker_method (节选)\nfor method_name in dir(user_defined_cls):\n    method = getattr(user_defined_cls, method_name)\n    if hasattr(method, MAGIC_ATTR):                 # 该方法被 @register 标记过\n        attribute = getattr(method, MAGIC_ATTR)     # 取回 dispatch/execute/blocking 配置\n        dispatch_mode = attribute[\"dispatch_mode\"]\n        execute_mode = attribute[\"execute_mode\"]\n        blocking = attribute[\"blocking\"]\n\n        if isinstance(dispatch_mode, Dispatch):     # 预定义模式: 去注册表查 dispatch/collect 函数\n            fn = get_predefined_dispatch_fn(dispatch_mode=dispatch_mode)\n            dispatch_fn, collect_fn = fn[\"dispatch_fn\"], fn[\"collect_fn\"]\n        else:                                       # 自定义模式: dict 里直接带着两个函数\n            dispatch_fn, collect_fn = dispatch_mode[\"dispatch_fn\"], dispatch_mode[\"collect_fn\"]\n\n        execute_mode = get_predefined_execute_fn(execute_mode=execute_mode)\n        execute_fn = getattr(self, execute_mode[\"execute_fn_name\"])  # 如 self.execute_all\n\n        func = func_generator(self, method_name,    # 生成一个闭包: dispatch -> execute -> collect\n                              dispatch_fn=dispatch_fn, collect_fn=collect_fn,\n                              execute_fn=execute_fn, blocking=blocking)\n        setattr(self, method_name, func)            # 安装为 worker_group 的同名方法"),
+      h("p",null,"这段代码是单控制器的枢纽。它把三件事在绑定时就确定下来：",h("strong",null,"如何切分输入")," (dispatch_fn)、",h("strong",null,"在哪些 worker 上执行")," (execute_fn，由 execute_mode 决定是全部还是仅 rank 0)、",h("strong",null,"如何聚合输出")," (collect_fn)。注意它接受一个 ",h("code",null,"func_generator")," 参数，基类不规定生成的闭包长什么样，由子类（",h("code",null,"RayWorkerGroup")," 用 ",h("code",null,"ray/base.py")," 里的 ",h("code",null,"func_generator"),"）注入具体的远程执行逻辑。这是典型的模板方法（template method）：抽象层定骨架，实现层填血肉。"),
+      h("div",{className:"note"},h("code",null,"ClassWithInitArgs")," 是一个延迟实例化的包装：它存住 ",h("code",null,"(cls, args, kwargs)")," 但不立即构造，等到被 Ray 调度到目标 GPU 上时才 ",h("code",null,"cls(*args, **kwargs)"),"。这样 worker 的构造可以发生在“正确的进程、正确的卡”上，而不是 driver 进程里。Ray 子类 ",h("code",null,"RayClassWithInitArgs")," 在它之上加了调度策略与资源选项。"),
+      h("div",null,
+        h(Src,{label:"ResourcePool",path:"verl/single_controller/base/worker_group.py",line:27}),
+        h(Src,{label:"ClassWithInitArgs",path:"verl/single_controller/base/worker_group.py",line:76}),
+        h(Src,{label:"WorkerGroup",path:"verl/single_controller/base/worker_group.py",line:123}),
+        h(Src,{label:"_bind_worker_method",path:"verl/single_controller/base/worker_group.py",line:185}),
+        h(Src,{label:"check_workers_alive",path:"verl/single_controller/base/worker_group.py",line:102})
+      )
+    );
+  }
+
+  // ===== @register 与 Dispatch / Execute 模式 =====
+  const DISPATCH=[
+    {key:"reg",name:"@register 装饰器",render:function(){return [
+      h("p",null,h("code",null,"@register")," 不改变函数的行为，它只是给函数挂上一个属性字典 ",h("code",null,"MAGIC_ATTR"),"，记录三项元数据：",h("code",null,"dispatch_mode"),"（怎么切分与聚合）、",h("code",null,"execute_mode"),"（在哪些 rank 上跑）、",h("code",null,"blocking"),"（调用是否阻塞等待结果）。",h("code",null,"_bind_worker_method")," 后来正是靠探测这个属性来识别“哪些方法需要被提升为 WorkerGroup 方法”。"),
+      h(Code,null,"# verl/single_controller/base/decorator.py\nMAGIC_ATTR = \"attrs_3141562937\"   # 一个不会与用户属性冲突的魔数键\n\ndef register(dispatch_mode=Dispatch.ALL_TO_ALL, execute_mode=Execute.ALL,\n             blocking=True, materialize_futures=True):\n    _check_dispatch_mode(dispatch_mode=dispatch_mode)\n    _check_execute_mode(execute_mode=execute_mode)\n\n    def decorator(func):\n        func = tqbridge(dispatch_mode=dispatch_mode)(func)   # TransferQueue 适配\n        @wraps(func)\n        def inner(*args, **kwargs):\n            if materialize_futures:\n                args, kwargs = _materialize_futures(*args, **kwargs)  # 先把 DataProtoFuture 取回\n            return func(*args, **kwargs)\n        @wraps(func)\n        async def async_inner(*args, **kwargs):\n            if materialize_futures:\n                args, kwargs = _materialize_futures(*args, **kwargs)\n            return await func(*args, **kwargs)\n        wrapper = async_inner if inspect.iscoroutinefunction(func) else inner\n        attrs = {\"dispatch_mode\": dispatch_mode, \"execute_mode\": execute_mode, \"blocking\": blocking}\n        setattr(wrapper, MAGIC_ATTR, attrs)        # 关键: 把元数据挂在函数上\n        return wrapper\n    return decorator"),
+      h("p",null,"逐项说明："),
+      h("ul",null,
+        h("li",null,h("code",null,"materialize_futures")," 默认为真：在 worker 真正执行前，把参数里的 ",h("code",null,"DataProtoFuture")," 先 ",h("code",null,".get()")," 成实体 ",h("code",null,"DataProto"),"。这允许 driver 把上一步的输出 future 直接作为下一步的输入而不必显式等待，框架在执行点自动求值。"),
+        h("li",null,"同时生成同步 ",h("code",null,"inner")," 与异步 ",h("code",null,"async_inner")," 两个包装，按原函数是否协程自动选用，因此 ",h("code",null,"async def")," 的 worker 方法（如 ",h("code",null,"update_weights"),"）也能被 register。"),
+        h("li",null,h("code",null,"blocking=False")," 时，driver 调用后立即拿到 future 而不阻塞，可用于把多个 worker 调用重叠起来（异步训练的基础，第 11 课）。")
+      ),
+      h("div",null,h(Src,{label:"register",path:"verl/single_controller/base/decorator.py",line:398}),h(Src,{label:"MAGIC_ATTR",path:"verl/single_controller/base/decorator.py",line:23}),h(Src,{label:"_materialize_futures",path:"verl/single_controller/base/decorator.py",line:383}))
+    ];}},
+    {key:"modes",name:"Dispatch 模式枚举",render:function(){return [
+      h("p",null,"Dispatch 是一个动态枚举（",h("code",null,"DynamicEnum"),"），在导入时注册一批预定义模式。每个模式在 ",h("code",null,"DISPATCH_MODE_FN_REGISTRY")," 里对应一对函数 ",h("code",null,"{dispatch_fn, collect_fn}"),"。下面是真实注册的全部模式："),
+      h(Code,null,"# verl/single_controller/base/decorator.py · init_predefined_dispatch_mode\nDispatch.register(\"RANK_ZERO\")\nDispatch.register(\"ONE_TO_ALL\")\nDispatch.register(\"ALL_TO_ALL\")\nDispatch.register(\"DP_COMPUTE\")\nDispatch.register(\"DP_COMPUTE_PROTO\")\nDispatch.register(\"DP_COMPUTE_PROTO_WITH_FUNC\")\nDispatch.register(\"DP_COMPUTE_METRIC\")\nDispatch.register(\"DIRECT_ROLLOUT_METHOD\")   # 给 vLLM 外部分布式执行器的特殊模式"),
+      h("ul",null,
+        h("li",null,h("code",null,"ONE_TO_ALL"),"：把同一份参数复制 ",h("code",null,"world_size")," 份广播给每个 worker，每个 worker 拿到完全相同的输入。用于初始化、加载/保存 checkpoint、广播配置这类“所有 rank 都要做同一件事”的方法。collect 直接返回所有 rank 的输出列表。"),
+        h("li",null,h("code",null,"ALL_TO_ALL"),"：参数原样传给每个 worker，不切分也不复制（即 ",h("code",null,"dispatch_all_to_all")," 直接返回 args/kwargs）。这是 ",h("code",null,"register")," 的默认模式，语义最朴素。"),
+        h("li",null,h("code",null,"DP_COMPUTE_PROTO"),"：核心模式。把输入 ",h("code",null,"DataProto")," 沿 batch 维切成 ",h("code",null,"world_size")," 份，第 $i$ 份发给第 $i$ 个 worker；执行后把各 worker 返回的 ",h("code",null,"DataProto")," 按 batch 维拼回一个。这是数据并行计算（生成、对数概率、价值估计、参数更新）的标准模式，且自动处理 padding。"),
+        h("li",null,h("code",null,"DP_COMPUTE_PROTO_WITH_FUNC"),"：与上同，但第一个参数是一个函数，会被广播给每个 worker（每个 worker 拿同一个 func 与自己那份数据）。用于把用户自定义函数下发到各 DP rank 上执行。"),
+        h("li",null,h("code",null,"DP_COMPUTE")," 与 ",h("code",null,"DP_COMPUTE_METRIC"),"：处理已是 list 形式（长度等于 world_size）的输入；后者 dispatch 与 PROTO 相同但 collect 不拼接，用于收集各 rank 的指标字典。"),
+        h("li",null,h("code",null,"RANK_ZERO"),"：作为 Execute 维度的对偶，常配合 ",h("code",null,"Execute.RANK_ZERO")," 使用，仅在 rank 0 执行。")
+      ),
+      h("div",{className:"note"},"枚举之所以用动态注册而非 Python 原生 ",h("code",null,"enum"),"，是为了允许运行时通过 ",h("code",null,"register_dispatch_mode")," 增补自定义模式（例如某后端需要特殊切分），并保证跨进程 pickle 时复用同一枚举对象。N 维并行用的 ",h("code",null,"make_nd_compute_dataproto_dispatch_fn(mesh_name=...)")," 则直接返回一个 ",h("code",null,"{dispatch_fn, collect_fn}")," 字典，绕过枚举注册。"),
+      h("div",null,h(Src,{label:"Dispatch 枚举",path:"verl/single_controller/base/decorator.py",line:26}),h(Src,{label:"init_predefined_dispatch_mode",path:"verl/single_controller/base/decorator.py",line:38}),h(Src,{label:"DISPATCH_MODE_FN_REGISTRY",path:"verl/single_controller/base/decorator.py",line:308}),h(Src,{label:"DynamicEnum",path:"verl/utils/py_functional.py",line:259}))
+    ];}},
+    {key:"dp",name:"DP_COMPUTE_PROTO 切分细节",render:function(){return [
+      h("p",null,"以最重要的 ",h("code",null,"DP_COMPUTE_PROTO")," 为例，看 dispatch 与 collect 各自做了什么。dispatch 端把每个 ",h("code",null,"DataProto")," 参数按 ",h("code",null,"world_size")," 切块，并在切之前做自动 padding，使 batch 长度能被 ",h("code",null,"world_size")," 整除（否则 ",h("code",null,"chunk")," 会因不能均分而失败）。"),
+      h(Code,null,"# verl/single_controller/base/decorator.py\ndef dispatch_dp_compute_data_proto(worker_group, *args, **kwargs):\n    # 对每个 DataProto 参数做 padding 后 chunk 成 world_size 份\n    splitted_args, splitted_kwargs = _split_args_kwargs_data_proto_with_auto_padding(\n        worker_group.world_size, *args, **kwargs)\n    return splitted_args, splitted_kwargs\n\ndef _padding_and_split_data(obj, chunks):\n    if isinstance(obj, DataProto) and obj.is_padding_enabled():\n        padding_size = (chunks - (len(obj) % chunks)) if (len(obj) % chunks > 0) else 0\n        obj.padding(padding_size=padding_size)     # 补齐到 chunks 的整数倍\n    return obj.chunk(chunks=chunks)                # 沿 batch 维切成 chunks 份"),
+      h("p",null,"collect 端把各 worker 返回的 ",h("code",null,"DataProto")," 沿 batch 维拼接回一个完整对象。padding 引入的额外样本会在最外层（",h("code",null,"func_generator")," 里）按 ",h("code",null,"padding_count")," 裁掉，对 driver 完全透明。"),
+      h(Code,null,"# verl/single_controller/base/decorator.py\ndef collect_dp_compute_data_proto(worker_group, output):\n    assert BatchData(output).is_concatable()       # 每个元素必须是同型 DataProto/Future\n    output = collect_dp_compute(worker_group, output)   # 断言 len(output)==world_size\n    return _concat_data_proto_or_future(output)    # BatchData(output).concat() 拼回一个"),
+      h(Formula,{cap:"DP_COMPUTE_PROTO 的数据流：长度 B 的 batch 经 padding 到 B', 切成 N 份, 各 worker 算完再拼回并裁掉 padding"},"$$ B' = \\Big\\lceil \\tfrac{B}{N} \\Big\\rceil \\cdot N,\\qquad x \\xrightarrow{\\ \\text{pad}\\ } x' \\xrightarrow{\\ \\text{chunk}_N\\ } (x'_0,\\dots,x'_{N-1}) \\xrightarrow{\\ f\\ } (y'_0,\\dots) \\xrightarrow{\\ \\text{concat}\\ } y' \\xrightarrow{\\ \\text{unpad}\\ } y $$"),
+      h("p",null,"为什么 padding 要在框架层而非业务层处理？因为切分是单控制器的内部细节，业务 worker 只关心“给我一份数据、我算出一份结果”，不应被 batch 是否整除困扰。把 padding 与裁剪收进 dispatch/collect，业务代码因此保持干净，这正是抽象边界的价值。"),
+      h("div",null,h(Src,{label:"dispatch_dp_compute_data_proto",path:"verl/single_controller/base/decorator.py",line:167}),h(Src,{label:"_split..._with_auto_padding",path:"verl/single_controller/base/decorator.py",line:91}),h(Src,{label:"collect_dp_compute_data_proto",path:"verl/single_controller/base/decorator.py",line:191}),h(Src,{label:"DataProto.chunk",path:"verl/protocol.py",line:864}),h(Src,{label:"DataProto.padding",path:"verl/protocol.py",line:849}))
+    ];}},
+    {key:"exec",name:"Execute 模式",render:function(){return [
+      h("p",null,"Execute 与 Dispatch 正交：Dispatch 决定数据怎么切，Execute 决定方法在哪些 worker 上跑。只有两个预定义模式："),
+      h(Code,null,"# verl/single_controller/base/decorator.py\ndef init_predefined_execute_mode():\n    Execute.register(\"ALL\")          # 在所有 worker 上执行 -> execute_all\n    Execute.register(\"RANK_ZERO\")    # 仅在 rank 0 worker 上执行 -> execute_rank_zero\n\ndef get_predefined_execute_fn(execute_mode):\n    return {\n        Execute.ALL:       {\"execute_fn_name\": \"execute_all\"},\n        Execute.RANK_ZERO: {\"execute_fn_name\": \"execute_rank_zero\"},\n    }[execute_mode]"),
+      h("p",null,"注意这里只给出方法名字符串，真正的 ",h("code",null,"execute_all")," / ",h("code",null,"execute_rank_zero")," 由 WorkerGroup 子类实现。基类只规定“契约”：必须存在这两个方法。这样 base 层完全不依赖 Ray，纯 CPU 的测试桩或别的后端都能实现同样的契约。"),
+      h("p",null,h("code",null,"Execute.RANK_ZERO")," 的典型用途是 ",h("code",null,"Worker.execute_func_rank_zero"),"：把一个函数只在 rank 0 上跑一次（例如某些全局副作用操作）。它常与 ",h("code",null,"Dispatch.ALL_TO_ALL")," 搭配，即参数原样传入、只在 rank 0 执行。"),
+      h(Code,null,"# verl/single_controller/base/worker.py\n@register(dispatch_mode=Dispatch.ALL_TO_ALL, execute_mode=Execute.RANK_ZERO)\ndef execute_func_rank_zero(self, func, *args, **kwargs):\n    result = func(*args, **kwargs)\n    return result"),
+      h("div",null,h(Src,{label:"init_predefined_execute_mode",path:"verl/single_controller/base/decorator.py",line:61}),h(Src,{label:"get_predefined_execute_fn",path:"verl/single_controller/base/decorator.py",line:357}),h(Src,{label:"execute_func_rank_zero",path:"verl/single_controller/base/worker.py",line:335}))
+    ];}}
+  ];
+  function DispatchExplorer(){const [s,setS]=useState(0);const d=DISPATCH[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},DISPATCH.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 一次调用的完整生命周期 =====
+  function LifecycleSection(){
+    return h("div",null,
+      h("p",null,"现在把三段式串成一条完整的调用。当 driver 写下 ",h("code",null,"output = actor_wg.update_actor(data)")," 时，实际触发的不是 worker 方法本身，而是 ",h("code",null,"_bind_worker_method")," 安装上去的那个闭包。该闭包由 ",h("code",null,"ray/base.py")," 的 ",h("code",null,"func_generator")," 生成，它把 dispatch、execute、collect 顺序串起来："),
+      h(Code,null,"# verl/single_controller/ray/base.py · func_generator\ndef func_generator(self, method_name, dispatch_fn, collect_fn, execute_fn, blocking):\n    class Functor:\n        def __call__(this, *args, **kwargs):\n            args, kwargs = dispatch_fn(self, *args, **kwargs)        # 1) 切分: DataProto -> N 份\n            padding_count = kwargs.pop(_padding_size_key, 0)\n            output = execute_fn(method_name, *args, **kwargs)        # 2) 并行下发到 N 个 worker\n            if blocking:\n                output = ray.get(output)                            # 3) 阻塞取回 N 份结果\n            output = collect_fn(self, output)                       # 4) 聚合: N 份 -> 1 个\n            if padding_count > 0:                                   # 5) 裁掉 padding 引入的样本\n                if isinstance(output, DataProto):\n                    indices = [i for i in range(len(output))][:-padding_count]\n                    output = output.select_idxs(indices)\n                elif isinstance(output, list):\n                    output = output[:-padding_count]\n            return output\n    return type(method_name, (Functor,), {})()   # 用方法名命名类型, 便于可观测"),
+      h("p",null,"逐行解释这条调用链："),
+      h("ol",null,
+        h("li",null,h("strong",null,"dispatch_fn(self, *args, **kwargs)"),"：以 ",h("code",null,"DP_COMPUTE_PROTO")," 为例，它把 ",h("code",null,"data")," padding 后 ",h("code",null,"chunk")," 成 ",h("code",null,"world_size")," 份。返回的 ",h("code",null,"args")," 此时是“每个参数的 N 元列表”，即 ",h("code",null,"args[0]")," 是长度为 N 的 DataProto 列表，padding 数量塞在一个特殊 kwarg 键里。"),
+        h("li",null,h("strong",null,"execute_fn(method_name, *args, **kwargs)"),"：这里 ",h("code",null,"execute_fn")," 是 ",h("code",null,"self.execute_all"),"。它检测到所有参数都是长度等于 worker 数的 list，于是把第 $i$ 个元素切给第 $i$ 个 worker，对每个 worker 调 ",h("code",null,"worker.method_name.remote(...)"),"，得到一组 Ray ObjectRef（future）。这一步是真正的并行：N 个远程调用同时发出。"),
+        h("li",null,h("strong",null,"ray.get(output)"),"：若 ",h("code",null,"blocking=True"),"，阻塞等待所有 future 完成并取回实体结果列表；若为 ",h("code",null,"False"),"，跳过这步，把 future 列表原样交给 collect（用于异步重叠）。"),
+        h("li",null,h("strong",null,"collect_fn(self, output)"),"：以 ",h("code",null,"DP_COMPUTE_PROTO")," 为例，断言收到 N 份且可拼接，然后 ",h("code",null,"concat")," 回单个 ",h("code",null,"DataProto"),"。"),
+        h("li",null,h("strong",null,"裁剪 padding"),"：把第 1 步补进去的填充样本按 ",h("code",null,"padding_count")," 从尾部去掉，于是 driver 拿到的结果 batch 长度与它传入时一致。")
+      ),
+      h("p",null,"于是 driver 端看到的 ",h("code",null,"update_actor(data)")," 与单机调用毫无二致：传入一个 ",h("code",null,"DataProto"),"，返回一个 ",h("code",null,"DataProto"),"，切分、并行、聚合、去填充全部隐藏在闭包里。这就是“把一组 worker 当作一个对象”的字面含义。"),
+      h("h3",null,"业务侧真实示例"),
+      h("p",null,"实际 worker 方法只写计算，分发策略通过装饰器声明。下面是 ",h("code",null,"ActorRolloutRefWorker")," 的几个方法，注意 ",h("code",null,"compute_log_prob")," 与 ",h("code",null,"update_actor")," 使用 N 维数据并行分发（按 mesh 名 ",h("code",null,"\"actor\"")," 的 dp_rank 切分），而 checkpoint 类用 ",h("code",null,"ONE_TO_ALL"),"（每个 rank 都参与保存）："),
+      h(Code,null,"# verl/workers/engine_workers.py · ActorRolloutRefWorker (节选)\n@register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name=\"actor\"))\ndef compute_log_prob(self, data: TensorDict) -> TensorDict:\n    output = self.actor.infer_batch(data)\n    return output.cpu() if output is not None else None\n\n@register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name=\"actor\"))\ndef update_actor(self, data: TensorDict) -> TensorDict:\n    output = self.actor.train_mini_batch(data=data)\n    return output.cpu() if output is not None else None\n\n@register(dispatch_mode=Dispatch.ONE_TO_ALL)\ndef save_checkpoint(self, local_path, hdfs_path=None, global_step=0, max_ckpt_to_keep=None):\n    self.actor.save_checkpoint(local_path, hdfs_path, global_step, max_ckpt_to_keep)\n\n@register(dispatch_mode=Dispatch.ONE_TO_ALL, blocking=False)\nasync def update_weights(self, global_steps: int = None, mode: str = \"auto\"):\n    ...   # 异步、非阻塞: driver 拿到 future 后可继续做别的事"),
+      h("div",{className:"warn"},"N 维分发（",h("code",null,"make_nd_compute_dataproto_dispatch_fn"),"）与朴素 ",h("code",null,"DP_COMPUTE_PROTO")," 的差别在于：当 TP×PP 使 world_size 远大于真正的 DP 数时，不能把 batch 切成 world_size 份。它先把数据切成 ",h("code",null,"dp_size")," 份，再按每个 worker 的 dp_rank 把对应份发给它（同一 dp 组里的 TP/PP rank 拿到相同那份）；collect 时只收每个 dp 组里 ",h("code",null,"is_collect=True")," 的那个 rank 的输出，避免重复。dp_rank 与 collect 标记正是前面 ",h("code",null,"_register_dispatch_collect_info")," 登记、",h("code",null,"_query_*_info")," 懒查询得来的。"),
+      h("div",null,
+        h(Src,{label:"func_generator",path:"verl/single_controller/ray/base.py",line:49}),
+        h(Src,{label:"execute_all_async",path:"verl/single_controller/ray/base.py",line:866}),
+        h(Src,{label:"execute_rank_zero_async",path:"verl/single_controller/ray/base.py",line:814}),
+        h(Src,{label:"compute_log_prob / update_actor",path:"verl/workers/engine_workers.py",line:644}),
+        h(Src,{label:"dispatch_nd_compute",path:"verl/single_controller/base/decorator.py",line:202}),
+        h(Src,{label:"make_nd_compute_dataproto_dispatch_fn",path:"verl/single_controller/base/decorator.py",line:300})
+      )
+    );
+  }
+
+  // ===== RayWorkerGroup 实现与共置 =====
+  function RaySection(){
+    return h("div",null,
+      h("p",null,h("code",null,"RayWorkerGroup")," 是上述抽象的 Ray 落实。它在构造时完成三件事：从 ",h("code",null,"RayResourcePool")," 取得 placement group（已锁定的 GPU bundle），在每个 bundle 上创建一个 worker 的 Ray actor，最后调用基类 ",h("code",null,"_bind_worker_method")," 把被 register 的方法安装上来。"),
+      h("h3",null,"placement group：锁定 GPU 并按拓扑排序"),
+      h("p",null,h("code",null,"RayResourcePool.get_placement_groups")," 为 ",h("code",null,"_store")," 里每个节点申请一个 placement group，每个 bundle 形如 ",h("code",null,"{\"CPU\": max_colocate_count, device_name: 1}"),"，用 ",h("code",null,"STRICT_PACK")," 策略保证同一 PG 的 bundle 落在同一节点。申请后用 ",h("code",null,"sort_placement_group_by_node_ip")," 按节点 IP 排序，使逻辑 rank 到物理节点的映射在多次 Ray 作业间保持稳定，这对从 checkpoint 恢复（要求 RANK 一致）很重要。"),
+      h(Code,null,"# verl/single_controller/ray/base.py · RayResourcePool.get_placement_groups (节选)\nbundle = {\"CPU\": self.max_colocate_count}\nif self.use_gpu:\n    bundle[device_name] = 1                    # 每个 bundle 含 1 张目标设备\npg_scheme = [[bundle.copy() for _ in range(process_count)]   # 每节点 process_count 个 bundle\n             for process_count in self._store]\npgs = [placement_group(bundles=bundles, strategy=strategy, name=...)\n       for idx, bundles in enumerate(pg_scheme)]\nray.get([pg.ready() for pg in pgs])            # 阻塞等待调度就绪\nself.pgs = sort_placement_group_by_node_ip(pgs)   # 按节点 IP 排序, 稳定 rank 映射"),
+      h("h3",null,"创建 worker：注入身份、绑定到 bundle"),
+      h("p",null,h("code",null,"_init_with_resource_pool")," 遍历 placement group 与其中的 bundle，为每个 (pg_idx, local_rank) 递增一个全局 rank，并在第一个 bundle 上调用一次 ",h("code",null,"_get_master_addr_port")," 探测主地址端口（即让 rank 0 所在节点选出 master）。随后 ",h("code",null,"_create_worker")," 把 ",h("code",null,"WORLD_SIZE/RANK/MASTER_ADDR/MASTER_PORT")," 等通过 ",h("code",null,"runtime_env.env_vars")," 注入，并把 actor 调度到对应 bundle 上："),
+      h(Code,null,"# verl/single_controller/ray/base.py · _create_worker (节选)\nnum_gpus = 1 / resource_pool.max_colocate_count    # 每 worker 申请的设备配额\nenv_vars = {\n    \"WORLD_SIZE\": str(world_size), \"RANK\": str(rank),\n    \"WG_PREFIX\": self.name_prefix, \"WG_BACKEND\": \"ray\",\n    \"RAY_LOCAL_WORLD_SIZE\": str(local_world_size),\n    \"MASTER_ADDR\": self._master_addr, \"MASTER_PORT\": self._master_port,\n}\nray_cls_with_init.update_options({\"runtime_env\": {\"env_vars\": env_vars}, \"name\": name})\nworker = ray_cls_with_init(                          # 触发 RayClassWithInitArgs.__call__\n    placement_group=pg, placement_group_bundle_idx=local_rank,\n    use_gpu=self.use_gpu, num_gpus=num_gpus, device_name=self.device_name)\nself._workers.append(worker)"),
+      h("p",null,"这里的 ",h("code",null,"num_gpus = 1 / max_colocate_count")," 是共置的物理基础：当 ",h("code",null,"max_colocate_count = 1"),"，每个 worker 独占一张卡；当它大于 1（例如 3），同一张卡可被三个不同 WorkerGroup 的 worker 共享，因为它们各自只向 Ray 声明 1/3 张卡。",h("code",null,"RayClassWithInitArgs.__call__")," 用 ",h("code",null,"PlacementGroupSchedulingStrategy")," 把 actor 钉到指定 bundle，从而把逻辑 rank 精确绑定到物理 GPU。"),
+      h("h3",null,"共置（colocate）：多个角色同住一组 GPU"),
+      h("p",null,"RLHF 里 actor、critic、reference、reward 各自占满一套 GPU 太浪费，且生成与训练通常分时进行。verl 的 FusedWorker 机制把多个角色的 worker 类合成一个 ",h("code",null,"WorkerDict")," 类，在同一个 Ray actor（同一进程、同一张卡）里同时持有多个子 worker 实例，再通过前缀路由把对外方法分派到正确的子 worker。"),
+      h(Code,null,"# verl/single_controller/ray/base.py · create_colocated_worker_raw_cls (节选)\nclass FusedWorker(Worker):\n    def __init__(self, *args, **kwargs):\n        super().__init__(*args, **kwargs)\n        for cls_name, udc, ud_args, ud_kwargs in zip(self.cls_names, ...):\n            with temp_env_var(\"DISABLE_WORKER_INIT\", \"1\"):\n                self.fused_worker_dict[cls_name] = udc(*ud_args, **ud_kwargs)  # actor / critic ...\n                setattr(self, cls_name, self.fused_worker_dict[cls_name])\n    def _fuw_execute(self, method_name, *args, **kwargs):\n        cls_name, method_name = method_name.split(\"_fwmn_\")    # \"actor_fwmn_update_actor\"\n        udc_method = getattr(self.fused_worker_dict[cls_name], method_name)\n        return udc_method(*args, **kwargs)                     # 路由到对应子 worker"),
+      h("p",null,"配套的 ",h("code",null,"spawn(prefix_set)")," 与 ",h("code",null,"fuse(prefix_set)")," 让 driver 既能整体管理这个共置组，又能按角色取出独立视图。",h("code",null,"spawn")," 返回 ",h("code",null,"{\"actor\": wg_actor, \"critic\": wg_critic}")," 这样的字典，每个 WorkerGroup 只暴露对应角色的方法；",h("code",null,"fuse")," 则把这些角色视图作为属性挂回主 WorkerGroup（",h("code",null,"wg.actor.update_actor(...)"),"）。底层 ",h("code",null,"_execute_remote_single_worker")," 在共置模式下把方法名改写成 ",h("code",null,"\"{角色}_fwmn_{方法}\"")," 经 ",h("code",null,"_fuw_execute")," 路由。"),
+      h(Formula,{cap:"共置的资源账：M 个角色共享同一组 N 张卡, 各角色按 1/C 配额声明, 总显存峰值取决于分时调度而非角色数之和"},"$$ \\text{GPU 需求} = N \\quad(\\text{而非}\\ M \\times N),\\qquad \\text{num\\_gpus per worker} = \\frac{1}{\\text{max\\_colocate\\_count}} $$"),
+      h("p",null,"为什么共置如此重要？因为 RL 训练的不同阶段（生成、计算 log_prob、更新）几乎不会真正同时占满显存：生成时 actor 权重在显存、训练时 rollout 引擎可卸载。把它们放进同一进程，配合 offload/onload，就能用一套 GPU 跑完整个流程，把硬件利用率显著提高。这是 verl 在工业级规模上可行的关键工程决策之一。"),
+      h("div",{className:"note"},h("code",null,"create_colocated_worker_cls")," 与 ",h("code",null,"_bind_workers_method_to_parent")," 是早期实现（已标注 deprecated），新代码走 ",h("code",null,"create_colocated_worker_cls_fused")," / ",h("code",null,"FusedWorker")," 路径。其中 ",h("code",null,"DIRECT_ROLLOUT_METHOD")," 模式的方法（给 vLLM 外部分布式执行器用）会被直接绑到外层类、不加前缀。"),
+      h("div",null,
+        h(Src,{label:"RayWorkerGroup",path:"verl/single_controller/ray/base.py",line:418}),
+        h(Src,{label:"RayResourcePool.get_placement_groups",path:"verl/single_controller/ray/base.py",line:131}),
+        h(Src,{label:"sort_placement_group_by_node_ip",path:"verl/single_controller/ray/base.py",line:70}),
+        h(Src,{label:"_init_with_resource_pool",path:"verl/single_controller/ray/base.py",line:538}),
+        h(Src,{label:"_create_worker",path:"verl/single_controller/ray/base.py",line:623}),
+        h(Src,{label:"RayClassWithInitArgs.__call__",path:"verl/single_controller/ray/base.py",line:369}),
+        h(Src,{label:"create_colocated_worker_raw_cls",path:"verl/single_controller/ray/base.py",line:1035}),
+        h(Src,{label:"FusedWorker._fuw_execute",path:"verl/single_controller/ray/base.py",line:1087}),
+        h(Src,{label:"spawn",path:"verl/single_controller/ray/base.py",line:718}),
+        h(Src,{label:"fuse",path:"verl/single_controller/ray/base.py",line:770})
+      )
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"HybridFlow 论文",d:"single-controller 与 multi-controller 混合编程模型的原始论述",href:"https://arxiv.org/abs/2409.19256"},
+    {t:"Ray Actors",d:"actor、远程调用与 ObjectRef future 的官方说明",href:"https://docs.ray.io/en/latest/ray-core/actors.html"},
+    {t:"Ray Placement Groups",d:"bundle、PACK/STRICT_PACK 调度策略与资源绑定",href:"https://docs.ray.io/en/latest/ray-core/scheduling/placement-group.html"},
+    {t:"verl single_controller 文档",d:"官方对 dispatch/execute 模式的说明（本机）",href:srcUrl("docs/single_controller.rst",null)},
+    {t:"verl hybrid_flow 文档",d:"HybridFlow 编程模型在 verl 中的落实（本机）",href:srcUrl("docs/hybrid_flow.rst",null)},
+    {t:"DataProto 实现",d:"chunk / concat / padding 的真实代码（本机, 第 2 课主题）",href:srcUrl("verl/protocol.py",318)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:3}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 3 课 / 共 12 · 混合控制器"),
+          h("h1",null,"single controller 混合控制器"),
+          h("p",{className:"lead"},"这是 verl 与几乎所有其他 RL 框架最不同的一层，也是 HybridFlow 论文的核心机制。本课讲清：单控制器（single controller）如何让一个 driver 进程像调用本地对象一样调用整组分布在多张 GPU 上的 worker。我们自底向上拆开 Worker 基类（rank/world_size/分布式身份）、ResourcePool 与 WorkerGroup（GPU 资源池与 worker 组抽象）、@register 装饰器与 dispatch / execute / collect 三段式，最后看 RayWorkerGroup 如何用 Ray actor 实现这一切，并把多个角色共置（colocate）到同一组 GPU。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"verl/single_controller/base/")," 的 decorator / worker / worker_group，",h("code",null,"verl/single_controller/ray/base.py")," 的全部抽象实现，以及 ",h("code",null,"verl/workers/engine_workers.py")," 的真实 @register 用例。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/verl")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"设计动机 · HybridFlow"),
+          h("h2",null,"为什么需要单控制器"),
+          h(MotivationSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"base/worker.py"),
+          h("h2",null,"Worker 基类：每个 GPU 进程的身份"),
+          h(WorkerSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"base/worker_group.py"),
+          h("h2",null,"ResourcePool 与 WorkerGroup：组的抽象"),
+          h(PoolGroupSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"base/decorator.py"),
+          h("h2",null,"@register 与 dispatch / execute 模式"),
+          h("p",null,"这一节是全课程的技术心脏。点 Tab 依次看：装饰器本身做了什么、有哪些预定义 Dispatch 模式、核心的 DP_COMPUTE_PROTO 如何切分与聚合、Execute 模式如何决定执行范围。"),
+          h(DispatchExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"ray/base.py · func_generator"),
+          h("h2",null,"一次调用的完整生命周期"),
+          h(LifecycleSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"ray/base.py · RayWorkerGroup"),
+          h("h2",null,"Ray 实现与共置"),
+          h(RaySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档，能把 HybridFlow 的设计动机与 Ray 的底层机制补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"控制流与计算流解耦"),"：driver 用单控制器风格写清晰的 RL 算法控制流，各 worker 内部仍以多控制器（SPMD）方式高效计算，两者通过 dispatch 协议粘合。这是 HybridFlow 的总纲，也是理解整个 verl 的钥匙。"),
+            h("li",null,h("strong",null,"Worker 从环境变量重建身份"),"：rank / world_size / master 地址端口由 RayWorkerGroup 注入、Worker 从 os.environ 读回，使远端 actor 能复用标准 torch.distributed 初始化路径。mesh 上的 dp_rank 与 collect 标记为 N 维并行分发提供基础。"),
+            h("li",null,h("strong",null,"三段式：dispatch → execute → collect"),"：@register 在方法上声明切分/执行/聚合策略；_bind_worker_method 把它编译成一个安装到 WorkerGroup 上的闭包；func_generator 把三段顺序串起，并自动处理 padding 与裁剪，对 driver 完全透明。"),
+            h("li",null,h("strong",null,"ResourcePool 管布局、WorkerGroup 管调用"),"：前者描述 GPU 在节点上的分布与共置配额（1/max_colocate_count），后者把一组 worker 暴露为单个对象。base 层不依赖 Ray，Ray 实现只填充 execute_all / func_generator 等血肉。"),
+            h("li",null,h("strong",null,"共置是工业级规模的关键"),"：FusedWorker 把多角色 worker 合进一个 Ray actor、一张卡，配合分时 offload/onload 用一套 GPU 跑完生成与训练，把硬件利用率显著提高。spawn / fuse 让 driver 既能整体管理又能按角色取视图。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"verl-lesson-02-dataproto.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 2 课：DataProto 数据协议")),
+            h("a",{href:"verl-lesson-04-config.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 4 课：配置体系"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

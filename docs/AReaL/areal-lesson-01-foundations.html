@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 逐文件精读 · 第 1 课：地基层</title>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      svg: { fontCache: 'global' },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}
+    .lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:830px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}
+    .filegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin:16px 0;}
+    .filechip{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:9px 11px;cursor:pointer;transition:all .12s;}
+    .filechip:hover{border-color:var(--line-2);background:var(--panel-2);}
+    .filechip.active{border-color:var(--teal);background:#0e2120;}
+    .filechip .fn{font-family:var(--mono);font-size:12px;color:var(--ink);}
+    .filechip .tag{font-size:10px;color:var(--faint);margin-top:2px;}
+    .detail{border:1px solid var(--line-2);background:var(--panel-2);border-radius:12px;padding:18px 20px;margin-top:6px;min-height:180px;}
+    .detail h3{margin-top:0;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    table.matrix{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+    table.matrix th,table.matrix td{padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;}
+    table.matrix th{color:var(--faint);font-family:var(--mono);font-size:10.5px;text-transform:uppercase;background:#0f1620;}
+    table.matrix td{color:var(--muted);}table.matrix tr:last-child td{border-bottom:0;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:820px){h1{font-size:32px;}}
+  </style>
+</head>
+<body>
+  <div id="root">
+    <main class="fallback">
+      <p class="kicker">Static fallback · 第 1 课</p>
+      <h1>AReaL 地基层</h1>
+      <p>这是 AReaL 逐文件精读系列的第 1 课。能访问 React/MathJax CDN 时切换为交互版。</p>
+      <ul><li>地基层是 <code>areal/utils/</code> 里无 RL 语义的部分加 <code>infra/platforms/</code>，所有其它层都依赖它。</li>
+      <li>核心：日志、分布式名字解析（rendezvous）、确定性随机种子、按字符串动态导入类、设备平台抽象。</li></ul>
+    </main>
+  </div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const AREAL="vscode://file/Users/xinyu/Code/Agentic-RL/AReaL/";
+  function srcUrl(p,l){return AREAL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Protocol","Literal","Optional","Callable","Platform","Enum","str","int","float","bool","dict","list","tuple","set","dataclass","torch","np","datetime","timedelta"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","areal-lesson-01-foundations.html"],[2,"数据契约","areal-lesson-02-contracts.html"],[3,"抽象基类","areal-lesson-03-interfaces.html"],[4,"RL 数学原语","areal-lesson-04-rl-math.html"],[5,"数据与奖励","areal-lesson-05-data-reward.html"],[6,"模型层","areal-lesson-06-models.html"],[7,"训练引擎","areal-lesson-07-train-engine.html"],[8,"推理引擎","areal-lesson-08-inference-engine.html"],[9,"Workflow","areal-lesson-09-workflow.html"],[10,"Trainer","areal-lesson-10-trainer.html"],[11,"编排运行时","areal-lesson-11-orchestration.html"],[12,"进阶与收尾","areal-lesson-12-advanced.html"]];
+  function CourseNav(props){
+    return h("div",{className:"course-nav"},
+      h("a",{className:"home",href:"areal-course-index.html"},"AReaL",h("span",{className:"dot"},"·"),"逐文件精读"),
+      h("div",{className:"lessons"},LESSONS.map(function(L){
+        const cls=L[0]===props.current?"lchip active":(L[2]==="#"?"lchip todo":"lchip done");
+        return L[2]==="#"?h("span",{key:L[0],className:cls},L[0]+" "+L[1]):h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);
+      }))
+    );
+  }
+
+  // 地基层全部文件（完整覆盖）。deep=true 的有深入说明。
+  const FILES=[
+    {f:"utils/logging.py",tag:"分级彩色日志",deep:true,role:"按组件类别给日志上色的集中式日志。logger 名用 PascalCase 描述名（如 FSDPEngine、RLVRWorkflow），不用模块点路径；颜色按类别分（基础设施蓝、编排白、RL 紫、计算后端青、数据绿），WARNING 以上一律覆盖成黄/红。",syms:[["getLogger","areal/utils/logging.py",339],["LoggerColoredFormatter","areal/utils/logging.py",159],["setup_file_logging","areal/utils/logging.py",407]]},
+    {f:"utils/name_resolve.py",tag:"分布式名字解析",deep:true,role:"rendezvous：让分散在各机器上的 worker 不靠硬编码地址也能互相发现。抽象基类 NameRecordRepository 定义 add/get/wait/watch，多种后端实现（内存测试用、NFS 文件、etcd3 带租约、Ray actor）。键可重复、值唯一（多重映射），TTL 靠 keepalive 线程续租。",syms:[["NameRecordRepository","areal/utils/name_resolve.py",42],["NfsNameRecordRepository","areal/utils/name_resolve.py",284],["Etcd3NameRecordRepository","areal/utils/name_resolve.py",412],["make_repository","areal/utils/name_resolve.py",1211]]},
+    {f:"utils/names.py",tag:"键名约定",deep:false,role:"name-resolve 键的统一命名：trial_root、worker_discovery、update_weights_from_disk 等，把字符串路径规范集中到一处。",syms:[["trial_root","areal/utils/names.py",21],["worker_discovery","areal/utils/names.py",33],["update_weights_from_disk","areal/utils/names.py",29]]},
+    {f:"utils/constants.py",tag:"全局常量",deep:true,role:"全局常量与算法枚举。生成超时默认 2 小时（避免长推理被提前掐断），向量化访存的 16 字节边界要求（SSE/AVX/CUDA TMA），以及 decoupled PPO 用的 ProxLogpMethod 与 ProxApproxMethod 枚举。",syms:[["DIST_GROUP_DEFAULT_TIMEOUT","areal/utils/constants.py",12],["DEFAULT_VECTORIZED_ALIGNMENT_BYTES","areal/utils/constants.py",28],["ProxLogpMethod","areal/utils/constants.py",36],["ProxApproxMethod","areal/utils/constants.py",54]]},
+    {f:"utils/seeding.py",tag:"确定性种子",deep:true,role:"跨 numpy/torch/transformers/平台的确定性随机种子，按字符串 key 派生。这样同一 base_seed 配不同 key（实验名、数据集名）会得到不同但可复现的 RNG 序列；Shuffler 维护计数器保证每轮 shuffle 不同。",syms:[["set_random_seed","areal/utils/seeding.py",22],["_seed_from_key","areal/utils/seeding.py",18],["Shuffler","areal/utils/seeding.py",46]]},
+    {f:"utils/dynamic_import.py",tag:"按字符串导入类",deep:true,role:"把 'module.path.ClassName' 字符串解析成真实的类或函数（rsplit + importlib + getattr）。这是整个框架的插件机制：Scheduler.create_engine 就是拿配置里的 engine 字符串在远端 worker 上实例化引擎。",syms:[["import_from_string","areal/utils/dynamic_import.py",7]]},
+    {f:"utils/timeutil.py",tag:"频率控制与调度",deep:true,role:"按时间间隔或步数触发的 FrequencyControl（支持 all_reduce 跨 rank 同步：任一 rank 触发则全体触发），组合三种条件的 EpochStepTimeFreqCtl，以及 LR 调度器（constant/linear/cosine/chained）。",syms:[["FrequencyControl","areal/utils/timeutil.py",17],["EpochStepTimeFreqCtl","areal/utils/timeutil.py",145],["CosineDecayScheduler","areal/utils/timeutil.py",233]]},
+    {f:"utils/lock.py",tag:"分布式锁",deep:true,role:"基于 torch.distributed c10d store 的原子计数器实现分布式锁：store.add 返回 1 者成为持有者，否则回退并指数退避重试。用于跨进程的临界区。",syms:[["DistributedLock","areal/utils/lock.py",10]]},
+    {f:"infra/platforms/platform.py",tag:"设备抽象",deep:true,role:"设备无关的硬件抽象基类 Platform。编码 device_type、PyTorch dispatch_key、Ray device_key、可见设备环境变量名、通信后端（nccl/hccl/gloo）。__getattr__ 回退到 torch.<device> 模块，于是 platform.synchronize() 直接转发到 torch.cuda.synchronize()。",syms:[["Platform","areal/infra/platforms/platform.py",12]]},
+    {f:"infra/platforms/cuda.py",tag:"CUDA 实现",deep:false,role:"NVIDIA CUDA 平台：nccl 后端、CUDA_VISIBLE_DEVICES、clear_memory 走 synchronize+empty_cache、用 pynvml 绑定 NUMA 亲和性、选择 vLLM worker 类。",syms:[["CudaPlatform","areal/infra/platforms/cuda.py",15]]},
+    {f:"infra/platforms/npu.py",tag:"昇腾 NPU",deep:false,role:"华为昇腾 NPU 平台：hccl 后端、ASCEND_RT_VISIBLE_DEVICES。证明 Platform 抽象的价值，换硬件只加一个子类。",syms:[["NPUPlatform","areal/infra/platforms/npu.py",14]]},
+    {f:"infra/platforms/cpu.py",tag:"CPU 实现",deep:false,role:"纯 CPU 平台：gloo 后端，多数方法为 no-op，内存查询返回 0。用于无 GPU 的测试与编排进程。",syms:[["CpuPlatform","areal/infra/platforms/cpu.py",6]]},
+    {f:"infra/platforms/unknown.py",tag:"未知硬件回退",deep:false,role:"识别不出硬件时的兜底，默认按 CUDA 行为处理以保证安全。",syms:[["UnknownPlatform","areal/infra/platforms/unknown.py",14]]},
+    {f:"utils/network.py",tag:"网络工具",deep:false,role:"IP 解析、空闲端口发现（避开 OS 临时端口段）、host:port 与 IPv6 地址解析。",syms:[["gethostip","areal/utils/network.py",12],["find_free_ports","areal/utils/network.py",114],["split_hostport","areal/utils/network.py",85]]},
+    {f:"utils/hf_utils.py",tag:"HF 集成",deep:false,role:"加载 tokenizer/processor（LRU 缓存）、应用 chat template、从 hf:// 路径下载模型或数据集。",syms:[["load_hf_tokenizer","areal/utils/hf_utils.py",51],["apply_chat_template","areal/utils/hf_utils.py",36]]},
+    {f:"utils/fs.py",tag:"文件系统",deep:false,role:"共享路径校验（检测是否在 NFS/Lustre 等网络文件系统上，否则告警）与用户临时目录。",syms:[["validate_shared_path","areal/utils/fs.py",60],["get_user_tmp","areal/utils/fs.py",53]]},
+    {f:"utils/environ.py",tag:"环境变量",deep:false,role:"解析布尔环境变量；检测 CI 模式与 SPMD（单控制器 vs 分布式）模式。",syms:[["is_in_ci","areal/utils/environ.py",29],["is_single_controller","areal/utils/environ.py",33]]},
+    {f:"utils/pkg_version.py",tag:"版本检测",deep:false,role:"包是否安装、版本比较（用于按 flash-attn / transformers 版本走不同分支）。",syms:[["is_version_greater_or_equal","areal/utils/pkg_version.py",34]]},
+    {f:"utils/errors.py",tag:"异常类型",deep:false,role:"结构化异常 EngineError 与 FrameworkError，带 error_type/sub_error/reason 字段。",syms:[["EngineError","areal/utils/errors.py",4],["FrameworkError","areal/utils/errors.py",14]]},
+    {f:"utils/wrapper.py",tag:"方法委托",deep:false,role:"标记可包装方法并把源对象的方法复制到目标对象，服务于组合优于继承的扩展方式。",syms:[["wrapable","areal/utils/wrapper.py",8],["wrap","areal/utils/wrapper.py",18]]},
+    {f:"utils/printing.py",tag:"统计表格",deep:false,role:"把 dict 统计格式化成列式表格输出。",syms:[["tabulate_stats","areal/utils/printing.py",6]]},
+    {f:"utils/image.py",tag:"图像工具",deep:false,role:"PIL 图转 base64、批量补齐到最大尺寸，供视觉 RL 用。",syms:[["image2base64","areal/utils/image.py",10]]},
+    {f:"utils/testing_utils.py",tag:"测试工具",deep:false,role:"模型/数据集路径解析、加载 Archon 模型、返回随机张量的 mock workflow。",syms:[["get_model_path","areal/utils/testing_utils.py",26],["TestWorkflow","areal/utils/testing_utils.py",173]]}
+  ];
+
+  function FileBrowser(){
+    const [sel,setSel]=useState(0);const fdata=FILES[sel];
+    return h("div",null,
+      h("div",{className:"filegrid"},FILES.map(function(x,i){
+        return h("div",{key:i,className:"filechip"+(i===sel?" active":""),onClick:function(){setSel(i);}},
+          h("div",{className:"fn"},x.f.split("/").pop()),
+          h("div",{className:"tag"},(x.deep?"◆ ":"")+x.tag));
+      })),
+      h("div",{className:"detail"},
+        h("div",{className:"card-title"},h("span",{className:fdata.deep?"pill teal":"pill"},fdata.deep?"深入":"概览"),h("code",null,fdata.f)),
+        h("p",{style:{marginTop:8}},fdata.role),
+        h("div",null,fdata.syms.map(function(s,i){return h(Src,{key:i,label:s[0]+":"+s[2],path:s[1],line:s[2]});}))
+      )
+    );
+  }
+
+  const DEEP=[
+    {key:"seed",name:"确定性种子",render:function(){
+      return [h("p",null,"RL 训练要可复现：同样的配置跑两次，数据顺序、采样、初始化都应一致，否则无法对比实验。难点是同一个 base_seed 不能让所有东西都用同一序列（数据集 shuffle 和参数初始化若同源会引入相关性）。AReaL 的做法是按字符串 key 派生种子："),
+        h(Formula,{cap:"按 key 派生种子"},"$$ \\text{seed}(k) = \\text{base\\_seed} + \\big(\\operatorname{SHA256}(k) \\bmod 2^{31}\\big) $$"),
+        h("p",null,"于是 ",h("code",null,"set_random_seed(base, key='dataset')")," 和 ",h("code",null,"key='init'")," 得到两条独立但可复现的序列。Shuffler 维护一个计数器，每个 epoch 取 ",h("code",null,"SHA256(key + counter)")," 作为新 shuffle 种子，保证每轮顺序不同却可复现。set_random_seed 会同时设 PYTHONHASHSEED、random、numpy、torch，并调用 ",h("code",null,"current_platform.manual_seed"),"（这就用到了平台抽象）。"),
+        h("div",null,h(Src,{label:"set_random_seed",path:"areal/utils/seeding.py",line:22}),h(Src,{label:"_seed_from_key",path:"areal/utils/seeding.py",line:18}))];
+    }},
+    {key:"name",name:"名字解析 rendezvous",render:function(){
+      return [h("p",null,"分布式训练里，actor、rollout、critic 进程被调度器扔到不同机器上，谁也不知道对方的 IP 和端口。rendezvous 解决“互相发现”：每个 worker 启动后把自己的地址写到一个共享的键值仓库，别人按约定的键去读或等待。"),
+        h("p",null,"抽象基类 ",h("code",null,"NameRecordRepository")," 定义 ",h("code",null,"add / get / get_subtree / wait / watch_names"),"，四种后端实现各有取舍：内存版（测试）、NFS 文件版（裸机最省事，靠临时文件 rename 处理竞态）、etcd3 版（带 TTL 租约和原生 watch）、Ray actor 版。键可重复、值唯一的多重映射语义让“一个角色多个副本”很自然（worker/actor/0、worker/actor/1 同前缀）。"),
+        h("div",{className:"note"},"为什么不用环境变量传地址？因为副本数、端口在运行时才确定，而且要支持容错重启后重新注册。把这件事抽象成可换后端的仓库，裸机用 NFS、云上用 etcd3，上层代码不变。"),
+        h("div",null,h(Src,{label:"NameRecordRepository",path:"areal/utils/name_resolve.py",line:42}),h(Src,{label:"NfsNameRecordRepository",path:"areal/utils/name_resolve.py",line:284}),h(Src,{label:"make_repository",path:"areal/utils/name_resolve.py",line:1211}))];
+    }},
+    {key:"dyn",name:"按字符串导入",render:function(){
+      return [h("p",null,"为什么需要“拿字符串实例化类”？因为引擎、workflow、reward 都是可插拔的。配置里写 ",h("code",null,"engine = 'areal.engine.fsdp_engine.FSDPEngine'"),"，调度器在远端 worker 上把这个字符串还原成类再实例化，于是换后端只改配置、不改编排代码。"),
+        h(Code,null,"def import_from_string(module_path: str):\n    # 'areal.engine.fsdp_engine.FSDPEngine'\n    module_name, _, attr = module_path.rpartition('.')\n    module = importlib.import_module(module_name)\n    return getattr(module, attr)   # 返回类 / 函数本身"),
+        h("p",null,"这一个十几行的小函数，是整个框架“后端无关”得以成立的支点之一。第 11 课讲 Scheduler.create_engine 时会回到它。"),
+        h("div",null,h(Src,{label:"import_from_string",path:"areal/utils/dynamic_import.py",line:7}))];
+    }},
+    {key:"plat",name:"设备平台抽象",render:function(){
+      return [h("p",null,"框架要同时支持 NVIDIA GPU、华为 NPU、纯 CPU。如果到处写 ",h("code",null,"torch.cuda.xxx"),"，换硬件就要全局改。Platform 抽象把设备相关的东西收成一个类：设备类型、PyTorch dispatch key、Ray 资源名、可见设备环境变量名、通信后端。"),
+        h(Code,null,"class CudaPlatform(Platform):\n    device_type = 'cuda'\n    communication_backend = 'nccl'\n    device_control_env_var = 'CUDA_VISIBLE_DEVICES'\n\nclass NPUPlatform(Platform):\n    device_type = 'npu'\n    communication_backend = 'hccl'\n    device_control_env_var = 'ASCEND_RT_VISIBLE_DEVICES'"),
+        h("p",null,"妙处在 ",h("code",null,"Platform.__getattr__")," 回退到 ",h("code",null,"torch.<device_type>")," 模块，所以 ",h("code",null,"current_platform.synchronize()")," 在 CUDA 上自动转成 ",h("code",null,"torch.cuda.synchronize()"),"，无需为每个方法写一遍包装。换硬件 = 加一个子类，这就是 seeding.py 调 current_platform.manual_seed 的底气。"),
+        h("div",null,h(Src,{label:"Platform",path:"areal/infra/platforms/platform.py",line:12}),h(Src,{label:"CudaPlatform",path:"areal/infra/platforms/cuda.py",line:15}),h(Src,{label:"NPUPlatform",path:"areal/infra/platforms/npu.py",line:14}))];
+    }},
+    {key:"log",name:"日志与频率控制",render:function(){
+      return [h("p",null,"看起来最不起眼的 logging.py 其实定了一条团队规范：logger 名用 PascalCase 描述名（",h("code",null,"getLogger('FSDPEngine')"),"），不用 ",h("code",null,"__name__")," 点路径。颜色按组件类别自动分配，WARNING 以上覆盖成黄红，于是几百个进程的混合日志里一眼能分出是哪类组件、是否出错。"),
+        h("p",null,"timeutil.py 的 FrequencyControl 解决“多久存一次 checkpoint、多久评测一次”这类节流问题，关键设计是支持 all_reduce 跨 rank 同步：取所有 rank 间隔的最大值，保证任一 rank 触发则全体一起触发，避免分布式下各 rank 各存各的导致死锁。"),
+        h("div",null,h(Src,{label:"getLogger",path:"areal/utils/logging.py",line:339}),h(Src,{label:"FrequencyControl",path:"areal/utils/timeutil.py",line:17}),h(Src,{label:"DistributedLock",path:"areal/utils/lock.py",line:10}))];
+    }}
+  ];
+  function DeepDive(){const [sel,setSel]=useState(0);const d=DEEP[sel];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},DEEP.map(function(x,i){return h("div",{key:i,className:"tab"+(i===sel?" active":""),onClick:function(){setSel(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:1}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 1 课 / 共 12 · 依赖图最底层"),
+          h("h1",null,"地基层：所有东西都站在它上面"),
+          h("p",{className:"lead"},"自底向上读 AReaL，第一站是没有 RL 语义、被其它所有层依赖的跨领域工具：日志、分布式名字解析、确定性种子、按字符串导入、设备平台抽象。读懂它们，后面的引擎和算法才不会处处卡在“这个 current_platform 是什么、worker 怎么找到彼此”。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"areal/utils/")," 里无 RL 语义的约 18 个文件 + ",h("code",null,"areal/infra/platforms/")," 5 个文件。下面先用文件浏览器过一遍全部（点任一文件看职责与源码行），再深入 6 个承重文件。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"全覆盖"),
+          h("h2",null,"地基层文件浏览器"),
+          h("p",null,"点击任一文件查看它的“出发点”和关键符号的 vscode 源码链接。标 ",h("span",{className:"hl-teal"},"◆")," 的是承重文件，下一节深入。"),
+          h(FileBrowser)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"深入"),
+          h("h2",null,"六个承重文件"),
+          h("p",null,"这些文件虽小，却是上层一切的支点。每个讲清它解决什么问题、为什么这样设计。"),
+          h(DeepDive)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"一切可换后端的东西都藏在抽象后面"),"：名字解析（NFS/etcd3/Ray）、设备（CUDA/NPU/CPU）、按字符串导入类。上层代码只依赖抽象。"),
+            h("li",null,h("strong",null,"分布式正确性从最底层就开始管"),"：FrequencyControl 的 all_reduce 同步、DistributedLock 的原子计数、种子的跨 rank 一致。"),
+            h("li",null,h("strong",null,"可复现是一等公民"),"：按 key 派生的确定性种子贯穿数据与初始化。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"areal-course-index.html"},h("div",{className:"faint"},"返回"),"课程总览"),
+            h("a",{href:"areal-lesson-02-contracts.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 2 课：数据契约与配置"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

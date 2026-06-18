@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>五框架大横评 · 面向长程 Agentic RL 的 RL 基础设施选型</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip:hover{color:var(--teal);border-color:#265450;text-decoration:none;}
+    main{max-width:1180px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:44px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:18px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:880px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .lsn{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .lsn::before{content:"\25A4";color:var(--faint);}.lsn:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .pick{border-left:3px solid var(--green);padding:8px 16px;margin:13px 0;color:#cfe8d3;background:#0f210f33;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:5px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}.pill.red{color:var(--red);border-color:#5a2c2c;background:#210e0e;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+    .fw{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:13px 14px;}
+    .fw .nm{font-weight:800;font-size:15px;}
+    .fw .og{font-size:11px;color:var(--faint);font-family:var(--mono);margin-bottom:5px;}
+    .fw .es{font-size:12.5px;color:var(--muted);}
+    .matrix-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:10px;}
+    table.matrix{border-collapse:collapse;width:100%;min-width:920px;font-size:12.5px;}
+    table.matrix th,table.matrix td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+    table.matrix thead th{background:#0e1626;color:var(--ink);position:sticky;left:0;}
+    table.matrix tbody th{background:#0e1626;color:var(--ink);font-weight:750;white-space:nowrap;}
+    table.matrix td{color:var(--muted);}
+    .y{color:var(--green);font-weight:700;}.n{color:var(--red);}.p{color:var(--amber);}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:900px){h1{font-size:32px;}.grid2,.grid5{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback</p><h1>五框架大横评</h1><p>能访问 CDN 时切换为交互版。本页对 AReaL / slime / miles / verl / Polar 做面向长程 Agentic RL（动态环境 + 异步效率）的选型对比，含决策矩阵、明确推荐与自研架构建议。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function Lsn(props){return h("a",{className:"lsn",href:props.href},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+
+  const COURSES=[["AReaL","AReaL/areal-course-index.html"],["slime","slime/slime-course-index.html"],["verl","verl/verl-course-index.html"],["Polar","POLARS/polar-course-index.html"]];
+  function TopNav(){return h("div",{className:"course-nav"},
+    h("span",{className:"home"},"五框架横评",h("span",{className:"dot"},"·"),"RL 基础设施选型"),
+    h("div",{className:"lessons"},COURSES.map(function(c){return h("a",{key:c[0],className:"lchip",href:c[1]},c[0]," 精读");})));}
+
+  // ===== 五框架一句话定位 =====
+  const FW=[
+    {nm:"AReaL",og:"清华 IIIS + 蚂蚁",es:"全异步原生：采样训练彻底解耦，逐 token 版本号 + decoupled PPO + staleness 容量阀；黑盒 agent 改 base_url 接入。",cls:"teal"},
+    {nm:"slime",og:"THUDM / Z.ai",es:"GLM-4.5→5.2 背后的训练内核：Megatron + 单一 SGLang，四档异步可组合，harness-as-env，delta 权重同步。",cls:"green"},
+    {nm:"miles",og:"InfiX+蚂蚁+SGLang",es:"slime 的生产硬化 fork：统一 FP8、INT4 QAT、R3 路由重放、true-on-policy 逐位一致；移除了 agent 子包。",cls:"purple"},
+    {nm:"verl",og:"字节 Seed",es:"HybridFlow 工业实现：单控制器 + dispatch 协议，放置最灵活、生态最大；异步与 agentic 已实现但多在 experimental。",cls:"blue"},
+    {nm:"Polar",og:"NVIDIA-NeMo",es:"trainer-agnostic 的 rollout 服务：八种 harness 零改造当动态环境，容器运行时池化，rollout-as-a-service。",cls:"amber"}
+  ];
+
+  // ===== 总览矩阵 =====
+  const COLS=["定位","异步范式","训练后端","权重同步","环境/Agent 接入","动态环境/Runtime 池化","长程 partial rollout","推理后端 / PD 分离","放置灵活度","成熟度 / 生产验证"];
+  const ROWS=[
+    ["AReaL",["RL 训练框架","全异步原生（默认 η=0，需调大）","FSDP2 / Megatron / Archon","NCCL 分桶广播 + 磁盘","改 base_url 的 OpenAI/Anthropic proxy（强）","部分：沙箱依赖外部 Daytona，非内置池","原生 interrupt-and-resume（强）","SGLang / vLLM；PD 仅 experimental","声明式 alloc DSL（+/| 解耦/共置）","论文 + SEA-235B/ASearcher；experimental 较多"]],
+    ["slime",["RL 训练内核","同步 / 异步 / fully_async / 流式（四档可组合）","Megatron-Core（原生透传）","disk/distributed/tensor/delta 四策略（delta 约 2%）","harness-as-env：引擎伪装 OpenAI/Anthropic，claude_code/codex","无 runtime 池化（E2B 按 run 创建）","流式 partial rollout（强）","仅 SGLang；PD 分离 + mooncake（强）","colocate / 解耦；Ray placement","GLM-4.5→5.2 全系列生产验证（最硬）"]],
+    ["miles",["RL 训练内核(fork)","同 slime + TIS/ICEPOP 失配修正","Megatron + 统一 FP8 / INT4 QAT","+ P2P(mooncake RDMA) 权重传输","移除 agent 子包（harness-as-env 仅在 slime 主干）","无（同 slime）","同 slime","SGLang；MilesRouter 与 PD 互斥","同 slime","R3 / true-on-policy / FP8 可 CI 回归；面向万亿 MoE"]],
+    ["verl",["RL 训练框架（生态最大）","one_step_off / fully_async / separate（experimental + v1 双轨）","FSDP/FSDP2/Megatron/veOmni/TorchTitan/MindSpeed 六后端","分桶 CUDA-IPC / checkpoint_engine(NIXL/mooncake)","agent_loop + 有状态 BaseTool（需自写环境）","无内置沙箱池（指向外部服务）","partial rollout + over-sample（在 experimental/v1）","vLLM/SGLang/TRT-LLM；SGLang PD 分离（强）","单控制器 dispatch，放置最灵活（HybridFlow 卖点）","社区/生态最大；同步主路径成熟，异步在演进"]],
+    ["Polar",["rollout 服务（不含训练）","async-only 服务 + Rollout Staging；陈旧度交给 trainer","无（trainer-agnostic）","不做同步，仅提供 pause/resume 生成门","八种 harness 零改造（最强）","会话级容器复用（docker/apptainer）= static→dynamic 省 pod","多轮原生 + prefix_merging + 超时保留部分轨迹","仅 SGLang（需打补丁）；vLLM 在路线图","Gateway Nodes 水平扩展；改拓扑即扩容","2026-05 新仓，slime_bridge 为 demo；较年轻"]]
+  ];
+
+  // ===== 7 维度深入 =====
+  const DIMS=[
+    {key:"async",name:"异步与陈旧度",render:function(){return [
+      h("p",null,"异步是“train efficiency”的核心。把生成与训练重叠，吞吐随重叠度上升，但训练数据相对当前策略越陈旧（off-policy），需重要性采样修正。各框架的异步成熟度差异很大。"),
+      h(Formula,{cap:"异步重叠的吞吐上界受单步权重同步时间制约（T_sync 越小、重叠越充分）"},"$$ \\text{throughput} \\propto \\frac{1}{\\max(T_{\\text{train}},\\,T_{\\text{gen}})+T_{\\text{sync}}},\\qquad \\text{staleness } s \\le \\eta $$"),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-teal"},"AReaL"),"：全异步是主路径而非补丁。逐 token 版本号 + decoupled PPO（π_behave/π_prox/π_θ 三策略）+ staleness 容量阀（capacity = min(staleness, concurrency)）。注意 ",h("code",null,"max_head_offpolicyness")," 默认 0，开箱近似同步，要异步必须主动调 η。"),
+        h("li",null,h("strong",{className:"hl-green"},"slime"),"：四档正交可组合（同步 / 普通异步 / fully_async 常驻在途池 / 流式部分 rollout），fully_async 把在途并发与 batch_size 解耦专治长尾；",h("strong",{className:"hl-purple"},"miles")," 在算法层补 TIS / ICEPOP 失配兜底。"),
+        h("li",null,h("strong",{className:"hl-blue"},"verl"),"：谱系最全（一步 off / 全异步 message_queue 解耦 / 物理分离），报 2.35–2.67x 加速，rollout_corr_helper 提供 TIS/IcePop。但这些主要在 ",h("code",null,"experimental/")," 与 v1 双轨，成熟度待自验。"),
+        h("li",null,h("strong",{className:"hl-amber"},"Polar"),"：本身不做训练，异步由 async-only 服务接口形态强制，陈旧度丢弃与修正交给所接 trainer（如 slime bridge 的 drain/staleness 过滤）。")),
+      h("div",{className:"note"},"判断：异步“设计成熟度”AReaL ≈ slime > verl（experimental）；异步“生产验证”slime/miles 最强；Polar 是异步“服务化”的执行侧，需配 trainer 才完整。",h(Lsn,{href:"slime/slime-lesson-08-rollout-async.html"},"slime L8 异步"),h(Lsn,{href:"verl/verl-lesson-11-async-train.html"},"verl L11 异步"),h(Lsn,{href:"AReaL/areal-lesson-11-orchestration.html"},"AReaL L11"))
+    ];}},
+    {key:"weight",name:"训练后端与权重同步",render:function(){return [
+      h("p",null,"权重同步（训练→推理）是异步吞吐的隐形瓶颈：",h("code",null,"T_sync")," 越大，重叠收益越被吃掉。"),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-green"},"slime"),"：Megatron 原生透传 + 四策略（disk / distributed / tensor / ",h("strong",null,"distributed_delta"),"）。delta 只传变化字节（实测约 2%）+ 侧流快照预取流水线，直接压缩 ",h("code",null,"T_sync"),"。",h("strong",{className:"hl-purple"},"miles")," 再加 mooncake RDMA P2P 传输与统一 FP8 / INT4 QAT。"),
+        h("li",null,h("strong",{className:"hl-blue"},"verl"),"：六训练后端（FSDP/Megatron/veOmni/TorchTitan/MindSpeed/AutoModel），权重经 ",h("code",null,"get_per_tensor_param()")," 统一成完整 HF 张量交换；colocate 走分桶 CUDA-IPC，解耦走 checkpoint_engine（NIXL / mooncake 环 P2P，弹性）。"),
+        h("li",null,h("strong",{className:"hl-teal"},"AReaL"),"：FSDP2 / Megatron / Archon 三后端；NCCL 分桶广播（攒桶控显存峰值）+ 磁盘兜底。"),
+        h("li",null,h("strong",{className:"hl-amber"},"Polar"),"：不含训练后端；权重同步是所接 trainer 的职责，Polar 只在更新窗口提供 pause/resume 生成门并 drain 在途请求。")),
+      h("div",{className:"note"},"判断：权重同步效率 slime(delta)/miles(P2P) 领先；verl 后端最多但需在组合空间里调优；Polar 不参与。",h(Lsn,{href:"slime/slime-lesson-07-weight-sync.html"},"slime L7 权重同步"),h(Lsn,{href:"verl/verl-lesson-06-engines.html"},"verl L6 引擎"))
+    ];}},
+    {key:"env",name:"环境/Agent 接入与动态化",render:function(){return [
+      h("p",null,"这是你们痛点 (a)“static→dynamic env”的核心维度，也是“env scale 谁最容易”的关键。"),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-amber"},"Polar（最强）"),"：八种真实商用 agent（claude_code/codex/gemini_cli/opencode/openhands_sdk/pi/qwen_code/shell）",h("strong",null,"零改造"),"接入：gateway 注入 ",h("code",null,"*_BASE_URL"),"=gateway、",h("code",null,"session_id")," 当 API key 重定向推理流量。接新环境只需写一个命令生成器或用 shell/import_path 逃逸口。"),
+        h("li",null,h("strong",{className:"hl-teal"},"AReaL"),"：黑盒 agent 改 ",h("code",null,"base_url")," 即接入（OpenAI/Anthropic/LangChain 零改动），三执行模式 inline/subproc/online，agent_service 微服务化。"),
+        h("li",null,h("strong",{className:"hl-green"},"slime"),"：harness-as-env（adapters 把引擎伪装成 OpenAI/Anthropic，harness/claude_code、codex 当环境），训练分布=部署分布。"),
+        h("li",null,h("strong",{className:"hl-blue"},"verl"),"：agent_loop + 有状态 BaseTool（instance-id 键控每轨迹环境）；环境需自写，不含 tau-bench。")),
+      h("div",{className:"pick"},h("strong",null,"动态环境 / 省 pod 的决定性差异：只有 Polar 内置容器运行时池化"),"。Polar 的 runtime 是“会话级长生命周期容器”，跨 INIT/RUN/POSTRUN 三阶段复用（docker / apptainer），把容器创建从“按阶段计”降到“按会话计”。slime / verl / AReaL 均无内置沙箱池：slime 按 run 起 E2B、verl 指向外部沙箱服务、AReaL 依赖 Daytona 云。这正是你们“每个环境都是 static、浪费 pod”的直接解药。"),
+      h("div",{className:"note"},h(Lsn,{href:"POLARS/polar-lesson-02-agent-harness.html"},"Polar L2 harness"),h(Lsn,{href:"POLARS/polar-lesson-05-runtime.html"},"Polar L5 runtime 池化"),h(Lsn,{href:"slime/slime-lesson-09-agent.html"},"slime L9 agent"),h(Lsn,{href:"verl/verl-lesson-10-agent-loop.html"},"verl L10 agent loop"))
+    ];}},
+    {key:"long",name:"长程支持",render:function(){return [
+      h("p",null,"长程任务的关键工程：超长轨迹在权重切换时不丢弃（partial / streaming rollout）、多轮重叠历史的正确 token 化与 loss_mask、长尾轨迹不拖慢整批。"),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-teal"},"AReaL"),"：interrupt-and-",h("strong",null,"resume"),"：一条超长轨迹可横跨多次权重更新而保留已生成 token（每段打当前版本号）。"),
+        h("li",null,h("strong",{className:"hl-green"},"slime"),"：流式 partial rollout（SSE 逐 chunk 写回），中止存前缀、下轮续跑，",h("code",null,"--mask-offpolicy-in-partial-rollout")," 屏蔽旧段；trajectory 消息树 + CLEAN/REALIGN/FORK 处理重新 token 化漂移。"),
+        h("li",null,h("strong",{className:"hl-amber"},"Polar"),"：多轮 harness 原生 + prefix_merging（把 N 次重叠请求重建成一条带正确 loss_mask 的序列，助手响应用 raw token 防 BPE 漂移）+ 超时保留部分轨迹。"),
+        h("li",null,h("strong",{className:"hl-blue"},"verl"),"：partial rollout + over-sample 早停 + v1 replay_buffer，主要在 experimental/v1。")),
+      h("div",{className:"note"},"判断：长程“正确性细节”AReaL / slime / Polar 都做得扎实（partial rollout + 漂移处理）；verl 的长程件多在演进路径。",h(Lsn,{href:"POLARS/polar-lesson-07-trajectory.html"},"Polar L7 轨迹"))
+    ];}},
+    {key:"infer",name:"推理后端与服务模式",render:function(){return [
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-blue"},"verl"),"：推理后端最多（vLLM / SGLang / TRT-LLM / HF / naive），SGLang 支持 PD 分离（prefill/decode 非对称 TP，KV 经 NIXL/mooncake），server 模式 + 弹性副本 + 粘性会话。"),
+        h("li",null,h("strong",{className:"hl-green"},"slime"),"：刻意只 SGLang（原生透传其最强能力），PD 分离 + mooncake 已用于 GLM-5.2 744B 生产。"),
+        h("li",null,h("strong",{className:"hl-teal"},"AReaL"),"：SGLang + vLLM 双后端协议抽象；PD 分离仅 experimental。"),
+        h("li",null,h("strong",{className:"hl-amber"},"Polar"),"：Rollout as a Service（async-only HTTP + Rollout Staging 四阶段隔离 worker 池 + 字典序负载均衡），但推理后端目前只 SGLang 且需打补丁，vLLM 在路线图。")),
+      h("div",{className:"note"},"判断：推理后端广度 verl 最强；单后端深度 slime 最成熟；服务化/横向扩展 Polar 最专门。",h(Lsn,{href:"verl/verl-lesson-09-async-server.html"},"verl L9 async server"),h(Lsn,{href:"slime/slime-lesson-06-sglang.html"},"slime L6 SGLang"),h(Lsn,{href:"POLARS/polar-lesson-06-rollout-server.html"},"Polar L6 rollout server"))
+    ];}},
+    {key:"place",name:"资源放置与扩展",render:function(){return [
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-blue"},"verl"),"：HybridFlow 单控制器 + dispatch/collect 协议 + 分数卡 colocation。放置即配置（两个 dict 决定 device mapping），可任意 colocate / 解耦，是“env scale 容易度”里最灵活的训练框架。"),
+        h("li",null,h("strong",{className:"hl-teal"},"AReaL"),"：声明式 ",h("code",null,"alloc_mode")," DSL（",h("code",null,"sglang[r]:d2+fsdp[a]:d4")," 用 +/| 表达解耦/共置）+ 三调度后端（Local/Ray/Slurm）。"),
+        h("li",null,h("strong",{className:"hl-green"},"slime"),"：colocate（offload/onload 时分复用）或解耦（异步必须），Ray placement_group 按拓扑排序走 NVLink。"),
+        h("li",null,h("strong",{className:"hl-amber"},"Polar"),"：执行侧横向扩展：加机器只需往 ",h("code",null,"gateway.nodes")," 多注册节点，NodeScheduler 按归一化压力自动纳入，异构节点可比。")),
+      h("div",{className:"note"},"判断：训练侧放置灵活度 verl 第一；执行/环境侧横向扩展 Polar 最简单（改拓扑即扩容）。")
+    ];}},
+    {key:"mature",name:"工程成熟度与生态",render:function(){return [
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-green"},"slime / miles"),"：唯一被 GLM-4.5→5.2 全系列前沿模型后训练验证（train efficiency 的最硬证据）；miles 把 R3 / true-on-policy / FP8 / INT4 做成可 CI 回归组件，面向万亿 MoE。"),
+        h("li",null,h("strong",{className:"hl-blue"},"verl"),"：开源 RL 框架中生态最大（30+ 贡献机构、约 80 个下游项目、52 个 CI workflow、109 页文档）；同步主路径最稳。"),
+        h("li",null,h("strong",{className:"hl-teal"},"AReaL"),"：论文 + 多个 SOTA agent（ASearcher、SEA-235B）；文档/CI 完整；关键“极致解耦”件多在 experimental。"),
+        h("li",null,h("strong",{className:"hl-amber"},"Polar"),"：NVIDIA-NeMo 出品但仓库年轻（2026-05、约 33 PR），slime_bridge 为 demo，trainer/推理后端生态仍在扩充。")),
+      h("div",{className:"note"},"判断：生产验证 slime/miles 最硬；生态广度 verl 最大；Polar 专精但年轻。")
+    ];}}
+  ];
+
+  function DimExplorer(){const [s,setS]=useState(0);const d=DIMS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},DIMS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 决策矩阵 =====
+  const DECIDE=[
+    ["你最看重的条件","首选","理由"],
+    ["最快拿到稳定的前沿级 train efficiency，可接受单一 SGLang 后端","slime（MoE/低精度上 miles）","唯一 GLM 全系列生产验证；delta 权重同步 + 四档异步直击吞吐"],
+    ["环境多样、要零改造接商用 agent、动态环境、省 pod","Polar（配 slime trainer）","八种 harness 零改造 + 容器运行时池化，唯一内置 runtime pool"],
+    ["要多推理后端、最大生态、最灵活 device mapping，愿自担异步成熟度","verl","HybridFlow 放置最灵活、生态最大；但异步/agentic 在 experimental"],
+    ["全异步设计最干净、黑盒 agent 改 base_url、长程 resume、要学术对照","AReaL","异步是主路径，staleness 机制最完备，partial rollout resume 原生"],
+    ["超大 MoE + FP8/INT4 低精度 + train-infer 逐位一致","miles","统一 FP8、INT4 QAT、R3、true-on-policy（注意它砍了 agent 子包）"]
+  ];
+
+  // ===== Async RL 深度剖析 =====
+  function AsyncDeep(){const ref=useTypeset("asyncdeep");
+    return h("div",{ref:ref},
+      h("h3",null,"1. 同步 RL 的三个效率损失（为什么需要异步）"),
+      h("p",null,"RL 后训练每步有两相：生成（rollout，受显存带宽与延迟限制，常吃不满算力）与训练（梯度更新，算力瓶颈）。同步 RL 让两相串行，带来三处损失："),
+      h("ul",null,
+        h("li",null,h("strong",null,"硬件画像错配"),"：生成与训练的硬件诉求相反，串行执行让一相空转另一相的理想硬件。"),
+        h("li",null,h("strong",{className:"hl-red"},"长尾阻塞（长程任务的致命点）"),"：一个 batch 内轨迹长度方差巨大（有的几秒，有的几分钟、多轮加工具），同步要等齐整批，整步被最慢轨迹拖死；horizon 越长越严重。"),
+        h("li",null,h("strong",null,"GPU 闲置"),"：共置同步下，推理卡在训练时闲、训练卡在生成时闲，offload/onload 又有开销。")),
+      h(Formula,{cap:"同步单步 vs 异步重叠（异步把吞吐从“和”降到“最大值”）"},"$$ T_{\\text{sync-step}} \\approx T_{\\text{gen}} + T_{\\text{train}} + T_{\\text{wsync}}, \\qquad T_{\\text{async-step}} \\approx \\max(T_{\\text{gen}},\\, T_{\\text{train}}) + \\epsilon\\,T_{\\text{wsync}} $$"),
+      h("h3",null,"2. 异步的代价：off-policy 陈旧度"),
+      h("p",null,"解耦生成与训练后，训练消费的数据由旧版本策略 ",h("code",null,"θ_gen")," 生成，与当前 ",h("code",null,"θ_train")," 不一致，破坏了 PPO/GRPO 的 on-policy 假设。必须限制并修正陈旧度。"),
+      h(Formula,{cap:"陈旧度上限 + 重要性采样比 + 截断（TIS）"},"$$ s = v_{\\text{train}} - v_{\\text{gen}} \\le \\eta, \\qquad \\rho = \\frac{\\pi_{\\theta}}{\\pi_{\\text{behave}}}, \\qquad \\rho_{\\text{TIS}} = \\min(\\rho,\\ c) $$"),
+      h("ul",null,
+        h("li",null,h("strong",null,"陈旧度上限 η"),"：生成最多落后训练几个版本。η 越大重叠越充分、吞吐越高，但越 off-policy，需要越强的修正。"),
+        h("li",null,h("strong",null,"重要性采样修正"),"：TIS（截断重要性采样，对比值 clamp 上界）、ICEPOP（区间外置零）；decoupled PPO 用 proximal 策略 ",h("code",null,"π_prox")," 作裁剪中心，与 behavior ",h("code",null,"π_behave")," 分离，修正更准。"),
+        h("li",null,h("strong",null,"逐 token 版本号"),"：一条长轨迹可横跨多次权重更新，每个 token 标注生成时的版本号，修正才精确。")),
+      h("h3",null,"3. 长程 Agentic RL 的额外难点与解法"),
+      h("ul",null,
+        h("li",null,h("strong",null,"长尾")," → ",h("strong",{className:"hl-green"},"在途池与 batch_size 解耦"),"：维持固定大小的并发在途轨迹池（slime fully_async 的 ",h("code",null,"max_concurrent_tasks"),"），慢轨迹不阻塞快轨迹，被中止的组回收重跑。"),
+        h("li",null,h("strong",null,"超长生成跨权重更新")," → ",h("strong",{className:"hl-green"},"partial / streaming rollout"),"：interrupt-and-resume（AReaL 保留已生成 token、更新后续跑）或流式分段存（slime 存前缀、下轮屏蔽旧段）。不丢弃即省算力。"),
+        h("li",null,h("strong",null,"权重同步吃掉重叠收益")," → ",h("strong",{className:"hl-green"},"压低 T_wsync"),"：delta 增量同步（slime 约 2% 字节）、P2P RDMA（miles mooncake）、分桶控显存峰值、pause-drain-resume 生成门（避免半新半旧轨迹）。"),
+        h("li",null,h("strong",null,"环境准备与评估也是长尾")," → ",h("strong",{className:"hl-green"},"Rollout Staging + Runtime 池化"),"：Polar 把“准备 runtime / 跑 agent / 评估”拆成可重叠的阶段并复用容器，是 env 侧的异步流水。")),
+      h("h3",null,"4. 推荐组合如何端到端解决 Async RL"),
+      h("div",{className:"pick"},"把上面每一项映射到推荐组合的具体承担者，异步问题被逐项消化在系统层，而非靠加大 batch 硬扛："),
+      h("ul",null,
+        h("li",null,h("strong",null,"解耦放置"),"：训练卡与推理卡物理分离（异步必需，slime 异步即断言禁共置）。"),
+        h("li",null,h("strong",null,"生成侧吸收 env 长尾 + 省 pod"),"：Polar rollout-as-a-service 的 Staging 四阶段隔离 + runtime 池化，持续供轨迹。"),
+        h("li",null,h("strong",null,"训练侧吸收生成长尾 + 长轨迹不丢"),"：slime fully_async 在途池消费 + 流式 partial rollout。"),
+        h("li",null,h("strong",null,"陈旧度修正"),"：miles 的 TIS / ICEPOP + 逐 token 版本号（借 AReaL 思路）。"),
+        h("li",null,h("strong",null,"压低 T_wsync"),"：slime distributed_delta + miles mooncake P2P。")),
+      h("p",null,"端到端效果：吞吐由 ",h("code",null,"max(T_gen, T_train)")," 主导，长尾与陈旧度都在系统层被消化。")
+    );
+  }
+
+  // ===== 各框架的问题 =====
+  const PROB=[
+    {key:"verl",name:"verl 的问题",render:function(){return [
+      h("p",null,"verl 的同步 PPO/GRPO 主路径成熟、生态最大，但作为“追求稳定异步效率”的主内核有以下问题："),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-red"},"异步在 experimental 与 v1 双轨、未统一"),"：one_step_off / fully_async / separation 都在 ",h("code",null,"verl/experimental/"),"，另有平行的 ",h("code",null,"trainer/ppo/v1/")," 三套 trainer。官方说明“稳定后合并入主库”，即目前尚未稳定收敛。"),
+        h("li",null,h("strong",{className:"hl-red"},"最深异步用的是更粗的修正"),"：",h("code",null,"separate_async")," 当前强制 bypass 模式，Decoupled PPO（AReaL 式精确修正）仍是 TODO。即物理分离这一最有价值的异步形态，目前牺牲了修正质量。"),
+        h("li",null,h("strong",{className:"hl-red"},"组合复杂度高、易错配"),"：6 训练后端 × 5 推理后端 × 多 checkpoint 传输 × 多异步模式，旋钮（资源池/桶大小/陈旧度阈值）极多；异步正确性依赖同时调对很多项。"),
+        h("li",null,h("strong",{className:"hl-red"},"异步路径无前沿规模生产验证"),"：报告的 2.35–2.67x 是 benchmark，而非 GLM-5.2 级别的真实模型发布验证。"),
+        h("li",null,h("strong",{className:"hl-red"},"版本漂移"),"：你们生产用 0.8，异步机制在 0.8 到 0.9.0.dev 间快速变动，文档与实际易脱节。")),
+      h("div",{className:"note"},"结论：verl 适合“最大生态 + 最灵活放置 + 同步主路径”，但把它的异步当成稳定生产基座，风险高于 slime。其放置灵活度与 agent_loop/BaseTool 工具抽象值得借鉴。",h(Lsn,{href:"verl/verl-lesson-11-async-train.html"},"verl L11 异步"))
+    ];}},
+    {key:"areal",name:"AReaL 的问题",render:function(){return [
+      h("p",null,"AReaL 的异步设计最干净、理论最完备（论文级），但工程实现有以下问题："),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-red"},"默认近似同步，异步要主动调且有崩溃悬崖"),"：",h("code",null,"max_head_offpolicyness")," 默认 0，开箱近 on-policy；要享异步吞吐必须显式调大 η，调大又需理解 decoupled PPO 的修正项，否则数值易发散。异步收益不是开箱即得。"),
+        h("li",null,h("strong",{className:"hl-red"},"最贴需求的能力多在 experimental"),"：PD 分离仅在 experimental inference_service；agent_service、inference_service、Archon 引擎、online proxy 均标 experimental。即“动态环境 + 极致异步解耦”这块最不稳。"),
+        h("li",null,h("strong",{className:"hl-red"},"沙箱/runtime 池外包 Daytona"),"：无内置高吞吐沙箱池，池化与扩缩依赖 Daytona 云 SDK，env scale 上是真实短板。"),
+        h("li",null,h("strong",{className:"hl-red"},"复杂度高、生态较小"),"：402 文件，single-controller RPC + RTensor + 五维并行 + Megatron 权重转换，学习曲线陡，社区与下游生态小于 verl。"),
+        h("li",null,h("strong",{className:"hl-red"},"生产验证广度不及 slime"),"：有 ASearcher / SEA-235B 等 SOTA agent，但缺少 GLM-4.5 到 5.2 全系列前沿模型的连续验证。")),
+      h("div",{className:"note"},"结论：AReaL 是异步范式的最佳概念参考，其 interrupt-and-resume partial rollout、staleness 容量阀、decoupled PPO、改 base_url 的黑盒 agent 接入都值得借鉴，但作为生产主内核，开箱体验与稳定性不及 slime。",h(Lsn,{href:"AReaL/areal-lesson-11-orchestration.html"},"AReaL L11"))
+    ];}},
+    {key:"slime",name:"slime 的局限（不回避）",render:function(){return [
+      h("p",null,"选 slime 也要清楚它的边界，多数可被组合或工程接受："),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-amber"},"单一 SGLang 后端"),"：无推理后端冗余（这是原生透传哲学的代价；好处是能直接用 SGLang 最强能力，如 PD 分离加 mooncake）。"),
+        h("li",null,h("strong",{className:"hl-amber"},"异步强制解耦放置、fully_async 不支持 eval"),"：拼装流水线时需提前规划资源与评测路径。"),
+        h("li",null,h("strong",{className:"hl-amber"},"无 runtime 池化"),"：沙箱按 run 起 E2B，大规模靠海量独立沙箱加重试硬扛，这正是由 Polar 的容器运行时池化补齐。"),
+        h("li",null,h("strong",{className:"hl-amber"},"miles 砍了 agent 子包"),"：harness-as-env 只在 slime 主干；若用 miles 内核，环境层正好交给 Polar。")),
+      h("div",{className:"note"},"结论：slime 的主要局限恰好落在 env 侧，而推荐组合用 Polar 补齐 env 侧，使训练侧（slime 强）与环境侧（Polar 强）各司其职。",h(Lsn,{href:"slime/slime-lesson-08-rollout-async.html"},"slime L8 异步"))
+    ];}},
+    {key:"polar",name:"Polar 的问题",render:function(){return [
+      h("p",null,"Polar 作为环境/rollout 服务层很贴需求，但要清楚其边界："),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-red"},"不含训练"),"：必须自配 trainer；陈旧度丢弃与重要性采样修正在 trainer 侧。"),
+        h("li",null,h("strong",{className:"hl-red"},"年轻"),"：2026-05 新仓、约 33 PR，slime_bridge 为 demo 级。"),
+        h("li",null,h("strong",{className:"hl-red"},"推理后端只 SGLang 且需打补丁"),"：vLLM 在路线图未就绪。")),
+      h("div",{className:"note"},"结论：Polar 的不足主要是成熟度而非方向；方向（harness-as-env + runtime 池化 + rollout-as-a-service）正是稀缺能力。可作为自研环境层的起点，按需补 vLLM 与硬化 bridge。",h(Lsn,{href:"POLARS/polar-lesson-05-runtime.html"},"Polar L5 runtime"))
+    ];}}
+  ];
+  function ProbExplorer(){const [s,setS]=useState(0);const d=PROB[s];const ref=useTypeset("prob"+d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},PROB.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== tau2 专项 =====
+  const VS="vscode://file/Users/xinyu/Code/Agentic-RL/slime/";
+  function TauTwo(){const ref=useTypeset("tau2");
+    return h("div",{ref:ref},
+      h("p",null,"先确认你的判断：tau2 的环境就应该是 ",h("strong",{className:"hl-green"},"dynamic（动态）+ noisy（含噪）"),"，这不仅正确，对 GRPO 类算法是必需的。"),
+      h("h3",null,"tau2 一次 rollout 到底是什么"),
+      h("p",null,"训练中的策略与一个 ",h("strong",null,"LLM 用户模拟器")," 多轮对话，调用零售/航司域工具，操作有状态后端 DB，最后用规则校验最终 DB 状态与必需输出给 reward。slime 现成例子里：环境每局现起（",h("code",null,"get_env(task_index=...)"),"），用户模拟器是一个便宜的外部 LLM（",h("code",null,"user_strategy=llm"),"、",h("code",null,"user_model=gemini-2.5-flash-lite"),"），被训练的策略由 slime 的 SGLang 服务。两个模型在一条 rollout 里：被训策略 + 用户模拟器。"),
+      h("div",null,
+        h("a",{className:"lsn",href:VS+"examples/tau-bench/generate_with_tau.py:100"},"slime generate_with_tau.py:100"),
+        h("a",{className:"lsn",href:VS+"examples/tau-bench/trainable_agents.py"},"trainable_agents.py"),
+        h(Lsn,{href:"slime/slime-lesson-09-agent.html"},"slime L9 Agent 层")),
+      h("h3",null,"dynamic 与 noisy 的两个来源"),
+      h("ul",null,
+        h("li",null,h("strong",null,"dynamic"),"：每个 episode 现起带状态的环境实例，按 split 采样不同场景、每局重置 DB。对应把你们的固定场景集换成按局采样。"),
+        h("li",null,h("strong",null,"noisy"),"：用户模拟器是 LLM、带采样温度，每次 rollout 用户措辞与行为都不同；工具与 DB 也可引入非确定性。")),
+      h("h3",null,"为什么 noisy 是必需而非可选（GRPO 视角）"),
+      h("p",null,"GRPO 在同一个 task 的一组 rollout 内算优势，分母是组内 reward 的标准差。若环境 static 且确定（同一用户脚本、同一结果），同组 G 条 rollout 的 reward 近乎相同，标准差趋于 0，优势退化为 0，没有梯度。"),
+      h(Formula,{cap:"GRPO 组内优势：static 且确定 → std 趋 0 → 优势趋 0 → 无梯度"},"$$ A_i = \\frac{r_i - \\mathrm{mean}(r_{1..G})}{\\mathrm{std}(r_{1..G}) + \\epsilon}, \\qquad \\text{static} \\Rightarrow \\mathrm{std}\\to 0 \\Rightarrow A_i \\to 0 $$"),
+      h("p",null,"slime 的动态采样过滤器 ",h("code",null,"check_reward_nonzero_std")," 正是据此把零方差的组直接丢弃（",h("code",null,"std > 1e-6")," 才保留，reason 记为 ",h("code",null,"zero_std"),"）。所以你们当前 static、缺噪声的版本，在很多 task 上根本产生不了学习信号。noisy 用户模拟器把同一 task 的结果摊成有方差的分布才有梯度；dynamic 场景采样提供覆盖与泛化。"),
+      h("div",null,
+        h("a",{className:"lsn",href:VS+"slime/rollout/filter_hub/dynamic_sampling_filters.py:9"},"check_reward_nonzero_std"),
+        h(Lsn,{href:"slime/slime-lesson-04-data-buffer.html"},"slime L4 数据与 Buffer"),
+        h(Lsn,{href:"slime/slime-lesson-03-rl-math.html"},"slime L3 RL 数学")),
+      h("div",{className:"note"},h("strong",null,"代价与配套："),"噪声抬高 reward 方差，需要更大的组 G、优势白化（masked whiten）、动态采样过滤丢退化组，以及异步吞吐来负担更多 rollout；含噪的长对话又拉长尾，正好用 fully_async 在途池吸收。见 ",h("a",{href:"slime-async-internals.html"},"slime 异步内核（代码级）"),"。"),
+      h("h3",null,"各框架对 tau2 的具体契合（结论在此微调）"),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-green"},"slime"),"：有现成 ",h("code",null,"examples/tau-bench"),"（",h("code",null,"generate_with_tau")," + ",h("code",null,"trainable_agents")," + openai_tool_adapter + sglang_tool_parser），用真实 ",h("code",null,"tau_bench")," 包、retail/airline、LLM 用户模拟器，经 ",h("code",null,"--custom-generate-function-path")," 接入，配 fully_async 池与动态过滤。对 tau2 最 turnkey。注意该例显式不支持 partial rollout（多轮外部 API 交互难以中途切分），故 tau2 的异步走 fully_async 在途池而非流式 partial rollout。"),
+        h("li",null,h("strong",{className:"hl-teal"},"AReaL"),"：有 ",h("code",null,"examples/tau2")," 与 experimental inference_service 的 tau2_rollout；黑盒 agent 改 base_url 接入；异步强但默认近同步、相关件部分在 experimental。"),
+        h("li",null,h("strong",{className:"hl-blue"},"verl"),"：仓内无 tau，你们现在是 DIY。tau2 的 static 多半是你们的实现选择（固定任务集 + 确定用户 + 一 env 一 pod），不是 verl 硬限制；你们也能在 verl 上做 dynamic 加 noisy，但 slime 的异步更成熟，且有现成 tau 例与更硬的 train-efficiency 证据。"),
+        h("li",null,h("strong",{className:"hl-amber"},"Polar"),"：关键澄清，tau2 不是 coding harness（claude_code/codex），Polar 的零改造商用 harness 头牌优势对 tau2 不直接适用；tau2 环境是轻量 Python（mock DB 加外部用户模拟器），Polar 的容器 runtime 池化对重容器环境（SWE/代码执行/computer-use）才是决定性收益，对轻量 tau2 收益较小。")),
+      h("div",{className:"pick"},h("strong",null,"tau2 专项结论"),
+        h("ul",null,
+          h("li",null,"只做 tau2：",h("strong",null,"slime 单选最优"),"（现成例 + fully_async + 动态过滤 + 证据最硬）。dynamic 靠每局任务采样、noisy 靠 LLM 用户模拟器采样；Polar 对纯 tau2 非必需。"),
+          h("li",null,"环境组合还含 SWE/代码执行/computer-use 等重容器任务：",h("strong",null,"slime + Polar 组合仍最优"),"，Polar 的 runtime 池化在重环境上回本。"),
+          h("li",null,"先别纠结迁不迁：在 slime 的 tau-bench 例上打开 dynamic 加 noisy（任务采样 + 用户模拟器温度 + 动态过滤），与现有 verl 0.8 static 版做 A/B，量测非零方差组占比、吞吐、pod 利用率，用数据定夺。")))
+    );
+  }
+
+  // ===== slime 数据自由度 / AnyGym / DTA / Async 大 PPO =====
+  const AR="vscode://file/Users/xinyu/Code/Agentic-RL/AReaL/";
+  const EXTRAS=[
+    {key:"firstclass",name:"自定义 rollout = 一等数据入口",render:function(){return [
+      h("p",null,"是的，你说的就是这个。slime 把它称为 ",h("strong",{className:"hl-green"},"最大化数据生成自由度"),"：数学、代码、检索、工具、沙箱、verifier、环境、多智能体、长程 agentic 工作流都作为数据生成或奖励工作流接入，",h("strong",null,"不 fork 训练内核"),"。"),
+      h("p",null,"机制只有一条契约：返回 ",h("code",null,"list[Sample]"),"。四个挂载点全部用 ",h("code",null,"load_function")," 按字符串路径动态导入："),
+      h("ul",null,
+        h("li",null,h("code",null,"--rollout-function-path"),"：整条 rollout（如 fully_async 池）。"),
+        h("li",null,h("code",null,"--custom-generate-function-path"),"：每个样本怎么生成（tau2 例就是 ",h("code",null,"generate_with_tau.generate"),"）。"),
+        h("li",null,h("code",null,"--custom-rm-path"),"：奖励 / verifier。"),
+        h("li",null,h("code",null,"--dynamic-sampling-filter-path"),"：组级过滤（如丢零方差组）。")),
+      h("p",null,"训练内核（Megatron 五维并行 + GRPO/PPO 损失 + delta 权重同步）与 rollout 怎么生成完全解耦：换任务只换这几个函数，内核零改动。这就是“一等数据入口”的含义,数据生成是可热插拔的一等公民，而非要为每个环境 fork 一次 trainer。"),
+      h("div",{className:"note"},"对比 verl：verl 的 agent_loop + 有状态 BaseTool 也可插，但更结构化（在 agent_loop 抽象内实现、注册工具、数据走 DataProto + dispatch 协议）。slime 是“写一个返回 Sample 的 async 函数”，仪式更轻、耦合更低,对“很多异构 gym”是优势；verl 更标准化是另一种取舍。",h(Lsn,{href:"slime/slime-lesson-08-rollout-async.html"},"slime L8"),h(Lsn,{href:"slime/slime-lesson-04-data-buffer.html"},"slime L4"))
+    ];}},
+    {key:"anygym",name:"AnyGym / 合成 gym 适配",render:function(){return [
+      h("p",null,"结合你的 ",h("a",{href:"AutoGym-Survey-v1.8-zh.html"},"AutoGym 设计稿"),"：你把 RL 栈切成 L0-L3（找 case、做大、沙箱）采用既有、L4-L5 信任层 + L0.5 定向生成自建；Core IR(L2) 是 binding 无关的 ",h("code",null,"reset / step / grade")," 合同（bindings 含 OpenAI Responses / MCP / function-calling / bash）；NeMo Gym 作为 L1 实现，置于 Core IR adapter 之后。你自己也写明：rollout/训练规模是“已知工程、是配置不是研究”。"),
+      h("p",null,"于是问题变成：Core IR 背后挂哪个 trainer 最好?",h("strong",{className:"hl-green"}," slime 比“需要按 gym fork 内核”的框架更适合做 Core IR 背后的训练后端"),"：因为自定义 rollout 是一等入口，你只需写一个 ",h("code",null,"Core IR → Sample")," 的适配生成函数（直接说 reset/step/grade，或用 slime 的 OpenAI/Anthropic adapter 走 Responses binding），之后 ",h("strong",null,"所有"),"遵从 Core IR 的合成 gym 自动可训、内核零改动。这正是“各种各样的合成 gym”世界需要的属性。"),
+      h("p",null,"它与 NeMo Gym 不冲突而是互补：NeMo Gym 是 env 组合 / 服务层（L1，catalog + 在 Ray 上收集 rollout），slime 是其背后的训练内核。团队用 NeMo Gym 走 scale-law 便利没问题；slime 是比“每个 gym fork 一次”更好的训练后端。dual-control 的 τ²-bench（配对 UserGym，用户模拟器也 reset/step 共享世界）也落在同一 reset/step/grade 合同上,slime 的双模型 rollout（策略 + 用户模拟器）已验证可承载。"),
+      h("div",{className:"pick"},"更深一层：AutoGym 的“定向生成 + verifier 信任闸”产出的是一个 ",h("strong",null,"不断变化、需按 reward 可信度过滤")," 的 env 分布。slime 的 ",h("code",null,"--custom-rm-path"),"（verifier 即奖励）+ ",h("code",null,"check_reward_nonzero_std"),"（丢零信号组）+ 异步效率，恰好匹配这种“持续生成 + 持续过滤”的回路,验证信号在数据侧引导训练，训练内核不动。")
+    ];}},
+    {key:"dta",name:"Dynamic Tree Attention",render:function(){return [
+      h("p",null,"AReaL 有完整的 DTA：把一组 rollout 的公共前缀建成前缀树，让共享前缀只算一次；用 DFS 遍历，任一时刻只物化一条 root-to-leaf 路径（显存友好），forward 与 backward 都遍历该树。"),
+      h("p",null,h("strong",null,"为什么对 tau2 特别有效"),"：GRPO 每个 prompt 采 G 条（tau2 例 ",h("code",null,"n_samples_per_prompt=8"),"），它们共享很长的公共前缀（system + tau wiki + 工具定义 + 早期轮次）；多轮轨迹还会分支。朴素训练把共享前缀重算 G 次，DTA 只算一次,长前缀 × 多样本 × 多轮，节省巨大。这是 AReaL 在 tau2 上效率好的一个具体原因，也是当前 slime 尚不具备的 tau2 效率优势。"),
+      h("div",null,h("a",{className:"lsn",href:AR+"areal/models/tree_attn/module.py"},"AReaL tree_attn/module.py"),h("a",{className:"lsn",href:AR+"areal/models/tree_attn/triton_kernel.py"},"triton_kernel.py"),h("a",{className:"lsn",href:AR+"docs/en/reference/tree_training.md"},"tree_training.md")),
+      h("p",null,h("strong",{className:"hl-green"},"slime/miles 有潜力吗?有，且前提已具备"),"："),
+      h("ul",null,
+        h("li",null,h("strong",null,"数据侧已就绪"),"：slime 的 ",h("code",null,"agent/trajectory.py")," 已把一次 session 构造成 ",h("strong",null,"消息树"),"（分支 CLEAN/REALIGN/FORK、按叶线性化）,前缀树结构在数据层已经存在。"),
+        h("li",null,h("strong",null,"kernel 侧有口子"),"：miles 已有可替换的自定义 attention 插件（",h("code",null,"flash_dot_product_attention")," / ",h("code",null,"learnable_softmax_attention")," / ",h("code",null,"qwen_gdn_backend")," 等）。"),
+        h("li",null,h("strong",null,"缺的是 compute 侧实现"),"：把 DTA 的树注意力 triton kernel 落到 Megatron attention 路径，并与序列装箱 / CP 协同。这是一个明确、可移植的增量（可参考 AReaL 的多后端实现 module_megatron / module_fsdp）。")),
+      h("h4",null,"移植到 slime/miles 的具体方案（5 步）"),
+      h("ol",null,
+        h("li",null,h("strong",null,"数据侧建前缀树"),"：复用 slime ",h("code",null,"agent/trajectory.py")," 的消息树，并在一个 GRPO 组（G 条共享 prompt 前缀）上额外建跨样本前缀树，产出 kernel 需要的树元数据（父指针、段边界）。参考 AReaL ",h("code",null,"tree_attn/tree.py"),"。slime 这一侧已基本具备。"),
+        h("li",null,h("strong",null,"移植 triton 树注意力 kernel"),"：把 AReaL ",h("code",null,"tree_attn/triton_kernel.py")," 落为 miles 的一个 attention backend（miles 已有 attention 插件机制）。每个节点只对其祖先（树上因果）做注意力；DFS 执行任一时刻只物化一条 root-to-leaf 路径，forward 与 backward 都走树。"),
+        h("li",null,h("strong",null,"接入 Megatron attention 路径"),"：仿 AReaL ",h("code",null,"module_megatron.py"),"，把树元数据随 packed 批（与 ",h("code",null,"cu_seqlens")," / ",h("code",null,"PackedSeqParams")," 并列）传入，attention 层在 tree 模式下调树 kernel 而非 flash-attn。"),
+        h("li",null,h("strong",null,"与 CP 协同（最难一步）"),"：slime ",h("code",null,"cp_utils")," 的 packed-CP 切分要改成 tree-aware，参考 AReaL ",h("code",null,"module_fsdp")," / ",h("code",null,"module_megatron")," 对 CP 的处理。"),
+        h("li",null,h("strong",null,"logprob/loss 重组"),"：",h("code",null,"loss.py")," 把树节点输出按叶（每条 root-to-leaf 路径）映射回 per-sample logprob，与现有装箱重组保持一致。")),
+      h("p",null,"可移植核心是 triton kernel；集成工作量在 Megatron-attention 接入与 CP 协同。落点选 ",h("strong",{className:"hl-purple"},"miles"),"（性能硬化 fork、已有 kernel 插件机制）。"),
+      h("div",{className:"note"},"结论：slime/miles 缺的是 tree-attention 的 compute 侧实现，不是 data 侧结构；miles 是更自然的落点。这条若补上，slime/miles 在 tau2 这类长共享前缀 + 多样本场景的训练效率会再上一档。",h("a",{className:"lsn",href:VS+"slime/agent/trajectory.py"},"slime trajectory.py（消息树）"),h("a",{className:"lsn",href:AR+"areal/models/tree_attn/module_megatron.py"},"AReaL module_megatron.py"),h(Lsn,{href:"slime/slime-lesson-09-agent.html"},"slime L9"))
+    ];}},
+    {key:"asyncppo",name:"Async 大规模 PPO：slime/miles vs verl",render:function(){return [
+      h("p",null,"对 ",h("strong",{className:"hl-green"},"异步大规模 PPO/GRPO"),"（大模型 / MoE / 多卡 + 异步），slime/miles 比 verl 更好，五条理由："),
+      h("ol",null,
+        h("li",null,h("strong",null,"唯一前沿规模生产验证"),"：GLM-4.5→5.2（miles 面向万亿 MoE）。verl 的异步无同级别前沿验证（2.35-2.67x 是 benchmark，非真实发布）。"),
+        h("li",null,h("strong",null,"直接打 T_sync 这个真瓶颈"),"：大规模异步里权重同步是吞吐天花板。slime delta 只传约 2% 字节 + miles mooncake RDMA P2P，模型越大收益越大；verl 走分桶 CUDA-IPC / checkpoint_engine，无“只传变化字节”的 delta。"),
+        h("li",null,h("strong",null,"大 MoE 异步会崩的点 miles 都补了"),"：统一 FP8（训推同一量化）、INT4 QAT、R3 路由重放（解 MoE 路由失配）、true-on-policy 逐位一致（让重要性比退化为 1）。verl 无 R3 / true-on-policy。"),
+        h("li",null,h("strong",null,"异步是主支持路径"),"：slime 异步有生产 CI；verl 异步在 experimental + v1 双轨，",h("code",null,"separate_async")," 还强制 bypass 修正（无 Decoupled PPO）。"),
+        h("li",null,h("strong",null,"单后端深度"),"：单一 SGLang 让 slime 直接吃 SGLang 最强的大规模特性（PD 分离 + mooncake）；verl 多后端抽象难以每后端做到同样深。")),
+      h("div",{className:"warn"},"公允地说：verl 的放置最灵活（HybridFlow）、生态最大、多推理后端,这些在“通用 RL / 同步主路径”成立。但专指 ",h("strong",null,"异步大规模 PPO 的稳定性与吞吐"),"，slime/miles 凭生产证据 + 专用机制（delta / mooncake / FP8 / R3 / true-on-policy）更优。",h(Lsn,{href:"slime/slime-lesson-11-miles-delta.html"},"miles 增量"),h(Lsn,{href:"slime/slime-lesson-07-weight-sync.html"},"slime L7"))
+    ];}}
+  ];
+  function ExtrasExplorer(){const [s,setS]=useState(0);const d=EXTRAS[s];const ref=useTypeset("ex"+d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},EXTRAS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== Async PPO with critic（长程） =====
+  function PpoCritic(){const ref=useTypeset("ppocritic");
+    return h("div",{ref:ref},
+      h("p",null,"GLM-5.2 开始强调长程里 ",h("strong",{className:"hl-green"},"PPO with critic")," 的作用，这对选型很关键，因为它改变了长程 RL 的成本结构与信用分配方式。"),
+      h("h3",null,"为什么长程要 critic"),
+      h("ul",null,
+        h("li",null,h("strong",null,"信用分配"),"：GRPO 用同一 prompt 一组 rollout 的组内基线，优势是 trajectory 级的；长程（tau2 多轮、几百 token、末端稀疏奖励）下把一个末端 reward 摊到整条轨迹，per-step 信用很差。critic 的价值函数支持 GAE，用 TD bootstrap 给 per-token 优势，把信用沿长轨迹反传到早期决定性动作。"),
+        h("li",null,h("strong",{className:"hl-amber"},"省 G 倍 rollout（长程的现实动机）"),"：GRPO 需要每 prompt G 条 rollout 才能形成基线，即 G 倍已经很贵的长 rollout；PPO-critic 用 critic 当基线，每 prompt 可少到 1 条，长程下直接省 G 倍生成成本。"),
+        h("li",null,h("strong",null,"方差"),"：critic 的 per-token 基线比 GRPO 的组级基线更能压低长轨迹回报的方差。")),
+      h(Formula,{cap:"GAE（需要 critic V）：per-token 优势，沿长轨迹 TD bootstrap"},"$$ A_t^{\\mathrm{GAE}} = \\sum_{l\\ge 0}(\\gamma\\lambda)^l\\,\\delta_{t+l},\\quad \\delta_t = r_t + \\gamma V(s_{t+1}) - V(s_t) $$"),
+      h(Formula,{cap:"GRPO（无 critic）：组内基线，无 bootstrap，信用是 trajectory 级"},"$$ A_i = \\frac{r_i - \\mathrm{mean}(r_{1..G})}{\\mathrm{std}(r_{1..G})+\\epsilon} $$"),
+      h("div",{className:"warn"},"代价：多一个 critic 模型（显存 + 计算 + 第二次训练）；critic 要预测长程回报且需 warmup；异步下 actor 与 critic 都消费陈旧数据、都要权重同步，陈旧度也影响 value target。"),
+      h("h3",null,"谁做 async PPO with critic 最好"),
+      h("div",{className:"matrix-wrap"},h("table",{className:"matrix"},
+        h("thead",null,h("tr",null,h("th",null,"框架"),h("th",null,"critic 支持"),h("th",null,"异步 + critic"),h("th",null,"长程信用分配 / tau2 用法"))),
+        h("tbody",null,
+          h("tr",null,h("th",null,"slime / miles"),
+            h("td",null,h("span",{className:"y"},"原生"),"：",h("code",null,"--use-critic"),"、独立 critic 训练组、",h("code",null,"--num-critic-only-steps"),"（critic 预热）、GAE（vanilla/chunked + CP）"),
+            h("td",null,h("span",{className:"y"},"支持"),"：train_async 内 ",h("code",null,"critic_model.async_train"),"；delta 同步 actor 与 critic 两套权重"),
+            h("td",null,"GAE+CP 适合长多轮；",h("strong",null,"GLM-5.2 正是用它做 async PPO-critic 长程，生产验证最硬"),"。tau2：",h("code",null,"--use-critic --advantage-estimator gae --num-critic-only-steps N")," + train_async + generate_with_tau")),
+          h("tr",null,h("th",null,"verl"),
+            h("td",null,h("span",{className:"y"},"本源最成熟"),"：HybridFlow 为 actor+critic+ref+RM 设计，放置最灵活、可 fused actor+critic；GAE + value clip"),
+            h("td",null,h("span",{className:"p"},"部分"),"：one_step_off 支持 critic（",h("code",null,"need_critic"),"）；最深异步 fully_async / separation 更偏 GRPO、async-critic 未在前沿规模验证"),
+            h("td",null,"critic 本身最灵活；tau2：配 critic worker + agent_loop + one_step_off_policy。更适合放置复杂或同步 PPO")),
+          h("tr",null,h("th",null,"AReaL"),
+            h("td",null,h("span",{className:"y"},"原生"),"：",h("code",null,"PPOCritic")," / ",h("code",null,"PPOCriticControllerV2"),"（GatewayTrainController）+ clipped value loss"),
+            h("td",null,h("span",{className:"y"},"async-native"),"：critic 与 decoupled PPO 修正组合；但默认近同步、部分 experimental"),
+            h("td",null,"架构最干净；tau2：",h("code",null,"examples/tau2")," + critic + GAE，但调参负担与验证广度不及 slime")),
+          h("tr",null,h("th",null,"Polar"),
+            h("td",null,h("span",{className:"n"},"不含"),"：critic 在所接 trainer"),
+            h("td",null,h("span",{className:"n"},"N/A")),
+            h("td",null,"作环境/rollout 层，critic 由 slime 或 verl 侧负责")))
+      )),
+      h("div",{className:"pick"},h("strong",null,"结论（async PPO-with-critic 的 long-horizon tau2）"),
+        h("ul",null,
+          h("li",null,h("strong",null,"首选 slime/miles"),"：GLM-5.2 实证 + 现成 tau 例 + critic 预热 + GAE/CP + delta 同步 actor 与 critic。"),
+          h("li",null,h("strong",null,"verl"),"：critic 本身最成熟最灵活（尤其同步或多模型放置复杂时），但其 async-critic 不如 slime 证据硬、且在 experimental。"),
+          h("li",null,h("strong",null,"AReaL"),"：async-native critic 架构最干净，适合研究对照，但开箱与验证不及 slime。")))
+    );
+  }
+
+  function App(){const ref=useTypeset("root");
+    return h("div",{ref:ref},
+      h(TopNav),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"五框架大横评 · AReaL / slime / miles / verl / Polar"),
+          h("h1",null,"面向长程 Agentic RL 的 RL 基础设施选型"),
+          h("p",{className:"lead"},"目标场景：长程（long-horizon）Agentic RL，两个核心痛点是 (a) 把 static 环境转成 dynamic 环境（当前每个环境都是 static、浪费 pod、缺噪声），(b) 更好的异步 RL 效率；并回答“train efficiency 谁最好、env scale 谁最容易”。本页基于四套已校验的逐文件精读课程与源码综合而成，给出对比矩阵、分维度深入、决策矩阵、针对你们的明确推荐，以及一个取各家之长的自研架构建议。"),
+          h("div",{className:"pick"},
+            h("strong",null,"一句话结论："),"你们的两个痛点恰好沿“训练侧”与“环境侧”分开，没有单一框架同时最优。",
+            h("strong",{className:"hl-green"}," 推荐组合：以 slime/miles 作训练内核（train efficiency 最硬），以 Polar 作环境/rollout 服务层（动态环境 + 省 pod + 异步服务化），两者经 Polar 已有的 ",h("code",null,"slime_bridge")," 连接"),
+            "。这正是你“全面拥抱 slime/miles 做自研 version”的现成起点，详见下方推荐与自研架构两节。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"定位"),
+          h("h2",null,"五框架一句话定位"),
+          h("div",{className:"grid5"},FW.map(function(f){return h("div",{className:"fw",key:f.nm},
+            h("div",{className:"nm "+("hl-"+f.cls)},f.nm),
+            h("div",{className:"og"},f.og),
+            h("div",{className:"es"},f.es));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"总览"),
+          h("h2",null,"对比矩阵（5 框架 × 10 维度）"),
+          h("p",null,"横向滚动查看。单元格为要点速读，深入见下一节与各课程链接。"),
+          h("div",{className:"matrix-wrap"},h("table",{className:"matrix"},
+            h("thead",null,h("tr",null,h("th",null,"维度 \\ 框架"),ROWS.map(function(r){return h("th",{key:r[0]},r[0]);}))),
+            h("tbody",null,COLS.map(function(col,ci){return h("tr",{key:ci},
+              h("th",null,col),
+              ROWS.map(function(r){return h("td",{key:r[0]},r[1][ci]);}));}))
+          ))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"分维度深入"),
+          h("h2",null,"七个维度的跨框架对比与判断"),
+          h("p",null,"点 Tab 切换维度。每个维度给跨框架对比 + 一句判断 + 课程深入链接。"),
+          h(DimExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"Async RL 深度剖析"),
+          h("h2",null,"怎么针对异步 RL 解决问题"),
+          h("p",null,"你们的痛点 (b) 是更好的异步 RL 效率。这一节拆开异步 RL 的问题本质、修正机制，以及推荐组合如何端到端解决。代码级机制（fully_async 在途池 + delta 权重同步）见 ",h("a",{href:"slime-async-internals.html"},"slime 异步内核（代码级）"),"。"),
+          h(AsyncDeep)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"各框架的问题"),
+          h("h2",null,"不只是为什么选 slime，还有 verl / AReaL / Polar 的问题"),
+          h("p",null,"点 Tab 切换。逐框架列出作为稳定异步生产主内核的具体问题与边界。"),
+          h(ProbExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"决策矩阵"),
+          h("h2",null,"按“你最看重什么”选"),
+          h("div",{className:"matrix-wrap"},h("table",{className:"matrix"},
+            h("tbody",null,DECIDE.map(function(row,i){return h("tr",{key:i},
+              i===0?h("th",null,row[0]):h("td",null,row[0]),
+              i===0?h("th",null,row[1]):h("td",null,h("strong",{className:"hl-green"},row[1])),
+              i===0?h("th",null,row[2]):h("td",null,row[2]));}))
+          ))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"针对你们的明确推荐"),
+          h("h2",null,"推荐：slime/miles 训练内核 + Polar 环境/rollout 服务层"),
+          h("p",null,"两个问题分别有清晰答案，且彼此正交："),
+          h("ul",null,
+            h("li",null,h("strong",null,"train efficiency 谁最好 → slime（MoE/低精度上 miles）"),"：唯一被 GLM-4.5→5.2 全系列验证；delta 权重同步把 ",h("code",null,"T_sync")," 压到约 2% 字节；fully_async 在途池 + 流式 partial rollout 专治长程长尾；miles 的统一 FP8 / INT4 QAT / R3 / true-on-policy 进一步保住大规模 MoE 的训练稳定与吞吐。"),
+            h("li",null,h("strong",null,"env scale 谁最容易 / static→dynamic / 省 pod → Polar"),"：八种商用 harness 零改造当环境，容器运行时会话级复用（docker/apptainer），rollout-as-a-service 横向扩展只改拓扑。这是五者中唯一内置 runtime 池化、直接回应“浪费 pod”的方案。")),
+          h("div",{className:"pick"},h("strong",null,"为什么是组合而非单选："),"slime 强在训练侧但无 runtime 池化；Polar 强在环境侧但不含训练。Polar 已提供 ",h("code",null,"slime_bridge")," 把 rollout 服务接到 slime 的 Megatron 训练（已有可跑的 SWE-Gym GRPO 训练曲线），陈旧度丢弃与 TIS 修正落在 slime 侧。两者天然互补，组合即同时解决你的两个痛点。"),
+          h("div",{className:"note"},h("strong",null,"一个关键细节："),"miles 移除了 slime 的 ",h("code",null,"agent/")," 子包（harness-as-env 只在 slime 主干）。若选 miles 作内核，正好由 Polar 提供环境层，二者互补不冲突；若选 slime，则 slime 自带 harness-as-env 与 Polar 的能力部分重叠，可按需取舍。"),
+          h("div",{className:"warn"},h("strong",null,"不直接把 verl 作为新内核的理由："),"你们已在 verl 0.8 上跑 tau2，但 verl 的异步/agentic 仍处 experimental 与 v1 双轨、配置组合空间大、",h("code",null,"separate_async")," 当前强制 bypass 修正。verl 的长处（HybridFlow 放置灵活度、agent_loop/BaseTool 工具抽象、多推理后端）值得借鉴，但作为“追求稳定前沿 train efficiency + 动态环境”的主内核，slime/miles + Polar 的证据更硬、分工更清晰。迁移成本见下节。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"tau2 专项 · 动态 + 含噪环境"),
+          h("h2",null,"针对 tau2 的 RL：动态 + 含噪环境怎么选"),
+          h("p",null,"这一节把通用推荐落到 tau2 这个具体场景，并讲清为什么环境要 dynamic + noisy，以及它如何改变 tau2 的选型。"),
+          h(TauTwo)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime 数据自由度 · AnyGym · DTA · Async 大 PPO"),
+          h("h2",null,"slime 的数据生成自由度、AnyGym 适配、DTA 潜力与 Async 大规模 PPO"),
+          h("p",null,"四个进一步的论点，点 Tab 切换：为什么 slime 的自定义 rollout 是一等数据入口、它如何契合你的 AnyGym/AutoGym 合成 gym 愿景、AReaL 的 Dynamic Tree Attention 与 slime/miles 的移植潜力、以及为什么异步大规模 PPO 上 slime/miles 优于 verl。"),
+          h(ExtrasExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"Async PPO with critic · 长程信用分配"),
+          h("h2",null,"Async PPO with critic：长程信用分配与各框架用法"),
+          h("p",null,"GLM-5.2 转向强调长程里 PPO with critic。这一节讲清为什么长程要 critic、谁做异步 PPO-critic 最好、各自优劣，以及如何在各框架上把它用于 tau2 这类 long-horizon RL。"),
+          h(PpoCritic)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"自研版本架构建议"),
+          h("h2",null,"取各家之长的自研架构"),
+          h("p",null,"你提到要做自己的 version、全面拥抱 slime/miles。下面是一个以 slime/miles + Polar 为骨架、吸收 AReaL 与 verl 长处的具体方案。"),
+          h("h3",null,"分层架构"),
+          h("pre",null,"[ 商用 agent harness: claude_code / codex / openhands / qwen_code ... ]\n            |  零改造 (gateway 注入 *_BASE_URL = gateway, session_id = api key)\n            v\n[ 环境/Rollout 服务层  ◀ 取自 Polar ]\n  - Gateway + proxy 协议变换/重定向 (Anthropic/OpenAI/Google -> SGLang)\n  - Runtime Pooling: docker/apptainer 容器复用 (static -> dynamic env, 省 pod)\n  - Rollout as a Service: Staging 四阶段隔离 + balancer 横向扩展\n  - Trajectory: prefix_merging 处理多轮重叠历史 + 评估器(swebench/test_on_output)\n            |  slime_bridge (已存在; 自定义 generate + reward + data_source)\n            v\n[ 训练内核  ◀ 取自 slime / miles ]\n  - Megatron-Core 五维并行 (+ FP8 / INT4 QAT for 万亿 MoE  ◀ miles)\n  - 异步: fully_async 在途池 + 流式 partial rollout\n  - 权重同步: distributed_delta (~2%) / mooncake P2P  ◀ miles\n  - 陈旧度: TIS / ICEPOP 修正  ◀ miles ; 逐 token 版本号 + decoupled PPO  ◀ AReaL\n  - 推理: SGLang + PD 分离(mooncake)"),
+          h("h3",null,"从各家具体借鉴什么"),
+          h("ul",null,
+            h("li",null,h("strong",{className:"hl-teal"},"借 AReaL"),"：interrupt-and-resume 的 partial rollout（超长轨迹跨权重更新不丢弃）、staleness 容量阀（capacity = min(staleness, concurrency)）、decoupled PPO 的三策略修正、黑盒 agent 改 base_url 的 proxy 设计。"),
+            h("li",null,h("strong",{className:"hl-blue"},"借 verl"),"：若未来要多角色解耦放置或多推理后端，引入 HybridFlow 式单控制器 dispatch 抽象；agent_loop + 有状态 BaseTool 的工具/环境契约可作为 Polar harness 之外的补充接入方式。"),
+            h("li",null,h("strong",{className:"hl-amber"},"自研增量"),"：把 Polar 的 runtime 复用从“会话内跨阶段”升级为“跨会话 warm pool”（进一步省 pod）；补 vLLM 推理后端（Polar 当前只 SGLang）；把陈旧度过滤 + TIS 修正在 bridge 层做成可观测、可回归的组件。")),
+          h("h3",null,"迁移路径（从现状 verl 0.8 + tau2 出发）"),
+          h("ol",null,
+            h("li",null,h("strong",null,"短期（验证）"),"：在 Polar 上用 ",h("code",null,"slime_bridge")," 复现一个 tau2 类任务（把 tau2 环境包成 harness 或有状态工具），与现有 verl 0.8 tau2 做 A/B，量测 pod 利用率、吞吐、陈旧度。"),
+            h("li",null,h("strong",null,"中期（对比）"),"：对照 slime+Polar 组合 vs verl 自身异步（one_step_off / fully_async）在你们集群上的实测 train efficiency 与 env scale 成本，形成数据支撑的结论。"),
+            h("li",null,h("strong",null,"长期（落定）"),"：若组合胜出，把训练内核迁到 slime/miles，环境层用 Polar（按上面的自研增量增强）；保留 verl 经验用于借鉴其放置与工具抽象。")),
+          h("div",{className:"note"},"建议先做一个最小可跑的“slime + Polar + 一个 tau2 类任务”完整流程验证，再决定是否大规模迁移。横评结论是方向，集群实测才是最终依据。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"风险"),
+          h("h2",null,"风险与注意事项"),
+          h("ul",null,
+            h("li",null,h("strong",{className:"hl-red"},"Polar 年轻"),"：2026-05 新仓、约 33 PR，slime_bridge 为 demo、推理后端只 SGLang 且需打补丁。作为环境层需自担成熟度，可能要自己补 vLLM、补 trainer bridge。"),
+            h("li",null,h("strong",{className:"hl-red"},"slime 约束"),"：单一 SGLang 后端；异步强制解耦放置（断言禁 colocate）；fully_async 不支持 eval；无 runtime 池化（由 Polar 补）。"),
+            h("li",null,h("strong",{className:"hl-red"},"miles 取舍"),"：移除了 agent 子包，harness-as-env 仅在 slime 主干；选 miles 内核就由 Polar 提供环境层。"),
+            h("li",null,h("strong",{className:"hl-red"},"迁移成本"),"：放弃 verl 作主内核意味着已有 tau2 工作要迁；建议用短期 A/B 把成本与收益量化后再决策，而非一次性切换。")),
+          h("div",{className:"foot"},
+            h("a",{href:"slime/slime-course-index.html"},h("div",{className:"faint"},"训练内核 →"),h("strong",null,"slime 逐文件精读")),
+            h("a",{href:"POLARS/polar-course-index.html"},h("div",{className:"faint"},"环境/rollout 服务 →"),h("strong",null,"Polar 逐文件精读"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

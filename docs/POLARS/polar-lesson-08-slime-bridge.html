@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Polar 逐文件精读 · 第 8 课：slime 集成与 Platform</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    .steps{counter-reset:step;list-style:none;padding-left:0;}
+    .steps>li{position:relative;padding:10px 0 10px 44px;border-bottom:1px dashed var(--line);}
+    .steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:10px;width:28px;height:28px;border-radius:8px;background:var(--panel-2);border:1px solid var(--line-2);color:var(--teal);font-family:var(--mono);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 8 课</p><h1>slime 集成与 Platform</h1><p>能访问 CDN 时切换为交互版。本课讲清 Polar 如何作为 rollout 服务接入 slime GRPO 训练：slime_bridge 的自定义 generate 函数、异步采集工作线程、Polar 会话结果到 slime 样本的转换、轨迹级奖励归一化；Platform 控制平面（server / api / fs_index / sse_fanout）如何把整套系统的运行状态汇总到只读仪表盘；examples 四个示例的角色；以及一次 slime GRPO 训练驱动 Polar rollout 的完整数据流，串起第 1 至 7 课。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const POLAR="vscode://file/Users/xinyu/Code/Agentic-RL/ProRL-Agent-Server/";
+  function srcUrl(p,l){return POLAR+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global","del"];
+  const PY_TY=["Any","ABC","Optional","Callable","Awaitable","Tensor","torch","dist","nn","int","float","bool","str","dict","list","tuple","set","deque","datetime","Path","Field","BaseModel","StrEnum","dataclass","Event","Queue","Future","httpx","uvicorn","FastAPI","Request","APIRouter","StreamingResponse","TaskRequest","TaskResult","TaskStatus","SessionResult","SessionTiming","SessionContext","Trace","Trajectory","Sample","PolarSlimeConfig","AsyncPolarRolloutWorker","RolloutLogprobError","TopologyConfig","FsIndex","TaskSummary","SessionSummary","EventBus","SseFanout","PlatformState","PlatformConfig","UpstreamClient","RolloutManager","Pipeline","NodeScheduler"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","polar-lesson-01-foundations.html"],[2,"Agent与Harness","polar-lesson-02-agent-harness.html"],[3,"Gateway","polar-lesson-03-gateway.html"],[4,"协议变换","polar-lesson-04-transform.html"],[5,"Runtime池化","polar-lesson-05-runtime.html"],[6,"Rollout服务","polar-lesson-06-rollout-server.html"],[7,"轨迹与评估","polar-lesson-07-trajectory.html"],[8,"slime集成","polar-lesson-08-slime-bridge.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"polar-course-index.html"},"Polar",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== slime 自定义 generate 契约 =====
+  function ContractSection(){
+    return h("div",null,
+      h("p",null,"前七课自底向上建好了 Polar 的全部组件：第 1 课地基、第 2 课 Agent 与 Harness、第 3 课 Gateway、第 4 课协议变换、第 5 课 Runtime 池化、第 6 课 Rollout Server 与流水线、第 7 课 Trajectory 构建与评估。这一课是收尾，把这套系统接到一个真实的训练框架 slime 上，并补上观测整套系统运行状态的控制平面 Platform。读完这一课，你应当能回答一个问题：一次 slime GRPO 训练，是如何驱动 Polar 完成一批 rollout 的。"),
+      h("p",null,"接入点是 slime 的一个扩展契约：",h("strong",null,"自定义 generate 函数"),"。slime 的训练循环（第 1 至 8 课的 slime 课程中讲过的 ",h("code",null,"train_async.py"),"）并不自己生成 rollout 数据，而是调用一个可替换的函数来获取一批样本。这个函数的签名由 slime 规定，Polar 提供的实现就是 ",h("code",null,"slime_bridge.rollout.generate_rollout_polar_async"),"。在 SWE-Gym 示例的启动脚本里，它通过 ",h("code",null,"--rollout-function-path")," 注入。"),
+      h(Code,null,"# run.sh: 把 Polar 的 generate 函数与三个奖励/数据钩子注入 slime\n--rollout-function-path slime_bridge.rollout.generate_rollout_polar_async \\\n--custom-rm-path slime_bridge.reward.reward_func \\\n--custom-reward-post-process-path slime_bridge.reward_post_process.post_process_rewards \\\n--custom-config-path \"${CUSTOM_CONFIG_PATH}\" \\\n--data-source-path slime_bridge.data_source.CeilEpochRolloutDataSourceWithBuffer \\"),
+      h("p",null,"这五个注入点正是 slime_bridge 的全部对外接口，本课逐一展开："),
+      h("ul",null,
+        h("li",null,h("code",null,"--rollout-function-path"),"：generate 函数。训练每一步调用它取回一批已生成、已评分的样本。这是 slime 与 Polar 之间唯一的主路径。"),
+        h("li",null,h("code",null,"--custom-rm-path"),"：奖励读取函数。Polar 的奖励在 rollout 阶段已由 evaluator 算好并写在样本上，此处只是把它读出来（",h("code",null,"reward.py"),"）。"),
+        h("li",null,h("code",null,"--custom-reward-post-process-path"),"：奖励后处理。把同一条轨迹的多条 trace 折叠成一份奖励，再在组内做 GRPO 归一化（",h("code",null,"reward_post_process.py"),"）。"),
+        h("li",null,h("code",null,"--custom-config-path"),"：一份 YAML，被 slime 读成 ",h("code",null,"args")," 命名空间上的属性，承载所有 ",h("code",null,"polar_*")," 配置与任务模板（",h("code",null,"config.py")," 解析它）。"),
+        h("li",null,h("code",null,"--data-source-path"),"：数据源包装类，让固定批大小覆盖到数据集的尾部 prompt（",h("code",null,"data_source.py"),"）。")
+      ),
+      h("div",{className:"note"},"slime_bridge 刻意放在 ",h("code",null,"polar")," 包命名空间之外（位于 ",h("code",null,"src/slime_bridge/"),"），因为 slime、Ray、Megatron、torch 等重依赖是独立安装的，核心 ",h("code",null,"polar")," 包不引入它们。第一版 beta 不为这些依赖打包。"),
+      h("p",null,"Polar 对外只暴露第 6 课讲过的 async-only HTTP 接口：",h("code",null,"POST /rollout/task/submit")," 立即返回 task_id，结果经回调或 ",h("code",null,"GET /rollout/task/{task_id}")," 轮询取回。slime_bridge 全程只说这一种协议。",h("code",null,"_submit_and_wait_for_task")," 是其最朴素的形态：提交后按固定间隔轮询直到状态变为 ",h("code",null,"completed")," 或 ",h("code",null,"failed"),"。"),
+      h(Code,null,"async def _submit_and_wait_for_task(client, base_url, payload, *, poll_interval=_POLL_INTERVAL):\n    resp = await client.post(f\"{base_url}/rollout/task/submit\", json=payload, ...)\n    resp.raise_for_status()\n    task_id = resp.json()[\"task_id\"]\n    while True:\n        await asyncio.sleep(poll_interval)\n        status_resp = await client.get(f\"{base_url}/rollout/task/{task_id}\")\n        status = TaskStatus.model_validate(status_resp.json())\n        if status.status in (\"completed\", \"failed\"):\n            break\n    return TaskResult(task_id=task_id, status=status.status, results=status.results, ...)"),
+      h("div",null,h(Src,{label:"generate_rollout_polar_async",path:"src/slime_bridge/rollout.py",line:1232}),h(Src,{label:"_submit_and_wait_for_task",path:"src/slime_bridge/rollout.py",line:246}),h(Src,{label:"slime_bridge README",path:"src/slime_bridge/README.md"}),h(Src,{label:"run.sh 注入点",path:"examples/swegym_slime_grpo/run.sh",line:266}),h(Ext,{href:"https://github.com/THUDM/slime"},"slime 仓库"))
+    );
+  }
+
+  // ===== config.py：把 YAML 解析成强类型配置 =====
+  function ConfigSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"config.py")," 把 ",h("code",null,"--custom-config-path")," 那份 YAML（被 slime 挂到 ",h("code",null,"args")," 上的 ",h("code",null,"polar_*")," 属性）解析成一个冻结的 ",h("code",null,"PolarSlimeConfig"),"。它做两件关键的事：校验配置合法性，以及从 slime 自己的训练超参推导出 Polar 侧的并发与陈旧度上限。"),
+      h("h3",null,"从训练超参推导调度上限"),
+      h("p",null,"这是整份配置最值得理解的一段。Polar 的并发预算不是单独设的，而是由 slime 的批大小、组大小、异步级别与权重更新间隔联合推导，从而让 rollout 侧的在途量与训练侧的消费节奏匹配。"),
+      h(Code,null,"max_async_level = int(getattr(args, \"polar_max_async_level\", 2))\nrollout_batch_size = int(getattr(args, \"rollout_batch_size\", 1) or 1)\ngroup_size = int(getattr(args, \"n_samples_per_prompt\", 1) or 1)\nupdate_weights_interval = int(getattr(args, \"update_weights_interval\", 1) or 1)\n\nmax_concurrency = rollout_batch_size * max_async_level          # 同时在途的任务数\nmax_session_concurrency = max_concurrency * group_size          # 同时在途的会话数\nmax_off_policy_steps = max_async_level + update_weights_interval # 允许的最大陈旧度"),
+      h("ul",null,
+        h("li",null,h("code",null,"max_concurrency"),"：同时在途的任务（一个 prompt 组对应一个任务）数量上限，等于批大小乘异步级别。异步级别即第 6 课的“提前发起多少批”。"),
+        h("li",null,h("code",null,"max_session_concurrency"),"：同时在途的会话数上限。一个任务展开成 ",h("code",null,"group_size")," 条会话（GRPO 要为同一 prompt 采样一组同源轨迹），故再乘组大小。"),
+        h("li",null,h("code",null,"max_off_policy_steps"),"：允许的最大策略陈旧度。异步训练里，一批数据由若干步之前的权重生成；超过这个上限的数据会被丢弃，下一节展开。")
+      ),
+      h("h3",null,"任务模板：把样本渲染成 TaskRequest"),
+      h("p",null,h("code",null,"polar_task_template")," 是 YAML 里的一棵字典，描述要提交给 Polar 的 ",h("code",null,"TaskRequest")," 骨架，其中含 ",h("code",null,"{instruction}")," / ",h("code",null,"{num_samples}")," / ",h("code",null,"{sample.metadata.instance_id}")," / ",h("code",null,"{args.*}")," 这样的占位符。",h("code",null,"render_task_payload")," 用当前样本与 args 构造一个上下文，递归地把模板里的占位符替换掉，再补上 ",h("code",null,"task_id"),"、",h("code",null,"instruction")," 与 ",h("code",null,"num_samples"),"。"),
+      h(Code,null,"def render_task_payload(*, args, config, sample, instruction, rollout_id, task_position, num_rollouts):\n    context = _build_context(args=args, sample=sample, instruction=instruction, ...)\n    payload = _render_template_value(deepcopy(config.task_template), context)\n    payload[\"task_id\"] = str(_render_template_value(config.task_id_template, context))\n    payload[\"instruction\"] = instruction\n    payload[\"num_samples\"] = num_rollouts\n    return payload"),
+      h("p",null,"占位符替换有两种语义：整串恰好是单个 ",h("code",null,"{path}")," 时，返回该路径的真实对象（保留类型，例如一个嵌套字典），由 ",h("code",null,"_from_namespace")," 还原成可 JSON 序列化的纯字典；否则做字符串内插。这样既能在模板里嵌入结构化字段，又能在文本里拼接变量。SWE-Gym 示例据此把每个实例的 SIF 镜像路径 ",h("code",null,"{args.polar_apptainer_image_dir}/{sample.metadata.instance_id}.sif")," 填进 runtime 规格。"),
+      h("div",null,h(Src,{label:"PolarSlimeConfig",path:"src/slime_bridge/config.py",line:17}),h(Src,{label:"resolve_polar_slime_config",path:"src/slime_bridge/config.py",line:37}),h(Src,{label:"推导调度上限",path:"src/slime_bridge/config.py",line:70}),h(Src,{label:"render_task_payload",path:"src/slime_bridge/config.py",line:130}),h(Src,{label:"_render_template_value",path:"src/slime_bridge/config.py",line:259}),h(Src,{label:"polar_config.yaml",path:"examples/swegym_slime_grpo/polar_config.yaml",line:19}))
+    );
+  }
+
+  // ===== 异步工作线程：rollout.py 的承重部分 =====
+  function WorkerSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"rollout.py")," 是本课最重的文件（约 1500 行）。它的核心是 ",h("code",null,"AsyncPolarRolloutWorker"),"：一个常驻后台线程，在自己的 asyncio 事件循环里持续从 slime 数据源拉取 prompt 组、提交给 Polar、收集结果、转换成 slime 样本、压进输出队列。训练循环每步只调一次 generate 函数，从这个工作线程“排空”已完成的组。这样设计是为了让生成与训练真正重叠：训练在消费上一批时，工作线程已经在生成后面几批。"),
+      h("h3",null,"训练路径与评估路径的分叉"),
+      h("p",null,"对外的 generate 函数 ",h("code",null,"generate_rollout_polar_async")," 是一个同步函数（slime 这样调用），内部按 ",h("code",null,"evaluation")," 标志分叉：评估走一次性的 submit+poll 批（",h("code",null,"asyncio.run(_run_eval_rollout(...))"),"），训练走常驻工作线程。"),
+      h(Code,null,"def generate_rollout_polar_async(args, rollout_id, data_source, evaluation=False):\n    if evaluation:\n        return asyncio.run(_run_eval_rollout(args, rollout_id, data_source))\n\n    async_worker = get_global_async_worker(args, data_source)  # 单例, 跨步复用\n    async_worker.set_rollout_context(rollout_id)\n    target = getattr(args, \"rollout_batch_size\", 1)\n\n    data = []\n    while len(data) < target:\n        completed_groups = async_worker.drain_completed(\n            max_groups=target - len(data), rollout_id=rollout_id)\n        for completed in completed_groups:\n            data.append(completed.samples)\n        if len(data) < target:\n            time.sleep(0.05)\n    ...\n    return RolloutFnTrainOutput(samples=data, metrics=metrics)"),
+      h("p",null,"训练路径用一个全局单例工作线程 ",h("code",null,"get_global_async_worker")," ，跨 rollout 步复用，因此后台生成不会随每步调用而重启。generate 函数本身只做一件事：阻塞地从工作线程排空，直到凑够 ",h("code",null,"rollout_batch_size")," 个组。"),
+      h("h3",null,"工作线程主循环：准入与提交"),
+      h("p",null,"工作线程的 ",h("code",null,"_async_loop")," 是一个持续运转的事件循环。每一轮它先回收已完成的 asyncio 任务，再在准入条件允许时不断提交新组，最后等待一个唤醒事件或 0.5 秒超时。准入由 ",h("code",null,"_can_admit_group")," 把守：受 ",h("code",null,"max_concurrency"),"、",h("code",null,"max_session_concurrency")," 以及“持有的组数不超过 ",h("code",null,"batch_size × max_async_level"),"”三道闸限制。"),
+      h(Code,null,"def _can_admit_group(self, active, active_session_cost):\n    with self._state_lock:\n        if self._admission_paused:           # 权重更新窗口期暂停吸入\n            return False\n    if len(active) >= self.config.max_concurrency:\n        return False\n    if active_session_cost >= self.config.max_session_concurrency:\n        return False\n    owned_groups = (len(active) + self.output_queue.qsize()\n                    + self._shared_completed_buffer_size())\n    return owned_groups < (self._batch_size * self.config.max_async_level)"),
+      h("p",null,"会话级并发 ",h("code",null,"active_session_cost")," 是逐组累加的：一组有几条会话就计几。当某组会加到超过 ",h("code",null,"max_session_concurrency")," 时，它被放回 ",h("code",null,"deferred_queue")," 推迟，而不是强行提交。这条规则保证 Polar 侧实际并发的会话数不超过约定上限。"),
+      h("h3",null,"回调优先、轮询兜底的单任务收集"),
+      h("p",null,"提交一个任务时，工作线程在本进程内起了一个 FastAPI 监听器（端口 0 自动分配），并把它的 URL 作为 ",h("code",null,"callback_url")," 随任务一起提交。这呼应第 6 课：Polar 完成任务后会主动 POST 终态 ",h("code",null,"TaskResult")," 回这个地址。",h("code",null,"_submit_with_callback")," 先注册事件再提交，避免极快的回调先于注册到达；",h("code",null,"_await_task_result")," 等这个事件，并以 60 秒为防御性间隔回退到轮询，覆盖回调丢失的情形。"),
+      h(Code,null,"async def _await_task_result(self, client, task_id, event):\n    while True:\n        try:\n            await asyncio.wait_for(event.wait(), timeout=_CALLBACK_FALLBACK_POLL_SECONDS)\n        except asyncio.TimeoutError:\n            # 回调迟迟未到: 主动查一次状态\n            status_resp = await client.get(f\"{base_url}/rollout/task/{task_id}\")\n            status = TaskStatus.model_validate(status_resp.json())\n            if status.status in (\"completed\", \"failed\"):\n                return TaskResult(task_id=task_id, status=status.status, ...)\n            continue\n        result = self._task_results.get(task_id)\n        if result is not None:\n            return result\n        # 竞态: 事件已置位但结果还没填, 再查一次\n        ..."),
+      h("div",{className:"note"},"这与第 6 课 Server 侧的 ",h("code",null,"_wait_for_result")," 是对称的：Server 用回调优先、轮询兜底回收 gateway 的会话结果，slime_bridge 用同样的模式回收 Server 的任务结果。回调是首选路径，轮询是始终在线的安全网，二者都不可省，因为 HTTP 回调可能丢失或延迟。"),
+      h("div",null,h(Src,{label:"AsyncPolarRolloutWorker",path:"src/slime_bridge/rollout.py",line:447}),h(Src,{label:"_async_loop",path:"src/slime_bridge/rollout.py",line:601}),h(Src,{label:"_can_admit_group",path:"src/slime_bridge/rollout.py",line:837}),h(Src,{label:"_start_callback_listener",path:"src/slime_bridge/rollout.py",line:685}),h(Src,{label:"_submit_with_callback",path:"src/slime_bridge/rollout.py",line:891}),h(Src,{label:"_await_task_result",path:"src/slime_bridge/rollout.py",line:913}),h(Src,{label:"get_global_async_worker",path:"src/slime_bridge/rollout.py",line:89}))
+    );
+  }
+
+  // ===== 陈旧度控制与权重更新协调 =====
+  function StalenessSection(){
+    return h("div",null,
+      h("p",null,"异步 RL 的核心难题是策略陈旧度：当生成与训练重叠时，训练所用的数据是由若干步之前的权重生成的。slime_bridge 在两处处理它：排空时按陈旧度丢弃过旧的组，以及在权重更新窗口期暂停吸入新会话。"),
+      h("h3",null,"排空时的陈旧度过滤"),
+      h("p",null,h("code",null,"drain_completed")," 是 generate 函数调用的接口。它先把输出队列搬进一个持久的溢出缓冲，再逐组检查陈旧度：当前 rollout_id 减去该组提交时的 policy_version，若超过 ",h("code",null,"max_off_policy_steps")," 就丢弃并计入 ",h("code",null,"polar/dropped_stale_groups")," 指标；否则给样本标注陈旧度元数据后接受。"),
+      h(Code,null,"def drain_completed(self, *, max_groups, rollout_id):\n    ...\n    while self._completed_buffer and len(accepted) < max_groups:\n        completed = self._completed_buffer.popleft()\n        staleness = max(0, int(rollout_id) - completed.policy_version)\n        if staleness > self.config.max_off_policy_steps:\n            self._inc_metric(\"polar/dropped_stale_groups\")\n            self._inc_metric(\"polar/dropped_sessions\", completed.session_count)\n            logger.warning(\"Dropping stale Polar group %s ...\", completed.group_id)\n            continue\n        _annotate_accepted_samples(completed.samples, accepted_rollout_id=rollout_id,\n                                   staleness=staleness, policy_version=completed.policy_version, ...)\n        accepted.append(completed)\n    return accepted"),
+      h(Formula,{cap:"接受条件：组的策略陈旧度不超过推导出的上限"},"$$ s = \\text{rollout\\_id} - \\text{policy\\_version} \\le \\texttt{max\\_async\\_level} + \\texttt{update\\_weights\\_interval} $$"),
+      h("p",null,"被接受的样本会被 ",h("code",null,"_annotate_accepted_samples")," 打上 ",h("code",null,"policy_staleness")," / ",h("code",null,"policy_version")," 元数据，写进 ",h("code",null,"train_metadata"),"，供 slime 的重要性采样修正（TIS，run.sh 里的 ",h("code",null,"--use-tis"),"）使用：陈旧数据需要按生成策略与当前策略的概率比加权。"),
+      h("h3",null,"权重更新窗口的暂停与恢复"),
+      h("p",null,"slime 在做 SGLang 权重同步时会调用一组可选钩子。",h("code",null,"prepare_policy_update")," 在同步前暂停工作线程吸入新组，并请求 gateway 暂停 SGLang 生成；",h("code",null,"finish_policy_update")," 在同步后恢复二者；",h("code",null,"update_policy_version")," 在权重更新后推进策略版本号。这套协调避免在一次会话生成的中途替换权重而导致数据版本混乱。"),
+      h(Code,null,"def prepare_policy_update(args, policy_version):\n    with _worker_lock:\n        worker = _global_async_worker\n        if worker is not None:\n            worker.pause_admission()        # 不再吸入新组\n    try:\n        _pause_gateway_generation(args)     # POST /admin/sglang/pause\n    except Exception:\n        _resume_gateway_generation(args)    # 失败时回滚\n        ... worker.resume_admission()\n        raise"),
+      h("div",{className:"warn"},h("strong",null,"为什么暂停而非中断"),"：",h("code",null,"pause_admission")," 只阻止吸入新组，已在途的会话照常跑完。这与第 6 课 ",h("code",null,"drain_node")," 排空节点的思路一致：优雅停吸、存量跑完，避免在权重切换瞬间产生半新半旧的轨迹。SWE-Gym 示例默认 ",h("code",null,"polar_allow_weight_update_overlap: false"),"，即不让权重同步与生成重叠，最简单也最安全。"),
+      h("div",null,h(Src,{label:"drain_completed",path:"src/slime_bridge/rollout.py",line:526}),h(Src,{label:"_annotate_accepted_samples",path:"src/slime_bridge/rollout.py",line:407}),h(Src,{label:"prepare_policy_update",path:"src/slime_bridge/rollout.py",line:115}),h(Src,{label:"finish_policy_update",path:"src/slime_bridge/rollout.py",line:137}),h(Src,{label:"update_policy_version",path:"src/slime_bridge/rollout.py",line:107}),h(Src,{label:"_pause_gateway_generation",path:"src/slime_bridge/rollout.py",line:162}))
+    );
+  }
+
+  // ===== adapter + reward 三件套 =====
+  function AdapterSection(){
+    return h("div",null,
+      h("p",null,"Polar 返回的是会话结果（",h("code",null,"SessionResult"),"，内含一条 ",h("code",null,"Trajectory")," 与若干条 ",h("code",null,"Trace"),"），slime 训练需要的是扁平的 ",h("code",null,"Sample")," 列表。",h("code",null,"adapter.py")," 负责这层转换，",h("code",null,"reward.py")," 与 ",h("code",null,"reward_post_process.py")," 负责奖励的读取与归一化。三者的分工很清晰。"),
+      h("h3",null,"一条 trace 即一个训练样本"),
+      h("p",null,"这是 Polar 接入 slime 的一个关键设计：动态历史（dynamic history）。一次 agent 会话由多轮交互组成，每一轮是 ",h("code",null,"Trajectory.traces")," 里的一条 trace（第 7 课讲过构建策略如何切分 trace）。",h("code",null,"session_result_to_samples")," 把每条可用 trace 转成一个独立的 ",h("code",null,"Sample"),"，让梯度从",h("strong",null,"每一轮"),"而非只从最后一轮学习。"),
+      h(Code,null,"def session_result_to_samples(result, group_index, *, trajectory_index, reward_key=\"score\", max_tokens=None):\n    Sample = _load_sample_type()\n    traces = result.trajectory.traces\n    samples = []\n    for trace_index, trace in enumerate(traces):\n        sample = _build_sample(Sample=Sample, result=result, trace=trace,\n                               trace_index=trace_index, group_index=group_index,\n                               index=trajectory_index, reward_key=reward_key, max_tokens=max_tokens)\n        if sample is not None:\n            samples.append(sample)\n    if samples:\n        return samples\n    # 全部 trace 不可用: 发一个全掩码占位样本, 让组里其余样本仍可训练\n    return [_build_dummy_sample(...)]"),
+      h("p",null,"同一条会话产生的所有样本共享同一个 ",h("code",null,"Sample.index"),"（即该轨迹在组内的位置），这是后处理把它们重新折叠成一条轨迹的依据。",h("code",null,"_build_sample")," 从 trace 读取 prompt_ids、response_ids、builder 给定的 ",h("code",null,"loss_mask")," 与 rollout 阶段的 ",h("code",null,"response_logprobs"),"，并严格校验三者长度一致：可训练 token 缺失 logprob 会抛 ",h("code",null,"RolloutLogprobError"),"，因为 TIS 需要生成时的对数概率，错位会静默污染梯度。超过 ",h("code",null,"max_tokens")," 的 trace 被丢弃，避免 Megatron 的单样本长度断言失败。"),
+      h("div",{className:"note"},"适配器不自己推断哪些 token 可训练：",h("code",null,"loss_mask")," 由第 7 课的 builder（构建策略）拥有并写在 trace 上，适配器只读取与校验。这条边界让“哪些 token 计入损失”这一决定集中在一处，而非散落在转换逻辑里。"),
+      h("h3",null,"奖励：读取与轨迹级归一化"),
+      h("p",null,"奖励在 Polar 的 rollout 阶段已由 evaluator 算好并写在 trace 上（第 7 课）。slime_bridge 不重新计算，只搬运。",h("code",null,"reward.py")," 的 ",h("code",null,"reward_func")," 就是把样本上 ",h("code",null,"reward")," 字典里的值读出来。真正有逻辑的是 ",h("code",null,"reward_post_process.py"),"。"),
+      h(Code,null,"# reward_post_process.py: 把多 trace 折叠回一条轨迹, 再做组内 GRPO 归一化\ntraj_reward = {}        # (group_index, index) -> 该轨迹的奖励 (首次见到为准)\ntraj_failed = {}        # 该轨迹是否 FAILED/ABORTED\nfor i, sample in enumerate(samples):\n    key = (int(sample.group_index), int(sample.index))\n    if key not in traj_reward:\n        traj_reward[key] = raw_rewards[i]\n        traj_failed[key] = _is_failed_trajectory(sample)\n\nfor keys in group_keys.values():           # 逐组归一化\n    valid_mask = torch.tensor([not traj_failed[k] for k in keys])\n    vals = torch.tensor([traj_reward[k] for k in keys])\n    vals = vals - vals[valid_mask].mean()  # 只用有效轨迹算基线\n    if std_norm:\n        vals = vals / (vals[valid_mask].std() + 1e-6)\n    vals = vals * valid_mask                # 失败轨迹优势强制为 0"),
+      h("p",null,"两个要点。其一，多 trace 折叠：同一轨迹的多条 trace 共享一个奖励，归一化只在轨迹层面做一次，再广播回该轨迹的所有样本，因此一条 24 轮的会话不会因为轮数多而在组内被过度加权。退化到单 trace 时，这就还原成普通的 GRPO 组归一化。其二，失败排除：agent 侧 ERROR 或 TIMEOUT 的轨迹被排除在组基线之外，且自身优势强制为 0。因为这类失败语义上是“没有结果”而非“结果为 0”，把它们计入基线会扭曲存活样本的优势估计。"),
+      h(Formula,{cap:"组内 GRPO 优势：均值与标准差仅由有效（非失败）轨迹计算"},"$$ A_i = \\frac{r_i - \\operatorname{mean}_{j \\in \\mathcal{V}}(r_j)}{\\operatorname{std}_{j \\in \\mathcal{V}}(r_j) + \\varepsilon} \\cdot \\mathbb{1}[i \\in \\mathcal{V}], \\quad \\mathcal{V} = \\{\\text{非失败轨迹}\\} $$"),
+      h("div",null,h(Src,{label:"session_result_to_samples",path:"src/slime_bridge/adapter.py",line:31}),h(Src,{label:"_build_sample",path:"src/slime_bridge/adapter.py",line:85}),h(Src,{label:"_extract_rollout_log_probs",path:"src/slime_bridge/adapter.py",line:260}),h(Src,{label:"_loss_mask_from_trace",path:"src/slime_bridge/adapter.py",line:303}),h(Src,{label:"reward_func",path:"src/slime_bridge/reward.py",line:8}),h(Src,{label:"post_process_rewards",path:"src/slime_bridge/reward_post_process.py",line:34}),h(Src,{label:"_is_failed_trajectory",path:"src/slime_bridge/reward_post_process.py",line:95}),h(Src,{label:"Trace 模型",path:"src/polar/trajectory/models.py",line:89}))
+    );
+  }
+
+  // ===== 准入控制：完成比例与零可训练 =====
+  function AdmissionSection(){
+    return h("div",null,
+      h("p",null,"并非所有提交的任务都值得训练。slime_bridge 在把任务结果转成样本前后做了几层准入检查，过滤掉会污染 GRPO 批次的数据。这些检查集中在 ",h("code",null,"_submit_attempt")," 里，任何一层不通过都抛出对应异常，由 ",h("code",null,"_submit_and_collect")," 归类计数后丢弃整组。"),
+      h("ul",null,
+        h("li",null,h("strong",null,"任务级拒绝"),"（",h("code",null,"_task_rejection_reason"),"）：任务状态非 ",h("code",null,"completed"),"、结果为空、或会话数与预期组大小不符，直接拒。"),
+        h("li",null,h("strong",null,"零样本 / 零可训练 token"),"：转换后若没有任何样本，或所有样本的 ",h("code",null,"loss_mask")," 全为 0（无可训练 token），拒。一组没有梯度信号对训练无意义。"),
+        h("li",null,h("strong",null,"完成比例不足"),"（",h("code",null,"_low_complete_accept_fraction_rejection_reason"),"）：统计 ",h("code",null,"COMPLETED")," 且含可训练 token 的会话占比，低于 ",h("code",null,"polar_min_complete_accept_fraction")," 阈值则拒。SWE-Gym 示例设为 0.6，即一组里至少六成会话要成功完成才接受。")
+      ),
+      h(Code,null,"def _low_complete_accept_fraction_rejection_reason(config, task_result, samples):\n    threshold = config.min_complete_accept_fraction\n    if threshold <= 0.0:\n        return None\n    total_sessions = len(task_result.results)\n    completed_trainable = _completed_trainable_session_count(task_result, samples)\n    required = math.ceil(total_sessions * threshold)\n    if completed_trainable >= required:\n        return None\n    return f\"completed trainable sessions {completed_trainable}/{total_sessions} below ...\""),
+      h("p",null,"被丢弃的组按原因分类计入指标：",h("code",null,"polar/dropped_zero_trainable_groups"),"、",h("code",null,"polar/dropped_low_complete_fraction_groups"),"、",h("code",null,"polar/dropped_logprob_error_groups"),"、",h("code",null,"polar/dropped_failed_groups"),"。这些指标连同会话各阶段时长（第 6 课 ",h("code",null,"StageTimer")," 的四段，经 ",h("code",null,"_polar_extra_metrics")," 汇总成 ",h("code",null,"polar/session_ms/*"),"）一起写进 W&B，是诊断 rollout 健康度的主要依据。"),
+      h("div",{className:"note"},"丢弃而非阻塞：一组数据不合格时，工作线程记一条 warning 并丢弃，不会让整个训练停摆。下游 generate 函数只要还没凑够 ",h("code",null,"rollout_batch_size")," 个组就继续等工作线程产出新组，因此丢弃会被后续生成自然补上。"),
+      h("div",null,h(Src,{label:"_submit_attempt",path:"src/slime_bridge/rollout.py",line:759}),h(Src,{label:"_submit_and_collect",path:"src/slime_bridge/rollout.py",line:719}),h(Src,{label:"_task_rejection_reason",path:"src/slime_bridge/rollout.py",line:856}),h(Src,{label:"完成比例拒绝",path:"src/slime_bridge/rollout.py",line:345}),h(Src,{label:"_polar_extra_metrics",path:"src/slime_bridge/rollout.py",line:1397}),h(Src,{label:"data_source 包装类",path:"src/slime_bridge/data_source.py",line:25}))
+    );
+  }
+
+  // ===== Platform 控制平面 =====
+  function PlatformSection(){
+    return h("div",null,
+      h("p",null,"训练之外，运维需要一个观测整套系统运行状态的界面。",h("code",null,"polar/platform/")," 就是这个控制平面：一个只读的 FastAPI 服务加 React 单页应用，命令为 ",h("code",null,"polar dashboard -c topology.yaml"),"。它不参与 rollout 主路径，只读地代理到 Rollout Server 与各 gateway，并扫描结果目录，把任务、会话、轨迹、评估、拓扑与实时事件汇总到一处。"),
+      h("p",null,"为什么单独做一个服务而非在 Rollout Server 上加端点：Rollout Server 在训练期间可能重启，而历史结果以文件形式留在 ",h("code",null,"save_dir")," 下。Platform 把“内存中的实时状态”与“磁盘上的历史记录”两个来源合并，因此即使 Server 重启过，仍能列出并查看历史任务。这是控制平面与数据平面分离的一个具体好处。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"实时"),"上游代理 + SSE"),
+          h("p",null,"通过 ",h("code",null,"UpstreamClient")," 只读拉取 Rollout Server 与 gateway 的 ",h("code",null,"/health"),"、",h("code",null,"/tasks"),"、",h("code",null,"/sessions")," 等；通过 ",h("code",null,"SseFanout")," 订阅它们的 ",h("code",null,"/events")," SSE 流并转发给浏览器。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"历史"),"文件系统索引"),
+          h("p",null,h("code",null,"FsIndex")," 周期扫描 ",h("code",null,"<save_dir>/task_*/"),"，把每个任务目录的会话文件汇成 ",h("code",null,"TaskSummary"),"，让历史任务在 Server 重启后仍可检索。")
+        )
+      ),
+      h("h3",null,"server.py：组装与生命周期"),
+      h("p",null,h("code",null,"create_app")," 构造一个 ",h("code",null,"PlatformState"),"，持有 rollout 客户端、各 gateway 客户端、文件索引与事件总线四类长生命周期对象，再挂上四个 API 路由（topology / tasks / sessions / events）与静态前端。FastAPI 的 ",h("code",null,"lifespan")," 在启动时做初次扫描、启动文件轮询、为 rollout 与每个 gateway 各起一个 SSE 转发；关闭时逆序收尾。"),
+      h(Code,null,"@asynccontextmanager\nasync def lifespan(app):\n    await rollout_client.start()\n    for client in gateway_clients.values():\n        await client.start()\n    await asyncio.to_thread(fs_index.scan)          # 初次扫描\n    fs_index.add_listener(_on_change)               # 文件变化 -> 发事件\n    await fs_index.start_polling()\n    fanouts = [SseFanout(name=\"rollout\", url=config.rollout_url, bus=event_bus)]\n    for node in config.topology.gateway.nodes:\n        fanouts.append(SseFanout(name=f\"gateway:{node.id}\", url=node.public_url, bus=event_bus))\n    for fanout in fanouts:\n        await fanout.start()\n    yield\n    ...  # 关闭时停止转发、停止轮询、关闭客户端"),
+      h("h3",null,"四个 API 路由"),
+      h("p",null,"四个路由都挂在 ",h("code",null,"/api")," 前缀下，全部只读（唯一改变状态的是取消会话的 DELETE 代理）。它们的共同特征是“合并两个来源”：文件索引提供历史，上游实时状态提供当前。"),
+      h("ul",null,
+        h("li",null,h("code",null,"topology.py · GET /api/topology"),"：静态拓扑加每个节点的实时 ",h("code",null,"/health"),"，以及 Rollout Server 的 ",h("code",null,"/rollout/status"),"（任务、流水线、节点占用）。"),
+        h("li",null,h("code",null,"tasks.py · GET /api/tasks"),"：先取文件索引的任务列表，再用 Rollout Server 的实时 ",h("code",null,"/tasks")," 叠加覆盖，合并后重新过滤排序。",h("code",null,"GET /api/tasks/{id}")," 进一步合并会话级摘要。"),
+        h("li",null,h("code",null,"sessions.py · GET /api/sessions/{id}"),"：会话详情、轨迹（",h("code",null,"/trajectory"),"）、评估（",h("code",null,"/evaluation"),"）、补全记录（",h("code",null,"/completions"),"，gateway 优先、磁盘兜底）、原始负载（",h("code",null,"/raw"),"），以及取消会话的 ",h("code",null,"DELETE"),"。"),
+        h("li",null,h("code",null,"events.py · GET /api/events"),"：把事件总线里的所有事件以 SSE 推给浏览器，含周期 ping 心跳。")
+      ),
+      h("h3",null,"FsIndex 与 SseFanout：两类数据来源"),
+      h("p",null,h("code",null,"FsIndex.scan")," 遍历 ",h("code",null,"save_dir")," 下所有 ",h("code",null,"task_*")," 目录，优先读目录里的 ",h("code",null,"_index.json")," 汇总，没有就逐个解析会话文件得出状态、完成数、平均奖励等。每次扫描比对上一次，对 ",h("code",null,"updated_at")," 变化的任务触发回调，回调用 ",h("code",null,"event_bus.publish_threadsafe")," 把 ",h("code",null,"task.updated")," 事件从扫描线程跨到事件循环线程发出。",h("code",null,"SseFanout")," 则维护一条到上游 ",h("code",null,"/events")," 的长连接，解析 SSE 帧后用 ",h("code",null,"bus.publish")," 重新发布，并带指数退避重连。"),
+      h(Code,null,"# fs_index.py: 扫描后只对变化的任务通知监听器\nfor tid, summary in new_tasks.items():\n    prior = previous.get(tid)\n    if prior is None or prior.updated_at != summary.updated_at:\n        for cb in self._on_change_callbacks:\n            cb(summary)            # -> EventBus.publish_threadsafe(task.updated)"),
+      h("p",null,h("code",null,"EventBus")," 是一个最小的 asyncio 发布订阅：每个订阅者拿一个有界队列，落后了就丢旧事件。它既被 Platform 用于聚合上游事件，也是第 6 课 Rollout Server 与 gateway 自身 ",h("code",null,"/events")," 端点复用的同一原语。Platform 因此是这些事件流的汇聚点。"),
+      h("div",null,h(Src,{label:"create_app",path:"src/polar/platform/server.py",line:55}),h(Src,{label:"lifespan",path:"src/polar/platform/server.py",line:72}),h(Src,{label:"PlatformState",path:"src/polar/platform/server.py",line:32}),h(Src,{label:"FsIndex.scan",path:"src/polar/platform/fs_index.py",line:266}),h(Src,{label:"_scan_task_dir",path:"src/polar/platform/fs_index.py",line:159}),h(Src,{label:"SseFanout._run",path:"src/polar/platform/sse_fanout.py",line:65}),h(Src,{label:"EventBus",path:"src/polar/platform/events.py",line:31}),h(Src,{label:"tasks 路由",path:"src/polar/platform/api/tasks.py",line:32}),h(Src,{label:"sessions 路由",path:"src/polar/platform/api/sessions.py",line:40}),h(Src,{label:"topology 路由",path:"src/polar/platform/api/topology.py",line:27}),h(Src,{label:"events 路由",path:"src/polar/platform/api/events.py",line:18}),h(Src,{label:"Platform README",path:"src/polar/platform/README.md"}))
+    );
+  }
+
+  // ===== examples 串讲 =====
+  const EXAMPLES=[
+    {key:"calculator",name:"calculator",render:function(){return [
+      h("p",null,"最小的端到端示例，用来快速验证 rollout、gateway、runtime 准备、harness 执行与评估能否协同工作。每个 agent 拿到一个含解析器桩的 ",h("code",null,"calculator.py"),"，编辑它，评估器跑 ",h("code",null,"python3 test_calculator.py"),"。"),
+      h("ul",null,
+        h("li",null,"拓扑：rollout 在 ",h("code",null,":8080"),"，两个 gateway 在 ",h("code",null,":8100/:8101"),"，两个本地 SGLang 后端在 ",h("code",null,":8000/:8001"),"。"),
+        h("li",null,"覆盖六种 harness：claude_code、codex、gemini_cli、opencode、pi、qwen_code，验证第 2 课的 harness 抽象。"),
+        h("li",null,"提交走 ",h("code",null,"submit_all.py")," 或 ",h("code",null,"submit_calculator_task.py <harness>"),"，结果写到 ",h("code",null,"batches/<timestamp>/"),"。")),
+      h("p",null,"它是验证“整条 rollout 路径是否还通”的烟测。",h("code",null,"polar serve_rollout")," 与 ",h("code",null,"polar serve_gateway")," 分别起第 6、3 课的两个服务。"),
+      h("div",null,h(Src,{label:"calculator README",path:"examples/calculator/README.md"}),h(Src,{label:"submit_calculator_task.py",path:"examples/calculator/submit_calculator_task.py"}),h(Src,{label:"topology.yaml",path:"examples/calculator/topology.yaml"}))
+    ];}},
+    {key:"count_stars",name:"count_stars",render:function(){return [
+      h("p",null,"在 calculator 之上验证一件事：coding-agent harness 能否从 runtime 工作区里的一张图片（",h("code",null,"/polar/session/workspace/polar_stars.png"),"）出发，经本地 SGLang 的 OpenAI 兼容后端完成多模态任务（数图中的星星）。"),
+      h("ul",null,
+        h("li",null,"拓扑与模型设置与 calculator 相同，但模型换成更大的 Qwen3.6-27B，并启用 Qwen 工具调用解析器。"),
+        h("li",null,"覆盖三种 harness：claude_code、codex、gemini_cli；评估器为 ",h("code",null,"session_completed"),"（只看会话是否正常完成，不做正确性打分）。")),
+      h("p",null,"它检验第 4 课协议变换里多模态内容（图像路径）的处理是否贯通到推理后端。"),
+      h("div",null,h(Src,{label:"count_stars README",path:"examples/count_stars/README.md"}),h(Src,{label:"submit_count_stars_task.py",path:"examples/count_stars/submit_count_stars_task.py"}))
+    ];}},
+    {key:"swebench",name:"swebench_verified",render:function(){return [
+      h("p",null,"在完整的 SWE-bench Verified（500 道人工核验任务）上评估 harness。每道任务在一个按实例构建的容器里、把仓库置于 ",h("code",null,"base_commit"),"，让 agent 修改代码，再用 ",h("code",null,"swebench.harness.grading")," 给生成的补丁打分。"),
+      h("ul",null,
+        h("li",null,"这是纯评估（非训练）路径：用 ",h("code",null,"submit_swebench_tasks.py")," 提交，",h("code",null,"--num-samples 1")," 测 pass@1，",h("code",null,"--num-samples 8")," 测 pass@8。"),
+        h("li",null,"需要先用 ",h("code",null,"build_images.py")," 构建每实例的容器镜像（可 ",h("code",null,"--max-tasks")," 取子集），呼应第 5 课 Runtime 池化按镜像准备运行时。")),
+      h("p",null,"它把第 7 课的评估器（",h("code",null,"swebench_harness")," 策略）放到一个权威基准上，是 Polar 评估能力的对外标尺。"),
+      h("div",null,h(Src,{label:"swebench README",path:"examples/swebench_verified/README.md"}),h(Src,{label:"submit_swebench_tasks.py",path:"examples/swebench_verified/submit_swebench_tasks.py"}),h(Src,{label:"dataset.py",path:"examples/swebench_verified/dataset.py"}),h(Ext,{href:"https://huggingface.co/datasets/princeton-nlp/SWE-bench_Verified"},"SWE-bench Verified"))
+    ];}},
+    {key:"swegym",name:"swegym_slime_grpo",render:function(){return [
+      h("p",null,"本课的核心示例：用 slime GRPO 在 SWE-Gym 上训练 Qwen3.5-4B，由 Polar 提供 rollout。它把前面所有部件接成一个可运行的训练任务。"),
+      h("ul",null,
+        h("li",null,h("code",null,"launch_e2e.sh"),"：单入口启动器，克隆 slime 与 Megatron-LM、可编辑安装、打 slime 与 SGLang 补丁、构建 SWE-Gym 数据与 Apptainer 镜像、转换 Qwen 权重为 Megatron 格式，最后交给 ",h("code",null,"run.sh"),"。"),
+        h("li",null,h("code",null,"run.sh"),"：8 卡 B200 布局，GPU 0-1 跑 Megatron GRPO 训练（TP=2），GPU 2-7 跑 6 个 SGLang 引擎（由 slime/Ray 管理）。权重经 NCCL 每步 GPU 到 GPU 同步。"),
+        h("li",null,h("code",null,"polar_config.yaml"),"：Polar 任务模板，runtime 用 Apptainer 加载每实例 SIF 镜像，builder 用 ",h("code",null,"prefix_merging"),"，evaluator 用 ",h("code",null,"swebench_harness"),"。"),
+        h("li",null,h("code",null,"topology.yaml"),"：Polar 集群与 gateway 拓扑，gateway 的 SGLang base_url 在启动时被填成 slime 的 router 地址。")),
+      h("p",null,h("code",null,"--dynamic-history")," 与 ",h("code",null,"--use-tis")," 是这个示例的两个关键开关：前者让每条 trace 成为一个训练样本（呼应 adapter），后者启用重要性采样以修正异步陈旧度（呼应陈旧度控制）。"),
+      h("div",null,h(Src,{label:"swegym README",path:"examples/swegym_slime_grpo/README.md"}),h(Src,{label:"launch_e2e.sh",path:"examples/swegym_slime_grpo/launch_e2e.sh"}),h(Src,{label:"run.sh",path:"examples/swegym_slime_grpo/run.sh"}),h(Src,{label:"polar_config.yaml",path:"examples/swegym_slime_grpo/polar_config.yaml"}),h(Src,{label:"topology.yaml",path:"examples/swegym_slime_grpo/topology.yaml"}))
+    ];}}
+  ];
+  function ExampleExplorer(){const [s,setS]=useState(3);const d=EXAMPLES[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},EXAMPLES.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 端到端数据流 =====
+  function EndToEndSection(){
+    return h("div",null,
+      h("p",null,"把整门课串起来：一次 slime GRPO 训练步如何驱动 Polar 完成一批 rollout。下面按编号给出完整数据流，括号里标注它对应到哪一课的组件。"),
+      h("ol",{className:"steps"},
+        h("li",null,h("strong",null,"slime 训练循环调用 generate 函数"),"。",h("code",null,"train_async.py")," 提前发起下一批生成，调用 ",h("code",null,"generate_rollout_polar_async(args, rollout_id, data_source)"),"。它取到全局工作线程并设置当前 rollout_id（本课 ",h("code",null,"rollout.py"),"）。"),
+        h("li",null,h("strong",null,"工作线程从数据源拉取 prompt 组"),"。",h("code",null,"data_source.get_samples(1)")," 返回一组同源样本，组大小为 ",h("code",null,"n_samples_per_prompt"),"（本课 ",h("code",null,"data_source.py"),"，slime 数据缓冲）。"),
+        h("li",null,h("strong",null,"渲染成 TaskRequest 并提交"),"。",h("code",null,"render_task_payload")," 用任务模板把样本填成 ",h("code",null,"TaskRequest"),"（含 instruction、runtime、agent、builder、evaluator），POST 到 ",h("code",null,"/rollout/task/submit"),"，附带本进程回调 URL（本课 ",h("code",null,"config.py")," + 第 6 课）。"),
+        h("li",null,h("strong",null,"Rollout Server 展开并派发会话"),"。",h("code",null,"RolloutManager")," 把任务展开成 ",h("code",null,"num_samples")," 条会话，",h("code",null,"Pipeline")," 经 ",h("code",null,"NodeScheduler")," 按阶段压力选节点，POST 到该 gateway 的 ",h("code",null,"/sessions"),"（第 6 课）。"),
+        h("li",null,h("strong",null,"gateway 执行会话的四个阶段"),"。dispatcher 用 INIT/READY/RUNNING/POSTRUN 四个 worker 池驱动：准备 runtime（第 5 课）、运行 agent harness（第 2 课），其间所有 LLM 请求经协议变换转发到 SGLang router（第 3、4 课）。"),
+        h("li",null,h("strong",null,"构建轨迹并评估"),"。harness 跑完后，builder 把交互切分成 trace 并写 loss_mask，evaluator 给补丁打分写回 trace 的 reward（第 7 课）。"),
+        h("li",null,h("strong",null,"结果回传"),"。gateway 把 ",h("code",null,"SessionResult")," POST 回 Server 的回调；Server 收齐一个任务的所有会话后，把终态 ",h("code",null,"TaskResult")," POST 回 slime_bridge 的回调监听器（第 6 课 + 本课 ",h("code",null,"_await_task_result"),"）。"),
+        h("li",null,h("strong",null,"转换成 slime 样本"),"。",h("code",null,"session_result_to_samples")," 把每条 trace 转成一个 ",h("code",null,"Sample"),"，读取 tokens、loss_mask 与 rollout logprobs，经准入检查后压进输出队列（本课 ",h("code",null,"adapter.py"),"）。"),
+        h("li",null,h("strong",null,"排空并过滤陈旧组"),"。generate 函数从工作线程 ",h("code",null,"drain_completed"),"，丢弃陈旧度超限的组，给余下样本标注 policy_staleness，凑够 ",h("code",null,"rollout_batch_size")," 后返回（本课陈旧度控制）。"),
+        h("li",null,h("strong",null,"slime 计算奖励与优势并更新权重"),"。",h("code",null,"reward_func")," 读奖励，",h("code",null,"post_process_rewards")," 做轨迹级 GRPO 归一化，Megatron 用 TIS 修正陈旧度后反向传播，再经 NCCL 把新权重同步给 SGLang，",h("code",null,"update_policy_version")," 推进版本号（本课 reward 三件套 + 权重协调）。")
+      ),
+      h("p",null,"整个过程中 Platform 在旁路只读观测：FsIndex 扫描结果目录、SseFanout 转发事件，运维通过 ",h("code",null,"polar dashboard")," 看到任务进度、会话轨迹与节点占用，但不介入这条主路径。"),
+      h(Formula,{cap:"异步重叠下，第 t 步训练消费的数据来自第 t 至 t-s 步生成的策略（s 为陈旧度）"},"$$ \\theta_{t+1} = \\theta_t - \\eta\\, \\nabla_\\theta \\mathcal{L}\\big(\\mathcal{D}_{t-s:t},\\, \\theta_t\\big), \\qquad 0 \\le s \\le \\texttt{max\\_off\\_policy\\_steps} $$"),
+      h("div",null,h(Src,{label:"generate 函数",path:"src/slime_bridge/rollout.py",line:1232}),h(Src,{label:"提交 + 收集",path:"src/slime_bridge/rollout.py",line:759}),h(Src,{label:"会话转样本",path:"src/slime_bridge/adapter.py",line:31}),h(Src,{label:"奖励归一化",path:"src/slime_bridge/reward_post_process.py",line:34}),h(Ext,{href:"https://arxiv.org/pdf/2605.24220"},"Polar Tech Report"))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"Polar Tech Report",d:"Rollout as a Service 与异步训练接入的设计动机",href:"https://arxiv.org/pdf/2605.24220"},
+    {t:"slime 仓库",d:"自定义 generate / reward / data-source 契约的来源",href:"https://github.com/THUDM/slime"},
+    {t:"GRPO（DeepSeekMath）",d:"组内归一化优势与失败轨迹排除的算法背景",href:"https://arxiv.org/abs/2402.03300"},
+    {t:"AReaL 异步 RL",d:"异步陈旧度控制与重要性采样修正的参照",href:"https://arxiv.org/pdf/2505.24298"},
+    {t:"SWE-bench Verified",d:"swebench_verified 示例使用的评估基准",href:"https://huggingface.co/datasets/princeton-nlp/SWE-bench_Verified"},
+    {t:"FastAPI 文档",d:"Platform 服务与回调监听器的 Web 框架",href:"https://fastapi.tiangolo.com/"},
+    {t:"rollout.py（本机）",d:"src/slime_bridge/rollout.py",href:srcUrl("src/slime_bridge/rollout.py",null)},
+    {t:"platform/server.py（本机）",d:"src/polar/platform/server.py",href:srcUrl("src/polar/platform/server.py",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:8}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 8 课 / 共 8 · slime 集成与 Platform"),
+          h("h1",null,"slime 集成与 Platform"),
+          h("p",{className:"lead"},"这是端到端收尾的一课。前七课建好了 Polar 的全部组件，这一课把它接到真实训练框架：slime_bridge 如何用一个自定义 generate 函数把 Polar 变成 slime GRPO 的 rollout 后端，异步工作线程如何在重叠生成与训练的同时控制策略陈旧度，adapter 与 reward 三件套如何把 Polar 轨迹转回带 GRPO 优势的训练样本；Platform 控制平面如何只读地汇总整套系统的运行状态；examples 四个示例各自的角色；以及一次训练步驱动 Polar rollout 的完整数据流。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"src/slime_bridge/")," 的 rollout / config / adapter / reward / reward_post_process / data_source，",h("code",null,"src/polar/platform/")," 的 server / api / fs_index / sse_fanout / events，以及 ",h("code",null,"examples/")," 下四个示例。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/ProRL-Agent-Server")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime_bridge · 自定义 generate 契约"),
+          h("h2",null,"Polar 作为 slime 的 rollout 后端"),
+          h(ContractSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime_bridge/config.py"),
+          h("h2",null,"配置：从训练超参推导调度上限"),
+          h(ConfigSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime_bridge/rollout.py（承重）"),
+          h("h2",null,"异步工作线程：重叠生成与训练"),
+          h(WorkerSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime_bridge/rollout.py · 陈旧度"),
+          h("h2",null,"陈旧度控制与权重更新协调"),
+          h(StalenessSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"adapter.py · reward.py · reward_post_process.py"),
+          h("h2",null,"轨迹转样本与 GRPO 奖励归一化"),
+          h(AdapterSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime_bridge/rollout.py · 准入"),
+          h("h2",null,"准入控制：哪些组值得训练"),
+          h(AdmissionSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"polar/platform"),
+          h("h2",null,"Platform：只读控制平面与仪表盘"),
+          h(PlatformSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"examples"),
+          h("h2",null,"四个示例：从烟测到完整训练"),
+          h("p",null,"Polar 用四个示例覆盖从最小验证到完整训练的谱系。点 Tab 切换；默认展开本课核心的 swegym_slime_grpo。"),
+          h(ExampleExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"端到端"),
+          h("h2",null,"一次 GRPO 训练驱动 Polar rollout 的完整数据流"),
+          h(EndToEndSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档，能把 slime 契约、异步陈旧度与 GRPO 的算法背景补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"一个 generate 函数即接入点"),"：Polar 通过 slime 的自定义 generate / reward / data-source 契约接入，全程只说 async-only 的 ",h("code",null,"/rollout/task/submit")," + 回调协议，因此训练后端与执行后端彻底解耦，换框架不必重写执行侧。"),
+            h("li",null,h("strong",null,"工作线程把异步做实"),"：常驻后台线程持续提交、收集、转换，generate 只负责排空。生成与训练真正重叠，并发上限由 slime 超参推导，回调优先、轮询兜底回收结果。"),
+            h("li",null,h("strong",null,"陈旧度是一等公民"),"：从配置推导 ",h("code",null,"max_off_policy_steps"),"，排空时按陈旧度丢弃，样本带 staleness 元数据供 TIS 修正，权重更新窗口期暂停吸入而非中断在途会话。"),
+            h("li",null,h("strong",null,"转换层只搬运、不发明"),"：每条 trace 成一个样本（动态历史），loss_mask 与奖励由 builder 与 evaluator 拥有，适配器只读取与严格校验；后处理把多 trace 折叠回轨迹再做组内 GRPO 归一化，并排除失败轨迹。"),
+            h("li",null,h("strong",null,"控制平面与数据平面分离"),"：Platform 只读地合并“内存实时状态”与“磁盘历史记录”，旁路观测整套系统，不介入 rollout 主路径，因此 Server 重启也不丢历史。"),
+            h("li",null,h("strong",null,"示例覆盖完整谱系"),"：calculator 烟测、count_stars 多模态、swebench_verified 权威基准评估、swegym_slime_grpo 完整训练，把第 1 至 7 课的组件接成可运行的端到端任务。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"polar-lesson-07-trajectory.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 7 课：Trajectory 构建与评估")),
+            h("a",{href:"polar-course-index.html"},h("div",{className:"faint"},"课程总览 →"),h("strong",null,"Polar · 逐文件精读"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

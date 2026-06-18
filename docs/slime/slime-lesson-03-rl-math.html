@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>slime 逐文件精读 · 第 3 课：RL 数学原语</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 3 课</p><h1>RL 数学原语</h1><p>能访问 CDN 时切换为交互版。本课逐一精读 slime 的强化学习数学核心：优势估计（GAE 与 GRPO 组内归一化）、策略损失各变体（PPO 双裁剪、GSPO、CISPO）、KL 估计器 k1/k2/k3、跨 DP 全局白化、log-prob 与熵、off-policy 的重要性采样修正，以及序列长度均衡装箱、多轮 loss mask、动态批调度与 MoE 路由重放 R3。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const SLIME="vscode://file/Users/xinyu/Code/Agentic-RL/slime/";
+  function srcUrl(p,l){return SLIME+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","Sample","Args","RolloutController","RolloutManager","RayTrainGroup","RayActor","SglangEngine","Box","ray","asyncio","Timer","ParamInfo","RolloutBatch","Namespace","Set","State","RoutingReplay","MultiTurnLossMaskGenerator","AutoTokenizer","F","mpu","heapq"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与双引擎","slime-lesson-01-foundations.html"],[2,"统一配置","slime-lesson-02-config.html"],[3,"RL 数学原语","slime-lesson-03-rl-math.html"],[4,"数据与 Buffer","slime-lesson-04-data-buffer.html"],[5,"Megatron 后端","slime-lesson-05-megatron.html"],[6,"SGLang 后端","slime-lesson-06-sglang.html"],[7,"权重同步","slime-lesson-07-weight-sync.html"],[8,"Rollout 与异步","slime-lesson-08-rollout-async.html"],[9,"Agent 层","slime-lesson-09-agent.html"],[10,"Ray 编排","slime-lesson-10-orchestration.html"],[11,"miles 增量","slime-lesson-11-miles-delta.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"slime-course-index.html"},"slime",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 总览：从奖励到损失的一条计算流 =====
+  function OverviewSection(){
+    return h("div",null,
+      h("p",null,"这一课只读 ",h("code",null,"slime/utils/")," 下的五个纯计算文件，它们构成 slime 的强化学习数学核心。与第 5 课的 Megatron 后端不同，这些文件几乎不依赖分布式或推理框架，可以在仅 CPU 的持续集成环境中独立单元测试。它们提供的是一组可组合的数学原语，由 ",h("code",null,"slime/backends/megatron_utils/loss.py")," 在前向传播中按配置拼装成最终的损失。"),
+      h("p",null,"先建立一条贯穿全课的计算流。一条 rollout 样本携带 prompt 与 response 的 token、一个标量奖励 ",h("code",null,"reward"),"、一个逐 token 的 ",h("code",null,"loss_mask"),"（只在 response 的有效 token 上为 1），以及旧策略生成时的 log-prob。训练侧的目标是把这些量转换成一个标量损失："),
+      h(Formula,{cap:"从奖励到损失：本课各原语在流水线上的位置"},"$$ r \\;\\xrightarrow{\\text{组内归一化}}\\; \\hat r \\;\\xrightarrow{\\text{优势估计}}\\; A \\;\\xrightarrow{\\text{全局白化}}\\; \\tilde A \\;\\xrightarrow{\\text{策略损失}}\\; \\mathcal L_{\\text{pg}} \\;\\xrightarrow{+\\,\\text{熵}/\\text{KL}}\\; \\mathcal L $$"),
+      h("p",null,"对照源码，每个箭头都有明确归属：组内归一化在 ",h("code",null,"ray/rollout.py")," 的 ",h("code",null,"_post_process_rewards")," 完成；优势估计与 KL 在 ",h("code",null,"loss.py")," 的 ",h("code",null,"compute_advantages_and_returns")," 调用 ",h("code",null,"ppo_utils.py")," 的函数完成；全局白化调用第 1 课提到的 ",h("code",null,"distributed_masked_whiten"),"；策略损失由 ",h("code",null,"compute_policy_loss"),"/",h("code",null,"compute_cispo_loss")," 给出；熵与 KL 惩罚在损失函数末尾叠加。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"五个原语文件")),
+          h("ul",null,
+            h("li",null,h("code",null,"ppo_utils.py"),"：KL 估计器、PPO/GSPO/CISPO 损失、GAE、各类 returns、log-prob 与熵。"),
+            h("li",null,h("code",null,"seqlen_balancing.py"),"：变长序列的均衡划分（Karmarkar-Karp）与首次适配装箱。"),
+            h("li",null,h("code",null,"mask_utils.py"),"：多轮对话的 loss mask 生成器。"),
+            h("li",null,h("code",null,"dp_schedule.py"),"：把样本打包成 micro-batch 并分配到各 DP rank。"),
+            h("li",null,h("code",null,"routing_replay.py"),"：MoE 专家路由重放 R3。"))
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"为什么独立成文件")),
+          h("p",null,"把数学原语与分布式框架解耦有两个动机。其一，正确性。强化学习的 bug 往往是静默的（损失数值看似正常但梯度方向错误），把纯计算抽离便于写确定性的单元测试。其二，可移植。同一套优势与损失公式既服务于 Megatron 后端，也可被自定义优势函数（",h("code",null,"custom_advantage_function_path"),"）复用，无需重写。"))
+      ),
+      h("div",null,h(Src,{label:"ppo_utils.py",path:"slime/utils/ppo_utils.py"}),h(Src,{label:"_post_process_rewards",path:"slime/ray/rollout.py",line:684}),h(Src,{label:"compute_advantages_and_returns",path:"slime/backends/megatron_utils/loss.py",line:575}),h(Src,{label:"policy_loss_function（拼装处）",path:"slime/backends/megatron_utils/loss.py",line:899}))
+    );
+  }
+
+  // ===== 优势与 KL =====
+  const ADVKL=[
+    {key:"grpo",name:"GRPO 组内归一化",render:function(){return [
+      h("p",null,"GRPO（Group Relative Policy Optimization）的核心思想是省去价值网络（critic），改用同一 prompt 的 ",h("code",null,"n_samples_per_prompt")," 个采样组成一个组，用组内的奖励均值作为基线（baseline），用组内标准差作归一化。直觉是：在同一道题的若干次作答之间比较好坏，而非依赖一个单独训练的价值函数去估计绝对回报。"),
+      h(Formula,{cap:"GRPO 组内归一化优势：对第 i 个组、第 j 个样本"},"$$ \\hat A_{i,j} \\;=\\; \\frac{r_{i,j} - \\operatorname{mean}\\big(\\{r_{i,k}\\}_{k=1}^{G}\\big)}{\\operatorname{std}\\big(\\{r_{i,k}\\}_{k=1}^{G}\\big) + \\varepsilon},\\qquad G = \\texttt{n\\_samples\\_per\\_prompt} $$"),
+      h("p",null,"在 slime 中，减均值与除标准差这一步发生在 rollout 侧的奖励后处理，而非训练侧。",h("code",null,"_post_process_rewards")," 先把扁平的奖励列表重塑成 ",h("code",null,"(组数, 组大小)"),"，对每组减均值；只有当 ",h("code",null,"grpo_std_normalization")," 为真时才再除以标准差。这一区分对应 ",h(Ext,{href:"https://arxiv.org/abs/2503.14476"},"DAPO")," 等工作的观察：除以标准差会放大那些组内方差很小（几乎全对或全错）的简单样本的权重，去掉它可缓解此问题。"),
+      h(Code,null,"# ray/rollout.py _post_process_rewards: 组内归一化\nrewards = torch.tensor(raw_rewards, dtype=torch.float)\nif rewards.shape[-1] == args.n_samples_per_prompt * args.rollout_batch_size:\n    rewards = rewards.reshape(-1, args.n_samples_per_prompt)\nelse:\n    rewards = rewards.view(-1, rewards.shape[-1])  # 各组样本数不等时\nmean = rewards.mean(dim=-1, keepdim=True)\nrewards = rewards - mean\nif args.advantage_estimator in [\"grpo\", \"gspo\", \"cispo\"] and args.grpo_std_normalization:\n    std = rewards.std(dim=-1, keepdim=True)\n    rewards = rewards / (std + 1e-6)"),
+      h("p",null,"到了训练侧，由于 GRPO 的优势是逐序列的标量（同一序列内每个 token 共享同一优势），",h("code",null,"get_grpo_returns")," 只是把这个标量广播到 response 的每个 token 上。注意它用 ",h("code",null,"kl[i]")," 的形状作为广播模板，因此当 ",h("code",null,"kl_coef")," 为 0 时 kl 全为零张量，仅用于取形状。"),
+      h(Code,null,"# ppo_utils.py: GRPO 把标量奖励广播为逐 token 的 returns/advantages\ndef get_grpo_returns(rewards, kl):\n    returns = []\n    for i in range(len(rewards)):\n        returns.append(torch.ones_like(kl[i]) * rewards[i])\n    return returns"),
+      h("div",null,h(Src,{label:"_post_process_rewards 组内归一化",path:"slime/ray/rollout.py",line:689}),h(Src,{label:"get_grpo_returns",path:"slime/utils/ppo_utils.py",line:224}),h(Src,{label:"grpo→get_grpo_returns 调用",path:"slime/backends/megatron_utils/loss.py",line:636}),h(Ext,{href:"https://arxiv.org/abs/2402.03300"},"GRPO (DeepSeekMath)"))
+    ];}},
+    {key:"gae",name:"GAE（PPO）",render:function(){return [
+      h("p",null,"当 ",h("code",null,"advantage_estimator")," 为 ",h("code",null,"ppo")," 时使用价值网络与广义优势估计（Generalized Advantage Estimation, GAE）。GAE 在偏差与方差之间用 ",h("code",null,"lambd")," 做插值：先定义时序差分残差，再做带 ",h("code",null,"gamma*lambd")," 衰减的反向累加。"),
+      h(Formula,{cap:"TD 残差与 GAE（response 末端 V_{T}=0 的 PPO 约定）"},"$$ \\delta_t = r_t + \\gamma\\, V_{t+1} - V_t, \\qquad \\hat A_t = \\sum_{l=0}^{\\infty} (\\gamma\\lambda)^{l}\\,\\delta_{t+l} $$"),
+      h("p",null,"等价的反向递推形式正是 slime 的实现："),
+      h(Formula,{cap:"GAE 反向递推（vanilla 实现的逐步形式）"},"$$ \\hat A_t = \\delta_t + \\gamma\\lambda\\,\\hat A_{t+1},\\qquad \\hat A_{T-1}=\\delta_{T-1};\\qquad G_t = \\hat A_t + V_t $$"),
+      h(Code,null,"# ppo_utils.py vanilla_gae: 标准反向递推\nlastgaelam = torch.zeros(B, device=device, dtype=dtype)\nadv_rev = []\nfor t in reversed(range(T)):\n    next_value = values[:, t + 1] if t < T - 1 else 0.0\n    delta = rewards[:, t] + gamma * next_value - values[:, t]\n    lastgaelam = delta + gamma * lambd * lastgaelam\n    adv_rev.append(lastgaelam)\nfull_advantages = torch.stack(adv_rev[::-1], dim=1)\nfull_returns = full_advantages + values"),
+      h("p",null,"反向递推的串行依赖长度是 O(T)，对长序列不友好。",h("code",null,"chunked_gae")," 借鉴 Flash Linear Attention 的思路，把序列切成长度 ",h("code",null,"chunk_size")," 的块，块内用一个上三角矩阵 ",h("code",null,"M[i,j]=w^{j-i}")," 做并行前缀扫描（",h("code",null,"w=gamma*lambd"),"），块间再做递推状态传播，把串行依赖缩短到 O(T / chunk_size)。两条路径数值等价，由 ",h("code",null,"get_advantages_and_returns_batch")," 的 ",h("code",null,"chunked")," 参数选择。"),
+      h(Formula,{cap:"chunked_gae 的块内并行核：在反转序列上做前缀和"},"$$ S[i] = \\sum_{k=0}^{i} w^{\\,i-k}\\,\\Delta[k] \\;=\\; (\\Delta\\,M)[i],\\qquad M[i,j]=\\begin{cases} w^{\\,j-i}, & j\\ge i\\\\ 0, & j<i \\end{cases} $$"),
+      h("p",null,"PPO 路径在把奖励送入 GAE 前，还会先把 KL 惩罚作为逐 token 奖励的一部分扣除（",h("code",null,"k *= -kl_coef"),"），并在 response 最后一个 token 上加回原始标量奖励，这与 OpenAI 原始 PPO 论文中“奖励含 KL 惩罚项”的约定一致。"),
+      h("div",null,h(Src,{label:"get_advantages_and_returns（单序列）",path:"slime/utils/ppo_utils.py",line:334}),h(Src,{label:"get_advantages_and_returns_batch",path:"slime/utils/ppo_utils.py",line:397}),h(Src,{label:"vanilla_gae",path:"slime/utils/ppo_utils.py",line:505}),h(Src,{label:"chunked_gae",path:"slime/utils/ppo_utils.py",line:529}),h(Src,{label:"ppo 分支（含 KL 入奖励）",path:"slime/backends/megatron_utils/loss.py",line:642}),h(Ext,{href:"https://arxiv.org/abs/1707.06347"},"PPO 原论文"))
+    ];}},
+    {key:"kl",name:"KL 估计器 k1/k2/k3",render:function(){return [
+      h("p",null,"KL 散度 ",h("code",null,"KL(π_θ || π_ref)")," 无法精确计算（要遍历整个词表），只能用采样估计。",h("code",null,"compute_approx_kl")," 实现了 John Schulman 博客中的三个无偏或近似无偏估计器。记 log 比值为 ",h("code",null,"ρ = log π_θ(y) - log π_ref(y)"),"。"),
+      h(Formula,{cap:"三种 KL 估计器（逐 token，对采样 token y 而言）"},"$$ k_1 = \\rho,\\qquad k_2 = \\tfrac{1}{2}\\rho^{2},\\qquad k_3 = e^{-\\rho} - 1 + \\rho $$"),
+      h("p",null,"三者的取舍：",h("code",null,"k1")," 是 ",h("code",null,"E[ρ]"),"，无偏但方差大且可能取负值；",h("code",null,"k2")," 用平方降低方差，但是有偏；",h("code",null,"k3")," 既无偏、方差更低、又恒为非负（因为 ",h("code",null,"e^x - 1 - x >= 0"),"），是实践中常用的选择。注意源码中 ",h("code",null,"k3")," 计算时先令 ",h("code",null,"log_ratio = -log_ratio"),"，即用 ",h("code",null,"ρ' = -ρ")," 代入 ",h("code",null,"e^{ρ'} - 1 - ρ'"),"，与上式 ",h("code",null,"k3 = e^{-ρ} - 1 + ρ")," 等价。"),
+      h(Code,null,"# ppo_utils.py compute_approx_kl\nlog_ratio = log_probs.float() - log_probs_base.float()\nif kl_loss_type == \"k1\":\n    kl = log_ratio\nelif kl_loss_type == \"k2\":\n    kl = log_ratio**2 / 2.0\nelif kl_loss_type in [\"k3\", \"low_var_kl\"]:\n    log_ratio = -log_ratio\n    kl = log_ratio.exp() - 1 - log_ratio\n# DeepSeek-V3.2 的无偏 KL: 乘上重要性采样比值\nif importance_ratio is not None:\n    kl = importance_ratio * kl\nif kl_loss_type == \"low_var_kl\":\n    kl = torch.clamp(kl, min=-10, max=10)"),
+      h("p",null,"KL 在 slime 中有两处用途，需区分。其一是奖励侧的 KL 惩罚：在 PPO/REINFORCE++ 中，KL 作为逐 token 惩罚并入奖励或 returns（由 ",h("code",null,"kl_coef")," 控制）。其二是损失侧的 KL 损失项：当 ",h("code",null,"use_kl_loss")," 为真时，在策略损失之外额外加一项 ",h("code",null,"kl_loss_coef * KL")," 直接作为损失（GRPO 风格）。此外，",h("code",null,"use_unbiased_kl")," 会传入重要性比值 ",h("code",null,"π_θ/π_old")," 做无偏修正（呼应 DeepSeek-V3.2 的做法）。"),
+      h(Formula,{cap:"两处 KL 用法：奖励惩罚（PPO 风格）与损失项（GRPO 风格）"},"$$ \\underbrace{r_t' = r_t - \\beta\\,\\mathrm{KL}_t}_{\\text{并入奖励}},\\qquad \\underbrace{\\mathcal L = \\mathcal L_{\\text{pg}} - c_e\\,\\mathcal H + \\beta_{\\text{kl}}\\,\\overline{\\mathrm{KL}}}_{\\text{并入损失}} $$"),
+      h("div",null,h(Src,{label:"compute_approx_kl",path:"slime/utils/ppo_utils.py",line:11}),h(Src,{label:"kl 入奖励（advantage 计算）",path:"slime/backends/megatron_utils/loss.py",line:620}),h(Src,{label:"KL 损失项（use_kl_loss）",path:"slime/backends/megatron_utils/loss.py",line:976}),h(Src,{label:"--kl-loss-type 配置",path:"slime/utils/arguments.py",line:908}),h(Ext,{href:"http://joschu.net/blog/kl-approx.html"},"Schulman: KL 近似"))
+    ];}},
+    {key:"whiten",name:"全局白化",render:function(){return [
+      h("p",null,"优势估计完成后，若 ",h("code",null,"normalize_advantages")," 为真，slime 会对所有优势做一次白化（whiten，即减均值除标准差）。关键在于这次白化是跨整个数据并行组（DP group）的全局白化，而不是各 rank 各自归一化。原因是：单个 micro-batch 或单个 rank 的优势分布抽样误差很大，局部归一化会引入与全局策略无关的噪声；用全局统计量才能得到一致的尺度。"),
+      h(Formula,{cap:"带掩码的全局白化（mask 标记有效 token）"},"$$ \\mu = \\frac{\\sum_{r,t} m_{r,t}\\,A_{r,t}}{\\sum_{r,t} m_{r,t}},\\qquad \\sigma^2 = \\frac{\\sum_{r,t} m_{r,t}\\,A_{r,t}^2}{\\sum_{r,t} m_{r,t}} - \\mu^2,\\qquad \\tilde A_{r,t} = \\frac{A_{r,t}-\\mu}{\\sqrt{\\sigma^2}+\\epsilon} $$"),
+      h("p",null,"实现的巧妙之处在于：每个 rank 只把三个局部标量（加权和、加权平方和、掩码和）打包成一个张量做一次 ",h("code",null,"all_reduce"),"，便能在所有 rank 上重建出全局均值与方差，再各自用全局统计量归一化本地数据。通信量与序列长度无关，只是三个标量。这正是第 1 课提到的 ",h("code",null,"distributed_masked_whiten"),"，此处在 DP group 上调用。"),
+      h(Code,null,"# loss.py compute_advantages_and_returns: 跨 DP 全局白化\nif args.normalize_advantages:\n    all_advs = torch.cat(advantages)\n    all_masks = torch.cat(loss_masks)          # cp_size==1 的简单情形\n    dp_group = mpu.get_data_parallel_group()\n    whitened_advs_flat = distributed_masked_whiten(\n        all_advs, all_masks, process_group=dp_group, shift_mean=True,\n    )\n    chunk_lengths = [chunk.size(0) for chunk in advantages]\n    advantages = list(torch.split(whitened_advs_flat, chunk_lengths))"),
+      h("p",null,"当上下文并行（context parallel, CP）开启时，一条序列被切到多个 CP rank 上，因此掩码也要按 CP 的 token 切分规则重建到本地分片，再参与全局白化。这段逻辑在源码中较长，核心仍是“先重建本地掩码分片，再做一次 DP 级 all_reduce”。",h("code",null,"shift_mean=True")," 表示输出零均值；若设为 False 则只做尺度归一化、不平移。"),
+      h("div",null,h(Src,{label:"normalize_advantages 全局白化",path:"slime/backends/megatron_utils/loss.py",line:692}),h(Src,{label:"distributed_masked_whiten",path:"slime/utils/distributed_utils.py",line:94}),h(Src,{label:"--normalize-advantages 配置",path:"slime/utils/arguments.py",line:978}))
+    ];}}
+  ];
+  function AdvKLExplorer(){const [s,setS]=useState(0);const d=ADVKL[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},ADVKL.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 策略损失各变体 =====
+  const LOSS=[
+    {key:"ppo",name:"PPO clip / 双裁剪",render:function(){return [
+      h("p",null,"策略梯度的基本形式是 ",h("code",null,"-A * π_θ/π_old"),"，其中重要性比值 ",h("code",null,"ratio = π_θ(y)/π_old(y)")," 修正“数据由旧策略生成、却用于更新新策略”的偏差。直接最大化该目标会让 ratio 偏离 1 太远，训练不稳定，PPO 因此引入裁剪（clip）。"),
+      h(Formula,{cap:"PPO 裁剪目标（最小化负号形式，逐 token）"},"$$ \\mathcal L^{\\text{clip}}_{t} = -\\min\\!\\Big(\\rho_t\\,\\hat A_t,\\;\\operatorname{clip}(\\rho_t,\\,1-\\varepsilon_{\\text{low}},\\,1+\\varepsilon_{\\text{high}})\\,\\hat A_t\\Big),\\qquad \\rho_t = \\frac{\\pi_\\theta(y_t)}{\\pi_{\\text{old}}(y_t)} $$"),
+      h("p",null,"slime 的实现里 ",h("code",null,"ratio = (-ppo_kl).exp()"),"，其中 ",h("code",null,"ppo_kl = old_log_probs - log_probs"),"，即 ratio 等于 ",h("code",null,"exp(log π_θ - log π_old)"),"。它把裁剪的上下界拆成 ",h("code",null,"eps_clip")," 与 ",h("code",null,"eps_clip_high")," 两个参数，这就支持 DAPO 提出的非对称裁剪（Clip-Higher，放宽上界以鼓励探索）。",h("code",null,"clipfrac")," 记录被裁剪 token 的比例，用于监控。"),
+      h(Code,null,"# ppo_utils.py compute_policy_loss\nratio = (-ppo_kl).exp()\npg_losses1 = -ratio * advantages\npg_losses2 = -ratio.clamp(1 - eps_clip, 1 + eps_clip_high) * advantages\nclip_pg_losses1 = torch.maximum(pg_losses1, pg_losses2)\nclipfrac = torch.gt(pg_losses2, pg_losses1).float()\nif eps_clip_c is not None:\n    # 双裁剪 (Dual-clip PPO): 给负优势再设一个下界 -c*A\n    assert eps_clip_c > 1.0\n    pg_losses3 = -eps_clip_c * advantages\n    clip_pg_losses2 = torch.min(pg_losses3, clip_pg_losses1)\n    pg_losses = torch.where(advantages < 0, clip_pg_losses2, clip_pg_losses1)\nelse:\n    pg_losses = clip_pg_losses1"),
+      h("p",null,"双裁剪（Dual-clip）解决的是一个边界情形：当优势为负且 ratio 很大时，标准 PPO 的负样本损失会变得非常大（梯度爆炸方向）。双裁剪对负优势再加一个下界 ",h("code",null,"-c*A"),"（要求 ",h("code",null,"c>1"),"），限制单个负样本对损失的贡献。注意 ",h("code",null,"torch.maximum")," 取的是较大者，因为这里是负号形式的损失，取 max 等价于原目标取 min（更保守）。"),
+      h("div",null,h(Src,{label:"compute_policy_loss",path:"slime/utils/ppo_utils.py",line:124}),h(Src,{label:"调用处（默认分支）",path:"slime/backends/megatron_utils/loss.py",line:902}),h(Src,{label:"--eps-clip / --eps-clip-high",path:"slime/utils/arguments.py",line:873}),h(Src,{label:"--eps-clip-c（双裁剪）",path:"slime/utils/arguments.py",line:876}),h(Ext,{href:"https://arxiv.org/abs/2503.14476"},"DAPO (Clip-Higher)"))
+    ];}},
+    {key:"gspo",name:"GSPO 序列级",render:function(){return [
+      h("p",null,"GSPO（Group Sequence Policy Optimization）的动机是：PPO 在每个 token 上独立裁剪，对长序列而言逐 token 的比值噪声会累积，尤其在 MoE 模型上路由波动会让单 token 比值剧烈抖动。GSPO 改为在整条序列上使用同一个序列级比值，从而稳定长序列与 MoE 的训练。"),
+      h(Formula,{cap:"GSPO 序列级 KL：对序列长度做几何平均（loss_mask 归一）"},"$$ \\mathrm{KL}^{\\text{seq}} = \\frac{1}{|y|}\\sum_{t} m_t\\big(\\log\\pi_{\\text{old}}(y_t) - \\log\\pi_\\theta(y_t)\\big),\\qquad \\rho^{\\text{seq}} = e^{-\\mathrm{KL}^{\\text{seq}}} $$"),
+      h("p",null,"实现上，",h("code",null,"compute_gspo_kl")," 先算出每条序列的标量 KL（按 loss_mask 求和再除以掩码和，即只在有效 token 上平均），再用 ",h("code",null,"expand_as")," 把这个标量广播回该序列的每个 token。这样得到的 ",h("code",null,"ppo_kl")," 仍是逐 token 张量（便于复用同一个 ",h("code",null,"compute_policy_loss"),"），但同一序列内所有 token 的值相同。注意 GSPO 要求完整序列的 log-prob，因此在 CP 开启时需要先 ",h("code",null,"all_gather_with_cp")," 把分片拼回完整序列。"),
+      h(Code,null,"# ppo_utils.py compute_gspo_kl: 序列级 KL 后广播回逐 token\nppo_kl = [\n    ((old_logprob - log_prob) * loss_mask).sum() / torch.clamp_min(loss_mask.sum(), 1)\n    for log_prob, old_logprob, loss_mask in zip(full_log_probs, full_old_log_probs, loss_masks)\n]\nppo_kl = [kl.expand_as(log_prob) for kl, log_prob in zip(ppo_kl, local_log_probs)]\nppo_kl = torch.cat(ppo_kl, dim=0)"),
+      h("p",null,"得到序列级 ",h("code",null,"ppo_kl")," 之后，GSPO 复用与 PPO 完全相同的 ",h("code",null,"compute_policy_loss"),"，差别仅在于送进去的比值是序列级的常量。这是“数学原语可组合”的一个清晰例子：换掉比值的计算方式，裁剪机制本身不变。"),
+      h("div",null,h(Src,{label:"compute_gspo_kl",path:"slime/utils/ppo_utils.py",line:95}),h(Src,{label:"gspo 分支（序列级 KL）",path:"slime/backends/megatron_utils/loss.py",line:885}),h(Src,{label:"need_full_log_probs（CP 全收集）",path:"slime/backends/megatron_utils/loss.py",line:856}),h(Ext,{href:"https://arxiv.org/abs/2507.18071"},"GSPO 论文"))
+    ];}},
+    {key:"cispo",name:"CISPO 截断重要性",render:function(){return [
+      h("p",null,"CISPO（来自 MiniMax-M1）针对的是 PPO 裁剪的一个副作用：被裁剪的 token 在反向传播中梯度为零，等于丢弃了这些 token 的学习信号，而它们往往是策略变化最大的“关键 token”。CISPO 的做法是：保留所有 token 的梯度，但把重要性比值在停止梯度（stop-gradient）下截断，梯度只经由 ",h("code",null,"log_probs")," 流动。"),
+      h(Formula,{cap:"CISPO 损失（sg 表示 stop-gradient，detach）"},"$$ \\mathcal L^{\\text{cispo}}_{t} = -\\,\\operatorname{sg}\\!\\big(\\operatorname{clip}(\\rho_t,\\,1-\\varepsilon_{\\text{low}},\\,1+\\varepsilon_{\\text{high}})\\big)\\cdot \\hat A_t \\cdot \\log\\pi_\\theta(y_t) $$"),
+      h(Code,null,"# ppo_utils.py compute_cispo_loss\nratio = (-ppo_kl).exp()\nratio_truncated = torch.clamp(ratio, min=1.0 - eps_clip, max=1.0 + eps_clip_high)\npg_losses = -ratio_truncated.detach() * advantages * log_probs\nclipfrac = (ratio_truncated != ratio).float()"),
+      h("p",null,"对比 PPO：PPO 的损失是 ",h("code",null,"-ratio * A"),"（ratio 带梯度，但裁剪时梯度被截断），CISPO 的损失是 ",h("code",null,"-sg(clip(ratio)) * A * log_probs"),"（截断后的比值作为不带梯度的权重，梯度全部经由 ",h("code",null,"log_probs"),"）。因此即使某 token 的比值被截断，它仍以截断后的权重贡献梯度，不会被完全丢弃。源码注释指出，标准 CISPO 会关闭下界（即令 ",h("code",null,"eps_clip >= 1.0"),"），只保留上界截断。"),
+      h("div",null,h(Src,{label:"compute_cispo_loss",path:"slime/utils/ppo_utils.py",line:151}),h(Src,{label:"cispo 分支调用",path:"slime/backends/megatron_utils/loss.py",line:899}),h(Ext,{href:"https://arxiv.org/abs/2506.13585"},"CISPO (MiniMax-M1)"))
+    ];}},
+    {key:"tis",name:"重要性采样修正（off-policy）",render:function(){return [
+      h("p",null,"第 1 课讲过，异步训练（",h("code",null,"train_async.py"),"）让生成与训练重叠，代价是训练数据由略旧的权重生成，即 off-policy。更细的一层 mismatch 来自推理引擎本身：SGLang 的采样实现与训练侧前向计算的数值精度不同，rollout 时记录的 log-prob 与训练侧重算的 log-prob 并不完全相等。两者都需要重要性采样（importance sampling）修正。"),
+      h("p",null,"slime 提供 TIS（Truncated Importance Sampling）做这一修正。它用旧策略 log-prob 与 rollout 记录的 log-prob 之比作为权重，对策略损失加权，并对该权重做截断以控制方差。"),
+      h(Formula,{cap:"TIS 权重：训练侧 log-prob 与 rollout 记录 log-prob 之比，截断后加权"},"$$ w_t = \\operatorname{clip}\\!\\Big(\\frac{\\pi_{\\text{old}}(y_t)}{\\pi_{\\text{rollout}}(y_t)},\\; c_{\\text{low}},\\; c_{\\text{high}}\\Big),\\qquad \\mathcal L'_{\\text{pg},t} = w_t \\cdot \\mathcal L_{\\text{pg},t} $$"),
+      h(Code,null,"# loss.py vanilla_tis_function\ntis = torch.exp(old_log_probs - rollout_log_probs)\ntis_weights = torch.clamp(tis, min=args.tis_clip_low, max=args.tis_clip)\ntis_clipfrac = (tis_weights != tis).float()\n# 随后 pg_loss 乘以 tis_weights"),
+      h("p",null,"此外，OPSM（Off-Policy Sequence Masking）从另一个角度处理陈旧数据：当某条序列的优势为负、且其序列级 KL 超过阈值 ",h("code",null,"opsm_delta")," 时，整条序列被掩掉（不参与损失）。直觉是：对一条“已经偏离很远、且方向为负”的旧序列继续施加梯度可能有害，不如直接屏蔽。",h("code",null,"compute_opsm_mask")," 返回逐 token 的 0/1 掩码与被掩序列的比例。"),
+      h(Code,null,"# ppo_utils.py compute_opsm_mask: 负优势且序列 KL 超阈值则屏蔽整条序列\nseq_kl = ((full_old_log_prob - full_log_prob) * loss_mask).sum() / torch.clamp_min(loss_mask.sum(), 1)\nmask = ((advantage < 0) & (seq_kl > args.opsm_delta)).float()\nopsm_mask_list.append(1 - mask)"),
+      h("div",null,h(Src,{label:"vanilla_tis_function",path:"slime/backends/megatron_utils/loss.py",line:751}),h(Src,{label:"TIS 应用（off-policy 修正）",path:"slime/backends/megatron_utils/loss.py",line:908}),h(Src,{label:"compute_opsm_mask",path:"slime/utils/ppo_utils.py",line:54}),h(Src,{label:"--use-tis / --tis-clip",path:"slime/utils/arguments.py",line:1026}))
+    ];}},
+    {key:"lpent",name:"log-prob 与熵",render:function(){return [
+      h("p",null,"所有比值与 KL 都建立在 log-prob 之上，而 log-prob 又来自模型 logits。在张量并行（tensor parallel, TP）下词表被切到多个 rank，因此 log-prob 与熵的计算都必须是“词表并行”的，不能在单 rank 上 softmax。"),
+      h("p",null,"log-prob 直接复用 Megatron 的融合算子 ",h("code",null,"fused_vocab_parallel_cross_entropy"),"：交叉熵的负值正是目标 token 的 log-prob，且该算子内部已处理 TP 的 all_reduce。"),
+      h(Formula,{cap:"采样 token 的 log-prob 即负交叉熵"},"$$ \\log\\pi_\\theta(y_t \\mid \\cdot) = -\\,\\mathrm{CE}(\\text{logits}_t,\\,y_t) = z_{t,y_t} - \\log\\!\\sum_{v} e^{z_{t,v}} $$"),
+      h("p",null,"熵则需要遍历整个词表分布，slime 自定义了 ",h("code",null,"_VocabParallelEntropy")," 这个 autograd Function，用三次 all_reduce（对 logits 的最大值、归一化指数和、softmax 加权 logits 之和）在词表并行下数值稳定地算出熵，并手写了反向传播以复用中间结果、减少显存。"),
+      h(Formula,{cap:"逐位置熵（词表并行计算，数值稳定形式）"},"$$ \\mathcal H_t = -\\sum_{v} p_{t,v}\\log p_{t,v} = \\log\\!\\sum_v e^{z_{t,v}} - \\sum_v p_{t,v}\\,z_{t,v},\\qquad p_{t,v}=\\mathrm{softmax}(z_t)_v $$"),
+      h(Code,null,"# ppo_utils.py calculate_log_probs_and_entropy: 可分块以省显存\nif with_entropy:\n    entropy_input = logits.clone()\n    entropy = compute_entropy_from_logits(entropy_input, tp_group)\nlog_prob = compute_log_probs(logits.clone(), tokens, tp_group)"),
+      h("p",null,"熵在最终损失中作为正则项出现：",h("code",null,"loss = pg_loss - entropy_coef * entropy_loss"),"。负号表示鼓励更高的熵（更强的探索）。可选的 ",h("code",null,"chunk_size")," 把序列分块计算，以在长序列上降低峰值显存。"),
+      h("div",null,h(Src,{label:"compute_log_probs",path:"slime/utils/ppo_utils.py",line:174}),h(Src,{label:"_VocabParallelEntropy",path:"slime/utils/ppo_utils.py",line:185}),h(Src,{label:"compute_entropy_from_logits",path:"slime/utils/ppo_utils.py",line:220}),h(Src,{label:"calculate_log_probs_and_entropy",path:"slime/utils/ppo_utils.py",line:672}),h(Src,{label:"熵正则项",path:"slime/backends/megatron_utils/loss.py",line:974}))
+    ];}}
+  ];
+  function LossExplorer(){const [s,setS]=useState(0);const d=LOSS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},LOSS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 装箱与 mask =====
+  const PACK=[
+    {key:"ffd",name:"首次适配装箱",render:function(){return [
+      h("p",null,"强化学习的 rollout 产生的是变长序列：有的回答几十个 token，有的上万。若按固定样本数切 micro-batch，各 micro-batch 的 token 总数会相差悬殊，导致各 DP rank 的计算时间不均，整体被最慢的 rank 拖慢。slime 因此改为按 token 数装箱（bin packing）：每个箱子的 token 总数受限于 ",h("code",null,"max_tokens_per_gpu"),"。"),
+      h(Formula,{cap:"装箱目标：在每箱 token 数不超过容量的前提下最小化箱数（NP-hard，启发式求解）"},"$$ \\min\\; K \\quad \\text{s.t.}\\quad \\sum_{i \\in \\text{bin}_k} \\ell_i \\le C \\;\\;\\forall k,\\qquad C = \\texttt{max\\_tokens\\_per\\_gpu}\\times \\texttt{cp\\_size} $$"),
+      h("p",null,"装箱问题是 NP-hard 的，slime 用首次适配（first-fit）启发式：每个样本依次尝试放入第一个还装得下的箱子，放不下则新开一个箱子。一个特例是：单个样本若本身就超过容量，它会独占一个箱子（此时该箱允许超过容量，否则无解）。"),
+      h(Code,null,"# seqlen_balancing.py first_fit_pack\nfor idx, length in enumerate(total_lengths):\n    for j in range(len(bins)):\n        if bin_sums[j] + length <= max_tokens_per_bin:\n            bins[j].append(idx); bin_sums[j] += length\n            break\n    else:\n        bins.append([idx]); bin_sums.append(length)"),
+      h("p",null,"装箱之后，箱子数 ",h("code",null,"K")," 未必是 ",h("code",null,"dp_size")," 的整数倍，而流水线并行（PP）要求每个 rank 运行相同数量的 micro-batch。",h("code",null,"expand_bins_by_splitting")," 通过反复拆分最大的多样本箱，把 ",h("code",null,"K")," 补足到目标倍数。拆分用 ",h("code",null,"_split_bin_by_tokens")," 的最长优先（LPT）启发式，保证拆出的两半 token 数都不超过原箱，因此不会破坏容量约束。"),
+      h("div",null,h(Src,{label:"first_fit_pack",path:"slime/utils/seqlen_balancing.py",line:180}),h(Src,{label:"_split_bin_by_tokens (LPT)",path:"slime/utils/seqlen_balancing.py",line:201}),h(Src,{label:"expand_bins_by_splitting",path:"slime/utils/seqlen_balancing.py",line:218}))
+    ];}},
+    {key:"kk",name:"Karmarkar-Karp 均衡",render:function(){return [
+      h("p",null,"当目标不是“最少箱子”而是“把样本分成 k 份、各份 token 总数尽量相等”时，slime 用 Karmarkar-Karp 算法（又称最大差分法，largest differencing method）。它适合把 micro-batch 均衡分配到固定数量的 DP rank，使各 rank 的工作量接近。"),
+      h(Formula,{cap:"k 路均衡划分目标：最小化各分区和的极差（spread）"},"$$ \\min\\;\\Big(\\max_{p} \\sum_{i\\in P_p}\\ell_i \\;-\\; \\min_{p}\\sum_{i\\in P_p}\\ell_i\\Big),\\qquad p = 1,\\dots,k $$"),
+      h("p",null,"Karmarkar-Karp 的思路是贪心地缩小差距：把所有元素按大小排序后入堆，每次取出当前极差（spread）最大的两个状态做合并，合并时把一方的最大分区与另一方的最小分区配对（",h("code",null,"sets[k-1-i]"),"），以抵消差距；重复到只剩一个状态。相比朴素的贪心（每次把最大元素放进当前最小分区），它的最终极差通常更小。"),
+      h(Code,null,"# seqlen_balancing.py karmarkar_karp: 反复合并极差最大的两个状态\nwhile len(states_pq) > 1:\n    state0 = heapq.heappop(states_pq)\n    state1 = heapq.heappop(states_pq)\n    state0.merge(state1)        # 大分区配小分区, 抵消差距\n    heapq.heappush(states_pq, state0)"),
+      h("p",null,"两个用途：",h("code",null,"equal_size=True")," 时要求每个分区元素个数相等（用于按 FLOPs 把 micro-batch 平均分给各 rank）；",h("code",null,"equal_size=False")," 时只均衡和、不限个数。对外接口 ",h("code",null,"get_seqlen_balanced_partitions")," 在返回前会校验每个元素恰好出现一次。",h("code",null,"greedy_partition")," 是一个更简单的贪心备选。"),
+      h("div",null,h(Src,{label:"karmarkar_karp",path:"slime/utils/seqlen_balancing.py",line:20}),h(Src,{label:"State.merge（大配小）",path:"slime/utils/seqlen_balancing.py",line:64}),h(Src,{label:"get_seqlen_balanced_partitions",path:"slime/utils/seqlen_balancing.py",line:146}),h(Src,{label:"greedy_partition",path:"slime/utils/seqlen_balancing.py",line:126}),h(Ext,{href:"https://en.wikipedia.org/wiki/Largest_differencing_method"},"最大差分法 (KK)"))
+    ];}},
+    {key:"dpsched",name:"DP 动态批调度",render:function(){return [
+      h("p",null,h("code",null,"dp_schedule.py")," 把装箱与均衡组合成完整的调度策略，核心是“先打包、后分配”（pack first, distribute second）。它是纯 Python 逻辑，不引入 Ray 或 SGLang，因此可在仅 CPU 的持续集成中单元测试。",h("code",null,"build_dp_schedule")," 决定一个训练步内：样本如何分组、如何打包成 micro-batch、每个 micro-batch 归属哪个 DP rank。"),
+      h("p",null,"四个步骤：(1) 按 rollout id 把样本分组（同一 rollout 的多个样本必须留在同一步，以保证逐 rollout 的损失归约定义良好），切成每步 ",h("code",null,"global_batch_size")," 个 rollout；(2) 每步用一次首次适配把样本打包成若干 micro-batch（动态批），或固定大小切分（静态批）；(3) 把 micro-batch 数 ",h("code",null,"K")," 补足到 ",h("code",null,"dp_size * (vpp>1 时的 mb_group)")," 的倍数；(4) 把 ",h("code",null,"K")," 个 micro-batch 分到 ",h("code",null,"dp_size")," 个 rank，每 rank ",h("code",null,"K/dp_size")," 个。"),
+      h(Code,null,"# dp_schedule.py build_dp_schedule: 第 3、4 步\ntarget_K = max(((len(step_mbs) + align_to - 1) // align_to) * align_to, align_to)\nif target_K != len(step_mbs):\n    expand_bins_by_splitting(step_mbs, target_K, step_lengths)   # 动态批: 拆分补齐\nK = len(step_mbs); num_mbs_per_rank = K // dp_size\nif args.balance_data:\n    # 按估算 FLOPs 做 KK 均衡分配\n    rank_mbs_idx = get_seqlen_balanced_partitions(mbs_weights, dp_size, equal_size=True)\nelse:\n    rank_mbs_idx = [list(range(r, K, dp_size)) for r in range(dp_size)]  # 跨步轮询"),
+      h("p",null,"第 4 步的分配有两种策略：默认是跨步轮询（strided round-robin），简单且确定；当 ",h("code",null,"balance_data")," 为真时改用基于估算 FLOPs 的 Karmarkar-Karp 均衡，让各 rank 的实际计算量更接近（长序列的 FLOPs 与长度近似平方关系，单纯均衡 token 数不够精确）。模块文档列出了若干必须满足的不变量，例如每个 rank 的 micro-batch 数必须相同（PP 同步要求）。"),
+      h("div",null,h(Src,{label:"build_dp_schedule",path:"slime/utils/dp_schedule.py",line:82}),h(Src,{label:"_pack_step_into_mbs",path:"slime/utils/dp_schedule.py",line:55}),h(Src,{label:"模块文档（不变量）",path:"slime/utils/dp_schedule.py",line:1}),h(Src,{label:"调用处 ray/rollout.py",path:"slime/ray/rollout.py",line:827}))
+    ];}},
+    {key:"mask",name:"多轮 loss mask",render:function(){return [
+      h("p",null,"loss mask 决定哪些 token 参与损失。基本原则是：只在模型自己生成的 token（assistant 回复）上计算损失，prompt、工具返回、用户消息等都不计。前面所有公式里的 ",h("code",null,"m_t")," 与归约里的归一化分母都依赖这个掩码。在多轮对话中，正确切出每一轮 assistant 段落并不平凡，",h("code",null,"mask_utils.py")," 的 ",h("code",null,"MultiTurnLossMaskGenerator")," 专门处理。"),
+      h("p",null,"难点在于 chat template：把消息列表渲染成 token 序列时，模板会插入角色标记、生成提示符（如 ",h("code",null,"<|im_start|>assistant"),"）等结构 token。生成器需要逐条消息渲染并定位 assistant 内容的边界。不同 tokenizer 家族（qwen / qwen3 / qwen3_5 / distill_qwen）的模板结构不同，因此有多个对应方法，由 ",h("code",null,"get_loss_mask")," 按 ",h("code",null,"tokenizer_type")," 分派。"),
+      h(Code,null,"# mask_utils.py gen_multi_turn_loss_mask_qwen: 仅 assistant 段落掩码为 1\nif message[\"role\"] == \"assistant\":\n    loss_mask = [0] * self.gen_token_length + [1] * (len(message_ids) - self.gen_token_length)\nelse:\n    loss_mask = [0] * len(message_ids)\nif message.get(\"step_loss_mask\", 1) != 1:   # 允许逐轮关闭某一步的 loss\n    loss_mask = [0] * len(message_ids)"),
+      h("p",null,"qwen3_5 的实现更稳健：它在渲染文本上用字符级前缀和定位 assistant 段落（含跳过 ",h("code",null,"<think>")," 前缀），再借助 fast tokenizer 的 ",h("code",null,"offset_mapping")," 把字符级掩码映射回 token 级，并断言渲染文本的分词结果与 ",h("code",null,"apply_chat_template(..., tokenize=True)")," 一致，避免分词不一致导致的错位。此外，",h("code",null,"step_loss_mask")," 字段允许在数据层面关闭某一轮的损失（例如某步是中间推理、不希望训练），",h("code",null,"get_loss_mask_with_multimodal_alignment")," 处理多模态输入时文本 token 与图像 token 的对位偏移。"),
+      h("div",null,h(Src,{label:"MultiTurnLossMaskGenerator",path:"slime/utils/mask_utils.py",line:9}),h(Src,{label:"gen_multi_turn_loss_mask_qwen",path:"slime/utils/mask_utils.py",line:55}),h(Src,{label:"gen_multi_turn_loss_mask_qwen3_5",path:"slime/utils/mask_utils.py",line:127}),h(Src,{label:"get_loss_mask（分派）",path:"slime/utils/mask_utils.py",line:216}),h(Src,{label:"get_response_lengths",path:"slime/utils/mask_utils.py",line:4}))
+    ];}}
+  ];
+  function PackExplorer(){const [s,setS]=useState(0);const d=PACK[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},PACK.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== R3 路由重放 =====
+  function R3Section(){
+    return h("div",null,
+      h("p",null,"最后一个原语处理的是 MoE（混合专家）模型特有的问题。在 MoE 中，每个 token 由一个路由器（router）选出 top-k 个专家处理。问题在于：rollout 时由 SGLang 做路由，训练时由 Megatron 重新前向计算路由，两者的数值实现不同，可能为同一 token 选出不同的专家集合。一旦专家选择不一致，训练侧重算的 log-prob 就与生成时的 log-prob 系统性地偏离，破坏 on-policy 假设。"),
+      h("p",null,"R3（Rollout Routing Replay，",h(Ext,{href:"https://arxiv.org/pdf/2510.11370"},"路由重放"),"）的解决方案是：训练侧不重新计算路由，而是重放 rollout 时记录的专家选择。具体地，rollout 记录每个 token 在每层选中的专家索引 ",h("code",null,"top_indices"),"，训练前向时直接复用这些索引，只用当前权重重新计算被选中专家的概率。这样专家选择与生成时严格一致，消除了路由不匹配带来的偏差。"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"RoutingReplay 的状态机"),
+          h("p",null,h("code",null,"RoutingReplay")," 为每个 MoE 层维护一个记录缓冲。它通过环境变量 ",h("code",null,"ROUTING_REPLAY_STAGE")," 在四个阶段间切换：",h("code",null,"fallthrough"),"（不干预，正常路由）、",h("code",null,"record"),"（记录路由结果）、",h("code",null,"replay_forward"),"、",h("code",null,"replay_backward"),"（前向与反向各自重放，分别用 ",h("code",null,"forward_index"),"/",h("code",null,"backward_index")," 两个游标推进，因为反向会再次取用同一批索引）。记录时把索引转到 CPU 固定内存以省显存。"),
+          h(Code,null,"# routing_replay.py: 重放时直接 gather 记录的专家\nif routing_replay_stage == \"record\":\n    probs, top_indices = old_compute_topk(scores, topk, ...)\n    ROUTING_REPLAY.record(top_indices)\nelif routing_replay_stage == \"replay_forward\":\n    top_indices = ROUTING_REPLAY.pop_forward()\n    probs = scores.gather(1, top_indices)   # 重用专家选择, 仅重算概率")
+        ),
+        h("div",null,
+          h("h4",null,"如何挂接到模型"),
+          h("p",null,h("code",null,"get_routing_replay_compute_topk")," 包裹原始的 ",h("code",null,"compute_topk")," 函数，按阶段决定是记录还是重放。",h("code",null,"register_routing_replay")," 给每个 MoE 模块挂一个前向预钩子（forward pre-hook），在进入该模块前把全局 ",h("code",null,"ROUTING_REPLAY")," 指针指向该模块自己的重放缓冲。所有重放对象登记在类变量 ",h("code",null,"all_routing_replays")," 中，便于 ",h("code",null,"clear_all")," 统一清空。"),
+          h("p",null,"训练侧的 ",h("code",null,"actor.py")," 在 ",h("code",null,"fill_routing_replay")," 中遍历每个 micro-batch、每个 vp_stage、每个 MoE 层，把 rollout 传来的 ",h("code",null,"rollout_routed_experts")," 经 CP 切分与 TP 切分后，按层 ",h("code",null,"record")," 进各层的重放缓冲；之后的前向便进入 ",h("code",null,"replay")," 阶段。它跳过 dense 层（非 MoE 层），并断言记录的层数与 ",h("code",null,"all_routing_replays")," 数量一致。"),
+          h(Code,null,"# actor.py fill_routing_replay: 逐层登记 rollout 的专家选择\nlayer_routed_experts = rollout_routed_experts[:, layer_id]\nRoutingReplay.all_routing_replays[routing_replay_offset].record(layer_routed_experts)\nrouting_replay_offset += 1")
+        )
+      ),
+      h("div",{className:"note"},"R3 与 GSPO 是互补而非互斥的。两者都针对 MoE 的稳定性：GSPO 用序列级比值降低逐 token 路由波动的影响，R3 则从源头消除训练与 rollout 的路由不匹配。源码中 ",h("code",null,"need_full_log_probs")," 也表明 GSPO 与 OPSM 都依赖完整序列的 log-prob。"),
+      h("div",null,h(Src,{label:"RoutingReplay",path:"slime/utils/routing_replay.py",line:13}),h(Src,{label:"get_routing_replay_compute_topk",path:"slime/utils/routing_replay.py",line:57}),h(Src,{label:"register_routing_replay（预钩子）",path:"slime/utils/routing_replay.py",line:85}),h(Src,{label:"actor.fill_routing_replay",path:"slime/backends/megatron_utils/actor.py",line:300}),h(Src,{label:"--use-rollout-routing-replay",path:"slime/utils/arguments.py",line:1063}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"GRPO (DeepSeekMath)",d:"组相对策略优化, 省去 critic 的优势估计",href:"https://arxiv.org/abs/2402.03300"},
+    {t:"PPO 原论文",d:"裁剪目标与 GAE 的原始定义",href:"https://arxiv.org/abs/1707.06347"},
+    {t:"GSPO",d:"序列级比值, 稳定长序列与 MoE 训练",href:"https://arxiv.org/abs/2507.18071"},
+    {t:"DAPO",d:"Clip-Higher 与去除 std 归一化等技巧",href:"https://arxiv.org/abs/2503.14476"},
+    {t:"CISPO (MiniMax-M1)",d:"停止梯度截断比值, 保留全部 token 梯度",href:"https://arxiv.org/abs/2506.13585"},
+    {t:"R3 路由重放",d:"重放 rollout 路由, 消除 MoE 训练-推理不匹配",href:"https://arxiv.org/pdf/2510.11370"},
+    {t:"Schulman: KL 近似",d:"k1/k2/k3 估计器的来源博客",href:"http://joschu.net/blog/kl-approx.html"},
+    {t:"最大差分法 (KK)",d:"Karmarkar-Karp 均衡划分算法",href:"https://en.wikipedia.org/wiki/Largest_differencing_method"}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:3}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 3 课 / 共 11 · RL 数学原语"),
+          h("h1",null,"RL 数学原语"),
+          h("p",{className:"lead"},"这是承重课。slime 的强化学习数学核心集中在 slime/utils 下五个纯计算文件里：ppo_utils.py 提供优势估计、各类策略损失、KL 估计器、log-prob 与熵；seqlen_balancing.py 与 dp_schedule.py 处理变长序列的装箱与调度；mask_utils.py 生成多轮 loss mask；routing_replay.py 实现 MoE 的路由重放 R3。本课把每个公式写全，并指出它在从奖励到损失的计算流上的确切位置。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"utils/ppo_utils.py"),"、",h("code",null,"utils/seqlen_balancing.py"),"、",h("code",null,"utils/mask_utils.py"),"、",h("code",null,"utils/dp_schedule.py"),"、",h("code",null,"utils/routing_replay.py"),"，以及它们在 ",h("code",null,"backends/megatron_utils/loss.py")," 与 ",h("code",null,"ray/rollout.py")," 中的拼装处。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部论文/文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"总览"),
+          h("h2",null,"从奖励到损失：一条计算流"),
+          h(OverviewSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"ppo_utils.py · 优势与 KL"),
+          h("h2",null,"优势估计、KL 估计器与全局白化"),
+          h("p",null,"点 Tab 切换：GRPO 组内归一化、GAE（PPO）、KL 估计器 k1/k2/k3、跨 DP 全局白化。这一组决定了“学习信号 A 如何从标量奖励算出来”。"),
+          h(AdvKLExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"ppo_utils.py · 策略损失"),
+          h("h2",null,"策略损失各变体与梯度修正"),
+          h("p",null,"点 Tab 切换：PPO 裁剪与双裁剪、GSPO 序列级、CISPO 截断重要性、off-policy 的重要性采样修正（TIS / OPSM）、以及底层的 log-prob 与熵。它们决定了“给定优势 A，如何转换成可反向传播的标量损失”。"),
+          h(LossExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"seqlen_balancing.py · dp_schedule.py · mask_utils.py"),
+          h("h2",null,"装箱、调度与 loss mask"),
+          h("p",null,"点 Tab 切换：首次适配装箱、Karmarkar-Karp 均衡、DP 动态批调度、多轮 loss mask。这一组是变长序列在数据并行下高效且正确训练的工程基础，与损失数值无关但直接影响吞吐与归一化分母。"),
+          h(PackExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"routing_replay.py · R3"),
+          h("h2",null,"MoE 路由重放 R3"),
+          h(R3Section)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"算法论文与外部文档"),
+          h("p",null,"本课涉及的每个损失变体都来自一篇具体论文。配合阅读能看清 slime 为何同时实现这么多变体：它们针对不同的稳定性问题（长序列、MoE、off-policy、探索）。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"原语可组合，框架不耦合"),"：优势、KL、损失都是 ",h("code",null,"ppo_utils.py")," 中的纯函数，由 ",h("code",null,"loss.py")," 按 ",h("code",null,"advantage_estimator")," 拼装。换比值的算法（GSPO）复用同一个裁剪损失，换优势的算法（GRPO）复用同一条白化路径。"),
+            h("li",null,h("strong",null,"一条从奖励到损失的计算流"),"：组内归一化（rollout 侧）→ 优势估计 → 全局白化（DP 级 all_reduce）→ 策略损失 → 叠加熵正则与 KL 损失。每一步都有确切的源码归属。"),
+            h("li",null,h("strong",null,"损失变体各有动机"),"：PPO 裁剪稳定 on-policy 更新，双裁剪压制负优势爆炸；GSPO 用序列级比值稳定长序列与 MoE；CISPO 保留被裁剪 token 的梯度；TIS/OPSM 修正异步与推理-训练精度的 off-policy mismatch。"),
+            h("li",null,h("strong",null,"KL 有两处、各司其职"),"：奖励侧的逐 token KL 惩罚（PPO/REINFORCE++）与损失侧的 KL 损失项（GRPO 风格），估计器 k3 因非负、无偏、低方差而常用。"),
+            h("li",null,h("strong",null,"变长序列靠装箱与调度高效训练"),"：首次适配按 token 数装箱、Karmarkar-Karp 均衡分配、",h("code",null,"build_dp_schedule")," 保证各 rank micro-batch 数相同；纯 Python 以便 CPU 单元测试。loss mask 保证只在 assistant token 上计损并提供正确的归一化分母。"),
+            h("li",null,h("strong",null,"MoE 的两道保险"),"：GSPO 降低逐 token 路由波动的影响，R3 从源头重放 rollout 的专家选择以消除训练-推理路由不匹配。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"slime-lesson-02-config.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 2 课：统一配置层")),
+            h("a",{href:"slime-lesson-04-data-buffer.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 4 课：数据与 Data Buffer"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>slime 逐文件精读 · 第 2 课：统一配置层</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 2 课</p><h1>统一配置层</h1><p>能访问 CDN 时切换为交互版。本课讲清 slime 如何把训练、推理、RL 算法、数据、评测的全部参数统一进一个命名空间：参数分组的组织方式、Megatron 参数的原生透传机制、SGLang 参数的 <code>--sglang-</code> 前缀自动发现与暴露、评测配置 eval_config 的结构，以及两阶段解析与校验流程。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const SLIME="vscode://file/Users/xinyu/Code/Agentic-RL/slime/";
+  function srcUrl(p,l){return SLIME+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","Sample","Args","RolloutController","RolloutManager","RayTrainGroup","RayActor","SglangEngine","Box","ray","asyncio","Timer","ParamInfo","RolloutBatch","ServerArgs","EvalDatasetConfig","ArgumentParser","Namespace","AutoConfig","str","type","ExternalEngineInfo","OmegaConf"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与双引擎","slime-lesson-01-foundations.html"],[2,"统一配置","slime-lesson-02-config.html"],[3,"RL 数学原语","slime-lesson-03-rl-math.html"],[4,"数据与 Buffer","slime-lesson-04-data-buffer.html"],[5,"Megatron 后端","slime-lesson-05-megatron.html"],[6,"SGLang 后端","slime-lesson-06-sglang.html"],[7,"权重同步","slime-lesson-07-weight-sync.html"],[8,"Rollout 与异步","slime-lesson-08-rollout-async.html"],[9,"Agent 层","slime-lesson-09-agent.html"],[10,"Ray 编排","slime-lesson-10-orchestration.html"],[11,"miles 增量","slime-lesson-11-miles-delta.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"slime-course-index.html"},"slime",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 总览：配置层的三个来源汇成一个命名空间 =====
+  function OverviewSection(){
+    return h("div",null,
+      h("p",null,"slime 的训练命令一行可以长达数十个参数。这些参数并非来自单一来源，而是把三套独立的参数系统合并进同一个 ",h("code",null,"argparse.Namespace"),"：slime 自己定义的强化学习与编排参数、",h("strong",{className:"hl-purple"},"Megatron-Core")," 的全部训练参数、以及已安装 ",h("strong",{className:"hl-teal"},"SGLang")," 的全部 server 参数（自动加 ",h("code",null,"--sglang-")," 前缀）。统一配置层要解决的核心问题是：如何让这三套参数在不互相覆盖、不重复包装的前提下，合成一个一致的配置对象，并集中校验。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"透传"),"原生参数"),
+          h("p",null,"Megatron 与 SGLang 的参数不被重新命名或包装，而是直接读取上游 parser 注册的全部参数。上游引擎一旦新增优化项，slime 立即可用，无需改配置代码。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"新增"),"slime 专属参数"),
+          h("p",null,"集群布局、rollout 采样、RL 算法超参、数据与 batch、评测、权重同步、观测性、调试等参数由 slime 自己定义，按功能分成十余个分组函数注册。")
+        )
+      ),
+      h("p",null,"这一层的入口是 ",h("code",null,"parse_args()"),"。它把上述三套参数按一个固定顺序解析并合并，最后调用 ",h("code",null,"slime_validate_args")," 做全局一致性校验（例如 ",h("code",null,"kl_coef")," 与 ",h("code",null,"kl_loss_coef")," 不能同时非零、colocate 模式强制开启 offload 等）。理解这一层之后，后续每一课遇到 ",h("code",null,"args.xxx")," 都能知道它在哪里定义、默认值是什么、被哪条校验约束。"),
+      h("div",{className:"note"},"本课覆盖四个文件：",h("code",null,"slime/utils/arguments.py"),"（2014 行，统一入口与全部 slime 参数）、",h("code",null,"slime/backends/megatron_utils/arguments.py"),"（Megatron 透传与 HF 配置校验）、",h("code",null,"slime/backends/sglang_utils/arguments.py"),"（SGLang 前缀透传）、",h("code",null,"slime/utils/eval_config.py"),"（评测数据集配置）。"),
+      h("div",null,h(Src,{label:"arguments.py · parse_args",path:"slime/utils/arguments.py",line:1523}),h(Src,{label:"slime_validate_args",path:"slime/utils/arguments.py",line:1746}),h(Src,{label:"megatron arguments.py",path:"slime/backends/megatron_utils/arguments.py",line:1}),h(Src,{label:"sglang arguments.py",path:"slime/backends/sglang_utils/arguments.py",line:1}),h(Src,{label:"eval_config.py",path:"slime/utils/eval_config.py",line:1}))
+    );
+  }
+
+  // ===== 参数分组探索器 =====
+  const GROUPS=[
+    {key:"cluster",name:"集群与布局",fn:"add_cluster_arguments",line:39,desc:"决定 actor 与 rollout 各占多少 GPU、是否共置（colocate）、是否把训练或推理一侧 offload 到 CPU。这些参数直接喂给第 1 课讲过的 placement group 与两个训练入口。",fields:[
+      ["--actor-num-nodes","int / 1","训练 actor 占用的节点数"],
+      ["--actor-num-gpus-per-node","int / 8","每节点给 actor 的 GPU 数"],
+      ["--rollout-num-gpus","int / None","推理占用的 GPU 总数；colocate 时若不显式设置则取 actor 的总卡数；设为 0 表示只启动 router 而不起本地 SGLang 引擎"],
+      ["--rollout-num-gpus-per-engine","int / 1","每个推理引擎的 GPU 数，等价于 SGLang 的 tp_size"],
+      ["--colocate","flag / False","训练与推理共用同一批 GPU；开启会强制 --offload 为真"],
+      ["--offload / --offload-train / --offload-rollout","flag","训练时把一侧卸载到 CPU 以腾出显存，colocate 下两者恒为真"]
+    ]},
+    {key:"train",name:"训练后端",fn:"add_train_arguments",line:108,desc:"Megatron 训练侧的 slime 专属补充项：attention 的 qkv 布局、显存余量、Megatron→HF 转换方式、权重同步的模式与载体（full/delta、nccl/disk），以及按正则冻结或只训练部分参数。",fields:[
+      ["--qkv-format","thd / bshd","Megatron 后端的 qkv 布局，默认 thd（变长打包）"],
+      ["--train-memory-margin-bytes","int / 1GiB","训练显存分配的安全余量"],
+      ["--megatron-to-hf-mode","raw / bridge","把 Megatron 权重转成 HF 格式供 SGLang 使用的方式"],
+      ["--update-weight-mode","full / delta","权重同步策略：全量广播，或只发送相对上次快照的字节级变化"],
+      ["--update-weight-transport","nccl / disk","权重同步的载体，第 7 课与第 11 课展开"],
+      ["--only-train-params-name-list / --freeze-params-name-list","str* / None","按正则选择要训练或冻结的参数名（如只训 MoE experts）"]
+    ]},
+    {key:"rollout",name:"Rollout 与采样",fn:"add_rollout_arguments",line:290,desc:"控制推理与采样行为：HF 检查点（同时提供 tokenizer）、自定义 rollout 函数入口、采样温度/top-p/top-k、上下文与响应长度上限、动态采样过滤、partial rollout，以及权重同步周期。",fields:[
+      ["--hf-checkpoint","str / None","HF 检查点，用于初始化 SGLang 并提供 tokenizer；训练前总会用 Megatron 权重覆盖它"],
+      ["--rollout-function-path","str / 默认 sglang_rollout.generate_rollout","rollout 生成函数路径，自定义多轮、工具调用的入口"],
+      ["--rollout-temperature / --rollout-top-p / --rollout-top-k","float/float/int","推理采样参数"],
+      ["--rollout-max-context-len / --rollout-max-response-len","int / None","推理上下文与响应长度上限"],
+      ["--dynamic-sampling-filter-path","str / None","动态采样过滤函数（如 DAPO 式去掉全对或全错的组）"],
+      ["--partial-rollout","flag / False","把动态采样中未完成的样本回收进 data buffer，适合长响应"],
+      ["--update-weights-interval","int / 1","权重同步周期，异步训练用它控制陈旧度"]
+    ]},
+    {key:"data",name:"数据与 Batch",fn:"add_data_arguments",line:578,desc:"数据来源与批大小。rollout_batch_size 是每步采样的 prompt 数；num_rollout 与 num_epoch 二选一确定训练总步数；动态 batch 按每卡最大 token 数自适应划分 micro-batch。注意 global_batch_size 以样本计而非 prompt 计。",fields:[
+      ["--prompt-data","str / None","jsonl 格式的 prompt 数据，每行含 input-key 与 label-key"],
+      ["--rollout-batch-size","int / 必填","每个 rollout 步的 prompt 数；返回的样本总数为它乘以 n_samples_per_prompt"],
+      ["--n-samples-per-prompt","int / 1","每个 prompt 生成的响应数（GRPO 的组大小）"],
+      ["--num-rollout / --num-epoch","int / None","训练总步数；两者二选一，同时设置则忽略 num_epoch"],
+      ["--global-batch-size","int / None","训练全局批大小，以样本计；reset_arg 改写 Megatron 的默认值"],
+      ["--use-dynamic-batch-size + --max-tokens-per-gpu","flag + int","按每卡最大 token 数动态打包 micro-batch，提升 GPU 利用率"]
+    ]},
+    {key:"algo",name:"RL 算法超参",fn:"add_algo_arguments",line:813,desc:"强化学习的核心超参：检查点加载、PPO 裁剪范围、KL 惩罚、优势估计器（GRPO/GSPO/CISPO/REINFORCE++/PPO）、重要性采样修正（TIS）、routing replay 等。这些字段是第 3 课 RL 数学原语的配置面。",fields:[
+      ["--ref-load / --load / --save","str / None","参考模型、续训加载、保存目录；reset_arg 复用 Megatron 同名参数"],
+      ["--eps-clip / --eps-clip-high / --eps-clip-c","float","PPO 裁剪下界、上界与 Dual-clip 下界"],
+      ["--kl-coef / --kl-loss-coef","float / 0","reward 整形的 KL 系数与 loss 的 KL 系数，二者不可同时非零"],
+      ["--advantage-estimator","grpo / gspo / cispo / reinforce_plus_plus / reinforce_plus_plus_baseline / ppo","优势估计器，默认 grpo；选 ppo 时启用 critic"],
+      ["--loss-type","policy_loss / sft_loss / custom_loss","损失类型"],
+      ["--use-tis + --tis-clip","flag + float / 2.0","off-policy 重要性采样修正与裁剪阈值"]
+    ]},
+    {key:"eval",name:"评测",fn:"add_eval_arguments",line:752,desc:"评测专属参数。eval_interval 的默认值被 reset 为 None（默认不评测）；评测数据集既可用 --eval-prompt-data 的「名字 路径」对给出，也可用 --eval-config 的 OmegaConf YAML 给出（后者优先）。评测的采样参数若不设则回退到 rollout 同名值。",fields:[
+      ["--eval-function-path","str / None","评测生成函数，不设则复用 rollout_function_path"],
+      ["--eval-interval","int / None","评测周期；reset_arg 把 Megatron 默认值改为 None"],
+      ["--eval-prompt-data","str+ / None","评测数据，按「名字 路径」成对给出，如 aime /path/to/aime.jsonl"],
+      ["--eval-config","str / None","OmegaConf YAML 评测配置，优先于 --eval-prompt-data"],
+      ["--n-samples-per-eval-prompt","int / 1","每个评测 prompt 的响应数"],
+      ["--eval-temperature / --eval-top-p / --eval-max-response-len","float / None","评测采样参数，不设回退到 rollout 同名值"]
+    ]},
+    {key:"obs",name:"观测与调试",fn:"add_wandb_arguments / add_debug_arguments",line:1126,desc:"wandb 与 tensorboard 的记录开关与命名，以及调试参数：单独 dump rollout/train 数据、显存快照、性能剖析目标、权重同步一致性检查。第 1 课的 init_tracking 即消费这些 wandb/tb 参数。",fields:[
+      ["--use-wandb / --wandb-project / --wandb-group","flag / str","wandb 记录开关与项目命名"],
+      ["--use-tensorboard / --tb-project-name","flag / str","tensorboard 记录开关与目录"],
+      ["--save-debug-rollout-data / --save-debug-train-data","str / None","把 rollout 或训练数据 dump 到指定路径供调试"],
+      ["--profile-target","train_overall / train_actor / train_log_probs","torch.profiler 的剖析目标"],
+      ["--record-memory-history + --memory-snapshot-dir","flag + str","记录显存历史并 dump 快照"],
+      ["--check-weight-update-equal","flag","校验权重同步前后是否一致，用于排查同步 bug"]
+    ]}
+  ];
+  function GroupExplorer(){const [s,setS]=useState(0);const g=GROUPS[s];
+    return h("div",null,
+      h("div",{className:"tabstrip"},GROUPS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:g.key,className:"card"},
+        h("div",{className:"card-title"},h("code",null,g.fn),h("span",{className:"pill blue"},"分组函数")),
+        h("p",null,g.desc),
+        h("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:"12.5px",marginTop:"6px"}},
+          h("tbody",null,g.fields.map(function(f,j){return h("tr",{key:j,style:{borderTop:"1px solid var(--line)"}},
+            h("td",{style:{padding:"6px 10px 6px 0",fontFamily:"var(--mono)",color:"var(--amber)",verticalAlign:"top",whiteSpace:"nowrap"}},f[0]),
+            h("td",{style:{padding:"6px 10px",fontFamily:"var(--mono)",color:"var(--green)",verticalAlign:"top",whiteSpace:"nowrap"}},f[1]),
+            h("td",{style:{padding:"6px 0",color:"var(--muted)"}},f[2]));}))),
+        h("div",{style:{marginTop:"10px"}},h(Src,{label:g.fn.split(" ")[0],path:"slime/utils/arguments.py",line:g.line}))
+      ),
+      h("p",{style:{marginTop:"12px"}},"以上分组都定义在 ",h("code",null,"get_slime_extra_args_provider")," 内部，作为闭包函数逐一调用。除以上分组外，还有故障容错（",h("code",null,"add_fault_tolerance_arguments"),"）、on-policy distillation（",h("code",null,"add_on_policy_distillation_arguments"),"）、网络（",h("code",null,"add_network_arguments"),"）、奖励模型（",h("code",null,"add_reward_model_arguments"),"）、rollout buffer（",h("code",null,"add_rollout_buffer_arguments"),"）、MTP 训练、CI 等分组。")
+    );
+  }
+
+  // ===== reset_arg：透传中的「就地修改」 =====
+  function ResetArgSection(){
+    return h("div",null,
+      h("p",null,"原生透传带来一个具体问题：Megatron 已经注册了 ",h("code",null,"--global-batch-size"),"、",h("code",null,"--eval-interval"),"、",h("code",null,"--lr")," 等参数，slime 既不想重新注册（会冲突），又希望改掉它们的默认值或补充帮助文本。",h("code",null,"reset_arg")," 就是为此而设：它先在已有 parser 的 action 列表里找同名参数，找到就只改默认值；找不到才新增。"),
+      h(Code,null,"def reset_arg(parser, name, **kwargs):\n    for action in parser._actions:\n        if name in action.option_strings:\n            if \"default\" in kwargs:\n                action.default = kwargs[\"default\"]\n            break\n    else:\n        parser.add_argument(name, **kwargs)"),
+      h("p",null,"这是一种刻意保守的「就地修改既有参数」策略。例如 ",h("code",null,'reset_arg(parser, "--lr", type=float, default=1e-6)')," 把 Megatron 默认学习率改成更适合 RL 后训练的 ",h("code",null,"1e-6"),"；",h("code",null,'reset_arg(parser, "--eval-interval", ..., default=None)')," 把默认评测周期改成「不评测」。注意 ",h("code",null,"for...else")," 的语义：只有循环未 break（即没找到同名参数）时才执行 ",h("code",null,"else")," 分支去新增参数。"),
+      h("div",{className:"note"},"为什么不直接 ",h("code",null,"parser.add_argument"),"？因为 Megatron 已注册的参数若再次 add 会抛 ",h("code",null,"argparse.ArgumentError"),"。",h("code",null,"reset_arg")," 用访问 ",h("code",null,"parser._actions")," 私有列表的方式绕开重复注册，是与上游 parser 共存的代价。"),
+      h("div",null,h(Src,{label:"reset_arg",path:"slime/utils/arguments.py",line:20}),h(Src,{label:"reset_arg 改 lr 默认值",path:"slime/utils/arguments.py",line:854}),h(Src,{label:"reset_arg 改 eval-interval",path:"slime/utils/arguments.py",line:764}),h(Src,{label:"reset_arg 改 global-batch-size",path:"slime/utils/arguments.py",line:679}))
+    );
+  }
+
+  // ===== Megatron 原生透传机制 =====
+  function MegatronSection(){
+    return h("div",null,
+      h("p",null,"Megatron 透传是 slime 配置层的第一条设计主线。机制本身非常简洁：slime 不重写 Megatron 的 parser，而是直接调用 Megatron 自己的 ",h("code",null,"parse_args"),"，并把全部 slime 参数作为一个 ",h("strong",null,"extra_args_provider")," 回调注入进去。"),
+      h(Code,null,"# slime/backends/megatron_utils/arguments.py\nfrom megatron.training.arguments import parse_args as _megatron_parse_args\nfrom megatron.training.arguments import validate_args as _megatron_validate_args\n\ndef megatron_parse_args(extra_args_provider, skip_hf_validate=False):\n    \"\"\"Parse megatron args, validate HF config, and set defaults.\"\"\"\n    args = _megatron_parse_args(\n        extra_args_provider=extra_args_provider,\n        ignore_unknown_args=True,\n    )\n    hf_config = None\n    if args.hf_checkpoint and not skip_hf_validate:\n        hf_config = AutoConfig.from_pretrained(args.hf_checkpoint, trust_remote_code=True)\n        _hf_validate_args(args, hf_config)\n    ...\n    args.world_size = args.actor_num_nodes * args.actor_num_gpus_per_node\n    args = _set_default_megatron_args(args)\n    return args"),
+      h("p",null,"两个关键点。第一，",h("code",null,"extra_args_provider")," 是 Megatron 原生支持的扩展点：Megatron 的 ",h("code",null,"parse_args")," 会先注册自己的全部参数，再调用这个回调让外部往同一个 parser 上追加参数。slime 的全部参数因此与 Megatron 参数注册在",h("strong",null,"同一个 parser"),"上，最终落进同一个 ",h("code",null,"Namespace"),"。第二，",h("code",null,"ignore_unknown_args=True")," 让这个 parser 静默忽略它不认识的参数（特别是 ",h("code",null,"--sglang-*")," 与几个预解析标志），从而把 SGLang 参数留给另一个 parser 处理。"),
+      h("h3",null,"透传之后：HF 配置一致性校验"),
+      h("p",null,"原生透传意味着 Megatron 的模型结构参数（如 ",h("code",null,"--hidden-size"),"、",h("code",null,"--num-layers"),"）由用户在命令行手填，容易与 ",h("code",null,"--hf-checkpoint")," 里的真实结构不一致。",h("code",null,"_hf_validate_args")," 因此在解析后逐项比对 HF 配置与 Megatron 参数："),
+      h(Code,null,"# _hf_validate_args 的比对表（节选）\nfor hf_config_name, megatron_config_name, compare_fn in [\n    (\"hidden_size\", \"hidden_size\", equal),\n    (\"num_attention_heads\", \"num_attention_heads\", equal),\n    (\"num_hidden_layers\", \"num_layers\", equal),\n    (\"intermediate_size\", \"ffn_hidden_size\", equal),\n    (\"moe_intermediate_size\", \"moe_ffn_hidden_size\", equal),\n    (\"tie_word_embeddings\", \"untie_embeddings_and_output_weights\",\n        lambda x, y: not x == y),\n    (\"rms_norm_eps\", \"norm_epsilon\", equal),\n]:\n    if hasattr(hf_config, hf_config_name) and hasattr(args, megatron_config_name):\n        if not compare_fn(getattr(hf_config, hf_config_name),\n                          getattr(args, megatron_config_name)):\n            errors.append(...)  # 收集所有不一致，最后一次性抛出"),
+      h("p",null,"这张比对表把 HF 与 Megatron 两套命名映射起来（注意 ",h("code",null,"tie_word_embeddings")," 与 ",h("code",null,"untie_embeddings_and_output_weights")," 语义相反，故用 ",h("code",null,"not x == y")," 比对）。",h("code",null,"rope_theta")," 因为可能藏在 ",h("code",null,"rope_parameters")," 字典里而被单独处理。这是「以正确性为先」设计主线在配置层的体现：透传给了用户最大自由，但用一道校验把手填参数与真实模型结构钉在一起，避免静默错配。"),
+      h("h3",null,"slime 强加的 Megatron 默认值"),
+      h("p",null,h("code",null,"_set_default_megatron_args")," 在透传之后强制设定一组 RL 后训练总是需要的默认值，使用户无需每次手填："),
+      h("ul",null,
+        h("li",null,h("code",null,"use_distributed_optimizer = True"),"：总是使用 ZeRO 分布式优化器。"),
+        h("li",null,h("code",null,"bf16 = not fp16"),"：默认 bf16 训练。"),
+        h("li",null,h("code",null,"variable_seq_lengths = True"),"（在 ",h("code",null,"validate_args")," 中设定）：总是使用变长序列；若 dispatcher 是 allgather 则强制换成 alltoall（allgather 不支持变长）。"),
+        h("li",null,"若未设 ",h("code",null,"--tokenizer-model"),"，则用 ",h("code",null,"--hf-checkpoint")," 作为 tokenizer 来源，类型设为 ",h("code",null,"HuggingFaceTokenizer"),"。")
+      ),
+      h("div",{className:"warn"},h("code",null,"validate_args")," 先调用 Megatron 自己的 ",h("code",null,"_megatron_validate_args"),"，再叠加 slime 的额外校验。因此 Megatron 内部所有的参数互斥与依赖检查仍然生效，slime 只在其之上增量补充（如变长序列、pipeline 并行为 1 时禁止设首尾层数）。"),
+      h("div",null,h(Src,{label:"megatron_parse_args",path:"slime/backends/megatron_utils/arguments.py",line:179}),h(Src,{label:"_hf_validate_args",path:"slime/backends/megatron_utils/arguments.py",line:93}),h(Src,{label:"_set_default_megatron_args",path:"slime/backends/megatron_utils/arguments.py",line:147}),h(Src,{label:"validate_args",path:"slime/backends/megatron_utils/arguments.py",line:72}),h(Ext,{href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},"Megatron-Core 参数文档"))
+    );
+  }
+
+  // ===== SGLang 前缀透传机制 =====
+  function SglangSection(){
+    return h("div",null,
+      h("p",null,"SGLang 透传是第二条设计主线，机制比 Megatron 更巧妙。slime 不维护一份 SGLang 参数清单，而是在运行时从",h("strong",null,"已安装的 SGLang 包"),"里发现其全部 server 参数，自动加 ",h("code",null,"--sglang-")," 前缀后暴露。这样无论用户装的是哪个版本的 SGLang，它的每一个 server 参数都能用 ",h("code",null,"--sglang-")," 前缀传入，且 SGLang 升级后新增的参数自动可用。"),
+      h("p",null,"实现的核心是一个对 ",h("code",null,"parser.add_argument")," 的临时替换（monkey-patch）。SGLang 提供 ",h("code",null,"ServerArgs.add_cli_args(parser)")," 把它的全部参数注册到给定 parser；slime 在调用它之前，把 parser 的 ",h("code",null,"add_argument")," 换成一个包装器，让每次注册都自动加前缀并改写 ",h("code",null,"dest"),"："),
+      h(Code,null,"# slime/backends/sglang_utils/arguments.py\nfrom sglang.srt.server_args import ServerArgs\n\ndef add_sglang_arguments(parser):\n    old_add_argument = parser.add_argument\n    skipped_args = [\n        \"model_path\", \"config\", \"trust_remote_code\", \"random_seed\",\n        \"enable_memory_saver\",          # memory\n        \"tp_size\", \"port\", \"nnodes\", \"node_rank\", \"dist_init_addr\",\n        \"gpu_id_step\", \"base_gpu_id\", \"nccl_port\", \"skip_server_warmup\",\n        \"enable_return_routed_experts\",  # distributed\n    ]\n\n    def new_add_argument_wrapper(*name_or_flags, **kwargs):\n        # 1) 跳过那些由 slime 自己管理的参数\n        canonical = None\n        if \"dest\" in kwargs:\n            canonical = kwargs[\"dest\"]\n        else:\n            for flag in name_or_flags:\n                if isinstance(flag, str) and flag.startswith(\"--\"):\n                    canonical = flag[2:].replace(\"-\", \"_\"); break\n        if canonical and canonical in skipped_args:\n            return  # 整个参数定义被跳过\n\n        # 2) 给每个 flag 加 --sglang- 前缀\n        new_flags = []\n        for item in name_or_flags:\n            if isinstance(item, str) and item.startswith(\"-\"):\n                stem = item.lstrip(\"-\")          # --foo-bar -> foo-bar\n                new_flags.append(f\"--sglang-{stem}\")\n            else:\n                new_flags.append(item)\n\n        # 3) 若显式给了 dest 也加 sglang_ 前缀\n        final_kwargs = kwargs.copy()\n        if \"dest\" in final_kwargs and isinstance(final_kwargs[\"dest\"], str):\n            if not final_kwargs[\"dest\"].startswith(\"sglang_\"):\n                final_kwargs[\"dest\"] = f\"sglang_{final_kwargs['dest']}\"\n        old_add_argument(*new_flags, **final_kwargs)\n\n    parser.add_argument = new_add_argument_wrapper\n    ServerArgs.add_cli_args(parser)   # SGLang 在这里注册全部参数, 全被包装器拦截\n    parser.add_argument = old_add_argument  # 恢复原始方法"),
+      h("p",null,"理解这段代码的关键在于：",h("code",null,"ServerArgs.add_cli_args(parser)")," 内部会对每个 SGLang 参数调用 ",h("code",null,"parser.add_argument(...)"),"。由于 slime 已经把 ",h("code",null,"parser.add_argument")," 临时替换为包装器，这些调用全部被拦截、加前缀、改 ",h("code",null,"dest"),"。例如 SGLang 的 ",h("code",null,"--mem-fraction-static")," 注册时被改写为 ",h("code",null,"--sglang-mem-fraction-static"),"，最终落在 ",h("code",null,"args.sglang_mem_fraction_static")," 上。注册完毕后立即把 ",h("code",null,"add_argument")," 恢复，使后续注册（如 PD 分离参数）不再被加前缀。"),
+      h("h3",null,"为什么要 skip 一部分参数"),
+      h("p",null,h("code",null,"skipped_args")," 列出的参数被整个跳过，因为它们由 slime 自己以更高层语义管理，不允许用户直接通过 SGLang 设定：",h("code",null,"model_path")," 由 ",h("code",null,"--hf-checkpoint")," 提供，",h("code",null,"tp_size")," 由 ",h("code",null,"--rollout-num-gpus-per-engine")," 推导，",h("code",null,"port"),"/",h("code",null,"nnodes"),"/",h("code",null,"dist_init_addr")," 等由 slime 的分布式编排分配。若放任用户直接设这些，会与 slime 的 placement group 与权重同步逻辑冲突。"),
+      h("h3",null,"独立解析阶段与 TP 默认值推导"),
+      h(Code,null,"def sglang_parse_args():\n    parser = argparse.ArgumentParser(add_help=False)\n    add_sglang_arguments(parser)\n\n    # 从 CLI 推导 sglang 张量并行的默认值\n    temp_parser = argparse.ArgumentParser(add_help=False)\n    temp_parser.add_argument(\"--rollout-num-gpus-per-engine\", type=int, default=1)\n    temp_parser.add_argument(\"--sglang-pp-size\", type=int, default=1)\n    temp_parser.add_argument(\"--sglang-pipeline-parallel-size\", type=int, default=1)\n    temp_args, _ = temp_parser.parse_known_args()\n    pp_size = temp_args.sglang_pp_size if temp_args.sglang_pp_size != 1 \\\n              else temp_args.sglang_pipeline_parallel_size\n    sglang_tp_size = temp_args.rollout_num_gpus_per_engine // pp_size\n    parser.set_defaults(sglang_tensor_parallel_size=sglang_tp_size)\n\n    args, _ = parser.parse_known_args()  # 只消费 --sglang-* , 其余留给 megatron\n    return args"),
+      h("p",null,"SGLang 参数用一个完全独立的 ",h("code",null,"ArgumentParser")," 解析，并以 ",h("code",null,"parse_known_args()")," 只取走自己认识的 ",h("code",null,"--sglang-*")," 参数，把其余原样留给 Megatron parser。这正好与 Megatron 侧的 ",h("code",null,"ignore_unknown_args=True")," 互补：两个 parser 各扫一遍同一份 ",h("code",null,"sys.argv"),"，各取所需，互不干扰。SGLang 的张量并行大小默认从 ",h("code",null,"rollout_num_gpus_per_engine // pp_size")," 推导，使「每引擎几张卡」这一个直观参数能自动转成 SGLang 的 TP 配置。"),
+      h("p",null,h("code",null,"validate_args")," 进一步把 SGLang 的并行参数补全并互校：把 ",h("code",null,"sglang_data_parallel_size")," 等别名映射成简称、根据 PP 大小回算 TP 大小、检查 DP attention 与 PD 分离配置的互斥关系。",h("code",null,"add_sglang_router_arguments")," 另外注册了 router 的 IP/端口/超时等参数（这些是 slime 显式写出的，并非来自透传）。"),
+      h("div",null,h(Src,{label:"add_sglang_arguments",path:"slime/backends/sglang_utils/arguments.py",line:33}),h(Src,{label:"new_add_argument_wrapper",path:"slime/backends/sglang_utils/arguments.py",line:63}),h(Src,{label:"sglang_parse_args",path:"slime/backends/sglang_utils/arguments.py",line:174}),h(Src,{label:"sglang validate_args",path:"slime/backends/sglang_utils/arguments.py",line:139}),h(Src,{label:"add_sglang_router_arguments",path:"slime/backends/sglang_utils/arguments.py",line:8}),h(Ext,{href:"https://docs.sglang.ai/"},"SGLang server 参数文档"))
+    );
+  }
+
+  // ===== 两阶段解析流程 =====
+  function PipelineSection(){
+    return h("div",null,
+      h("p",null,"前面分别讲了三套参数的来源，现在把它们如何被 ",h("code",null,"parse_args()")," 串起来讲清。整个流程分为预解析、两阶段解析、合并、校验四步。"),
+      h(Code,null,"def parse_args(add_custom_arguments=None):\n    configure_logger()\n    add_slime_arguments = get_slime_extra_args_provider(add_custom_arguments)\n\n    # 预解析: 取出控制解析流程本身的少数标志\n    pre = _pre_parse_mode()\n    skip_sglang = pre.debug_train_only or pre.load_debug_rollout_data is not None\n\n    # 阶段 1: 独立解析 sglang 参数 (除非用不到 sglang)\n    sglang_ns = None\n    if not skip_sglang:\n        sglang_ns = sglang_parse_args()\n\n    # 阶段 2: 解析 megatron + slime 参数 (ignore_unknown_args=True)\n    args = megatron_parse_args(\n        extra_args_provider=add_slime_arguments,\n        skip_hf_validate=pre.debug_rollout_only,\n    )\n\n    # 合并: 把预解析与 sglang 命名空间并入主 args\n    for key, value in vars(pre).items():\n        setattr(args, key, value)\n    if sglang_ns is not None:\n        for key, value in vars(sglang_ns).items():\n            setattr(args, key, value)\n\n    # 三道校验\n    slime_validate_args(args)\n    if pre.train_backend == \"megatron\" and not args.debug_rollout_only:\n        megatron_validate_args(args)\n    if not args.debug_train_only:\n        sglang_validate_args(args)\n    return args"),
+      h("h3",null,"为什么需要预解析"),
+      h("p",null,h("code",null,"_pre_parse_mode")," 用一个临时 parser 提前取出 ",h("code",null,"--train-backend"),"、",h("code",null,"--debug-rollout-only"),"、",h("code",null,"--debug-train-only"),"、",h("code",null,"--load-debug-rollout-data")," 这几个标志。它们之所以要预解析，是因为它们决定",h("strong",null,"后续要不要解析另外两套参数"),"：例如 ",h("code",null,"--debug-train-only")," 意味着不需要 SGLang，因此可以跳过 SGLang 解析与校验。这些标志被从正式分组里移除，避免重复注册，最后再合并回主 ",h("code",null,"args"),"。"),
+      h(Formula,{cap:"两个 parser 各扫一遍同一份命令行，靠互补的忽略策略避免冲突"},"$$ \\text{argv} \\;\\xrightarrow[\\text{parse\\_known\\_args}]{\\text{SGLang parser}}\\; \\text{sglang\\_ns} \\qquad \\text{argv} \\;\\xrightarrow[\\text{ignore\\_unknown\\_args}]{\\text{Megatron+slime parser}}\\; \\text{args} $$"),
+      h("p",null,"这套两阶段设计的本质是：用两个互相「装看不见对方参数」的 parser，分别扫描同一份命令行。SGLang parser 用 ",h("code",null,"parse_known_args")," 只取 ",h("code",null,"--sglang-*"),"；Megatron parser 用 ",h("code",null,"ignore_unknown_args=True")," 忽略 ",h("code",null,"--sglang-*")," 与预解析标志。两者的结果再用简单的 ",h("code",null,"setattr")," 循环合并进同一个 ",h("code",null,"Namespace"),"。这避免了维护一个统一的巨型 parser，也使三套参数系统在代码上保持解耦。"),
+      h("h3",null,"slime_validate_args：全局一致性校验"),
+      h("p",null,h("code",null,"slime_validate_args")," 是配置层最长的一段逻辑（约 270 行），负责跨参数的一致性约束与默认值回填。它体现的是「配置错误应当在启动时就报错，而非训练几小时后才暴露」的原则。代表性规则："),
+      h("ul",null,
+        h("li",null,h("code",null,"kl_coef")," 与 ",h("code",null,"kl_loss_coef")," 不可同时非零（reward 整形 KL 与 loss KL 二选一）；启用 KL 时检查 ",h("code",null,"ref_load")," 路径存在。"),
+        h("li",null,"colocate 时强制 ",h("code",null,"offload_train")," 与 ",h("code",null,"offload_rollout")," 为真，并把 ",h("code",null,"rollout_num_gpus")," 默认设为 actor 总卡数。"),
+        h("li",null,h("code",null,"advantage_estimator == \"ppo\"")," 时自动设 ",h("code",null,"use_critic = True"),"，且 critic 的 GPU 数与 actor 一致。"),
+        h("li",null,"动态 batch 必须配 ",h("code",null,"max_tokens_per_gpu"),"；",h("code",null,"num_rollout")," 与 ",h("code",null,"num_epoch")," 必须设其一；",h("code",null,"eps_clip_high")," 不设时回退到 ",h("code",null,"eps_clip"),"。"),
+        h("li",null,"评测数据集在此构建（",h("code",null,"args.eval_datasets = _resolve_eval_datasets(args)"),"），下一节展开。")
+      ),
+      h("div",{className:"note"},"统一配置文件还支持 ",h("code",null,"--custom-config-path")," 的 YAML 覆盖与 ",h("code",null,"--megatron-config-path")," 的 actor/critic 角色化配置（",h("code",null,"parse_megatron_role_args")," 用 ",h("code",null,"deepcopy")," 复制基础 args 再按角色 override，critic 会自动关掉 ",h("code",null,"kl_coef"),"、",h("code",null,"use_opd")," 等只对 actor 有效的特性）。"),
+      h("div",null,h(Src,{label:"parse_args",path:"slime/utils/arguments.py",line:1523}),h(Src,{label:"_pre_parse_mode",path:"slime/utils/arguments.py",line:1507}),h(Src,{label:"slime_validate_args",path:"slime/utils/arguments.py",line:1746}),h(Src,{label:"parse_megatron_role_args",path:"slime/utils/arguments.py",line:1604}),h(Src,{label:"_validate_update_weight_args",path:"slime/utils/arguments.py",line:1729}))
+    );
+  }
+
+  // ===== eval_config 评测配置 =====
+  function EvalConfigSection(){
+    return h("div",null,
+      h("p",null,"评测配置单独抽到 ",h("code",null,"slime/utils/eval_config.py"),"，因为评测往往要在多个数据集上各自用不同的采样参数与字段名。它的核心是 ",h("code",null,"EvalDatasetConfig")," 数据类，每个评测数据集一个实例，描述名字、路径、采样参数、字段名映射与 metadata 覆盖。"),
+      h(Code,null,"@dataclass\nclass EvalDatasetConfig:\n    name: str\n    path: str\n    rm_type: str | None = None\n    # 字段名覆盖\n    input_key: str | None = None\n    label_key: str | None = None\n    tool_key: str | None = None\n    metadata_key: str | None = None\n    # 采样参数\n    n_samples_per_eval_prompt: int | None = None\n    temperature: float | None = None\n    top_p: float | None = None\n    top_k: int | None = None\n    max_response_len: int | None = None\n    # 每数据集自定义生成函数 (如工具调用)\n    custom_generate_function_path: str | None = None\n    metadata_overrides: dict[str, Any] = field(default_factory=dict)"),
+      h("h3",null,"三级回退：数据集 → 默认 → 全局 args"),
+      h("p",null,"评测配置最值得理解的是它的取值优先级。对每个字段（如 ",h("code",null,"temperature"),"），",h("code",null,"_apply_dataset_field_overrides")," 按以下顺序取第一个非缺失值：先看该数据集自己的配置，再看 ",h("code",null,"eval.defaults")," 的全局默认，最后回退到主 ",h("code",null,"args")," 的对应属性。",h("code",null,"DATASET_RUNTIME_SPECS")," 与 ",h("code",null,"DATASET_SAMPLE_SPECS")," 两张表声明了每个字段的取值来源与回退到哪个 args 属性。"),
+      h(Code,null,"DATASET_RUNTIME_SPECS = {\n    \"temperature\": {\n        \"dataset_keys\": (\"temperature\",),\n        \"default_keys\": (\"temperature\",),\n        \"arg_attrs\": (\"eval_temperature\", \"rollout_temperature\"),\n    },\n    ...\n}\n\ndef _apply_dataset_field_overrides(args, dataset_cfg, defaults, spec_names):\n    for field_name, spec in spec_names.items():\n        dataset_value = _pick_from_mapping(dataset_cfg, spec[\"dataset_keys\"])\n        default_value = _pick_from_mapping(defaults, spec[\"default_keys\"])\n        resolved = _first_not_missing(dataset_value, default_value)\n        if resolved is not _MISSING:\n            dataset_cfg[field_name] = resolved\n            continue\n        dataset_cfg[field_name] = pick_from_args(args, spec[\"arg_attrs\"])"),
+      h("p",null,"注意 ",h("code",null,"arg_attrs")," 是一个有序元组，例如 ",h("code",null,'("eval_temperature", "rollout_temperature")'),"：先找评测专用的 ",h("code",null,"eval_temperature"),"，没设再退到通用的 ",h("code",null,"rollout_temperature"),"。这就是上一节 eval 分组里「评测参数不设则回退到 rollout 同名值」的具体实现。",h("code",null,"_MISSING")," 哨兵对象用来区分「显式设为 None」与「根本没出现这个键」。"),
+      h("h3",null,"两种配置来源汇成同一结构"),
+      h("p",null,h("code",null,"_resolve_eval_datasets")," 把 ",h("code",null,"--eval-config")," 的 OmegaConf YAML 与 ",h("code",null,"--eval-prompt-data")," 的「名字 路径」对，统一转成 ",h("code",null,"list[EvalDatasetConfig]"),"。两条路径都最终经过 ",h("code",null,"build_eval_dataset_configs")," 构造数据类，因此无论用哪种方式配置，下游评测代码看到的都是同一种结构。",h("code",null,"ensure_dataset_list")," 还兼容「列表」与「以名字为键的字典」两种 YAML 写法。"),
+      h("p",null,"为了与旧版兼容，",h("code",null,"_resolve_eval_datasets")," 在构造完成后会把结果反写回 ",h("code",null,"args.eval_prompt_data")," 为扁平的「名字 路径」交替列表（",h("code",null,"[name, path, name, path, ...]"),"），使依赖旧字段的代码仍然工作。单个 ",h("code",null,"--eval-prompt-data")," 值会被当作 aime 数据集处理（旧版约定）。"),
+      h("div",null,h(Src,{label:"EvalDatasetConfig",path:"slime/utils/eval_config.py",line:94}),h(Src,{label:"DATASET_RUNTIME_SPECS",path:"slime/utils/eval_config.py",line:10}),h(Src,{label:"_apply_dataset_field_overrides",path:"slime/utils/eval_config.py",line:188}),h(Src,{label:"build_eval_dataset_configs",path:"slime/utils/eval_config.py",line:201}),h(Src,{label:"ensure_dataset_list",path:"slime/utils/eval_config.py",line:160}),h(Src,{label:"_resolve_eval_datasets",path:"slime/utils/arguments.py",line:1652}),h(Ext,{href:"https://omegaconf.readthedocs.io/"},"OmegaConf 文档"))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"SGLang server 参数",d:"--sglang- 前缀透传的来源；server_args 全部字段",href:"https://docs.sglang.ai/"},
+    {t:"Megatron-Core 参数",d:"原生透传的训练后端参数文档",href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},
+    {t:"OmegaConf 文档",d:"--eval-config 与 --custom-config-path 的 YAML 解析库",href:"https://omegaconf.readthedocs.io/"},
+    {t:"argparse 文档",d:"parse_known_args / ignore_unknown_args 的官方语义",href:"https://docs.python.org/3/library/argparse.html"},
+    {t:"slime 官方文档",d:"快速上手、用法与参数说明",href:"https://thudm.github.io/slime/"},
+    {t:"arguments.py（本机）",d:"统一配置入口，2014 行",href:srcUrl("slime/utils/arguments.py",1)},
+    {t:"sglang arguments.py（本机）",d:"SGLang 前缀透传实现",href:srcUrl("slime/backends/sglang_utils/arguments.py",1)},
+    {t:"eval_config.py（本机）",d:"评测数据集配置与三级回退",href:srcUrl("slime/utils/eval_config.py",1)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:2}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 2 课 / 共 11 · 统一配置层"),
+          h("h1",null,"统一配置层"),
+          h("p",{className:"lead"},"slime 把训练、推理、RL 算法、数据、评测的全部参数合并进同一个命名空间。本课讲清四件事：参数如何按功能分组组织，Megatron 参数如何通过 extra_args_provider 原生透传并校验，SGLang 参数如何用 monkey-patch 自动加 --sglang- 前缀暴露，以及 eval_config 的评测数据集配置与三级回退。读完之后，后续每课遇到 args.xxx 都能定位它的定义、默认值与校验约束。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"slime/utils/arguments.py"),"（统一入口与全部 slime 参数）、",h("code",null,"slime/backends/megatron_utils/arguments.py"),"（Megatron 透传与 HF 校验）、",h("code",null,"slime/backends/sglang_utils/arguments.py"),"（SGLang 前缀透传）、",h("code",null,"slime/utils/eval_config.py"),"（评测配置）。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"总览"),
+          h("h2",null,"三个来源，一个命名空间"),
+          h(OverviewSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"arguments.py · 参数分组"),
+          h("h2",null,"参数如何分组：逐组探索真实字段"),
+          h("p",null,"slime 自己的参数全部定义在 ",h("code",null,"get_slime_extra_args_provider")," 返回的 ",h("code",null,"add_slime_arguments")," 里，按功能拆成十余个 ",h("code",null,"add_*_arguments")," 闭包函数，依次调用。点 Tab 切换分组，每组展示真实字段、默认值与作用。"),
+          h(GroupExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"arguments.py · reset_arg"),
+          h("h2",null,"reset_arg：与上游 parser 共存的就地修改"),
+          h(ResetArgSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"megatron_utils/arguments.py"),
+          h("h2",null,"Megatron 原生透传：extra_args_provider 与 HF 校验"),
+          h(MegatronSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"sglang_utils/arguments.py"),
+          h("h2",null,"SGLang 前缀透传：运行时发现全部 server 参数"),
+          h(SglangSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"parse_args 流程"),
+          h("h2",null,"两阶段解析：两个 parser 各扫一遍命令行"),
+          h(PipelineSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"eval_config.py"),
+          h("h2",null,"评测配置：EvalDatasetConfig 与三级回退"),
+          h(EvalConfigSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"读配置层时配合这些文档：SGLang 与 Megatron 文档是两条透传路径的参数来源，OmegaConf 与 argparse 文档解释解析机制。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"一个命名空间，三套来源"),"：slime 专属参数、Megatron 全部参数、SGLang 全部 server 参数（加 ",h("code",null,"--sglang-")," 前缀），最终合并进同一个 ",h("code",null,"Namespace"),"。这是理解配置层的总纲。"),
+            h("li",null,h("strong",null,"原生透传而非重新包装"),"：Megatron 通过 ",h("code",null,"extra_args_provider")," 回调把 slime 参数注册到它自己的 parser；SGLang 通过临时替换 ",h("code",null,"add_argument")," 在运行时发现并加前缀。上游引擎升级后新增参数自动可用。"),
+            h("li",null,h("strong",null,"两个互补的忽略策略"),"：Megatron parser 用 ",h("code",null,"ignore_unknown_args=True")," 忽略 ",h("code",null,"--sglang-*"),"，SGLang parser 用 ",h("code",null,"parse_known_args")," 只取 ",h("code",null,"--sglang-*"),"。两者各扫一遍同一份命令行，互不干扰。"),
+            h("li",null,h("strong",null,"透传换来自由，校验保住正确性"),"：",h("code",null,"_hf_validate_args")," 把手填的 Megatron 结构参数与 HF 检查点钉死，",h("code",null,"slime_validate_args")," 集中做跨参数一致性约束，使配置错误在启动时即报错。"),
+            h("li",null,h("strong",null,"reset_arg 与预解析是共存的代价"),"：",h("code",null,"reset_arg")," 就地改既有参数默认值以避免重复注册，",h("code",null,"_pre_parse_mode")," 提前取出控制解析流程的标志以决定跳过哪些阶段。"),
+            h("li",null,h("strong",null,"评测配置独立且统一"),"：",h("code",null,"EvalDatasetConfig")," 按「数据集 → 默认 → 全局 args」三级回退取值，两种 YAML/命令行来源都汇成同一种结构供下游使用。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"slime-lesson-01-foundations.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 1 课：地基与双引擎全局观")),
+            h("a",{href:"slime-lesson-03-rl-math.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 3 课：RL 数学原语"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

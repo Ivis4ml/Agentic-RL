@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 逐文件精读 · 第 5 课：数据与奖励</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:830px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}
+    .filegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin:16px 0;}
+    .filechip{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:9px 11px;cursor:pointer;transition:all .12s;}
+    .filechip:hover{border-color:var(--line-2);background:var(--panel-2);}
+    .filechip.active{border-color:var(--teal);background:#0e2120;}
+    .filechip .fn{font-family:var(--mono);font-size:12.5px;color:var(--ink);}
+    .filechip .tag{font-size:10px;color:var(--faint);margin-top:2px;}
+    .detail{border:1px solid var(--line-2);background:var(--panel-2);border-radius:12px;padding:18px 20px;margin-top:6px;min-height:170px;}
+    .detail h3{margin-top:0;}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 5 课</p><h1>数据与奖励</h1><p>能访问 CDN 时切换为交互版。本课讲 dataset/ 各数据集 loader、dataloader 的分布式 sampler、以及 reward/ 的可验证奖励函数。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const AREAL="vscode://file/Users/xinyu/Code/Agentic-RL/AReaL/";
+  function srcUrl(p,l){return AREAL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Enum","str","int","float","bool","dict","list","tuple","torch","StatefulDataLoader","DistributedSampler","Dataset","MathVerifyWorker"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","areal-lesson-01-foundations.html"],[2,"数据契约","areal-lesson-02-contracts.html"],[3,"抽象基类","areal-lesson-03-interfaces.html"],[4,"RL 数学原语","areal-lesson-04-rl-math.html"],[5,"数据与奖励","areal-lesson-05-data-reward.html"],[6,"模型层","areal-lesson-06-models.html"],[7,"训练引擎","areal-lesson-07-train-engine.html"],[8,"推理引擎","areal-lesson-08-inference-engine.html"],[9,"Workflow","areal-lesson-09-workflow.html"],[10,"Trainer","areal-lesson-10-trainer.html"],[11,"编排运行时","areal-lesson-11-orchestration.html"],[12,"进阶与收尾","areal-lesson-12-advanced.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"areal-course-index.html"},"AReaL",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":(L[2]==="#"?"lchip todo":"lchip done");return L[2]==="#"?h("span",{key:L[0],className:cls},L[0]+" "+L[1]):h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  const DATASETS=[
+    {n:"gsm8k",line:6,tag:"数学应用题 · 范例",role:"最规范的范例。SFT 版把 question+answer 编码成 input_ids，并构造 loss_mask（prompt 置 0、answer 置 1）；RL 版只返回 messages（chat 格式，追加“把答案放进 \\boxed{}”提示），token 化推迟到 workflow。",syms:[["get_gsm8k_sft_dataset","areal/dataset/gsm8k.py",6],["get_gsm8k_rl_dataset","areal/dataset/gsm8k.py",31]]},
+    {n:"geometry3k",line:44,tag:"多模态几何",role:"带图像的几何题。多了 pad_to_square、convert_image 把图统一成方形并编码。SFT 与 RL 两版，processor 处理视觉输入。",syms:[["pad_to_square","areal/dataset/geometry3k.py",12],["convert_image","areal/dataset/geometry3k.py",21],["get_geometry3k_sft_dataset","areal/dataset/geometry3k.py",44],["get_geometry3k_rl_dataset","areal/dataset/geometry3k.py",125]]},
+    {n:"clevr_count_70k",line:38,tag:"多模态计数",role:"数图中物体个数的视觉任务。SFT 与 RL 两版，输出是一个整数计数，reward 校验计数是否正确。",syms:[["get_clevr_count_70k_sft_dataset","areal/dataset/clevr_count_70k.py",38],["get_clevr_count_70k_rl_dataset","areal/dataset/clevr_count_70k.py",153]]},
+    {n:"hhrlhf",line:6,tag:"偏好数据 RW/DPO",role:"Anthropic HH 偏好对（chosen/rejected）。不是可验证奖励任务，而是给奖励模型（RW）和 DPO 用的成对偏好数据。",syms:[["get_hhrlhf_rw_dataset","areal/dataset/hhrlhf.py",6],["get_hhrlhf_dpo_dataset","areal/dataset/hhrlhf.py",33]]},
+    {n:"torl_data",line:62,tag:"工具调用 RL",role:"工具使用 RL 数据。多了 download、prepare_torl_data 先把原始数据拉下来预处理，再产出 sft/rl 数据集。",syms:[["download","areal/dataset/torl_data.py",33],["prepare_torl_data","areal/dataset/torl_data.py",43],["get_torl_data_rl_dataset","areal/dataset/torl_data.py",71]]},
+    {n:"virl39k",line:48,tag:"多模态 RL",role:"大规模多模态 RL 数据集，只有 RL 版。同样用 convert_image 预处理视觉输入。",syms:[["get_virl39k_rl_dataset","areal/dataset/virl39k.py",48]]}
+  ];
+  function DatasetBrowser(){const [s,setS]=useState(0);const d=DATASETS[s];
+    return h("div",null,
+      h("div",{className:"filegrid"},DATASETS.map(function(x,i){return h("div",{key:i,className:"filechip"+(i===s?" active":""),onClick:function(){setS(i);}},h("div",{className:"fn"},x.n),h("div",{className:"tag"},x.tag));})),
+      h("div",{className:"detail"},
+        h("div",{className:"card-title"},h("span",{className:"pill teal"},"dataset"),h("code",null,"dataset/"+d.n+".py")),
+        h("p",{style:{marginTop:8}},d.role),
+        h("div",null,d.syms.map(function(sy,i){return h(Src,{key:i,label:sy[0],path:sy[1],line:sy[2]});}))
+      )
+    );
+  }
+
+  function PipelineMath(){const ref=useTypeset("pipe");
+    return h("div",{ref:ref},
+      h("p",null,"数据集 loader 的产物分两类，决定了下游怎么用。SFT 直接给可训练的 token 和 mask："),
+      h(Formula,{cap:"SFT 样本：token + loss_mask（prompt 段 mask=0）"},"$$ \\{\\, \\text{input\\_ids} = \\text{enc}(q{+}a),\\;\\; m_t = \\mathbb{1}[\\,t \\ge |q|\\,] \\,\\} $$"),
+      h(Formula,{cap:"SFT 损失：只在 answer 段算交叉熵"},"$$ \\mathcal{L}_{\\text{SFT}} = -\\frac{\\sum_t m_t \\log \\pi_\\theta(y_{t+1}\\mid y_{\\le t})}{\\sum_t m_t} $$"),
+      h("p",null,"RL 版则只返回 ",h("code",null,"messages"),"（chat 格式，附“把答案放进 \\boxed{}”指令），token 化与采样推迟到 workflow（第 9 课）。原因：RL 的回答是模型现采的，数据集只提供 prompt 和参考答案。"),
+      h("h4",null,"分发：按路径子串 + 类型分流"),
+      h("p",null,h("code",null,"_get_custom_dataset(path, type)")," 不维护显式注册表，而是按 ",h("code",null,"path")," 里是否含 'gsm8k'/'geometry3k'/... 以及 ",h("code",null,"type")," 是 sft/rl 分流，并在分支里就地 import 对应 loader（按需加载，避免一次性拉入所有数据集依赖）。"),
+      h(Code,null,"def _get_custom_dataset(path, type='sft', split=None, tokenizer=None, processor=None, **kw):\n    if 'gsm8k' in path and type == 'sft':\n        from .gsm8k import get_gsm8k_sft_dataset\n        return get_gsm8k_sft_dataset(path=path, split=split, tokenizer=tokenizer, **kw)\n    elif 'gsm8k' in path and type == 'rl':\n        from .gsm8k import get_gsm8k_rl_dataset\n        return get_gsm8k_rl_dataset(...)\n    elif 'geometry3k' in path and type == 'sft':\n        ...   # 多模态走 processor 而非 tokenizer"),
+      h("div",null,h(Src,{label:"_get_custom_dataset",path:"areal/dataset/__init__.py",line:27}),h(Src,{label:"get_custom_dataset",path:"areal/dataset/__init__.py",line:165}))
+    );
+  }
+
+  function DataloaderSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"create_dataloader")," 用 torchdata 的 ",h("code",null,"StatefulDataLoader"),"（可保存恢复迭代位置，配合断点续训）。每 rank 的 batch 是全局 batch 除以 world_size，并按场景选不同的分布式 sampler："),
+      h("div",{className:"split"},
+        h("div",null,h(Code,null,"def create_dataloader(dataset, rank, world_size, cfg, collate_fn=None):\n    assert cfg.batch_size % world_size == 0\n    if isinstance(cfg, ValidDatasetConfig):\n        sampler_cls = EvalDistributedSampler   # 评测：不补齐\n    else:\n        sampler_cls = DistributedSampler       # 训练：补齐到整除\n    return StatefulDataLoader(\n        dataset,\n        batch_size=cfg.batch_size // world_size,\n        sampler=sampler_cls(dataset, world_size, rank,\n                            shuffle=cfg.shuffle, drop_last=...),\n        num_workers=cfg.num_workers,\n        collate_fn=collate_fn or (lambda x: x),  # 默认恒等\n    )")),
+        h("div",null,
+          h("h4",null,"三个设计出发点"),
+          h("ul",null,
+            h("li",null,h("strong",null,"评测用 EvalDistributedSampler"),"：标准 DistributedSampler 会补齐样本到各 rank 整除，导致部分验证样本被算两次、指标偏差。评测版不补齐，保证 accuracy/loss 无偏。"),
+            h("li",null,h("strong",null,"collate 默认恒等"),"（",h("code",null,"lambda x: x"),"）：数据集产出原始 dict 列表，真正的打包（pad/pack 成 packed micro-batch）推迟到引擎里用第 4 课的 data 工具做。dataloader 不越权。"),
+            h("li",null,h("strong",null,"StatefulDataLoader"),"：迭代位置可存进 checkpoint，断点续训时数据顺序精确恢复，配合第 1 课的确定性种子。")),
+          h("div",null,h(Src,{label:"create_dataloader",path:"areal/utils/dataloader.py",line:13}),h(Src,{label:"EvalDistributedSampler",path:"areal/utils/dataloader.py",line:65}))
+        )
+      )
+    );
+  }
+
+  const REWARDS=[
+    {n:"MathVerifyWorker",file:"areal/reward/__init__.py",line:13,role:"共享的数学校验器，薄封装 math_verify 库的 parse() + verify()。关键设计：用 concurrent.futures 做线程安全超时，而不是 signal.alarm（后者只在主线程有效，多线程 rollout 下会失效）。精度按有效数字（默认 6 位），singleton 复用。",code:"class MathVerifyWorker:\n    def _verify_impl(self, response, ground_truth):\n        gold = parse(ground_truth, ...)\n        pred = parse(response, ...)\n        if not gold or not pred:\n            return 0.0\n        return 1.0 if math_verify_verify(gold, pred, float_rounding=self.precision) else 0.0\n\n    def verify(self, response, ground_truth):\n        # 线程池里跑, future.result(timeout=...) 实现线程安全超时\n        with ThreadPoolExecutor(max_workers=1) as ex:\n            return ex.submit(self._verify_impl, response, ground_truth).result(timeout=self.timeout)"},
+    {n:"gsm8k_reward_fn",file:"areal/reward/gsm8k.py",line:10,role:"最简 reward 范例。签名 (prompt, completions, prompt_ids, completion_ids, answer, **kwargs) -> float，内部调 MathVerifyWorker 校验答案，对就 1.0、错就 0.0；任何异常都吞掉返回 0.0（reward 函数绝不能让一条坏样本拖垮整个训练步）。",code:"def gsm8k_reward_fn(prompt, completions, prompt_ids, completion_ids, answer, **kwargs):\n    try:\n        worker = get_math_verify_worker()\n        return worker.verify(str(completions), str(answer))   # 1.0 / 0.0\n    except Exception:\n        logger.warning('Exception in gsm8k_reward_fn', exc_info=True)\n        return 0.0"},
+    {n:"geometry3k_reward_fn",file:"areal/reward/geometry3k.py",line:27,role:"多模态几何的 reward：先 extract_answer 从模型输出里抽出答案（默认取最后一个数字），再做数值校验。结构与 gsm8k 一致，只是多一步答案抽取。",code:"def extract_answer(pred_str, use_last_number=True):\n    # 从自由文本里抽出答案（默认最后一个数字）\n    ...\n\ndef geometry3k_reward_fn(prompt, completions, ..., answer, **kwargs):\n    pred = extract_answer(str(completions))\n    return 1.0 if verify(pred, answer) else 0.0"},
+    {n:"懒加载分发",file:"areal/reward/__init__.py",line:120,role:"reward 包用模块级 __getattr__ 懒加载：访问 areal.reward.gsm8k_reward_fn 时才真正 import 对应模块。这样 import areal.reward 不会一次性拉入所有数据集与校验依赖。",code:"_LAZY_IMPORTS = {\n    'gsm8k_reward_fn': 'areal.reward.gsm8k',\n    'geometry3k_reward_fn': 'areal.reward.geometry3k',\n    'clevr_count_70k_reward_fn': 'areal.reward.clevr_count_70k',\n}\ndef __getattr__(name):          # PEP 562 模块级 __getattr__\n    if name in _LAZY_IMPORTS:\n        mod = importlib.import_module(_LAZY_IMPORTS[name])\n        return getattr(mod, name)\n    raise AttributeError(name)"}
+  ];
+  function RewardBrowser(){const [s,setS]=useState(0);const d=REWARDS[s];const ref=useTypeset("rw"+s);
+    return h("div",null,
+      h("div",{className:"filegrid"},REWARDS.map(function(x,i){return h("div",{key:i,className:"filechip"+(i===s?" active":""),onClick:function(){setS(i);}},h("div",{className:"fn"},x.n),h("div",{className:"tag"},x.file.split("/").pop()+":"+x.line));})),
+      h("div",{className:"detail",ref:ref,key:s},
+        h("div",{className:"card-title"},h("span",{className:"pill purple"},"reward"),h("code",null,x_file(d))),
+        h("p",{style:{marginTop:8}},d.role),
+        h(Code,null,d.code),
+        h("div",{style:{marginTop:8}},h(Src,{label:d.n,path:d.file,line:d.line}))
+      )
+    );
+  }
+  function x_file(d){return d.file.replace("areal/","")+":"+d.line;}
+
+  function RewardIntro(){const ref=useTypeset("rwintro");
+    return h("div",{ref:ref},
+      h("p",null,"RLVR（可验证奖励的 RL）的奖励不是学出来的打分模型，而是一个确定性的校验函数：把模型输出和参考答案都解析出来，判断是否相等。形式上奖励就是一个指示函数："),
+      h(Formula,{cap:"可验证奖励"},"$$ R(x, y) = \\mathbb{1}\\big[\\,\\operatorname{parse}(y) \\equiv \\operatorname{parse}(a^\\star)\\,\\big] \\in \\{0, 1\\} $$"),
+      h("p",null,"reward 函数的契约（第 3 课的 reward_api）：返回一个 float，签名灵活，但有两条铁律。其一，",h("strong",null,"绝不抛异常到训练循环"),"（一律 try/except 返回 0.0）。其二，",h("strong",null,"必须能在 rollout 的并发线程里安全运行"),"（所以 MathVerifyWorker 用 concurrent.futures 而非 signal 做超时）。第 3 课的 AsyncRewardWrapper 再把它包成带超时重试的异步调用。")
+    );
+  }
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:5}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 5 课 / 共 12 · dataset + dataloader + reward"),
+          h("h1",null,"数据与奖励：喂给训练的原料"),
+          h("p",{className:"lead"},"前一课是算法数学，这一课是原料：把 HuggingFace 数据集变成可训练样本（SFT 给 token+mask，RL 给 prompt），用分布式 sampler 切到各 rank，再用可验证奖励函数给采样出的回答打分。文件不多、逻辑直白，但定义了“训练在学什么、按什么评分”。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"utils/dataloader.py"),"、",h("code",null,"dataset/")," 6 个数据集 loader + 分发、",h("code",null,"reward/")," 的 MathVerifyWorker 与各 reward 函数。reward 函数的契约在第 3 课的 reward_api（AsyncRewardWrapper）。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"dataset/"),
+          h("h2",null,"数据集 loader：六个，一种范式"),
+          h("p",null,"点击任一数据集看它的角色与 sft/rl 两版入口。",h("code",null,"gsm8k")," 是最该先读的范例。"),
+          h(DatasetBrowser),
+          h("div",{style:{marginTop:20}},h(PipelineMath))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"utils/dataloader.py"),
+          h("h2",null,"分布式 dataloader"),
+          h(DataloaderSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"reward/"),
+          h("h2",null,"可验证奖励"),
+          h(RewardIntro),
+          h("div",{style:{marginTop:16}},h(RewardBrowser))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"SFT 与 RL 产物不同"),"：SFT 给 token+loss_mask 直接可训，RL 只给 prompt，回答靠采样、打分靠 reward。"),
+            h("li",null,h("strong",null,"按需加载、就地分发"),"：数据集与 reward 都用懒加载（分支内 import、模块级 __getattr__），import 主包不拉全部依赖。"),
+            h("li",null,h("strong",null,"reward 必须健壮且线程安全"),"：异常一律吞成 0.0，超时用 concurrent.futures 而非 signal，能在并发 rollout 里安全跑。"),
+            h("li",null,h("strong",null,"评测无偏"),"：EvalDistributedSampler 不补齐样本，避免重复计数。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"areal-lesson-04-rl-math.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 4 课：RL 数学原语")),
+            h("a",{href:"areal-course-index.html"},h("div",{className:"faint"},"下一课（待建） →"),h("strong",null,"第 6 课：模型层"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 第 8 课：Rollout 引擎与多推理后端</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 8 课</p><h1>Rollout 引擎与多推理后端</h1><p>能访问 CDN 时切换为交互版。本课讲清 verl 的 rollout 子系统：统一的 BaseRollout 抽象与 AsyncRolloutRequest 数据结构、tokenizer 与 chat template 处理、vLLM / SGLang / TensorRT-LLM / HF / naive 五个推理后端如何生成序列并与训练侧共置，以及权重同步的核心机制（分桶 IPC 传输与参数/缓冲区拆分），最后是 RolloutReplica 的副本管理。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const VERL="vscode://file/Users/xinyu/Code/Agentic-RL/verl/";
+  function srcUrl(p,l){return VERL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global","nonlocal"];
+  const PY_TY=["Any","ABC","Optional","Callable","Generator","AsyncGenerator","Tensor","DTensor","torch","dist","nn","int","float","bool","str","dict","list","tuple","DataProto","WorkerGroup","ResourcePool","RayWorkerGroup","RayResourcePool","AgentLoop","BaseRollout","ServerAdapter","RolloutReplica","RolloutConfig","HFModelConfig","DeviceMesh","AsyncRolloutRequest","TokenOutput","BucketedWeightSender","BucketedWeightReceiver","TensorMetadata","RolloutMode","Message","ray","asyncio","zmq"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与HybridFlow","verl-lesson-01-foundations.html"],[2,"DataProto","verl-lesson-02-dataproto.html"],[3,"混合控制器","verl-lesson-03-single-controller.html"],[4,"配置","verl-lesson-04-config.html"],[5,"RL数学","verl-lesson-05-core-algos.html"],[6,"训练引擎","verl-lesson-06-engines.html"],[7,"Workers","verl-lesson-07-workers.html"],[8,"Rollout","verl-lesson-08-rollout.html"],[9,"异步服务","verl-lesson-09-async-server.html"],[10,"Agent Loop","verl-lesson-10-agent-loop.html"],[11,"异步训练","verl-lesson-11-async-train.html"],[12,"Trainer与端到端","verl-lesson-12-trainer-e2e.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"verl-course-index.html"},"verl",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 全局观：rollout 子系统在 verl 中的位置 =====
+  function OverviewSection(){
+    return h("div",null,
+      h("p",null,"在 PPO 这类策略梯度算法里，每一步训练都需要先用当前策略采样轨迹（rollout），再用这些轨迹算优势、更新参数。采样本质上是大批量的自回归推理，它的吞吐直接决定整个 RL 训练的速度。因此 verl 把 rollout 单独抽象成一个子系统，并允许接入不同的推理引擎。本课覆盖的目录是 ",h("code",null,"verl/workers/rollout/"),"。"),
+      h("p",null,"理解这一层的关键在于区分三类对象，它们各司其职，不要混淆："),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"Rollout / ServerAdapter"),"客户端适配器"),
+          h("p",null,"驻留在训练进程（hybrid worker）内的薄客户端，继承 ",h("code",null,"BaseRollout"),"。它本身不持有推理引擎，而是通过 Ray actor 句柄或 HTTP 客户端向真正的推理服务发请求，负责 ",h("code",null,"resume"),"/",h("code",null,"release"),"/",h("code",null,"update_weights")," 三类控制方法。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"RolloutReplica"),"副本管理器"),
+          h("p",null,"一个 replica 是一台逻辑上的推理服务实例，可能横跨多个节点。",h("code",null,"RolloutReplica")," 负责按 hybrid / colocated / standalone 三种模式拉起底层 HTTP server，并暴露 ",h("code",null,"wake_up"),"/",h("code",null,"sleep"),"/",h("code",null,"clear_kv_cache")," 等集合操作。第 9 课承接它的 server 细节。")
+        )
+      ),
+      h("p",null,"第三类是真正的推理后端（vLLM、SGLang、TensorRT-LLM 引擎本身），它们运行在独立的 server actor 进程里，由 replica 拉起。本课讲清前两类如何把训练侧、推理侧、权重同步三者衔接起来，并对比五个后端各自的生成实现。"),
+      h("div",{className:"note"},"承接关系：第 7 课讲 worker 与角色（actor/critic/rollout 如何在 ",h("code",null,"FSDP")," / Megatron 引擎上初始化），本课讲 rollout 子系统内部；第 9 课讲 async server（HTTP 服务、OpenAI 接口、PD 分离）；第 10 课讲 Agent Loop 如何调用 server 完成多轮采样。"),
+      h("div",null,
+        h(Src,{label:"workers/rollout/",path:"verl/workers/rollout/base.py"}),
+        h(Src,{label:"BaseRollout",path:"verl/workers/rollout/base.py",line:29}),
+        h(Src,{label:"RolloutReplica",path:"verl/workers/rollout/replica.py",line:70}),
+        h(Ext,{href:"https://docs.vllm.ai/"},"vLLM 文档"),
+        h(Ext,{href:"https://docs.sglang.ai/"},"SGLang 文档"))
+    );
+  }
+
+  // ===== base.py：统一接口与注册表 =====
+  function BaseSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"base.py")," 定义了所有 rollout 的最小公共契约 ",h("code",null,"BaseRollout"),"。它是一个抽象基类，只规定四件事：构造时把配置转为 dataclass（",h("code",null,"omega_conf_to_dataclass"),"），以及三个异步抽象方法 ",h("code",null,"resume"),"、",h("code",null,"update_weights"),"、",h("code",null,"release"),"。注意这三个方法都是 ",h("code",null,"async")," 的，因为 server 模式下它们要通过网络或 IPC 与独立的推理进程通信。"),
+      h(Code,null,"class BaseRollout(ABC):\n    def __init__(self, config, model_config, device_mesh, *args, **kwargs):\n        self.config = omega_conf_to_dataclass(config)\n        self.model_config = omega_conf_to_dataclass(model_config)\n        self.device_mesh = device_mesh\n\n    @abstractmethod\n    async def resume(self, tags: list[str]): ...      # 把权重/kv_cache 恢复进显存\n\n    @abstractmethod\n    async def update_weights(self, weights, **kwargs): ...  # 训练权重推给推理引擎\n\n    @abstractmethod\n    async def release(self): ...                       # 释放权重与 kv_cache 显存\n\n    def generate_sequences(self, prompts: DataProto) -> DataProto:\n        raise NotImplementedError                      # 同步批量生成 (仅 HF/naive)"),
+      h("p",null,"这里有一处设计上的分叉值得指出：",h("code",null,"generate_sequences")," 是同步的、不是抽象方法，默认抛 ",h("code",null,"NotImplementedError"),"。它代表早期的 SPMD（单程序多数据）生成路径，即每个训练 rank 在自己进程内直接驱动推理。如今主流的 vLLM / SGLang / TRT-LLM 后端都走 server 模式，生成由 server 进程完成、训练侧只发请求，因此它们的 ",h("code",null,"generate_sequences")," 直接抛错（见 ",h("code",null,"vllm_rollout.py:206"),"）。只有 HF 与 naive 两个后端仍实现它，用于单卡调试与教学。"),
+      h("h3",null,"为什么需要 resume / release：显存的时分复用"),
+      h("p",null,"在共置（colocate / hybrid）部署里，训练引擎与推理引擎共用同一批 GPU。训练时需要优化器状态、梯度、激活值占满显存；采样时又需要 KV cache 占满显存。两者无法同时存在，于是引入显存的时分复用：采样前 ",h("code",null,"resume")," 把推理权重和 KV cache 唤醒进显存，采样后 ",h("code",null,"release")," 把它们释放（vLLM 称为 sleep，SGLang 称为 release_memory_occupation），腾出空间给训练。",h("code",null,"tags")," 参数区分唤醒/释放的是 ",h("code",null,'"weights"')," 还是 ",h("code",null,'"kv_cache"'),"，因为 LoRA 等场景只需换 KV cache 而保留基座权重。"),
+      h("h3",null,"注册表：按 (后端名, 模式) 动态解析类"),
+      h("p",null,"verl 不在 import 时静态依赖任何推理引擎，而是用一张字符串注册表延迟加载。",h("code",null,"get_rollout_class")," 根据 ",h("code",null,"(rollout_name, mode)")," 查表得到全限定类名，再用 ",h("code",null,"importlib")," 动态导入。这样未安装 vLLM 的环境也能 import verl，只在真正用到某后端时才触发其依赖。"),
+      h(Code,null,"_ROLLOUT_REGISTRY = {\n    (\"vllm\", \"async\"):   \"verl.workers.rollout.vllm_rollout.ServerAdapter\",\n    (\"sglang\", \"async\"): \"verl.workers.rollout.sglang_rollout.sglang_rollout.ServerAdapter\",\n    (\"trtllm\", \"async\"): \"verl.workers.rollout.trtllm_rollout.trtllm_rollout.ServerAdapter\",\n}\n\ndef get_rollout_class(rollout_name, mode=\"async\"):\n    fqdn = _ROLLOUT_REGISTRY[(rollout_name, mode)]\n    module_name, class_name = fqdn.rsplit(\".\", 1)\n    return getattr(importlib.import_module(module_name), class_name)"),
+      h("p",null,"注意三个后端注册的都是名为 ",h("code",null,"ServerAdapter")," 的类，且 mode 只有 ",h("code",null,'"async"'),"。这正是前文所说的：SPMD 同步模式（PR #4411）已被移除，所有生产后端统一走 server 模式，ServerAdapter 充当客户端。HF 与 naive 走另一条同步路径，不进这张表。"),
+      h("div",null,
+        h(Src,{label:"BaseRollout",path:"verl/workers/rollout/base.py",line:29}),
+        h(Src,{label:"resume / update_weights / release",path:"verl/workers/rollout/base.py",line:44}),
+        h(Src,{label:"generate_sequences",path:"verl/workers/rollout/base.py",line:71}),
+        h(Src,{label:"_ROLLOUT_REGISTRY",path:"verl/workers/rollout/base.py",line:83}),
+        h(Src,{label:"get_rollout_class",path:"verl/workers/rollout/base.py",line:90}))
+    );
+  }
+
+  // ===== schemas.py：AsyncRolloutRequest =====
+  function SchemasSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"schemas.py")," 定义 server 模式下贯穿一次多轮对话采样的核心数据结构 ",h("code",null,"AsyncRolloutRequest"),"（基于 pydantic ",h("code",null,"BaseModel"),"）。它不是简单的请求体，而是一个持续累积的状态机：随着多轮工具调用与回复的展开，它的 ",h("code",null,"input_ids"),"、",h("code",null,"attention_mask"),"、",h("code",null,"position_ids"),"、",h("code",null,"loss_mask")," 会被逐段追加，最终切分出 prompt 段与 response 段交给训练。"),
+      h("h3",null,"为什么 rollout 侧要自己做 tokenization"),
+      h("p",null,"一个容易被忽视的正确性问题：训练侧计算 log-prob 用的 token 序列，必须与推理侧实际喂给模型的 token 序列逐 token 一致，否则重要性采样比值算错、梯度方向就错。推理引擎（如 SGLang）接收的是 token id 列表，而多轮对话的 prompt 是由 chat template 拼出来的。verl 选择在 rollout 侧用与训练同一个 tokenizer / processor 自行 apply chat template 并 tokenize，把每一轮的 token 边界精确记录下来，从源头保证两侧一致。"),
+      h("p",null,"初始化逻辑在 ",h("code",null,"initialize_request")," 校验器里：它对消息分别在「不加生成提示」和「加生成提示」两种条件下应用 chat template，从而精确算出 prompt 段的 token 数、生成提示（如 ",h("code",null,"<|im_start|>assistant\\n"),"）的 token 数；并对一段固定的 ",h("code",null,"BASE_CHAT_HISTORY")," 做同样处理，记录两个偏移量 ",h("code",null,"base_conv_wo_gen_prompt_end_pos")," 与 ",h("code",null,"base_conv_with_gen_prompt_end_pos"),"。这两个偏移量的作用是：之后追加用户消息或助手消息时，可以把消息单独套进 BASE_CHAT_HISTORY 再 tokenize，然后从偏移量处切片，得到「只属于这条新消息」的增量 token，而不必每轮都重 tokenize 整段历史。"),
+      h(Code,null,"# 追加一条助手消息: 增量更新 input_ids/attention_mask/loss_mask\ndef add_assistant_message(self, processing_class, content, content_ids=None, tool_calls=None):\n    self.messages.append(Message(role=\"assistant\", content=content, tool_calls=tool_calls))\n    if content_ids is None:\n        messages = [*BASE_CHAT_HISTORY, self.messages[-1]]\n        content_ids = self._handle_apply_chat_template(\n            ..., add_generation_prompt=False, tokenize=True,\n        )[..., self.base_conv_with_gen_prompt_end_pos:]   # 切掉 BASE 前缀, 留下增量\n    # loss_mask=True: 助手 token 参与训练 loss\n    self._update_input_ids(processing_class, content_ids, attention_mask=True, loss_mask=True)"),
+      h("p",null,h("code",null,"loss_mask")," 的取值体现了 RL 的训练目标：助手生成的 token（",h("code",null,"add_assistant_message"),"）置 ",h("code",null,"loss_mask=True"),"，参与策略梯度；用户消息与工具返回（",h("code",null,"add_user_message"),"、",h("code",null,"add_tool_response_messages"),"）置 ",h("code",null,"loss_mask=False"),"，因为它们不是模型自己生成的，不应被当作要优化的动作。",h("code",null,"_update_input_ids")," 同时把新 token 的 ",h("code",null,"position_ids")," 接续到上一段末尾（",h("code",null,"new_position_ids + (last_pos + 1)"),"），并对多模态输入做增量拼接。"),
+      h("h3",null,"finalize：切分 prompt / response 与 tokenization 健全性检查"),
+      h("p",null,"一条请求生成结束后调用 ",h("code",null,"finalize"),"：先移除可能残留在末尾的生成提示 token，再以 ",h("code",null,"prompt_ids")," 的长度为界，把 ",h("code",null,"input_ids")," 切成 prompt 段与 response 段；随后做可选的 tokenization 健全性检查。检查方式是把全部消息一次性 apply chat template（",h("code",null,"full_prompt_ids"),"）与增量累积出来的 ",h("code",null,"input_ids")," 用 ",h("code",null,"difflib")," 对比，若存在差异则按 ",h("code",null,"strict")," / ",h("code",null,"ignore_strippable")," / ",h("code",null,"disable")," 三档策略决定是否告警。这正是为了捕捉「增量 tokenize」与「整体 tokenize」可能产生的不一致（多见于 chat template 在消息边界插入的空白字符）。最后 ",h("code",null,"truncate_output_ids")," 按 ",h("code",null,"max_model_len")," 与 ",h("code",null,"max_response_len")," 截断。"),
+      h(Formula,{cap:"训练与推理 tokenization 一致性的不变量：response 段由 input_ids 自 prompt 末尾切出"},"$$ \\text{input\\_ids} = [\\underbrace{\\text{prompt\\_ids}}_{|p|}\\;\\|\\;\\underbrace{\\text{response\\_ids}}_{\\le\\,\\text{max\\_response\\_len}}],\\quad \\text{response\\_ids}=\\text{input\\_ids}[\\,|p|:\\,] $$"),
+      h("div",{className:"warn"},"健全性检查只在 ",h("code",null,"finalize")," 阶段做事后比对并告警，它不会修正数据。若你的 chat template 会在多轮边界产生不可忽略的 token 差异，应当修正模板本身，否则训练用的 token 序列与推理实际序列不符，会引入静默的 off-policy 偏差。"),
+      h("div",null,
+        h(Src,{label:"AsyncRolloutRequest",path:"verl/workers/rollout/schemas.py",line:81}),
+        h(Src,{label:"initialize_request",path:"verl/workers/rollout/schemas.py",line:125}),
+        h(Src,{label:"_update_input_ids",path:"verl/workers/rollout/schemas.py",line:321}),
+        h(Src,{label:"add_assistant_message",path:"verl/workers/rollout/schemas.py",line:428}),
+        h(Src,{label:"finalize",path:"verl/workers/rollout/schemas.py",line:591}),
+        h(Src,{label:"truncate_output_ids",path:"verl/workers/rollout/schemas.py",line:699}),
+        h(Src,{label:"Message / 枚举",path:"verl/workers/rollout/schemas.py",line:38}))
+    );
+  }
+
+  // ===== tokenizer.py =====
+  function TokenizerSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"tokenizer.py")," 提供一个极薄的抽象基类 ",h("code",null,"HybridEngineBaseTokenizer"),"。它的存在动机在文件注释里写得很直白：vLLM 这类推理引擎对 tokenizer 有特定的属性和方法约定（如 ",h("code",null,"vocab_size"),"、",h("code",null,"eos_token_id"),"、",h("code",null,"encode"),"、",h("code",null,"decode"),"、",h("code",null,"convert_ids_to_tokens"),"），当我们想用一个自定义或包装过的 tokenizer 喂给混合引擎时，必须实现与 HuggingFace 同名同义的这组接口，引擎才能正常工作。"),
+      h(Code,null,'class HybridEngineBaseTokenizer(ABC):\n    """the tokenizer property and function name should align with HF\'s to meet vllm requirement"""\n    @property\n    @abstractmethod\n    def vocab_size(self): ...\n    @property\n    @abstractmethod\n    def eos_token_id(self): ...\n    @abstractmethod\n    def encode(self, text): ...\n    @abstractmethod\n    def decode(self, token_ids, skip_special_tokens=False, ...): ...\n    @abstractmethod\n    def convert_ids_to_tokens(self, ids, skip_special_tokens=False): ...'),
+      h("p",null,"换言之，这个基类是「鸭子类型」的显式契约：它把 vLLM 隐式要求的 tokenizer 接口固化成抽象方法，任何子类只要实现齐全，就能无缝替代 HF tokenizer 接入混合引擎。绝大多数情况下我们直接用 HF 的 ",h("code",null,"PreTrainedTokenizer"),"，这个基类是给需要自定义 tokenizer 行为的高级场景预留的扩展点。"),
+      h("div",{className:"note"},"真正在 rollout 数据路径上执行 tokenization 的逻辑在 ",h("code",null,"schemas.py")," 的 ",h("code",null,"_handle_apply_chat_template")," 与 ",h("code",null,"_get_position_ids"),"（前一节）；而 Qwen2-VL 等多模态模型的位置编码（3D rope）在 ",h("code",null,"_get_position_ids")," 里特判，调用 ",h("code",null,"verl/models/transformers/qwen2_vl.py")," 的 ",h("code",null,"get_rope_index"),"。",h("code",null,"workers/rollout/utils.py")," 里的 ",h("code",null,"qwen2_5_vl_dedup_image_tokens")," 则用于去重 vLLM 复制出的图像占位 token。"),
+      h("div",null,
+        h(Src,{label:"HybridEngineBaseTokenizer",path:"verl/workers/rollout/tokenizer.py",line:26}),
+        h(Src,{label:"decode 契约",path:"verl/workers/rollout/tokenizer.py",line:89}),
+        h(Src,{label:"_get_position_ids (qwen2vl)",path:"verl/workers/rollout/schemas.py",line:282}),
+        h(Src,{label:"qwen2_5_vl_dedup_image_tokens",path:"verl/workers/rollout/utils.py",line:92}))
+    );
+  }
+
+  // ===== 多后端对比 Tab 探索器 =====
+  const BACKENDS=[
+    {key:"vllm",name:"vLLM",render:function(){return [
+      h("p",null,h("code",null,"vllm_rollout/vllm_rollout.py")," 的 ",h("code",null,"ServerAdapter")," 是生产首选后端的客户端。它在构造时只算清自己在拓扑中的位置：从环境变量 ",h("code",null,"RANK")," 与 ",h("code",null,"RAY_LOCAL_WORLD_SIZE")," 推出 ",h("code",null,"replica_rank"),"、",h("code",null,"rollout_rank"),"、",h("code",null,"node_rank"),"，并据此构造一个 ZMQ IPC 套接字路径用于权重传输。"),
+      h(Code,null,"# zmq handle: 用 (job_id, replica_rank, local_rank) 拼出 /tmp 下唯一的 ipc 套接字\nlocal_rank = self.rollout_rank % local_world_size\njob_id = ray.get_runtime_context().get_job_id()\nself.zmq_handle = f\"ipc:///tmp/rl-colocate-zmq-{job_id}-replica-{self.replica_rank}-rank-{local_rank}.sock\"\nself.use_shm = not is_support_ipc()   # 不支持 CUDA IPC 时退回共享内存"),
+      h("p",null,"为什么用 ",h("code",null,"local_rank")," 而不是 ",h("code",null,"rollout_rank")," 拼套接字名：CheckpointEngineWorker 与 vLLM worker 进程的 ",h("code",null,"CUDA_VISIBLE_DEVICES")," 可能不同（ROCm/AMD 常见），用 GPU UUID 会对不上；改用节点本地 rank 才能与 vLLM worker 的 local_rank 匹配。加 ",h("code",null,"job_id")," 是为了让同主机上两个独立 verl 任务（或崩溃后重启留下的陈旧套接字）不会在 ",h("code",null,"/tmp")," 命名空间里冲突。"),
+      h("p",null,"控制方法都很薄：",h("code",null,"resume")," 调 server 的 ",h("code",null,"wake_up"),"，",h("code",null,"release")," 调 ",h("code",null,"sleep"),"；只有 ",h("code",null,"rollout_rank == 0")," 才持有 server 句柄（懒加载），其余 rank 直接返回。",h("code",null,"update_weights")," 是核心，下一节单独展开。",h("code",null,"generate_sequences")," 直接抛 ",h("code",null,"NotImplementedError"),"，提示改用 server 接口或 HFRollout。"),
+      h("p",null,"sleep_level 的选择体现了显存与功能的权衡：默认用 ",h("code",null,"VLLM_SLEEP_LEVEL"),"（通常为 2，连权重一起释放）；但当 ",h("code",null,"layered_summon")," 开启、或专家并行 ",h("code",null,"expert_parallel_size > 1")," 且 vLLM 版本低于 0.11.0 时，强制降到 level 1（只释放 KV cache、保留权重），并告警这可能导致显存溢出。"),
+      h("div",null,
+        h(Src,{label:"ServerAdapter (vllm)",path:"verl/workers/rollout/vllm_rollout/vllm_rollout.py",line:61}),
+        h(Src,{label:"zmq_handle 构造",path:"verl/workers/rollout/vllm_rollout/vllm_rollout.py",line:106}),
+        h(Src,{label:"resume / release",path:"verl/workers/rollout/vllm_rollout/vllm_rollout.py",line:155}),
+        h(Src,{label:"update_weights",path:"verl/workers/rollout/vllm_rollout/vllm_rollout.py",line:170}),
+        h(Ext,{href:"https://docs.vllm.ai/"},"vLLM 文档"))
+    ];}},
+    {key:"sglang",name:"SGLang",render:function(){return [
+      h("p",null,h("code",null,"sglang_rollout/sglang_rollout.py")," 的 ",h("code",null,"ServerAdapter")," 走 HTTP 客户端路线：它通过 ",h("code",null,"AsyncHttpServerAdapter")," 向 SGLang 的 HTTP server 发请求，而非 ZMQ IPC。它额外承担了 PD 分离（prefill/decode disaggregation）的拓扑推算，这是 SGLang 独有的能力。"),
+      h(Code,null,"# PD 分离: prefill 与 decode 使用不同的 TP, 据角色推出 server 索引\nif disagg is not None and disagg.enabled:\n    decode_tp = disagg.decode_tensor_model_parallel_size or prefill_tp\n    footprint = prefill_tp + disagg.decode_replicas * decode_tp\n    local = self.rollout_rank % footprint\n    if local < prefill_tp:\n        self._pd_role, self._pd_server_index = \"prefill\", 0\n    else:\n        off = local - prefill_tp\n        self._pd_role = \"decode\"\n        self._pd_server_index = off // decode_tp"),
+      h("p",null,"权重更新用 SGLang 自带的 ",h("code",null,"update_weights")," 接口（导入别名 ",h("code",null,"sgl_update_weights"),"）配合 ",h("code",null,"get_named_tensor_buckets")," 分桶。关键约束写在注释里：所有 rank 都必须迭代 weights 生成器，因为 ",h("code",null,"DTensor.full_tensor()")," 会在 FSDP 组内 all-gather，某个 rank 跳过会让其它 rank 死锁；只有 HTTP 分发被 ",h("code",null,"_engine")," 是否存在所限。"),
+      h(Code,null,"# 所有 rank 迭代生成器(避免 all_gather 死锁), 仅 TP-leader 发 HTTP\nbucket_bytes = int(self.config.checkpoint_engine.update_weights_bucket_megabytes) << 20\nasync for params_batch in get_named_tensor_buckets(weights, bucket_bytes):\n    await sgl_update_weights(engine=self._engine, params_batch=params_batch,\n                            device_mesh_key=\"infer_tp\", device_mesh=self.device_mesh)\nif self._engine is not None and self._is_server_tp_leader():\n    await self._engine.flush_cache()"),
+      h("p",null,"SGLang 后端还原生支持两条进阶路径：FP8 量化（采样前把 bf16 权重转 fp8 再加载，",h("code",null,"SGLangFP8QuantizerHelper"),"）与 LoRA（",h("code",null,"wrap_lora_params")," 把适配器权重序列化后通过 ",h("code",null,"LoadLoRAAdapterFromTensorsReqInput")," 加载，配合 ",h("code",null,"sleep_level=1")," 只换 KV cache、保留基座）。这是 slime 选择只深度优化 SGLang 的同款理由：直接使用引擎的最强能力而不做最小公共抽象。"),
+      h("div",null,
+        h(Src,{label:"ServerAdapter (sglang)",path:"verl/workers/rollout/sglang_rollout/sglang_rollout.py",line:103}),
+        h(Src,{label:"PD 角色推算",path:"verl/workers/rollout/sglang_rollout/sglang_rollout.py",line:171}),
+        h(Src,{label:"_init_server_adapter",path:"verl/workers/rollout/sglang_rollout/sglang_rollout.py",line:198}),
+        h(Src,{label:"update_weights",path:"verl/workers/rollout/sglang_rollout/sglang_rollout.py",line:295}),
+        h(Src,{label:"wrap_lora_params",path:"verl/workers/rollout/sglang_rollout/sglang_rollout.py",line:362}),
+        h(Ext,{href:"https://docs.sglang.ai/"},"SGLang 文档"))
+    ];}},
+    {key:"trtllm",name:"TensorRT-LLM",render:function(){return [
+      h("p",null,h("code",null,"trtllm_rollout/trtllm_rollout.py")," 的 ",h("code",null,"ServerAdapter")," 接入 NVIDIA TensorRT-LLM。它的权重更新走 CUDA IPC handle 直传：把每个参数 ",h("code",null,"reduce_tensor")," 成 IPC 句柄，按桶累积到字节上限后调 ",h("code",null,"flush")," 一次性下发给 server。"),
+      h(Code,null,"# 按字节预算累积 IPC 句柄, 超预算先 flush\ntotal_bytes = int(self.config.checkpoint_engine.update_weights_bucket_megabytes) * 1024 * 1024\nasync for name, param in ensure_async_iterator(weights):\n    if supports_partial_loading:\n        size = param.element_size() * param.numel()\n        if size > cur_available_bytes:\n            await flush()\n        cur_available_bytes -= size\n    # clone() 让 IPC 句柄独占数据, 防止缓冲区被复用而静默损坏权重\n    handle = reduce_tensor(param.detach().clone())\n    cur_handles.append((name, handle))\nawait flush()"),
+      h("p",null,"TRT-LLM 的两个特点：其一，它区分 ",h("code",null,"_WEIGHTS_TAGS"),"（来自 ",h("code",null,"ExecutorMemoryType")," 枚举，除 KV cache 外的所有可释放/可恢复内存类型）做更细的内存管理；其二，对视觉语言模型（VLM）需要先查询模型是否 ",h("code",null,"supports_partial_loading"),"，由 leader rank 查询后广播给 DP 组内所有 rank，非 VLM 则一律走部分加载。",h("code",null,"clone()")," 这一步在注释里被特别强调：不克隆会让 IPC 句柄指向可能被复用的缓冲区，导致权重静默损坏。"),
+      h("p",null,"hybrid 模式下它从 ",h("code",null,"device_mesh")," 构造一个 CPU 后端的镜像 mesh，把除 DP 外的维度展平成 ",h("code",null,"exclude_dp")," 组，用于内部 rank 通信与 leader 判定；standalone 模式则从 gloo 进程组懒构造 mesh。"),
+      h("div",null,
+        h(Src,{label:"ServerAdapter (trtllm)",path:"verl/workers/rollout/trtllm_rollout/trtllm_rollout.py",line:268}),
+        h(Src,{label:"_WEIGHTS_TAGS",path:"verl/workers/rollout/trtllm_rollout/trtllm_rollout.py",line:272}),
+        h(Src,{label:"get_supports_partial_loading",path:"verl/workers/rollout/trtllm_rollout/trtllm_rollout.py",line:344}),
+        h(Src,{label:"update_weights",path:"verl/workers/rollout/trtllm_rollout/trtllm_rollout.py",line:450}),
+        h(Ext,{href:"https://nvidia.github.io/TensorRT-LLM/"},"TensorRT-LLM 文档"))
+    ];}},
+    {key:"hf",name:"HF",render:function(){return [
+      h("p",null,h("code",null,"hf_rollout.py")," 的 ",h("code",null,"HFRollout")," 是用 HuggingFace ",h("code",null,"model.generate()")," 直接生成的同步后端。它不走 server 模式，实现了 ",h("code",null,"generate_sequences"),"：把整批 prompt 切成 micro-batch，逐块调 ",h("code",null,"_generate_minibatch")," 再拼回。"),
+      h(Code,null,"@torch.no_grad()\ndef _generate_minibatch(self, prompts: DataProto) -> DataProto:\n    # 采样参数可被 meta_info 覆盖, 否则取 config\n    do_sample = prompts.meta_info.get(\"do_sample\", self.config.do_sample)\n    ...\n    if isinstance(self.module, FSDP):\n        # 生成前 summon 出完整参数 (recurse=False 规避 pytorch#100069)\n        param_ctx = FSDP.summon_full_params(self.module, writeback=False, recurse=False)\n    with param_ctx, torch.autocast(device_type=get_device_name(), dtype=torch.bfloat16):\n        output = self.module.generate(input_ids=idx, attention_mask=attention_mask,\n                                      max_new_tokens=response_length, ...)"),
+      h("p",null,"它的价值在于无需额外推理引擎依赖即可跑通完整 RL 流程，适合单卡调试、小模型实验、以及验证某个新模型在 verl 里能否正常采样。代价是吞吐远低于专用推理引擎：HF generate 没有 PagedAttention、continuous batching、prefix cache 等优化。因为 HF generate 在整批到达 EOS 时会提前停止，代码显式把序列 pad 到 ",h("code",null,"prompt_length + response_length")," 的固定长度，再用 ",h("code",null,"get_response_mask")," 构造 response 段的 attention mask。"),
+      h("div",{className:"note"},"注意 ",h("code",null,"HFRollout.__init__")," 直接接收 ",h("code",null,"module")," 与 ",h("code",null,"config"),"（不走 BaseRollout 的三参构造），且没有实现 ",h("code",null,"resume"),"/",h("code",null,"update_weights"),"/",h("code",null,"release")," 抽象方法，因为它与训练共用同一份内存中的模型，不存在跨进程权重同步问题。"),
+      h("div",null,
+        h(Src,{label:"HFRollout",path:"verl/workers/rollout/hf_rollout.py",line:39}),
+        h(Src,{label:"generate_sequences",path:"verl/workers/rollout/hf_rollout.py",line:45}),
+        h(Src,{label:"_generate_minibatch",path:"verl/workers/rollout/hf_rollout.py",line:54}),
+        h(Ext,{href:"https://huggingface.co/docs/transformers/main/en/main_classes/text_generation"},"HF generate 文档"))
+    ];}},
+    {key:"naive",name:"naive",render:function(){return [
+      h("p",null,h("code",null,"naive/naive_rollout.py")," 的 ",h("code",null,"NaiveRollout")," 是最朴素的教学实现：手写自回归解码循环，逐 token 前向、取末位 logits、按温度缩放、可选 top-k 截断、softmax 后采样或贪心。它把推理引擎里所有被工程优化掩盖的细节摊开给读者看。"),
+      h(Code,null,"@torch.no_grad()\ndef generate_sequences(self, prompts: DataProto) -> DataProto:\n    idx = prompts.batch[\"input_ids\"]\n    for _ in range(self.config.response_length):\n        output = self.module(input_ids=idx, attention_mask=attention_mask, position_ids=position_ids)\n        logits = output.logits[:, -1, :] / self.config.temperature   # 取末位并缩放\n        if self.config.top_k is not None:\n            v, _ = torch.topk(logits, min(self.config.top_k, logits.size(-1)))\n            logits[logits < v[:, [-1]]] = -float(\"Inf\")\n        probs = F.softmax(logits, dim=-1)\n        idx_next = torch.multinomial(probs, 1) if self.config.do_sample else torch.argmax(probs, -1, keepdim=True)\n        idx = torch.cat((idx, idx_next), dim=1)                        # 拼接到序列"),
+      h("p",null,"它没有 KV cache（每步都对完整 ",h("code",null,"idx")," 重新前向，复杂度是平方级的），也不做 padding/截断的精细处理，纯粹用于理解「自回归生成 + log-prob 计算」的最小骨架。它额外输出 ",h("code",null,"old_log_probs"),"，因为它在生成时顺便保存了每步 logits，可以直接算出采样 token 的对数概率。"),
+      h("div",{className:"note"},"naive 与 hf 都不是为吞吐设计的，理解它们的意义在于：看清专用推理引擎（vLLM/SGLang/TRT-LLM）究竟在哪些环节做了优化（连续批处理、分页 KV cache、prefix 复用），从而明白为什么 RL 训练必须把生成交给它们。"),
+      h("div",null,
+        h(Src,{label:"NaiveRollout",path:"verl/workers/rollout/naive/naive_rollout.py",line:36}),
+        h(Src,{label:"generate_sequences",path:"verl/workers/rollout/naive/naive_rollout.py",line:51}))
+    ];}}
+  ];
+  function BackendExplorer(){const [s,setS]=useState(0);const d=BACKENDS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},BACKENDS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":"")+(x.key==="sglang"?" mega":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 权重同步：分桶 IPC 传输 =====
+  function WeightSyncSection(){
+    return h("div",null,
+      h("p",null,"权重同步是异步 RL 效率的核心之一：训练一步后，必须把更新后的参数推给推理引擎，否则采样仍用旧策略。难点在于一个数十亿乃至上千亿参数的模型，其权重总量可能达数百 GB，若一次性物化到一块连续显存再传，显存峰值会爆。verl 的解法是分桶传输（bucketing）：把权重切成固定大小的桶逐个传，把显存峰值压到一个桶的大小。"),
+      h("h3",null,"发送端：BucketedWeightSender"),
+      h("p",null,h("code",null,"bucketed_weight_transfer.py")," 用 ZMQ（REQ/REP）+ CUDA IPC 实现发送端。它先分配一块 ",h("code",null,"bucket_size")," 大小的 uint8 通信缓冲区，把 IPC 句柄发给接收端；随后遍历权重生成器，把张量按字节拷进缓冲区，攒满一个桶就发一次、等接收端确认（",h("code",null,"socket.recv()"),"），清空再攒下一桶。"),
+      h(Code,null,"async def async_send_weights(self, weights):\n    self._init_socket(); self._init_buffer()           # 建 ZMQ + 共享通信缓冲区\n    offset, bucket_meta = 0, {}\n    async for name, weight in ensure_async_iterator(weights):\n        if offset + weight.nbytes > self.bucket_size and len(bucket_meta) > 0:\n            get_torch_device().synchronize()\n            self.socket.send_pyobj({\"bucket_meta\": bucket_meta, \"is_last\": False})\n            self.socket.recv()                          # 等接收端把这桶加载完\n            bucket_meta, offset = {}, 0                  # 复用同一块缓冲区, 显存峰值 = 1 桶\n        if offset + weight.nbytes > self.bucket_size:   # 单个权重比桶还大\n            self._direct_send_large_weight(name, weight)   # 直传它自己的 IPC 句柄\n            continue\n        bucket_meta[name] = {\"name\": name, \"shape\": weight.shape, \"dtype\": weight.dtype,\n                             \"offset\": offset, \"handle\": None}\n        self.buffer[offset:offset+weight.nbytes].copy_(weight.view(-1).view(torch.uint8), non_blocking=True)\n        offset += weight.nbytes\n    get_torch_device().synchronize()\n    self.socket.send_pyobj({\"bucket_meta\": bucket_meta, \"is_last\": True})  # 收尾桶\n    self.socket.recv()"),
+      h("p",null,"几个设计要点：第一，发送端与接收端共用同一块 IPC 缓冲区，每桶只是把数据拷进同一段显存再通知对方读取，因此整个传输过程的额外显存峰值恒定为一个桶（默认见 ",h("code",null,"update_weights_bucket_megabytes"),"，2048 MB），与模型总参数量无关。第二，注释明确不强制 cast 权重 dtype，因为 MoE gate 等参数必须保持 fp32；让接收端按需转换，避免凭空放大传输量。第三，对比单个桶还大的权重（如超大词表 embedding），退回 ",h("code",null,"_direct_send_large_weight"),"，单独 ",h("code",null,"reduce_tensor")," 直传它自己的 IPC 句柄。"),
+      h(Formula,{cap:"分桶传输的显存峰值与桶数：峰值由桶大小决定, 与模型总量解耦"},"$$ \\text{peak\\_mem} \\approx \\text{bucket\\_size},\\qquad n_{\\text{buckets}} = \\left\\lceil \\frac{\\sum_i \\text{nbytes}(w_i)}{\\text{bucket\\_size}} \\right\\rceil $$"),
+      h("h3",null,"接收端：BucketedWeightReceiver"),
+      h("p",null,"接收端用 ZMQ REP socket，循环 ",h("code",null,"recv_pyobj")," 取每桶元数据，按 ",h("code",null,"offset")," / ",h("code",null,"shape")," / ",h("code",null,"dtype")," 从共享缓冲区切出张量视图，交给回调 ",h("code",null,"on_bucket_received")," 处理（即加载进推理模型），加载完同步并回 ACK，直到 ",h("code",null,"is_last"),"。它运行在推理引擎进程内（如 vLLM worker 的 ",h("code",null,"update_weights_from_ipc"),"）。"),
+      h(Code,null,"def receive_weights(self, on_bucket_received):\n    self._init_socket(); self._init_buffer()   # 从发送端 rebuild IPC 缓冲区\n    while True:\n        metadata = self.socket.recv_pyobj()\n        weights = []\n        for name, meta in metadata[\"bucket_meta\"].items():\n            if meta[\"handle\"] is not None:                      # 超大权重: 直接 rebuild\n                weights.append((name, rebuild_ipc(meta[\"handle\"], self.device.index))); continue\n            size = meta[\"dtype\"].itemsize * meta[\"shape\"].numel()\n            tensor = self.buffer[meta[\"offset\"]:meta[\"offset\"]+size].view(dtype=meta[\"dtype\"]).view(meta[\"shape\"])\n            weights.append((name, tensor))\n        on_bucket_received(weights)            # 加载进推理模型\n        get_torch_device().synchronize()\n        self.socket.send(b\"\")                   # ACK, 通知发送端可复用缓冲区\n        if metadata[\"is_last\"]: break"),
+      h("p",null,"REQ/REP 的一来一回是关键的流控：发送端必须等接收端 ACK 才能复用缓冲区写下一桶，从而保证「写入」与「读取」不会在同一块共享显存上竞争。文件顶部注释提示这套机制刻意不依赖 vLLM 内部 API，因此可在不同后端复用。",h("code",null,"use_shm")," 路径用于不支持 CUDA IPC 的设备（如部分 Ascend NPU），改用主机共享内存。"),
+      h("div",null,
+        h(Src,{label:"BucketedWeightSender",path:"verl/workers/rollout/vllm_rollout/bucketed_weight_transfer.py",line:74}),
+        h(Src,{label:"async_send_weights",path:"verl/workers/rollout/vllm_rollout/bucketed_weight_transfer.py",line:103}),
+        h(Src,{label:"_direct_send_large_weight",path:"verl/workers/rollout/vllm_rollout/bucketed_weight_transfer.py",line:216}),
+        h(Src,{label:"BucketedWeightReceiver",path:"verl/workers/rollout/vllm_rollout/bucketed_weight_transfer.py",line:233}),
+        h(Src,{label:"receive_weights",path:"verl/workers/rollout/vllm_rollout/bucketed_weight_transfer.py",line:261}),
+        h(Src,{label:"接收端入口 update_weights_from_ipc",path:"verl/workers/rollout/vllm_rollout/utils.py",line:229}))
+    );
+  }
+
+  // ===== weight_update_utils：参数 vs 缓冲区 =====
+  function WeightUtilsSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"weight_update_utils.py")," 解决一个细节但重要的正确性问题：模型里既有可训练参数（",h("code",null,"named_parameters"),"），也有不可训练的缓冲区（",h("code",null,"named_buffers"),"，如 RoPE 的频率表、BatchNorm 的 running stats、某些注意力的 sliding window mask）。训练侧推过来的权重流里两者混在一起，但它们在推理引擎里的加载方式不同：参数走引擎的 ",h("code",null,"load_weights"),"，缓冲区必须原地 ",h("code",null,"copy_"),"。"),
+      h(Code,null,"def split_buffer_updates(model, weights):\n    named_buffers = dict(model.named_buffers())\n    param_updates, buffer_updates = [], []\n    for name, tensor in weights:\n        (buffer_updates if name in named_buffers else param_updates).append((name, tensor))\n    return param_updates, buffer_updates, named_buffers\n\n@torch.no_grad()\ndef apply_buffer_updates(model, buffer_updates, named_buffers=None):\n    for name, tensor in buffer_updates:\n        target = named_buffers[name]\n        if target.shape != tensor.shape:                 # 形状不符直接报错, 防止静默错配\n            raise ValueError(f\"Buffer shape mismatch for {name}: ...\")\n        target.copy_(tensor.to(device=target.device, dtype=target.dtype))   # 原地拷贝"),
+      h("p",null,"调用点在接收端 ",h("code",null,"_update_weights")," 里：每收到一桶，就先 ",h("code",null,"split_buffer_updates")," 把这桶拆成参数更新与缓冲区更新，参数交给 vLLM 模型的 ",h("code",null,"load_weights"),"，缓冲区交给 ",h("code",null,"apply_buffer_updates")," 原地拷贝。后者还会同步到所有副本模型（如 MTP drafter 草稿模型，见 ",h("code",null,"_apply_buffer_updates_all_models"),"）。",h("code",null,"named_buffers")," 在拆分时已构建，传给 apply 复用、避免重复遍历。"),
+      h("div",{className:"note"},"为什么不能把缓冲区也当参数喂给 ",h("code",null,"load_weights"),"：引擎的权重加载器通常只认参数名、会做 TP 切分与权重映射，对缓冲区可能直接忽略或处理错误。把缓冲区单独 ",h("code",null,"copy_")," 进 ",h("code",null,"named_buffers")," 是最稳妥的方式，且形状不符时主动报错，避免训练与推理用不同的位置编码频率表而产生静默偏差。"),
+      h("div",null,
+        h(Src,{label:"split_buffer_updates",path:"verl/workers/rollout/vllm_rollout/weight_update_utils.py",line:20}),
+        h(Src,{label:"apply_buffer_updates",path:"verl/workers/rollout/vllm_rollout/weight_update_utils.py",line:39}),
+        h(Src,{label:"调用点 _update_weights",path:"verl/workers/rollout/vllm_rollout/utils.py",line:306}),
+        h(Src,{label:"_apply_buffer_updates_all_models",path:"verl/workers/rollout/vllm_rollout/utils.py",line:294}))
+    );
+  }
+
+  // ===== replica.py：副本管理 =====
+  const MODES=[
+    {n:"HYBRID",d:"推理引擎与训练引擎(fsdp/megatron)融合在同一进程, 共用 GPU, 靠权重同步切换上下文。用于 on-policy 训练。init_hybrid 直接复用已初始化训练引擎的 worker_group 切片。",links:[["init_hybrid","verl/workers/rollout/replica.py",131]]},
+    {n:"COLOCATED",d:"推理引擎与 hybrid 引擎共置于同一 ray placement group 但在独立进程, 共用 GPU 但无需权重同步切换。用于 GRM(LLM as a judge)。init_colocated 新建 RayWorkerGroup 占住 GPU。",links:[["init_colocated","verl/workers/rollout/replica.py",160]]},
+    {n:"STANDALONE",d:"独立推理服务, 拥有独立 GPU 资源, 解耦(disaggregated)架构。用于 off-policy 异步训练。init_standalone 自建 ResourcePoolManager 与资源池。",links:[["init_standalone","verl/workers/rollout/replica.py",189]]}
+  ];
+  function ReplicaSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"replica.py")," 的 ",h("code",null,"RolloutReplica")," 是副本抽象基类。一个 replica 等价于命令行里启动的一台推理服务实例（如 ",h("code",null,"sglang.launch_server --node-rank 0 --nnode 2"),"），可横跨多节点。它根据 TP / DP / PP 三个并行度算出 ",h("code",null,"world_size")," 与节点数 ",h("code",null,"nnodes"),"，再按三种部署模式之一拉起底层 server。"),
+      h("div",{className:"tabstrip"},MODES.map(function(m,i){return h("span",{key:i,className:"pill "+(i===0?"purple":i===1?"amber":"teal")},m.n);})),
+      h("div",{className:"linkgrid"},MODES.map(function(m,i){return h("div",{className:"linkcard",key:i},
+        h("div",{className:"lt"},h("code",null,m.n)),
+        h("div",{className:"ld"},m.d),
+        h("div",null,m.links.map(function(l,j){return h(Src,{key:j,label:l[0],path:l[1],line:l[2]});})));}))
+      ,
+      h("p",null,"三种模式的本质区别在于推理与训练如何共享或独占 GPU。",h("code",null,"RolloutMode")," 枚举把这层语义固化下来。无论哪种模式，初始化最后都调 ",h("code",null,"launch_servers")," 抽象方法（由 ",h("code",null,"vLLMReplica")," / ",h("code",null,"SGLangReplica")," / ",h("code",null,"TRTLLMReplica")," 各自实现，第 9 课展开）。"),
+      h("h3",null,"对外的集合操作与并发上限"),
+      h("p",null,"基类把对一个 replica 内所有 server 的集合操作统一成 ",h("code",null,"asyncio.gather"),"：",h("code",null,"wake_up"),"、",h("code",null,"sleep"),"、",h("code",null,"clear_kv_cache"),"、",h("code",null,"release_kv_cache")," / ",h("code",null,"resume_kv_cache"),"、",h("code",null,"abort_all_requests")," / ",h("code",null,"resume_generation"),"（partial rollout 用）、",h("code",null,"start_profile")," / ",h("code",null,"stop_profile"),"。",h("code",null,"max_concurrency")," 取 ",h("code",null,"max(1000, max_num_seqs + 16)"),"，给控制方法留出余量。"),
+      h(Code,null,"async def wake_up(self):\n    await asyncio.gather(*[s.wake_up.remote() for s in self.servers])\nasync def abort_all_requests(self):       # partial rollout: 中止并保存未完成请求\n    await asyncio.gather(*[s.abort_all_requests.remote() for s in self.servers])\nasync def release_kv_cache(self):          # 仅释放 kv_cache 显存, 保留权重\n    await asyncio.gather(*[s.release_kv_cache.remote() for s in self.servers])"),
+      h("h3",null,"注册表与 PD 分离的分派"),
+      h("p",null,h("code",null,"RolloutReplicaRegistry")," 同样用延迟加载：",h("code",null,"vllm"),"/",h("code",null,"sglang"),"/",h("code",null,"trtllm")," 各注册一个 loader 函数，按需 import 对应 replica 类（",h("code",null,"_load_sglang")," 还会在缺少 vLLM 时注入 mock 模块以满足 SGLang 的传递依赖）。",h("code",null,"get_rollout_replica_class")," 在 ",h("code",null,"disaggregation_enabled=True")," 且后端为 sglang 时，分派到 PD 分离专用的 ",h("code",null,"SGLangPDReplica"),"。"),
+      h(Code,null,"def get_rollout_replica_class(rollout, disaggregation_enabled=False):\n    if disaggregation_enabled:\n        if rollout != \"sglang\":\n            raise NotImplementedError(\"PD disaggregation is only supported with rollout='sglang'\")\n        RolloutReplicaRegistry.get(\"sglang\")        # 触发 vllm mock 注入\n        from verl.workers.rollout.sglang_rollout.sglang_pd_replica import SGLangPDReplica\n        return SGLangPDReplica\n    return RolloutReplicaRegistry.get(rollout)"),
+      h("div",{className:"note"},h("code",null,"TokenOutput")," 也定义在 replica.py：它是 token-in-token-out 生成接口的返回结构（",h("code",null,"token_ids"),"、",h("code",null,"log_probs"),"、",h("code",null,"routed_experts"),"、",h("code",null,"stop_reason"),"、",h("code",null,"num_preempted"),"），第 9、10 课的 server 与 agent loop 会用到它。"),
+      h("div",null,
+        h(Src,{label:"RolloutReplica",path:"verl/workers/rollout/replica.py",line:70}),
+        h(Src,{label:"RolloutMode 枚举",path:"verl/workers/rollout/replica.py",line:54}),
+        h(Src,{label:"TokenOutput",path:"verl/workers/rollout/replica.py",line:39}),
+        h(Src,{label:"集合操作 wake_up/sleep",path:"verl/workers/rollout/replica.py",line:265}),
+        h(Src,{label:"RolloutReplicaRegistry",path:"verl/workers/rollout/replica.py",line:302}),
+        h(Src,{label:"get_rollout_replica_class",path:"verl/workers/rollout/replica.py",line:383}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"vLLM 文档",d:"PagedAttention、连续批处理、sleep/wake_up、IPC 权重加载",href:"https://docs.vllm.ai/"},
+    {t:"SGLang 文档",d:"RadixAttention、HTTP server、PD 分离、update_weights",href:"https://docs.sglang.ai/"},
+    {t:"TensorRT-LLM 文档",d:"NVIDIA 高性能推理引擎, IPC 权重直传与部分加载",href:"https://nvidia.github.io/TensorRT-LLM/"},
+    {t:"HF text generation",d:"HFRollout/NaiveRollout 依赖的 generate API",href:"https://huggingface.co/docs/transformers/main/en/main_classes/text_generation"},
+    {t:"ZeroMQ 指南",d:"分桶权重传输用的 REQ/REP 套接字与流控模式",href:"https://zguide.zeromq.org/"},
+    {t:"base.py (本机)",d:"BaseRollout 与后端注册表",href:srcUrl("verl/workers/rollout/base.py",29)},
+    {t:"replica.py (本机)",d:"RolloutReplica 三种部署模式",href:srcUrl("verl/workers/rollout/replica.py",70)},
+    {t:"bucketed_weight_transfer.py (本机)",d:"分桶 IPC 权重收发",href:srcUrl("verl/workers/rollout/vllm_rollout/bucketed_weight_transfer.py",74)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:8}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 8 课 / 共 12 · Rollout 引擎与多推理后端"),
+          h("h1",null,"Rollout 引擎与多推理后端"),
+          h("p",{className:"lead"},"采样是 RL 训练的吞吐瓶颈。本课讲清 verl 如何把 rollout 抽象成可插拔的子系统：统一的 BaseRollout 接口与注册表、AsyncRolloutRequest 状态机与训练/推理 tokenization 一致性、vLLM / SGLang / TensorRT-LLM / HF / naive 五个后端的生成实现对比、分桶 IPC 权重同步如何把显存峰值与模型规模解耦、参数与缓冲区为何分开加载，以及 RolloutReplica 的三种部署模式。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"workers/rollout/")," 下的 base / schemas / tokenizer / utils / replica，以及 vllm / sglang / trtllm / hf / naive 五个后端的 rollout 与 ",h("code",null,"vllm_rollout/")," 的 bucketed_weight_transfer / weight_update_utils。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/verl")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"全局观"),
+          h("h2",null,"rollout 子系统：三类对象各司其职"),
+          h(OverviewSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"base.py"),
+          h("h2",null,"统一接口与后端注册表"),
+          h(BaseSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"schemas.py"),
+          h("h2",null,"AsyncRolloutRequest：贯穿多轮采样的状态机"),
+          h(SchemasSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"tokenizer.py"),
+          h("h2",null,"混合引擎 tokenizer 契约"),
+          h(TokenizerSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"五个推理后端"),
+          h("h2",null,"后端对比：从生产引擎到教学实现"),
+          h("p",null,"点 Tab 切换五个后端。前三个（vLLM / SGLang / TensorRT-LLM）是 server 模式的生产后端，以 ServerAdapter 客户端形式出现，差别主要在权重同步路径与各自的进阶能力；后两个（HF / naive）是同步的调试与教学后端。"),
+          h(BackendExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"bucketed_weight_transfer.py"),
+          h("h2",null,"权重同步（一）：分桶 IPC 传输控制显存峰值"),
+          h(WeightSyncSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"weight_update_utils.py"),
+          h("h2",null,"权重同步（二）：参数与缓冲区分开加载"),
+          h(WeightUtilsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"replica.py"),
+          h("h2",null,"副本管理：三种部署模式"),
+          h(ReplicaSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档理解各推理引擎的内部优化（PagedAttention / RadixAttention / 连续批处理）与权重同步所依赖的 IPC、ZMQ 机制。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"接口统一、后端可插拔"),"：",h("code",null,"BaseRollout")," 只规定 resume / update_weights / release 三个异步控制方法与可选的同步 generate_sequences；后端通过字符串注册表延迟加载，未安装某引擎也能 import verl。"),
+            h("li",null,h("strong",null,"tokenization 一致性是正确性底线"),"：",h("code",null,"AsyncRolloutRequest")," 在 rollout 侧用与训练同一 tokenizer 增量构造 token 序列与 loss_mask（仅助手 token 参与 loss），finalize 时与整体 tokenize 比对告警，从源头杜绝训练/推理不一致引入的静默偏差。"),
+            h("li",null,h("strong",null,"生产后端走 server 模式"),"：vLLM / SGLang / TRT-LLM 以 ServerAdapter 客户端形式驻留训练进程，生成交给独立 server；SPMD 同步生成已退役。HF / naive 保留同步路径用于调试与教学。"),
+            h("li",null,h("strong",null,"分桶传输把显存峰值与模型规模解耦"),"：发送端与接收端共用一块 IPC 缓冲区，按桶 REQ/REP 流控逐段传输，显存峰值恒为一个桶；超大权重单独直传 IPC 句柄；不强制 cast dtype 以保 MoE gate 的 fp32 精度。"),
+            h("li",null,h("strong",null,"参数与缓冲区区别对待"),"：参数走引擎 load_weights，缓冲区原地 copy_ 并校验形状，避免位置编码频率表等被错误加载。"),
+            h("li",null,h("strong",null,"副本承载三种部署语义"),"：HYBRID（on-policy 融合）、COLOCATED（共置不切换权重）、STANDALONE（解耦异步）；",h("code",null,"RolloutReplica")," 统一拉起 server 并提供集合操作，PD 分离分派到 SGLangPDReplica，细节留待第 9 课。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"verl-lesson-07-workers.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 7 课：Workers 与角色")),
+            h("a",{href:"verl-lesson-09-async-server.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 9 课：Async 推理服务与 server 模式"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

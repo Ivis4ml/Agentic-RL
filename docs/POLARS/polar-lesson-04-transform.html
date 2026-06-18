@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Polar 逐文件精读 · 第 4 课：协议变换 transform</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 4 课</p><h1>协议变换 transform</h1><p>能访问 CDN 时切换为交互版。本课讲清 Polar 的协议变换层：为什么需要一个把 Anthropic Messages、Google/Gemini、OpenAI Chat、OpenAI Responses 四种 API 方言统一变换到 SGLang 后端格式、再把响应变换回各方言的中间层；base.py 的变换抽象（请求变换、响应变换、流式变换三个抽象方法与训练增强）；各方言在消息结构、工具调用、流式事件、停止原因上的差异；以及 images.py 的多模态图像在各格式间的互转。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const POLAR="vscode://file/Users/xinyu/Code/Agentic-RL/ProRL-Agent-Server/";
+  function srcUrl(p,l){return POLAR+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","str","Path","Sample","Args","RolloutController","RolloutManager","RolloutPipeline","Runtime","BaseRuntime","Harness","BaseHarness","Trajectory","GatewayNodeManager","SGLangClient","UpstreamError","SessionRegistry","SessionStore","CompletionRecord","CompletionSession","APIType","BaseTransformer","TransformManager","AnthropicTransformer","GoogleTransformer","OpenAIChatTransformer","OpenAIResponsesTransformer","AnthropicStreamState","ResponsesStreamState","abstractmethod","dataclass","uuid","json","re","asyncio","httpx","FastAPI","Request","JSONResponse","StreamingResponse"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","polar-lesson-01-foundations.html"],[2,"Agent与Harness","polar-lesson-02-agent-harness.html"],[3,"Gateway","polar-lesson-03-gateway.html"],[4,"协议变换","polar-lesson-04-transform.html"],[5,"Runtime池化","polar-lesson-05-runtime.html"],[6,"Rollout服务","polar-lesson-06-rollout-server.html"],[7,"轨迹与评估","polar-lesson-07-trajectory.html"],[8,"slime集成","polar-lesson-08-slime-bridge.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"polar-course-index.html"},"Polar",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 全局观：为什么需要变换层 =====
+  function OverviewSection(){
+    return h("div",null,
+      h("p",null,"第 3 课讲过，Gateway 的 proxy 拦截 agent 对模型的每一次调用。但被训练的 agent（harness）来自真实生态：有的用 Anthropic SDK 发 ",h("code",null,"POST /v1/messages"),"，有的用 OpenAI Chat SDK 发 ",h("code",null,"POST /v1/chat/completions"),"，有的用 Codex CLI 走较新的 ",h("code",null,"POST /v1/responses"),"，还有的用 Google Gemini SDK 走 ",h("code",null,"generateContent"),"。这四种是不同的 API 方言：消息结构、工具调用表示、流式事件、停止原因字段全都不同。而 Polar 的后端只有一个 SGLang，它讲 OpenAI Chat Completions 一种方言。"),
+      h("p",null,"协议变换层就是这个矛盾的解。它的设计意图可以用一句话概括：",h("strong",{className:"hl-teal"},"让任意 harness 对接一个推理服务"),"。无论 agent 用哪家 SDK，proxy 都先把它的请求变换成 SGLang 接受的 OpenAI Chat 格式发出去，拿到 SGLang 的 OpenAI Chat 响应后，再变换回 agent 当初使用的那种方言返回。对 agent 而言，它以为自己在跟一个原生的 Anthropic / OpenAI / Google 服务对话；对 SGLang 而言，它只看到统一的 OpenAI Chat 请求。变换层夹在中间，对两侧都透明。"),
+      h(Formula,{cap:"变换层的两个方向：请求向内统一，响应向外还原（N 种方言 ⇄ 1 种后端格式）"},"$$ \\text{方言}_i \\xrightarrow{\\;\\text{transform\\_request}\\;} \\text{OpenAI Chat} \\xrightarrow{\\;\\text{SGLang}\\;} \\text{OpenAI Chat} \\xrightarrow{\\;\\text{transform\\_response}\\;} \\text{方言}_i $$"),
+      h("p",null,"为什么不让 agent 直接讲 OpenAI Chat 就好？因为目标是用真实未改动的 agent 做 RL rollout：被测 agent 是什么样就什么样，不能为了训练去改它的 SDK 选择。变换层把这种适配工作收拢到 Gateway 一侧，agent 代码零改动。这与 Polar 整体的设计思路一致：训练基础设施去适应 agent，而不是要求 agent 适应基础设施。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"detection.py"),"先识别方言"),
+          h("p",null,"第 3 课已介绍：",h("code",null,"detect")," 按“路径 → 头部 → 请求体”判定这次调用属于哪个 ",h("code",null,"APIType"),"（ANTHROPIC / OPENAI_CHAT / OPENAI_RESPONSES / GOOGLE）。识别结果是选择变换器的依据。"),
+          h("div",null,h(Src,{label:"APIType",path:"src/polar/gateway/detection.py",line:9}),h(Src,{label:"detect",path:"src/polar/gateway/detection.py",line:16}))
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"transform/__init__.py"),"再分发变换器"),
+          h("p",null,h("code",null,"TransformManager")," 在构造时为四种 ",h("code",null,"APIType")," 各实例化一个变换器并存入字典，",h("code",null,"get(api_type)")," 按识别结果取出对应变换器。proxy 据此调用其 ",h("code",null,"transform_request"),"/",h("code",null,"transform_response"),"。"),
+          h("div",null,h(Src,{label:"TransformManager",path:"src/polar/gateway/transform/__init__.py",line:11}),h(Src,{label:"get()",path:"src/polar/gateway/transform/__init__.py",line:22}))
+        )
+      ),
+      h(Code,null,"# transform/__init__.py: 按 APIType 注册四个变换器, get() 分发\nclass TransformManager:\n    def __init__(self):\n        self._transformers: dict[APIType, BaseTransformer] = {\n            APIType.ANTHROPIC: AnthropicTransformer(),\n            APIType.OPENAI_CHAT: OpenAIChatTransformer(),\n            APIType.OPENAI_RESPONSES: OpenAIResponsesTransformer(),\n            APIType.GOOGLE: GoogleTransformer(),\n        }\n\n    def get(self, api_type: APIType) -> BaseTransformer:\n        return self._transformers[api_type]"),
+      h("p",null,"回顾第 3 课 proxy 主流程的衔接点：",h("code",null,"proxy_request")," 在 ",h("code",null,"server.py")," 里先 ",h("code",null,"detect")," 出 ",h("code",null,"api_type"),"，再 ",h("code",null,"state.transform_manager.get(api_type)")," 取变换器，调用 ",h("code",null,"transformer.transform_request(...)")," 得到 OpenAI 请求并强制改写 ",h("code",null,"model")," 字段，转发到 SGLang，最后 ",h("code",null,"transformer.transform_response(response, original_request)")," 还原。本课就是放大这条流程里“变换”这一步的内部细节。"),
+      h("div",null,h(Src,{label:"proxy 取变换器",path:"src/polar/gateway/server.py",line:632}),h(Src,{label:"transform_request 调用",path:"src/polar/gateway/server.py",line:645}),h(Src,{label:"transform_response 调用",path:"src/polar/gateway/server.py",line:699}),h(Src,{label:"transform/README.md",path:"src/polar/gateway/transform/README.md"}))
+    );
+  }
+
+  // ===== base.py 抽象 =====
+  const BASE=[
+    {key:"iface",name:"三个抽象方法",render:function(){return [
+      h("p",null,h("code",null,"BaseTransformer")," 是一个 ",h("code",null,"ABC"),"（抽象基类），用三个抽象方法定义了每个方言变换器必须实现的契约。这三个方法恰好对应一次模型调用的三个时机：发请求前、收到完整响应后、收到流式分片时。"),
+      h(Code,null,"# base.py: 变换器的抽象契约\nclass BaseTransformer(ABC):\n    @abstractmethod\n    def transform_request(self, body: dict[str, Any]) -> dict[str, Any]:\n        \"\"\"把源方言请求体变换成 OpenAI / SGLang 格式。\"\"\"\n\n    @abstractmethod\n    def transform_response(self, response, original_request) -> dict[str, Any]:\n        \"\"\"把 SGLang 的响应变换回源方言。\"\"\"\n\n    @abstractmethod\n    def transform_stream_chunk(self, chunk, original_request, is_first=False):\n        \"\"\"把单个流式分片变换回源方言事件。\"\"\""),
+      h("p",null,"另有两个可被覆盖的非抽象方法：",h("code",null,"is_streaming_request")," 默认读 ",h("code",null,"body['stream']")," 判断是否流式（Google 因为参数名不同而覆盖它）；",h("code",null,"create_stream_state")," 默认返回 ",h("code",null,"None"),"，但凡流式变换需要跨分片记忆状态（Anthropic 与 Responses）的方言都会覆盖它，返回一个有状态对象。这是“接口可选扩展点”的典型用法：基类给出最小默认，子类按需深化。"),
+      h("div",null,h(Src,{label:"BaseTransformer",path:"src/polar/gateway/transform/base.py",line:9}),h(Src,{label:"transform_request",path:"src/polar/gateway/transform/base.py",line:17}),h(Src,{label:"transform_response",path:"src/polar/gateway/transform/base.py",line:22}),h(Src,{label:"transform_stream_chunk",path:"src/polar/gateway/transform/base.py",line:31}),h(Src,{label:"is_streaming_request",path:"src/polar/gateway/transform/base.py",line:40}),h(Src,{label:"create_stream_state",path:"src/polar/gateway/transform/base.py",line:44}))
+    ];}},
+    {key:"enhance",name:"训练增强 _enhance_for_training",render:function(){return [
+      h("p",null,"每个方言的 ",h("code",null,"transform_request")," 在返回前都会调用基类的 ",h("code",null,"_enhance_for_training"),"。这是变换层为 RL 训练专门附加的步骤，普通推理代理并不需要。它做三件事：移除 Gateway 内部注入的临时字段 ",h("code",null,"_polar_model_served"),"；对 Qwen 系模型做模板兼容修正；强制打开 ",h("code",null,"logprobs"),"。"),
+      h(Code,null,"# base.py: 把请求“训练化”\ndef _enhance_for_training(self, request, model_name=None):\n    request.pop(\"_polar_model_served\", None)\n    if self._is_qwen_model(model_name):\n        # Qwen 的 chat template 不支持 developer 角色, 且需关闭 thinking\n        request = self._merge_developer_role(request)\n        chat_template_kwargs = dict(request.get(\"chat_template_kwargs\") or {})\n        chat_template_kwargs.setdefault(\"enable_thinking\", False)\n        request[\"chat_template_kwargs\"] = chat_template_kwargs\n    request[\"logprobs\"] = True   # RL 训练需要逐 token 的对数概率\n    return request"),
+      h("p",null,h("strong",null,"为什么强制 ",h("code",null,"logprobs=True")),"：RL 训练需要 rollout 阶段每个生成 token 的对数概率（用于重要性采样与策略梯度计算）。无论 agent 当初的请求要不要 logprobs，变换层都补上，让截留的补全携带训练所需信号。这正是“变换层为训练服务”与普通 API 网关的根本区别。"),
+      h("p",null,h("strong",null,"为什么有 Qwen 专门分支"),"：模型名经由 ",h("code",null,"_polar_model_served")," 传入（即本节点真正服务的模型）。当它是 Qwen 系时，其 chat template 不识别 OpenAI 的 ",h("code",null,"developer")," 角色，因此 ",h("code",null,"_merge_developer_role")," 把所有 ",h("code",null,"developer")," 改名为 ",h("code",null,"system")," 并把多条 system 合并成顶部一条；同时把 ",h("code",null,"enable_thinking")," 设为 ",h("code",null,"False")," 以关闭思考模式。这是把上游引擎/模型的具体约束收在变换层处理，避免污染各方言的转换逻辑。"),
+      h("div",null,h(Src,{label:"_enhance_for_training",path:"src/polar/gateway/transform/base.py",line:85}),h(Src,{label:"_is_qwen_model",path:"src/polar/gateway/transform/base.py",line:49}),h(Src,{label:"_merge_developer_role",path:"src/polar/gateway/transform/base.py",line:55}))
+    ];}},
+    {key:"chat",name:"最简实现 OpenAI Chat",render:function(){return [
+      h("p",null,"理解抽象后，最快的方式是先看最简单的实现。",h("code",null,"OpenAIChatTransformer")," 几乎是直通的，因为 agent 讲的就是后端讲的同一种方言。请求侧只复制一份再调 ",h("code",null,"_enhance_for_training")," 补上训练字段；响应侧只把 ",h("code",null,"model")," 字段还原成 agent 当初请求的模型名（因为 proxy 已把它改写成了 ",h("code",null,"node.model_served"),"）。"),
+      h(Code,null,"# openai_chat.py: 同方言, 近乎直通\nclass OpenAIChatTransformer(BaseTransformer):\n    def transform_request(self, body):\n        result = body.copy()\n        return self._enhance_for_training(result, body.get(\"_polar_model_served\"))\n\n    def transform_response(self, response, original_request):\n        result = response.copy()\n        if \"model\" in original_request:\n            result[\"model\"] = original_request[\"model\"]   # 还原 agent 请求的模型名\n        return result"),
+      h("p",null,"这条最简路径揭示了所有变换器共有的两个不变量：第一，请求侧总要经过 ",h("code",null,"_enhance_for_training")," 加训练字段；第二，响应侧总要把模型名还原成 agent 当初看到的名字（",h("code",null,"original_request['model']"),"），因为 proxy 为了路由到正确后端而临时改写过它。其余三种方言的复杂度，都来自它们与 OpenAI Chat 在消息结构、工具调用、流式与停止原因上的差异，下一节逐一展开。"),
+      h("div",null,h(Src,{label:"OpenAIChatTransformer",path:"src/polar/gateway/transform/openai_chat.py",line:10}),h(Src,{label:"transform_request",path:"src/polar/gateway/transform/openai_chat.py",line:13}),h(Src,{label:"transform_response",path:"src/polar/gateway/transform/openai_chat.py",line:20}))
+    ];}}
+  ];
+  function BaseExplorer(){const [s,setS]=useState(0);const d=BASE[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},BASE.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 四方言差异 =====
+  const DIALECTS=[
+    {key:"anthropic",name:"Anthropic Messages",render:function(){return [
+      h("p",null,h("code",null,"AnthropicTransformer")," 是变换难度最高的一个，因为 Anthropic Messages 与 OpenAI Chat 在四处都不同：system 提示是顶层独立字段而非一条消息；工具调用是消息 ",h("code",null,"content")," 数组里的 ",h("code",null,"tool_use")," 块、工具结果是 ",h("code",null,"tool_result")," 块（而 OpenAI 用单独的 ",h("code",null,"role: tool")," 消息）；流式用有状态的 content block 事件；停止原因字段叫 ",h("code",null,"stop_reason")," 且取值不同。"),
+      h("h4",null,"请求变换：system 提取 + 消息拆分"),
+      h(Code,null,"# anthropic.py: transform_request 的骨架 (精简)\ndef transform_request(self, body):\n    messages = []\n    system = body.get(\"system\")\n    if system:\n        system_content = self._flatten_content(system)\n        # 去掉 Claude Code 每轮变化的计费头, 否则前缀无法跨轮复用\n        system_content = _CLAUDE_CODE_BILLING_HEADER_RE.sub(\"\", system_content)\n        if system_content:\n            messages.append({\"role\": \"system\", \"content\": system_content})\n    for msg in body.get(\"messages\", []):\n        transformed = self._transform_message(msg)   # 一条可能拆成多条\n        ...\n    result = {\"messages\": messages, \"max_tokens\": body.get(\"max_tokens\", 4096)}\n    if \"tools\" in body:\n        tools = self._transform_tools_to_openai(body[\"tools\"])\n        if tools:                                    # 空 tools 不带 tool_choice\n            result[\"tools\"] = tools\n            result[\"tool_choice\"] = self._transform_tool_choice_to_openai(...)\n    return self._enhance_for_training(result, body.get(\"_polar_model_served\"))"),
+      h("p",null,"两个值得注意的细节。其一，",h("strong",null,"计费头清洗"),"：Claude Code SDK 会把一个每轮都变的 ",h("code",null,"x-anthropic-billing-header: ...cch=<hash>")," 行塞进 system 提示首行；这个 hash 每次请求都不同，会导致渲染后的 prompt token 漂移，使多轮轨迹无法按前缀合并（",h("code",null,"prefix_merging"),"）。变换器用正则把这一行删掉再转发。其二，",h("strong",null,"工具对的绑定"),"：Claude Code 在压缩/摘要轮有时发空 ",h("code",null,"tools=[]"),"，若此时仍带 ",h("code",null,"tool_choice")," 会被 SGLang 拒绝，因此只有 tools 非空才一并附上 tool_choice。"),
+      h("h4",null,"消息拆分：一条 Anthropic 消息 → 多条 OpenAI 消息"),
+      h("p",null,h("code",null,"_transform_message")," 处理最棘手的结构差异。assistant 消息里若含 ",h("code",null,"tool_use")," 块，要把文本与工具调用拆开，工具调用放进 OpenAI 的 ",h("code",null,"tool_calls")," 字段；user 消息里若含 ",h("code",null,"tool_result")," 块，每个结果要变成一条独立的 ",h("code",null,"role: tool")," 消息（携带 ",h("code",null,"tool_call_id"),"）。因此一条 Anthropic 消息可能展开成多条 OpenAI 消息，方法返回值可以是 dict 或 list。"),
+      h(Code,null,"# anthropic.py: user 的 tool_result 块 → 多条 role:tool 消息 (精简)\nif role == \"user\" and tool_results:\n    for tr in tool_results:\n        converted_content = anthropic_content_to_openai_chat(tr.get(\"content\", \"\"))\n        messages.append({\n            \"role\": \"tool\",\n            \"tool_call_id\": tr.get(\"tool_use_id\", \"\"),\n            \"content\": self._flatten_content(converted_content),\n        })\n        # OpenAI 的 tool 消息只能放文本; 图像另起一条 user 消息发\n        image_parts = self._image_parts(converted_content)\n        if image_parts:\n            messages.append({\"role\": \"user\", \"content\": image_parts})\n    return messages if messages else None"),
+      h("h4",null,"响应与停止原因还原"),
+      h("p",null,"响应侧 ",h("code",null,"transform_response")," 把 OpenAI 的 ",h("code",null,"message.content")," 还原成 Anthropic 的 ",h("code",null,"content")," 块数组，把 ",h("code",null,"tool_calls")," 还原成 ",h("code",null,"tool_use")," 块（其 ",h("code",null,"arguments")," 字符串解析回 ",h("code",null,"input")," 对象），并按 ",h("code",null,"FINISH_TO_STOP_REASON")," 把 OpenAI 的 ",h("code",null,"finish_reason")," 映射成 Anthropic 的 ",h("code",null,"stop_reason"),"（",h("code",null,"stop→end_turn"),"、",h("code",null,"length→max_tokens"),"、",h("code",null,"tool_calls→tool_use"),"）。"),
+      h("h4",null,"流式：有状态的 content block 事件"),
+      h("p",null,"Anthropic SSE 是跨分片有状态的：每个 content block 必须先显式 ",h("code",null,"content_block_start"),"、再发若干 delta、最后 ",h("code",null,"content_block_stop"),"，整条消息以 ",h("code",null,"message_start")," 开头、",h("code",null,"message_delta")," + ",h("code",null,"message_stop")," 收尾。因此 ",h("code",null,"AnthropicTransformer")," 覆盖 ",h("code",null,"create_stream_state")," 返回一个 ",h("code",null,"AnthropicStreamState"),"，由它在 ",h("code",null,"process_chunk")," 里记录哪些块已打开、",h("code",null,"finalize")," 里逐一关闭并补发收尾事件。这就是基类为何要提供 ",h("code",null,"create_stream_state")," 这个可选扩展点。"),
+      h("div",null,h(Src,{label:"AnthropicTransformer",path:"src/polar/gateway/transform/anthropic.py",line:260}),h(Src,{label:"FINISH_TO_STOP_REASON",path:"src/polar/gateway/transform/anthropic.py",line:263}),h(Src,{label:"transform_request",path:"src/polar/gateway/transform/anthropic.py",line:270}),h(Src,{label:"transform_response",path:"src/polar/gateway/transform/anthropic.py",line:322}),h(Src,{label:"_transform_message",path:"src/polar/gateway/transform/anthropic.py",line:396}),h(Src,{label:"_transform_tools_to_openai",path:"src/polar/gateway/transform/anthropic.py",line:494}),h(Src,{label:"AnthropicStreamState",path:"src/polar/gateway/transform/anthropic.py",line:39}),h(Src,{label:"process_chunk",path:"src/polar/gateway/transform/anthropic.py",line:61}),h(Src,{label:"finalize",path:"src/polar/gateway/transform/anthropic.py",line:116}),h(Ext,{href:"https://docs.anthropic.com/en/api"},"Anthropic Messages API"))
+    ];}},
+    {key:"google",name:"Google / Gemini",render:function(){return [
+      h("p",null,h("code",null,"GoogleTransformer")," 面对的 Gemini 方言差异同样大：消息装在 ",h("code",null,"contents")," 数组里、每条有 ",h("code",null,"parts"),"；角色用 ",h("code",null,"user"),"/",h("code",null,"model")," 而非 ",h("code",null,"user"),"/",h("code",null,"assistant"),"；工具调用是 ",h("code",null,"functionCall")," part、工具结果是 ",h("code",null,"functionResponse")," part；生成参数包在 ",h("code",null,"generationConfig")," 里，键名用驼峰（",h("code",null,"maxOutputTokens"),"、",h("code",null,"topP"),"、",h("code",null,"stopSequences"),"）；停止原因是大写枚举（",h("code",null,"STOP"),"、",h("code",null,"MAX_TOKENS"),"、",h("code",null,"SAFETY"),"）。"),
+      h("h4",null,"请求变换：角色映射 + 驼峰参数 + 工具声明"),
+      h(Code,null,"# google.py: 角色与停止原因的映射表\nROLE_MAP = {\"user\": \"user\", \"model\": \"assistant\"}\nFINISH_REASON_MAP_REVERSE = {\n    \"stop\": \"STOP\", \"length\": \"MAX_TOKENS\",\n    \"content_filter\": \"SAFETY\", \"tool_calls\": \"STOP\",\n}\n\n# transform_request: 抽 systemInstruction, 遍历 contents, 搬运 generationConfig (精简)\nsystem_instruction = body.get(\"systemInstruction\") or config_section.get(\"systemInstruction\")\nif isinstance(system_instruction, dict):\n    system_text = self._extract_text_from_parts(system_instruction.get(\"parts\", []))\n    if system_text:\n        messages.append({\"role\": \"system\", \"content\": system_text})\nfor content in body.get(\"contents\", []):\n    messages.extend(self._convert_content_to_messages(content))\nif \"maxOutputTokens\" in gen_config: result[\"max_tokens\"] = gen_config[\"maxOutputTokens\"]\nif \"topP\" in gen_config:          result[\"top_p\"] = gen_config[\"topP\"]\nif \"stopSequences\" in gen_config: result[\"stop\"] = gen_config[\"stopSequences\"]"),
+      h("p",null,h("code",null,"_convert_content_to_messages")," 把一条 Gemini content 的多种 part 分流：纯文本与图像归入 user/assistant 消息的内容，",h("code",null,"functionCall")," 收集成 OpenAI 的 ",h("code",null,"tool_calls"),"，",h("code",null,"functionResponse")," 转成 ",h("code",null,"role: tool")," 消息。工具声明在 ",h("code",null,"_convert_tools")," 里从 ",h("code",null,"functionDeclarations")," 展平成 OpenAI function 工具；工具选择由 ",h("code",null,"_convert_tool_choice")," 把 Gemini 的 ",h("code",null,"functionCallingConfig.mode"),"（",h("code",null,"NONE"),"/",h("code",null,"ANY"),"/",h("code",null,"VALIDATED"),"）映射成 OpenAI 的 ",h("code",null,"none"),"/",h("code",null,"required"),"/具名工具。与 Anthropic 一样，工具与 tool_choice 成对绑定，避免空工具仍带 tool_choice 被 SGLang 拒绝。"),
+      h("h4",null,"响应变换：candidates 与 functionCalls"),
+      h("p",null,"响应侧把 OpenAI 的每个 choice 还原成 Gemini 的 candidate（",h("code",null,"content.parts")," + ",h("code",null,"finishReason"),"，角色固定为 ",h("code",null,"model"),"），用量映射成 ",h("code",null,"usageMetadata"),"（",h("code",null,"promptTokenCount")," 等）。工具调用被还原成 ",h("code",null,"functionCall")," part，其 ",h("code",null,"arguments")," 字符串经 ",h("code",null,"_parse_arguments")," 解析回 ",h("code",null,"args")," 对象；此外还在顶层汇总一份 ",h("code",null,"functionCalls")," 便于客户端直接读取。"),
+      h("h4",null,"流式：参数名差异与工具累积"),
+      h("p",null,"Google 覆盖了 ",h("code",null,"is_streaming_request"),"：它的流式标志不是标准的 ",h("code",null,"stream"),"，而是 Gateway 内部约定的 ",h("code",null,"_streaming"),"。流式状态 ",h("code",null,"_GoogleStreamState")," 负责把 OpenAI 的工具调用 delta 跨分片累积成完整的 ",h("code",null,"functionCall"),"，并在拿到 ",h("code",null,"finish_reason")," 时一次性吐出。这与 Anthropic 的有状态流式同理，但 Gemini 不需要显式的 block start/stop 事件，状态机更简单。"),
+      h("div",null,h(Src,{label:"GoogleTransformer",path:"src/polar/gateway/transform/google.py",line:161}),h(Src,{label:"ROLE_MAP / FINISH_REASON_MAP_REVERSE",path:"src/polar/gateway/transform/google.py",line:164}),h(Src,{label:"transform_request",path:"src/polar/gateway/transform/google.py",line:172}),h(Src,{label:"transform_response",path:"src/polar/gateway/transform/google.py",line:230}),h(Src,{label:"_convert_content_to_messages",path:"src/polar/gateway/transform/google.py",line:328}),h(Src,{label:"_convert_tools",path:"src/polar/gateway/transform/google.py",line:400}),h(Src,{label:"_convert_tool_choice",path:"src/polar/gateway/transform/google.py",line:431}),h(Src,{label:"is_streaming_request",path:"src/polar/gateway/transform/google.py",line:325}),h(Src,{label:"_GoogleStreamState",path:"src/polar/gateway/transform/google.py",line:24}),h(Ext,{href:"https://ai.google.dev/api"},"Gemini API"))
+    ];}},
+    {key:"responses",name:"OpenAI Responses",render:function(){return [
+      h("p",null,h("code",null,"OpenAIResponsesTransformer")," 对应较新的 OpenAI Responses API（Codex CLI 使用）。它与 Chat Completions 同属 OpenAI 家但结构差异很大：没有 ",h("code",null,"messages")," 数组，而是 ",h("code",null,"instructions")," + ",h("code",null,"input"),"；",h("code",null,"input")," 是一串异构 item（",h("code",null,"input_text"),"、",h("code",null,"message"),"、",h("code",null,"function_call"),"、",h("code",null,"function_call_output")," 等）；响应不是 choices 而是 ",h("code",null,"output")," item 数组；流式是一套 ",h("code",null,"response.*")," 事件。"),
+      h("h4",null,"请求变换：把 input item 流重建成 messages"),
+      h(Code,null,"# openai_responses.py: instructions→system, input→messages (精简)\ndef transform_request(self, body):\n    messages = []\n    instructions = body.get(\"instructions\")\n    if instructions:\n        messages.append({\"role\": \"system\", \"content\": instructions})\n    input_data = body.get(\"input\", \"\")\n    if isinstance(input_data, str):\n        messages.append({\"role\": \"user\", \"content\": input_data})\n    elif isinstance(input_data, list):\n        messages.extend(self._convert_input_items_to_messages(input_data))\n    ...\n    return self._enhance_for_training(result, body.get(\"_polar_model_served\"))"),
+      h("p",null,"难点在 ",h("code",null,"_convert_input_items_to_messages"),"：input 是一串扁平 item，需要按类型分组重建出 OpenAI Chat 的有序消息。它维护三个待处理缓冲（待合并的输入内容、待发的工具调用、待发的工具输出），遇到边界就 flush。",h("code",null,"function_call")," item 攒进 ",h("code",null,"tool_calls"),"，",h("code",null,"function_call_output")," item 转成 ",h("code",null,"role: tool")," 消息，由 ",h("code",null,"_flush_tool_block")," 保证“assistant 带 tool_calls”紧接其“tool 输出”的正确顺序。这是四种方言里消息重建最复杂的一处。"),
+      h("h4",null,"响应变换：output item 与 local_shell_call 特例"),
+      h("p",null,"响应侧把 OpenAI 的 message 还原成 ",h("code",null,"type: message")," 的 output item（内容是 ",h("code",null,"output_text"),"），工具调用还原成 ",h("code",null,"function_call")," item。有一个值得注意的特例：当工具名是 ",h("code",null,"shell"),"/",h("code",null,"execute"),"/",h("code",null,"run_command")," 时，会被还原成 Responses 专有的 ",h("code",null,"local_shell_call")," item 而非普通 function_call，以契合 Codex CLI 对本地命令执行的处理。"),
+      h(Code,null,"# openai_responses.py: shell 类工具映射为 local_shell_call (节选)\nfor tc in message.get(\"tool_calls\") or []:\n    func = tc.get(\"function\", {})\n    name = func.get(\"name\", \"\")\n    if name in (\"shell\", \"execute\", \"run_command\"):\n        output_items.append({\n            \"type\": \"local_shell_call\",\n            \"call_id\": tc.get(\"id\", \"\"),\n            \"status\": \"completed\",\n            \"action\": {\"type\": \"execute\", \"command\": func.get(\"arguments\", \"{}\")},\n        })\n    else:\n        output_items.append({\"type\": \"function_call\", ...})"),
+      h("h4",null,"流式：response.* 事件序列"),
+      h("p",null,"Responses 流式同样有状态。",h("code",null,"ResponsesStreamState")," 在 ",h("code",null,"process_chunk")," 里发 ",h("code",null,"response.created"),"、",h("code",null,"response.output_item.added"),"、",h("code",null,"response.output_text.delta"),"、",h("code",null,"response.function_call_arguments.delta")," 等事件，在 ",h("code",null,"finalize")," 里补发各 item 的 ",h("code",null,"done")," 事件与最终的 ",h("code",null,"response.completed"),"。因此它也覆盖 ",h("code",null,"create_stream_state")," 返回这个状态对象。"),
+      h("div",null,h(Src,{label:"OpenAIResponsesTransformer",path:"src/polar/gateway/transform/openai_responses.py",line:283}),h(Src,{label:"transform_request",path:"src/polar/gateway/transform/openai_responses.py",line:286}),h(Src,{label:"transform_response",path:"src/polar/gateway/transform/openai_responses.py",line:325}),h(Src,{label:"local_shell_call 特例",path:"src/polar/gateway/transform/openai_responses.py",line:356}),h(Src,{label:"_convert_input_items_to_messages",path:"src/polar/gateway/transform/openai_responses.py",line:408}),h(Src,{label:"_flush_tool_block",path:"src/polar/gateway/transform/openai_responses.py",line:565}),h(Src,{label:"ResponsesStreamState",path:"src/polar/gateway/transform/openai_responses.py",line:28}),h(Src,{label:"process_chunk",path:"src/polar/gateway/transform/openai_responses.py",line:41}),h(Src,{label:"finalize",path:"src/polar/gateway/transform/openai_responses.py",line:185}),h(Ext,{href:"https://platform.openai.com/docs/api-reference"},"OpenAI API"))
+    ];}},
+    {key:"compare",name:"四方言对照",render:function(){return [
+      h("p",null,"把四种方言放在一起，差异的本质就清楚了：它们在五个维度上各不相同，而变换器的工作就是在这五个维度上做双向翻译。"),
+      h(Code,null,"维度            OpenAI Chat        Anthropic            Google/Gemini       OpenAI Responses\n--------------- ------------------ -------------------- ------------------- ------------------\nsystem 提示     messages 一条      顶层 system 字段     systemInstruction   instructions 字段\n消息容器        messages[]         messages[] + 块      contents[].parts    input[] 异构 item\n助手角色名      assistant          assistant            model               assistant\n工具调用        tool_calls 字段    tool_use 块          functionCall part   function_call item\n工具结果        role:tool 消息     tool_result 块       functionResponse    function_call_output\n停止原因        finish_reason      stop_reason          finishReason(大写)  status\n生成参数        顶层(snake)        顶层(snake)          generationConfig    顶层(部分驼峰)\n流式            data: chunk        content_block 事件   candidates 分片     response.* 事件\n流式状态        无状态             有状态(StreamState)  有状态(StreamState) 有状态(StreamState)"),
+      h("p",null,"由此可见三层复杂度递增：OpenAI Chat 几乎直通；Google 与 Anthropic 需要消息结构与工具表示的双向重写、以及有状态流式；OpenAI Responses 还要把扁平的 input item 流重建成有序 messages，是最复杂的一个。但它们都收敛到同一个抽象（",h("code",null,"BaseTransformer")," 的三个方法），proxy 完全不必关心方言细节，只按 ",h("code",null,"APIType")," 取对应变换器即可。这就是把差异封装在统一接口背后的价值。"),
+      h("div",{className:"note"},"流式还有一层系统级取舍（第 3 课已介绍）：Gateway 的 ",h("code",null,"_handle_streaming")," 先以非流式方式向 SGLang 取得完整响应并记录，再用 ",h("code",null,"_response_to_stream_chunk")," 合成一个分片，交给变换器的 ",h("code",null,"create_stream_state().process_chunk(...)")," + ",h("code",null,"finalize()")," 吐成该方言的 SSE 事件。因此变换器的流式代码在生产路径上处理的其实是“一个完整分片 + 收尾”，而非真正逐 token 的上游流。这样轨迹构建用的始终是一份确定的完整响应。"),
+      h("div",null,h(Src,{label:"_handle_streaming",path:"src/polar/gateway/server.py",line:703}),h(Src,{label:"_response_to_stream_chunk",path:"src/polar/gateway/server.py",line:770}),h(Src,{label:"_format_stream_events",path:"src/polar/gateway/server.py",line:360}))
+    ];}}
+  ];
+  function DialectExplorer(){const [s,setS]=useState(0);const d=DIALECTS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},DIALECTS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== images.py 多模态 =====
+  function ImagesSection(){
+    return h("div",null,
+      h("p",null,"四种方言不仅文本与工具结构不同，图像的表示也各异。",h("code",null,"images.py")," 是一组无状态的纯函数，专门处理多模态图像在各格式之间的互转，被三个方言变换器共用。把图像逻辑抽出来单独成模块，避免每个变换器各写一份易出错的图像解析。"),
+      h("h3",null,"统一中介：OpenAI 的 data URL 与 image_url 块"),
+      h("p",null,"各方言对图像的编码不同：Anthropic 用 ",h("code",null,"image")," 块（",h("code",null,"source")," 可为 base64 或 url）；Google 用 ",h("code",null,"inline_data")," / ",h("code",null,"file_data")," part；OpenAI 用 ",h("code",null,"image_url")," 块（其 url 可以是 http 链接或 ",h("code",null,"data:")," base64）；Responses 用 ",h("code",null,"input_image"),"。",h("code",null,"images.py")," 选择 OpenAI 的 ",h("code",null,"image_url")," 块作为统一中介格式：所有“入站”转换都把源格式图像转成 OpenAI image_url 块，所有“出站”转换都从 OpenAI image_url 块转回源格式。data URL 的解析与构造由 ",h("code",null,"parse_data_url")," / ",h("code",null,"make_data_url")," 负责，并用 ",h("code",null,"is_image_mime_type")," 校验 MIME 类型确为图像。"),
+      h(Code,null,"# images.py: data URL 的解析与构造 (节选)\n_DATA_URL_RE = re.compile(r\"^data:(?P<mime_type>[^;,]+);base64,(?P<data>.*)$\", re.DOTALL)\n\ndef parse_data_url(url):\n    match = _DATA_URL_RE.match(url)\n    if not match: return None\n    mime_type = match.group(\"mime_type\")\n    if not is_image_mime_type(mime_type): return None   # 只接受 image/* \n    return mime_type, match.group(\"data\")\n\ndef make_data_url(mime_type, data):\n    if data.startswith(\"data:\"): return data\n    return f\"data:{mime_type};base64,{data}\""),
+      h("h3",null,"双向转换函数对照"),
+      h("p",null,"每个方言都有一对“入站/出站”图像函数，配合该方言的内容转换函数使用。下表给出对应关系（点 ",h("code",null,"Src")," 看实现）："),
+      h(Code,null,"方言             入站 (→ OpenAI image_url)              出站 (OpenAI image_url →)\n---------------- ------------------------------------- -------------------------------------\nAnthropic        anthropic_content_to_openai_chat      openai_chat_content_to_anthropic_blocks\nGoogle/Gemini    google_content_parts_to_openai_chat    openai_chat_content_to_google_parts\nOpenAI Responses openai_responses_input_content_to_chat (Responses 用 output_text, 见 transform_response)"),
+      h("p",null,"一个务实的边界处理（已在 Anthropic 一节出现）：OpenAI 的 ",h("code",null,"role: tool")," 消息只能放纯文本，不能带图像。因此当工具结果里含图像时，变换器把图像剥离出来，另起一条 ",h("code",null,"role: user")," 消息发送。代价是同一条工具结果里文本与图像的相对顺序不被保留，但这是 OpenAI Chat 协议限制下的合理取舍。",h("code",null,"openai_content_from_text_and_images")," 负责决定：若内容含图像则保留为块数组，否则压成纯字符串，尽量不给后端制造多余的结构。"),
+      h("div",null,h(Src,{label:"is_image_mime_type",path:"src/polar/gateway/transform/images.py",line:11}),h(Src,{label:"make_data_url",path:"src/polar/gateway/transform/images.py",line:15}),h(Src,{label:"parse_data_url",path:"src/polar/gateway/transform/images.py",line:21}),h(Src,{label:"anthropic_content_to_openai_chat",path:"src/polar/gateway/transform/images.py",line:119}),h(Src,{label:"openai_chat_content_to_anthropic_blocks",path:"src/polar/gateway/transform/images.py",line:207}),h(Src,{label:"google_part_to_openai_chat",path:"src/polar/gateway/transform/images.py",line:189}),h(Src,{label:"openai_chat_content_to_google_parts",path:"src/polar/gateway/transform/images.py",line:254}),h(Src,{label:"openai_responses_input_content_to_chat",path:"src/polar/gateway/transform/images.py",line:80}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"Anthropic Messages API",d:"system 字段、content 块、tool_use/tool_result、stop_reason",href:"https://docs.anthropic.com/en/api"},
+    {t:"OpenAI API 参考",d:"Chat Completions 与 Responses API（input item、output、response.* 事件）",href:"https://platform.openai.com/docs/api-reference"},
+    {t:"Gemini API",d:"contents/parts、functionCall/functionResponse、generationConfig、finishReason",href:"https://ai.google.dev/api"},
+    {t:"SGLang 文档",d:"变换的目标后端，OpenAI Chat Completions 兼容接口",href:"https://docs.sglang.ai/"},
+    {t:"Python abc 文档",d:"BaseTransformer 用的抽象基类与 abstractmethod",href:"https://docs.python.org/3/library/abc.html"},
+    {t:"transform/README.md（本机）",d:"变换层职责的官方说明",href:srcUrl("src/polar/gateway/transform/README.md",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:4}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 4 课 / 共 8 · 协议变换层"),
+          h("h1",null,"协议变换 transform"),
+          h("p",{className:"lead"},"第 3 课讲了 proxy 如何拦截 agent 的每一次模型调用，但留了一个关键问题没展开：agent 用的 SDK 五花八门（Anthropic、OpenAI Chat、OpenAI Responses、Google/Gemini），后端却只有一个讲 OpenAI Chat 的 SGLang。本课讲清横在中间的协议变换层：它如何把四种 API 方言统一变换到后端格式、再把响应还原回各方言，从而实现“任意 harness 对接一个推理服务”。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"transform/base.py")," 变换抽象与训练增强、",h("code",null,"openai_chat.py")," 最简实现、",h("code",null,"anthropic.py")," / ",h("code",null,"google.py")," / ",h("code",null,"openai_responses.py")," 三种方言的消息结构、工具调用、流式与停止原因差异、",h("code",null,"images.py")," 多模态图像互转。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机 ",h("code",null,"ProRL-Agent-Server")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"detection · TransformManager"),
+          h("h2",null,"为什么需要变换层：N 种方言对 1 个后端"),
+          h(OverviewSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"transform/base.py"),
+          h("h2",null,"变换抽象：三个方法 + 训练增强"),
+          h("p",null,"所有方言变换器都继承同一个抽象基类。点 Tab 依次看：三个抽象方法定义的契约、为 RL 训练专设的请求增强、以及最简单的 OpenAI Chat 实现（用它校准对接口的理解）。"),
+          h(BaseExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"anthropic · google · openai_responses"),
+          h("h2",null,"四种方言的差异要点"),
+          h("p",null,"差异集中在五个维度：system 提示位置、消息结构、工具调用/结果表示、流式事件、停止原因。点 Tab 分方言查看真实代码，最后一个 Tab 给出四方言对照表。"),
+          h(DialectExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"transform/images.py"),
+          h("h2",null,"多模态图像：以 OpenAI image_url 为统一中介"),
+          h(ImagesSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"读变换器时配合各 API 的官方参考，能把每个字段映射的来源补齐：知道源方言长什么样，才能看懂变换代码在还原什么。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"N 种方言对 1 个后端"),"：变换层让任意 harness 对接一个 SGLang 推理服务。请求向内统一成 OpenAI Chat，响应向外还原回 agent 当初用的方言，对两侧都透明，agent 代码零改动。"),
+            h("li",null,h("strong",null,"统一接口封装差异"),"：",h("code",null,"BaseTransformer")," 用 ",h("code",null,"transform_request")," / ",h("code",null,"transform_response")," / ",h("code",null,"transform_stream_chunk")," 三个抽象方法定义契约，再以可选的 ",h("code",null,"create_stream_state")," / ",h("code",null,"is_streaming_request")," 容纳方言特例。proxy 只按 ",h("code",null,"APIType")," 取变换器，不碰方言细节。"),
+            h("li",null,h("strong",null,"为训练而变换"),"：每个请求都经 ",h("code",null,"_enhance_for_training")," 强制开 ",h("code",null,"logprobs"),"、按需做 Qwen 模板兼容。这是变换层与普通 API 网关的根本区别：它产出的补全要能用于 RL 训练。"),
+            h("li",null,h("strong",null,"复杂度递增"),"：OpenAI Chat 近乎直通；Google 与 Anthropic 需双向重写消息结构与工具表示、并维护有状态流式；OpenAI Responses 还要把扁平 input item 流重建成有序 messages，最复杂。"),
+            h("li",null,h("strong",null,"图像走统一中介"),"：",h("code",null,"images.py")," 以 OpenAI image_url 块为枢纽做无状态互转，被三个方言共用；并务实处理 OpenAI tool 消息只能放文本的协议限制。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"polar-lesson-03-gateway.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 3 课：Gateway 节点与 proxy")),
+            h("a",{href:"polar-lesson-05-runtime.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 5 课：Runtime 池化"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 第 11 课：异步训练范式</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    table.cmp{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px;}
+    table.cmp th,table.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;color:var(--muted);}
+    table.cmp th{background:var(--panel-2);color:var(--ink);font-weight:700;font-size:12px;}
+    table.cmp td:first-child{color:var(--ink);font-weight:600;white-space:nowrap;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 11 课</p><h1>异步训练范式</h1><p>能访问 CDN 时切换为交互版。本课回答一个被反复追问的问题：verl 的异步训练究竟实现了没有。结论是已经实现，位于 verl/experimental 与 verl/trainer/ppo/v1，并分为多种范式：one_step_off_policy（陈旧度恰好一步的重叠）、fully_async_policy（rollouter 与 trainer 经 message_queue 解耦的全异步）、separation（训练与推理物理分离）、以及 v1 家族的 trainer_sync / trainer_colocate_async / trainer_separate_async（由 transfer-queue 驱动的 agent loop 与 replay buffer 支撑）。本课逐文件精读这些源码并给出取舍表。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const VERL="vscode://file/Users/xinyu/Code/Agentic-RL/verl/";
+  function srcUrl(p,l){return VERL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","DataProto","WorkerGroup","ResourcePool","ResourcePoolManager","RayWorkerGroup","AgentLoop","AgentLoopManager","AgentLoopWorker","AgentLoopOutput","RolloutSample","MessageQueue","MessageQueueClient","ReplayBuffer","KVBatchMeta","CheckpointEngineManager","LLMServerManager","PPOTrainer","SeparateRayPPOTrainer","FullyAsyncRollouter","FullyAsyncTrainer","OneStepOffRayTrainer","Role","TensorDict","ray","asyncio","np","deque","tq"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与HybridFlow","verl-lesson-01-foundations.html"],[2,"DataProto","verl-lesson-02-dataproto.html"],[3,"混合控制器","verl-lesson-03-single-controller.html"],[4,"配置","verl-lesson-04-config.html"],[5,"RL数学","verl-lesson-05-core-algos.html"],[6,"训练引擎","verl-lesson-06-engines.html"],[7,"Workers","verl-lesson-07-workers.html"],[8,"Rollout","verl-lesson-08-rollout.html"],[9,"异步服务","verl-lesson-09-async-server.html"],[10,"Agent Loop","verl-lesson-10-agent-loop.html"],[11,"异步训练","verl-lesson-11-async-train.html"],[12,"Trainer与端到端","verl-lesson-12-trainer-e2e.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"verl-course-index.html"},"verl",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 引入：为什么需要异步，verl 异步实现了吗 =====
+  function WhySection(){
+    return h("div",null,
+      h("p",null,"同步 RL（第 12 课要讲的主路径 ",h("code",null,"verl/trainer/ppo/ray_trainer.py"),"）按步严格串行：生成一批 rollout 数据，等它全部完成，再训练一步，再把新权重同步回推理引擎，然后才开始下一批生成。这条路径的正确性最强（每一批数据都由当前策略生成，是严格的 on-policy），但存在一个结构性低效：在生成阶段，训练用的 GPU 处于空闲；在训练阶段，推理用的 GPU 处于空闲。当生成阶段占整步时间的多数（长序列、多轮工具调用、agentic 任务尤其如此），这种交替空转会大幅压低集群利用率。"),
+      h("p",null,"异步训练就是为消除这种空转而设计：让生成与训练在时间上重叠，代价是训练所用的数据不再严格来自当前策略，而是来自若干步之前的旧权重，即引入 ",h("strong",{className:"hl-amber"},"陈旧度（staleness）"),"。陈旧度需要算法上的重要性采样修正来保证 PPO 目标的无偏性（见第 5 课的 ",h("code",null,"core_algos.py")," 与 ",h("code",null,"rollout_corr_helper.py"),"）。"),
+      h("div",{className:"note"},h("strong",null,"核心结论"),"：verl 的异步训练",h("strong",{className:"hl-green"},"已经实现"),"，并非停留在设计文档。它当前主要位于 ",h("code",null,"verl/experimental/")," 下（计划在稳定后合并入主库），同时 ",h("code",null,"verl/trainer/ppo/v1/")," 已提供一套以 transfer-queue 与 replay buffer 为基础的下一代 trainer 家族。异步不是单一开关，而是一组沿陈旧度连续谱排布的范式。"),
+      h("p",null,"本课把这组范式按陈旧度从低到高梳理为四个层次："),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-teal"},"one_step_off_policy"),"：生成与训练重叠恰好一步，陈旧度恒为一步。最接近同步，正确性损失最小。"),
+        h("li",null,h("strong",{className:"hl-purple"},"fully_async_policy"),"：rollouter 与 trainer 作为两个独立的 Ray actor，经一个消息队列解耦；rollouter 持续生成、trainer 持续消费，陈旧度由阈值控制，可大于一步。"),
+        h("li",null,h("strong",{className:"hl-amber"},"separation"),"：训练与推理在物理资源上分离（disaggregated），是上面两种范式共享的底层骨架。"),
+        h("li",null,h("strong",{className:"hl-blue"},"trainer/ppo/v1 家族"),"：sync / colocate_async / separate_async 三种模式注册在同一基类下，由 transfer-queue 驱动的 agent loop 产出轨迹、replay buffer 做陈旧度过滤，是 verl 异步能力收敛到主库的形态。")),
+      h("div",null,h(Src,{label:"主库同步 ray_trainer（对照）",path:"verl/trainer/ppo/ray_trainer.py"}),h(Src,{label:"experimental/__init__",path:"verl/experimental/__init__.py"}),h(Ext,{href:"https://arxiv.org/pdf/2505.24298"},"AReaL 全异步 RL 论文"),h(Ext,{href:"https://arxiv.org/abs/2409.19256"},"HybridFlow 论文"))
+    );
+  }
+
+  // ===== 陈旧度的数学定义 =====
+  function StalenessSection(){
+    const ref=useTypeset("staleness");
+    return h("div",{ref:ref},
+      h("p",null,"在展开各范式之前，先把陈旧度用统一的符号定义清楚，后面所有范式都用同一把尺子衡量。设训练器当前的参数版本号为 ",h("code",null,"v_train"),"，一条轨迹是由版本 ",h("code",null,"v_gen")," 的权重生成的，则该轨迹的陈旧度为两个版本号之差："),
+      h(Formula,{cap:"单条轨迹的陈旧度（以参数版本为单位）"},"$$ s \\;=\\; v_{\\text{train}} - v_{\\text{gen}} \\;\\ge\\; 0 $$"),
+      h("p",null,"同步训练里 ",h("code",null,"s = 0")," 恒成立。one_step_off_policy 让 ",h("code",null,"s = 1")," 恒成立。全异步与 v1 separate_async 则把 ",h("code",null,"s")," 控制在一个上界内。陈旧度之所以重要，是因为 PPO 的目标函数假设数据来自当前策略 ",h("code",null,"π_θ"),"，而异步数据来自旧策略 ",h("code",null,"π_{θ_old}"),"。两者不一致时，需要用重要性采样比修正梯度的偏差："),
+      h(Formula,{cap:"重要性采样修正：用旧策略采样估计当前策略下的期望"},"$$ \\mathbb{E}_{a\\sim\\pi_\\theta}\\big[f(a)\\big] \\;=\\; \\mathbb{E}_{a\\sim\\pi_{\\theta_{\\text{old}}}}\\!\\left[\\frac{\\pi_\\theta(a)}{\\pi_{\\theta_{\\text{old}}}(a)}\\,f(a)\\right] $$"),
+      h("p",null,"陈旧度越大，比值 ",h("code",null,"π_θ/π_{θ_old}")," 的方差越大，修正越不稳定，因此每种范式都会显式地给陈旧度设上界，并在超过上界时丢弃或等待（见后文 replay buffer 的 ",h("code",null,"drop"),"/",h("code",null,"wait")," 策略）。verl 的具体修正在第 5 课展开（截断重要性采样、bypass 模式等），本课聚焦于陈旧度是如何在系统层面被生产、传播和约束的。"),
+      h("div",{className:"note"},"一个工程细节：在多轮 agentic 生成中，一条轨迹可能横跨若干次权重同步，于是它没有单一的 ",h("code",null,"v_gen"),"，而有一个起始版本 ",h("code",null,"min_global_steps")," 与结束版本 ",h("code",null,"max_global_steps"),"。verl 用这两个字段刻画 partial rollout 的陈旧度区间。"),
+      h("div",null,h(Src,{label:"min/max_global_steps 标记",path:"verl/trainer/ppo/v1/agent_loop_tq.py",line:196}),h(Src,{label:"partial 跨度统计",path:"verl/experimental/fully_async_policy/detach_utils.py",line:151}))
+    );
+  }
+
+  // ===== 范式一：one_step_off_policy =====
+  const OSO=[
+    {key:"main",name:"入口 main_ppo.py",render:function(){return [
+      h("p",null,"one_step_off_policy 的入口非常薄：它复用主库的 ",h("code",null,"run_ppo")," 流程，只把 task runner 替换为 ",h("code",null,"OneStepTaskRunner"),"，后者构造的是 ",h("code",null,"OneStepOffRayTrainer")," 而非默认 trainer。注意它通过 ",h("code",null,"separation.utils")," 创建角色到 worker 的映射与资源池管理器，这正说明 one-step-off 建立在 separation 的物理分离骨架之上。"),
+      h(Code,null,"@ray.remote(num_cpus=10, max_concurrency=100)\nclass OneStepTaskRunner:\n    def run(self, config):\n        role_worker_mapping, ray_worker_group_cls = create_role_worker_mapping(config)\n        resource_pool_manager = create_resource_pool_manager(config, role_worker_mapping.keys())\n        ...\n        trainer = OneStepOffRayTrainer(config=config, tokenizer=tokenizer, ...)\n        trainer.init_workers()\n        asyncio.run(trainer.fit())          # fit 本身是协程"),
+      h("p",null,"训练循环以 ",h("code",null,"asyncio.run(trainer.fit())")," 驱动，这是异步的第一处信号：整个 fit 是一个协程，生成任务用 ",h("code",null,"asyncio.create_task")," 提前发起，与训练计算重叠。"),
+      h("div",null,h(Src,{label:"OneStepTaskRunner",path:"verl/experimental/one_step_off_policy/main_ppo.py",line:34}),h(Src,{label:"构造 trainer",path:"verl/experimental/one_step_off_policy/main_ppo.py",line:90}),h(Src,{label:"asyncio.run(fit)",path:"verl/experimental/one_step_off_policy/main_ppo.py",line:106}))
+    ];}},
+    {key:"overlap",name:"重叠机制 ray_trainer.py",render:function(){return [
+      h("p",null,"核心在 ",h("code",null,"OneStepOffRayTrainer.fit"),"。它继承自 ",h("code",null,"SeparateRayPPOTrainer"),"（separation 骨架），在循环开始前先用 ",h("code",null,"asyncio.create_task")," 发起第一批生成，得到一个 future；进入循环后，每一步都先把上一步发起的生成 future 取回，再立刻发起下一步生成，然后才用取回的数据做训练。生成与训练因此重叠了一步。"),
+      h(Code,null,"async def fit(self):\n    self._load_checkpoint()\n    self._fit_update_weights()            # 训练前先把权重推给 rollout\n    ...\n    continuous_iterator = self._create_continuous_iterator()\n    # 提前发起第一批生成 (与后续训练重叠)\n    batch_data_future = asyncio.create_task(self._async_gen_next_batch(continuous_iterator))\n    while batch_data_future is not None:\n        batch_data_future = await self.fit_step(batch_data_future, continuous_iterator)\n        if self.is_last_step:\n            return"),
+      h("p",null,"在 ",h("code",null,"_fit_generate")," 里能看到一步的完整结构：先 ",h("code",null,"await")," 上一批生成结果，随后同步权重，再立刻发起下一批生成的 task。下一批生成用的是刚同步出去的新权重，但它要等到下一轮 ",h("code",null,"fit_step")," 才被训练消费，因此训练永远落后生成恰好一步。"),
+      h(Code,null,"async def _fit_generate(self, batch_data_future, continuous_iterator):\n    with marked_timer(\"gen\", timing_raw, color=\"red\"):\n        _metrics, _timing_raw, epoch, batch, future_reward = await batch_data_future\n    # 把 actor 权重同步给 rollout\n    with marked_timer(\"sync_rollout_weights\", timing_raw, color=\"purple\"):\n        self._fit_update_weights()\n    # 异步发起下一批生成\n    if not self.is_last_step:\n        batch_data_future = asyncio.create_task(self._async_gen_next_batch(continuous_iterator))\n        await asyncio.sleep(0)\n    else:\n        batch_data_future = None\n    return batch, batch_data_future"),
+      h("p",null,"fit_step 内部在每个计算阶段之间插入 ",h("code",null,"await asyncio.sleep(0)"),"，把控制权交还事件循环。这样在 trainer 做 compute_reward / compute_log_prob / update_actor 等阻塞性 RPC 的间隙，提前发起的生成 task 能在事件循环中推进，真正实现重叠而非名义上的异步。"),
+      h("div",null,h(Src,{label:"OneStepOffRayTrainer.fit",path:"verl/experimental/one_step_off_policy/ray_trainer.py",line:265}),h(Src,{label:"_async_gen_next_batch",path:"verl/experimental/one_step_off_policy/ray_trainer.py",line:206}),h(Src,{label:"fit_step + sleep(0)",path:"verl/experimental/one_step_off_policy/ray_trainer.py",line:323}),h(Src,{label:"_fit_generate",path:"verl/experimental/one_step_off_policy/ray_trainer.py",line:385}))
+    ];}},
+    {key:"why",name:"设计动机：为何只差一步",render:function(){return [
+      h("p",null,"为什么刻意把陈旧度钉在恰好一步，而不放得更大？因为一步重叠在两个目标之间取得了一个特别稳定的平衡点："),
+      h("ul",null,
+        h("li",null,h("strong",null,"利用率提升明显"),"：生成与训练完全重叠，理想情况下整步时间从 ",h("code",null,"t_gen + t_train")," 降到 ",h("code",null,"max(t_gen, t_train)"),"。"),
+        h("li",null,h("strong",null,"陈旧度可控且极小"),"：",h("code",null,"s = 1")," 是非零陈旧度里最小的取值，重要性采样比的方差最小，PPO 的稳定性几乎不受影响。该范式的 README 报告了在多个数学基准上相对同步基线 23%~40% 的端到端加速，且最终精度持平甚至略升。")),
+      h(Formula,{cap:"一步重叠的理想整步时间"},"$$ t_{\\text{step}}^{\\text{one-off}} \\;=\\; \\max\\!\\big(t_{\\text{gen}},\\, t_{\\text{train}}\\big) \\;\\le\\; t_{\\text{gen}} + t_{\\text{train}} \\;=\\; t_{\\text{step}}^{\\text{sync}} $$"),
+      h("p",null,"代价是 one-step-off 不能 colocate：生成与训练要同时占用 GPU，必须各自独占一组卡（这正是它依赖 separation 骨架的原因）。当 ",h("code",null,"t_gen")," 与 ",h("code",null,"t_train")," 严重不平衡时，较快的一侧会空等较慢的一侧，重叠收益打折，这时就需要全异步范式进一步解耦。"),
+      h("div",{className:"warn"},h("strong",null,"正确性保障"),"：one-step-off 仍用 rollout 阶段记录的 log_probs 做 PPO 的重要性采样基准（README 第 215 行附近说明），确保即使数据来自上一版权重，PPO 目标仍是该数据分布下的无偏估计。"),
+      h("div",null,h(Src,{label:"one_step_off README",path:"verl/experimental/one_step_off_policy/README.md"}),h(Src,{label:"separation 骨架 SeparateRayPPOTrainer",path:"verl/experimental/separation/ray_trainer.py",line:52}))
+    ];}}
+  ];
+  function OSOExplorer(){const [s,setS]=useState(0);const d=OSO[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},OSO.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 范式二：fully_async_policy =====
+  function FullyAsyncSection(){
+    return h("div",null,
+      h("p",null,"fully_async_policy 把 one-step-off 的隐含耦合彻底拆开。在 one-step-off 里，rollouter 与 trainer 仍是同一个 fit 协程里交替推进的两个阶段，二者步调被锁在一起。全异步范式则把它们做成两个独立的 Ray actor：",h("code",null,"FullyAsyncRollouter")," 永不停歇地生成样本并塞进一个消息队列，",h("code",null,"FullyAsyncTrainer")," 独立地从队列里取样本训练。生产者与消费者的步调由队列容量与陈旧度阈值松弛地协调，而不再硬性绑定。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"producer"),"FullyAsyncRollouter"),
+          h("p",null,"持续从 dataloader 取 prompt、流式发起生成、把完成的 ",h("code",null,"RolloutSample")," 序列化后 put 进队列。内部有 feed / processor / monitor 三条协程协同，并在队列满或陈旧度超限时自我暂停。")),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"consumer"),"FullyAsyncTrainer"),
+          h("p",null,"循环地从队列里收集 ",h("code",null,"required_samples")," 个样本拼成一批，跑完整 PPO 计算，按 ",h("code",null,"trigger_parameter_sync_step")," 周期把新权重推回 rollouter 并令其重置陈旧度计数。"))),
+      h("h3",null,"装配：fully_async_main.py 的三件套"),
+      h("p",null,"入口 ",h("code",null,"FullyAsyncTaskRunner")," 负责把三个组件连起来：先建 trainer（因为可能要把它的 worker group 注入 rollouter 用于训练侧验证），再建 rollouter，再建 ",h("code",null,"MessageQueue")," 并把它的客户端分别注入两侧，最后用 ",h("code",null,"ray.wait")," 同时监控两个 fit future，任一异常即取消另一个。"),
+      h(Code,null,"def _run_training_loop(self):\n    rollouter_future = self.components[\"rollouter\"].fit.remote()\n    trainer_future = self.components[\"trainer\"].fit.remote()\n    futures = [rollouter_future, trainer_future]\n    while futures:\n        # 任一组件结束就回收, 异常则取消另一个\n        done_futures, remaining_futures = ray.wait(futures, num_returns=1, timeout=None)\n        for future in done_futures:\n            try:\n                ray.get(future)\n            except Exception as e:\n                for remaining_future in remaining_futures:\n                    ray.cancel(remaining_future)\n                raise e\n        futures = remaining_futures"),
+      h("div",null,h(Src,{label:"FullyAsyncTaskRunner",path:"verl/experimental/fully_async_policy/fully_async_main.py",line:36}),h(Src,{label:"_initialize_components 装配",path:"verl/experimental/fully_async_policy/fully_async_main.py",line:51}),h(Src,{label:"_run_training_loop",path:"verl/experimental/fully_async_policy/fully_async_main.py",line:176})),
+
+      h("h3",null,"消息队列 message_queue.py：解耦的关键"),
+      h("p",null,"队列本身是一个 Ray actor，内部用 ",h("code",null,"collections.deque(maxlen=...)")," 实现有界队列，配合 ",h("code",null,"asyncio.Lock")," 与 ",h("code",null,"asyncio.Condition")," 做生产者-消费者同步。设计上有两个值得注意的取舍："),
+      h("ul",null,
+        h("li",null,h("strong",null,"满队列丢最旧"),"：",h("code",null,"put_sample")," 在队列满时 ",h("code",null,"popleft()")," 丢弃最旧样本而非阻塞生产者。这保证 rollouter 永不被队列卡住，丢掉的恰是陈旧度最高、价值最低的旧样本。"),
+        h("li",null,h("strong",null,"消费端阻塞等待"),"：",h("code",null,"get_sample")," 在队列空时用条件变量 ",h("code",null,"wait()")," 挂起，直到有新样本或队列关闭。trainer 因此不会空转拉取。")),
+      h(Code,null,"@ray.remote(num_cpus=2, max_concurrency=20)\nclass MessageQueue:\n    async def put_sample(self, sample):\n        async with self._lock:\n            is_drop = False\n            if len(self.queue) >= self.max_queue_size:\n                self.queue.popleft()          # 队满: 丢最旧样本, 生产者不阻塞\n                self.dropped_samples += 1\n                is_drop = True\n            self.queue.append(sample)\n            self.total_produced += 1\n            self._consumer_condition.notify_all()   # 唤醒等待的消费者\n            return not is_drop\n\n    async def get_sample(self):\n        async with self._lock:\n            while len(self.queue) == 0 and self.running:\n                await self._consumer_condition.wait()    # 队空: 阻塞等待\n            if not self.running and len(self.queue) == 0:\n                return None\n            return self.queue.popleft(), len(self.queue)"),
+      h("p",null,"配套的 ",h("code",null,"MessageQueueClient")," 是一个轻量包装，把 Ray 的 ",h("code",null,"ObjectRef")," 通过 ",h("code",null,"asyncio.wrap_future(future.future())")," 转成可 ",h("code",null,"await")," 的协程，使两侧的异步代码能自然地与远程队列交互。样本本身用 ",h("code",null,"ray.cloudpickle.dumps")," 序列化后才入队（见 rollouter 的 ",h("code",null,"_process_single_sample_streaming"),"），以便跨 actor 传递整个 ",h("code",null,"RolloutSample"),"。"),
+      h("div",null,h(Src,{label:"MessageQueue",path:"verl/experimental/fully_async_policy/message_queue.py",line:27}),h(Src,{label:"put_sample（丢最旧）",path:"verl/experimental/fully_async_policy/message_queue.py",line:55}),h(Src,{label:"get_sample（阻塞等待）",path:"verl/experimental/fully_async_policy/message_queue.py",line:85}),h(Src,{label:"MessageQueueClient",path:"verl/experimental/fully_async_policy/message_queue.py",line:180})),
+
+      h("h3",null,"detach_utils.py：权重分离与样本承载"),
+      h("p",null,"全异步的另一半基础设施在 ",h("code",null,"detach_utils.py"),"。它定义了在队列里流动的数据契约 ",h("code",null,"RolloutSample"),"（携带完整 batch、样本 id、epoch 与 rollout 状态），并提供把若干 ",h("code",null,"RolloutSample")," 重新拼成一个训练批次的 ",h("code",null,"assemble_batch_from_rollout_samples"),"。后者在拼批的同时计算 partial rollout 的陈旧度统计：用每条轨迹的 ",h("code",null,"min_global_steps")," 与 ",h("code",null,"max_global_steps")," 算出版本跨度，统计有多少轨迹横跨了权重更新（partial 比例与最大跨度）。"),
+      h(Code,null,"@dataclass\nclass RolloutSample:\n    full_batch: Any           # 完整 DataProto\n    sample_id: str\n    epoch: int\n    rollout_status: dict[str, Any]\n\n# 拼批时计算每条轨迹的参数版本跨度 (partial rollout 的陈旧度区间)\nparam_version_start = final_batch.non_tensor_batch[\"min_global_steps\"]\nparam_version_end = final_batch.non_tensor_batch[\"max_global_steps\"]\nparam_version_diff = [abs(a - b) for a, b in zip(param_version_end, param_version_start)]\nnum_diff0 = param_version_diff.count(0)\npartial_stats = {\n    \"fully_async/partial/total_partial_num\": len(param_version_diff) - num_diff0,\n    \"fully_async/partial/partial_ratio\": (len(param_version_diff) - num_diff0) / len(param_version_diff),\n    \"fully_async/partial/max_partial_span\": max(param_version_diff),\n}"),
+      h("p",null,"文件里还有 ",h("code",null,"MetricsAggregator"),"，因为全异步下一个参数版本可能对应多个训练 step，需要把这些 step 的指标按规则（time_sum / avg / max / last 等）聚合后再按参数版本号记录一次，否则指标会与同步训练对不上。",h("code",null,"safe_create_task")," 则给每个后台协程挂上异常回调，避免“即发即弃”的 task 静默失败。"),
+      h("div",null,h(Src,{label:"RolloutSample",path:"verl/experimental/fully_async_policy/detach_utils.py",line:28}),h(Src,{label:"assemble_batch_from_rollout_samples",path:"verl/experimental/fully_async_policy/detach_utils.py",line:84}),h(Src,{label:"partial 跨度统计",path:"verl/experimental/fully_async_policy/detach_utils.py",line:151}),h(Src,{label:"MetricsAggregator",path:"verl/experimental/fully_async_policy/detach_utils.py",line:179}),h(Src,{label:"safe_create_task",path:"verl/experimental/fully_async_policy/detach_utils.py",line:359}))
+    );
+  }
+
+  // ===== rollouter 与 trainer 的协程结构 =====
+  const FAFLOW=[
+    {key:"rollouter",name:"Rollouter 的三条协程",render:function(){return [
+      h("p",null,"FullyAsyncRollouter 的 ",h("code",null,"fit")," 同时启动两条主协程：",h("code",null,"_streaming_generation_main")," 负责生成，",h("code",null,"_async_monitor_loop")," 负责监控与恢复。生成主协程内部又拆成 feed 与 processor 两条："),
+      h("ul",null,
+        h("li",null,h("code",null,"_feed_samples"),"：从 dataloader 连续取 prompt，包成 ",h("code",null,"RolloutSample")," 放入内部的 ",h("code",null,"pending_queue"),"，到达 ",h("code",null,"total_rollout_steps")," 后放一个 None 作为结束信号。"),
+        h("li",null,h("code",null,"_processor_worker"),"：从 pending_queue 取样本，为每个样本用 ",h("code",null,"safe_create_task")," 起一个流式生成 task；并在每次取样本时把 ",h("code",null,"staleness_samples")," 加一。"),
+        h("li",null,h("code",null,"_async_monitor_loop"),"：周期打印统计，并在暂停状态下检查是否可以恢复生成。")),
+      h(Code,null,"async def _processor_worker(self):\n    while True:\n        if self.paused or await self._should_pause_generation():\n            # 暂停: 排空在途 task, 等待 resume 信号\n            async with self.lock:\n                self.paused = True\n                self._resume_event.clear()\n            ...\n            continue\n        rollout_sample = await self.pending_queue.get()\n        self.staleness_samples += 1\n        if rollout_sample is None:        # 结束信号\n            break\n        # 并发上限控制\n        while len(self.active_tasks) >= self.max_concurrent_samples:\n            ...\n        task = safe_create_task(\n            self._process_single_sample_streaming(rollout_sample),\n            name=rollout_sample.sample_id, task_set=self.active_tasks)"),
+      h("p",null,"单样本生成 ",h("code",null,"_process_single_sample_streaming")," 调用 agent loop 管理器生成序列，序列化后 put 进消息队列；put 成功则 ",h("code",null,"total_generated_samples")," 加一，失败（队满被丢）则计入 ",h("code",null,"dropped_stale_samples"),"。"),
+      h("div",null,h(Src,{label:"FullyAsyncRollouter",path:"verl/experimental/fully_async_policy/fully_async_rollouter.py",line:294}),h(Src,{label:"_feed_samples",path:"verl/experimental/fully_async_policy/fully_async_rollouter.py",line:716}),h(Src,{label:"_processor_worker",path:"verl/experimental/fully_async_policy/fully_async_rollouter.py",line:749}),h(Src,{label:"_process_single_sample_streaming",path:"verl/experimental/fully_async_policy/fully_async_rollouter.py",line:834}),h(Src,{label:"fit（起两协程）",path:"verl/experimental/fully_async_policy/fully_async_rollouter.py",line:917}))
+    ];}},
+    {key:"staleness",name:"陈旧度的生产侧约束",render:function(){return [
+      h("p",null,"rollouter 不能无限生成，否则队列里会堆满相对当前策略已严重陈旧的样本。约束逻辑在 ",h("code",null,"_should_pause_generation"),"：当消息队列已满，或累计的 ",h("code",null,"staleness_samples")," 达到 ",h("code",null,"max_required_samples")," 时，暂停生成。"),
+      h(Code,null,"async def _should_pause_generation(self) -> bool:\n    queue_stats = await self.message_queue_client.get_statistics()\n    if queue_stats[\"queue_size\"] >= self.max_queue_size:\n        return True       # 队列已满\n    if self.staleness_samples >= self.max_required_samples:\n        return True       # 累计陈旧样本达上限\n    return False"),
+      h("p",null,"其中 ",h("code",null,"max_required_samples")," 由陈旧度阈值、每个参数版本所需样本数与同步周期共同决定。这正是把陈旧度从“一步”放宽到“可配置上界”的旋钮："),
+      h(Formula,{cap:"陈旧样本预算：阈值越大, 允许在途的旧样本越多"},"$$ \\text{max\\_required\\_samples} = \\text{required\\_samples}\\times(\\text{staleness\\_threshold}+1)\\times\\text{trigger\\_parameter\\_sync\\_step} $$"),
+      h(Code,null,"async def set_max_required_samples(self):\n    self.max_required_samples = int(\n        self.required_samples\n        * (self.staleness_threshold + 1)\n        * self.config.async_training.trigger_parameter_sync_step\n    )"),
+      h("p",null,"每当 trainer 完成一次权重同步，会远程调用 rollouter 的 ",h("code",null,"reset_staleness"),"：把 ",h("code",null,"paused")," 置否、唤醒生成、并把 ",h("code",null,"staleness_samples")," 重置为“当前在途 task 数 + 队列里剩余样本数”。换言之，权重一更新，已有的在途与排队样本相对新权重的陈旧度归零重新累计。这就是生产者-消费者之间的陈旧度协调机制。"),
+      h(Code,null,"async def reset_staleness(self):\n    async with self.lock:\n        self.paused = False\n        self._resume_event.set()\n        # 权重已更新, 在途与排队样本重新计数陈旧度\n        self.staleness_samples = len(self.active_tasks) + await self.message_queue_client.get_queue_size()"),
+      h("div",null,h(Src,{label:"_should_pause_generation",path:"verl/experimental/fully_async_policy/fully_async_rollouter.py",line:983}),h(Src,{label:"set_max_required_samples",path:"verl/experimental/fully_async_policy/fully_async_rollouter.py",line:429}),h(Src,{label:"reset_staleness",path:"verl/experimental/fully_async_policy/fully_async_rollouter.py",line:464}),h(Src,{label:"配置默认值（staleness_threshold=0.1）",path:"verl/experimental/fully_async_policy/config/fully_async_ppo_trainer.yaml",line:12}))
+    ];}},
+    {key:"trainer",name:"Trainer 的消费侧循环",render:function(){return [
+      h("p",null,"FullyAsyncTrainer 的 ",h("code",null,"fit")," 是一个无尽的 ",h("code",null,"while True")," 循环，每轮调一次 ",h("code",null,"fit_step"),"，直到队列返回结束信号抛出 ",h("code",null,"TrainingStopException"),"。每个 fit_step 是一次完整的 PPO 计算，但数据来源换成了消息队列。"),
+      h(Code,null,"async def fit(self):\n    while True:\n        try:\n            await self.fit_step()\n        except TrainingStopException:\n            break\n    self.progress_bar.close()\n    ...\n    self._fit_save_checkpoint(force=True)"),
+      h("p",null,"取数在 ",h("code",null,"_get_samples_from_queue"),"：循环调用 ",h("code",null,"get_sample")," 直到攒够 ",h("code",null,"required_samples"),"，再 ",h("code",null,"cloudpickle.loads")," 反序列化并用 ",h("code",null,"assemble_batch_from_rollout_samples")," 拼成训练批次。",h("code",null,"required_samples = ppo_mini_batch_size × require_batches"),"。"),
+      h(Code,null,"async def _get_samples_from_queue(self):\n    queue_samples = []\n    while len(queue_samples) < self.required_samples:\n        sample, queue_len = await self.message_queue_client.get_sample()\n        if sample is None:                 # 结束信号\n            break\n        queue_samples.append(sample)\n    queue_samples = [ray.cloudpickle.loads(x) for x in queue_samples]\n    batch = assemble_batch_from_rollout_samples(queue_samples, self.tokenizer, self.config, ...)\n    return 0, batch"),
+      h("p",null,"权重同步不是每个 step 都做，而是攒够 ",h("code",null,"trigger_parameter_sync_step")," 个 step 才升一个参数版本。",h("code",null,"_fit_update_local_step")," 维护一个本地计数 ",h("code",null,"local_trigger_step"),"，到达阈值才把 ",h("code",null,"current_param_version")," 加一并归零计数；",h("code",null,"_fit_update_weights")," 只在 ",h("code",null,"local_trigger_step == 1")," 时真正推权重、调 rollouter 的 ",h("code",null,"reset_staleness"),"，并把这一参数版本内多个 step 的聚合指标记录一次。"),
+      h(Code,null,"def _fit_update_local_step(self):\n    if self.local_trigger_step < self.trigger_parameter_sync_step:\n        self.local_trigger_step += 1\n    else:\n        self.current_param_version += 1\n        self.local_trigger_step = 1\n\nasync def _fit_update_weights(self):\n    if self.local_trigger_step != 1:\n        return                              # 未到同步周期, 跳过\n    await self.checkpoint_manager.update_weights(global_steps=self.current_param_version)\n    timing_raw = await asyncio.wrap_future(self.rollouter.reset_staleness.remote().future())\n    self.logger.log(data=self.metrics_aggregator.get_aggregated_metrics(), step=self.current_param_version)\n    self.metrics_aggregator.reset()"),
+      h("div",{className:"note"},"这里隐含了一个 verl 的 MIS（多重要性采样）细节：",h("code",null,"_compute_old_log_prob")," 在 ",h("code",null,"local_trigger_step")," 大于 1 时，会临时把训练引擎恢复到该参数版本第一个 step 的权重来重算 old_log_prob，再恢复回当前权重。这保证一个参数版本内多个 step 共享同一个 behavior policy 基准，使重要性采样比定义一致。"),
+      h("div",null,h(Src,{label:"FullyAsyncTrainer.fit",path:"verl/experimental/fully_async_policy/fully_async_trainer.py",line:376}),h(Src,{label:"fit_step",path:"verl/experimental/fully_async_policy/fully_async_trainer.py",line:412}),h(Src,{label:"_get_samples_from_queue",path:"verl/experimental/fully_async_policy/fully_async_trainer.py",line:275}),h(Src,{label:"_fit_update_local_step",path:"verl/experimental/fully_async_policy/fully_async_trainer.py",line:487}),h(Src,{label:"_fit_update_weights",path:"verl/experimental/fully_async_policy/fully_async_trainer.py",line:501}),h(Src,{label:"_compute_old_log_prob（MIS）",path:"verl/experimental/fully_async_policy/fully_async_trainer.py",line:465}))
+    ];}}
+  ];
+  function FAExplorer(){const [s,setS]=useState(0);const d=FAFLOW[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},FAFLOW.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 范式三：separation 骨架 =====
+  function SeparationSection(){
+    return h("div",null,
+      h("p",null,"separation 不是一个独立可跑的训练入口，而是 one-step-off 与 fully-async 共享的“物理分离”底座。它的核心类 ",h("code",null,"SeparateRayPPOTrainer")," 继承自主库的 ",h("code",null,"RayPPOTrainer"),"，但把 worker 初始化与 fit 流程重构成一组可被子类逐段覆写的模板方法。其文档字符串明确写道：支持 fully async policy 与 one-step off-policy 两种资源分离场景。"),
+      h("p",null,"为什么需要一个共享骨架？因为异步范式与同步范式在“训练计算的内部结构”上是一致的（都要算 reward、log_prob、advantage、更新 critic/actor），差异只在“数据从哪来、权重何时同步、是否 colocate”。把不变的训练计算抽到基类，把可变的取数与同步留给子类覆写，就能让 one-step-off 与 fully-async 复用同一套 PPO 计算而不重复实现。"),
+      h(Code,null,"class SeparateRayPPOTrainer(RayPPOTrainer):\n    \"\"\"\n    Support for the initialization and fit process of Ray Trainer in the resource-separated scenario:\n        - Fully async policy\n        - One-step off-policy\n    \"\"\"\n    def init_workers(self):\n        self._init_resource_pools()\n        self._create_worker_classes()\n        self._init_worker_groups()\n        self._init_models()\n        self._init_reward_loop()\n        self._init_async_rollout_manager()\n        self.checkpoint_manager = CheckpointEngineManager(\n            config=...,\n            actor_wg=self.actor_rollout_wg,\n            replicas=self.llm_server_manager.get_replicas())"),
+      h("p",null,"fit 被拆成一串以 ",h("code",null,"_fit_")," 开头的细粒度方法（",h("code",null,"_fit_generate"),"、",h("code",null,"_fit_compute_reward"),"、",h("code",null,"_fit_compute_advantage"),"、",h("code",null,"_fit_update_actor")," 等）。one-step-off 覆写 ",h("code",null,"_fit_generate")," 实现一步重叠；fully-async 覆写 ",h("code",null,"_fit_generate")," 改为从消息队列取数，并覆写 ",h("code",null,"_fit_update_weights")," 实现周期同步。这是典型的模板方法模式（Template Method）。"),
+      h("div",{className:"note"},"separation 目录下还另有一个独立的 ",h("code",null,"ray_trainer.py")," 顶层路径用于纯物理分离的实验配置（与 one-step-off 的子类同名但作用不同：前者是基类，one-step-off 的 ray_trainer 是其子类）。",h("code",null,"engine_workers.py")," 与 ",h("code",null,"utils.py")," 提供分离场景下的 worker 与资源池辅助函数。"),
+      h("div",null,h(Src,{label:"SeparateRayPPOTrainer",path:"verl/experimental/separation/ray_trainer.py",line:52}),h(Src,{label:"init_workers",path:"verl/experimental/separation/ray_trainer.py",line:105}),h(Src,{label:"模板方法 fit",path:"verl/experimental/separation/ray_trainer.py",line:270}),h(Src,{label:"_fit_generate（可覆写）",path:"verl/experimental/separation/ray_trainer.py",line:401}),h(Src,{label:"engine_workers.py",path:"verl/experimental/separation/engine_workers.py"}),h(Src,{label:"separation/utils.py",path:"verl/experimental/separation/utils.py"}))
+    );
+  }
+
+  // ===== 范式四：trainer/ppo/v1 家族 =====
+  const V1=[
+    {key:"registry",name:"注册表与三种模式",render:function(){return [
+      h("p",null,"v1 家族是 verl 把异步能力收敛进主库的形态。它不再用三个独立入口，而是用一个注册表把三种 trainer 注册在统一基类 ",h("code",null,"PPOTrainer")," 下，由配置 ",h("code",null,"trainer.v1.trainer_mode")," 选择实例化哪一个。",h("code",null,"main_ppo")," 通过 ",h("code",null,"get_trainer_cls(config.trainer.v1.trainer_mode)")," 取类，再构造、init、fit。"),
+      h(Code,null,"# main_ppo.py 中的选择逻辑\nfrom verl.trainer.ppo.v1 import get_trainer_cls\ntrainer_cls = get_trainer_cls(config.trainer.v1.trainer_mode)   # \"sync\"/\"colocate_async\"/\"separate_async\"\n\n# trainer_base.py 的注册机制\ndef register_trainer(name: str):\n    def decorator(cls):\n        TRAINER_REGISTRY[name] = cls\n        return cls\n    return decorator\n\n@register_trainer(\"sync\")\nclass PPOTrainerSync(PPOTrainer): ...\n@register_trainer(\"colocate_async\")\nclass PPOTrainerColocateAsync(PPOTrainer): ...\n@register_trainer(\"separate_async\")\nclass PPOTrainerSeparateAsync(PPOTrainer): ..."),
+      h("p",null,"三种模式只覆写少量生命周期钩子（",h("code",null,"on_init_end"),"、",h("code",null,"on_train_begin"),"、",h("code",null,"on_sample_begin/end"),"、",h("code",null,"on_step_end"),"），共享基类 ",h("code",null,"PPOTrainer.fit")," 的主循环。这种钩子式设计与上文 separation 的模板方法异曲同工，但更细：基类 fit 在固定位置回调钩子，子类只需填入差异行为。"),
+      h("table",{className:"cmp"},
+        h("thead",null,h("tr",null,h("th",null,"trainer_mode"),h("th",null,"训练与推理位置"),h("th",null,"partial rollout"),h("th",null,"权重同步时机"))),
+        h("tbody",null,
+          h("tr",null,h("td",null,"sync"),h("td",null,"colocate（共用 GPU）"),h("td",null,"禁用"),h("td",null,"每步结束 on_step_end")),
+          h("tr",null,h("td",null,"colocate_async"),h("td",null,"colocate（共用 GPU）"),h("td",null,"启用"),h("td",null,"每步结束后唤醒并恢复生成")),
+          h("tr",null,h("td",null,"separate_async"),h("td",null,"分离（trainer 空闲可切 rollout）"),h("td",null,"启用"),h("td",null,"按 parameter_sync_step 周期")))),
+      h("div",null,h(Src,{label:"register_trainer",path:"verl/trainer/ppo/v1/trainer_base.py",line:1482}),h(Src,{label:"get_trainer_cls",path:"verl/trainer/ppo/v1/trainer_base.py",line:1500}),h(Src,{label:"main_ppo 选择 trainer",path:"verl/trainer/main_ppo.py",line:126}),h(Src,{label:"v1/__init__",path:"verl/trainer/ppo/v1/__init__.py",line:15}))
+    ];}},
+    {key:"hooks",name:"钩子式主循环",render:function(){return [
+      h("p",null,"基类 ",h("code",null,"PPOTrainer.fit")," 的主循环在固定位置回调钩子。三种模式的差异完全表现为对这些钩子的不同实现："),
+      h(Code,null,"# trainer_base.py: 基类 fit 的主循环骨架\nself.on_train_begin()\nwhile current_epoch < total_epochs and global_steps <= total_training_steps:\n    with marked_timer(\"step\", self.timing_raw):\n        self.on_step_begin()\n        batch = self.step(metrics, self.timing_raw)    # 内部: add_batch / sample / train\n        ...\n        self.on_step_end()                              # 子类在此同步权重\n    if test_freq > 0 and ...:\n        self.on_validate_begin()                        # separate_async 在此切回 rollout 模式\n        val_metrics = self._validate()\n        self.on_validate_end()\n    tq.kv_clear(keys=batch.keys, partition_id=batch.partition_id)   # 清理已用轨迹"),
+      h("p",null,"对比三者的 ",h("code",null,"on_step_end")," 即可看出范式差异："),
+      h(Code,null,"# sync: 同步权重, 不恢复生成 (生成在下一步重新唤醒)\ndef on_step_end(self):\n    with marked_timer(\"update_weights\", self.timing_raw, color=\"red\"):\n        self.checkpoint_manager.update_weights(self.global_steps)\n\n# colocate_async: 同步权重并立刻恢复生成 (partial rollout 重叠)\ndef on_step_end(self):\n    with marked_timer(\"update_weights\", self.timing_raw, color=\"red\"):\n        self.checkpoint_manager.update_weights(self.global_steps)\n        self.checkpoint_manager.resume_generation_replicas()\n\n# separate_async: 仅在周期点同步给独立的 standalone rollout\ndef on_step_end(self):\n    if self.global_steps % self.config.trainer.v1.separate_async.parameter_sync_step == 0:\n        with marked_timer(\"update_weights\", self.timing_raw, color=\"red\"):\n            self.standalone_checkpoint_manager.update_weights(self.global_steps)"),
+      h("p",null,"step 内部统一调用 ",h("code",null,"_add_batch_to_generate")," 把一批 prompt 注册进 transfer-queue 并交给 agent loop 异步生成，再用 ",h("code",null,"replay_buffer.sample")," 从队列里取一批轨迹。生产与消费的解耦由 transfer-queue 与 replay buffer 承担，trainer 主循环本身只是“发起生成 + 取够样本 + 训练”。"),
+      h(Code,null,"def step(self, metrics, timing_raw):\n    self._add_batch_to_generate()           # 发起异步生成 (不阻塞)\n    with marked_timer(\"gen\", timing_raw, color=\"red\"):\n        self.on_sample_begin()\n        batch, off_policy_metrics = self.replay_buffer.sample(\n            global_steps=self.global_steps, partition_id=\"train\",\n            batch_size=self.config.data.train_batch_size)\n        self.on_sample_end()\n    ..."),
+      h("div",null,h(Src,{label:"PPOTrainer.fit",path:"verl/trainer/ppo/v1/trainer_base.py",line:299}),h(Src,{label:"step",path:"verl/trainer/ppo/v1/trainer_base.py",line:404}),h(Src,{label:"_add_batch_to_generate",path:"verl/trainer/ppo/v1/trainer_base.py",line:1094}),h(Src,{label:"trainer_sync 钩子",path:"verl/trainer/ppo/v1/trainer_sync.py",line:24}),h(Src,{label:"trainer_colocate_async 钩子",path:"verl/trainer/ppo/v1/trainer_colocate_async.py",line:26}),h(Src,{label:"trainer_separate_async 钩子",path:"verl/trainer/ppo/v1/trainer_separate_async.py",line:36}))
+    ];}},
+    {key:"separate",name:"separate_async：训练空闲转推理",render:function(){return [
+      h("p",null,"separate_async 是 v1 里最完整的异步形态：trainer 与 rollout 在物理资源上分离（有一组 standalone rollout replicas），但 trainer 自己的 GPU 在空闲时可以切换成临时的 rollout 角色，把闲置算力也用于生成。它用 ",h("code",null,"HybridEngineMode")," 枚举追踪当前模式（TRAINER 或 ROLLOUT）。"),
+      h(Code,null,"@register_trainer(\"separate_async\")\nclass PPOTrainerSeparateAsync(PPOTrainer):\n    def __init__(self, config):\n        # 分离异步下要求 train_batch_size == ppo_mini_batch_size\n        assert config.data.train_batch_size == config.actor_rollout_ref.actor.ppo_mini_batch_size\n        # standalone rollout 必须用 nccl/nixl/mooncake 等同步后端, 不能用 naive\n        assert config.actor_rollout_ref.rollout.checkpoint_engine.backend != \"naive\"\n        super().__init__(config)\n        # TODO: 支持 Decoupled PPO (arxiv 2505.24298)\n        self.config.algorithm.rollout_correction.bypass_mode = True"),
+      h("p",null,"模式切换由验证与采样钩子触发：验证开始前若处于 TRAINER 模式则切回 ROLLOUT（",h("code",null,"on_validate_begin"),"）；采样结束后切回 TRAINER 准备训练（",h("code",null,"on_sample_end"),"）。切换的物理动作是更新权重、恢复或休眠生成副本、并在全局负载均衡器里增减服务地址。"),
+      h(Code,null,"def switch_to_rollout(self):\n    self.checkpoint_manager.update_weights(self.global_steps)\n    self.checkpoint_manager.resume_generation_replicas()\n    self.add_replicas_to_balancer()             # 把 trainer 的 GPU 加入推理负载均衡\n    self.current_mode = HybridEngineMode.ROLLOUT\n\ndef switch_to_trainer(self):\n    self.remove_replicas_from_balancer()        # 从负载均衡移除\n    self.checkpoint_manager.abort_replicas()    # 中止未完成请求\n    self.checkpoint_manager.sleep_replicas()    # 释放显存给训练\n    self.current_mode = HybridEngineMode.TRAINER"),
+      h("div",{className:"warn"},h("strong",null,"陈旧度处理"),"：separate_async 当前把 ",h("code",null,"rollout_correction.bypass_mode")," 强制设为 True（直接用 rollout 端的 log_probs，绕过重算），并留有 TODO 指向 AReaL 提出的 Decoupled PPO（arxiv 2505.24298）作为后续更严格的陈旧度修正方案。这正是本课与第 5 课 RL 数学、以及后续 slime/AReaL 横评要接续的对比维度。"),
+      h("div",null,h(Src,{label:"PPOTrainerSeparateAsync.__init__",path:"verl/trainer/ppo/v1/trainer_separate_async.py",line:43}),h(Src,{label:"_setup（建 standalone rollout）",path:"verl/trainer/ppo/v1/trainer_separate_async.py",line:63}),h(Src,{label:"switch_to_rollout / trainer",path:"verl/trainer/ppo/v1/trainer_separate_async.py",line:121}),h(Src,{label:"HybridEngineMode",path:"verl/trainer/ppo/v1/trainer_separate_async.py",line:31}))
+    ];}},
+    {key:"tq",name:"agent_loop_tq + replay_buffer",render:function(){return [
+      h("p",null,"v1 异步的数据通路由两件东西支撑：",h("code",null,"agent_loop_tq.py")," 把第 10 课的 agent loop 适配到 transfer-queue（生产侧），",h("code",null,"replay_buffer.py")," 在消费侧从 transfer-queue 采样并做陈旧度过滤。"),
+      h("h4",null,"agent_loop_tq.py：即发即弃的生产侧"),
+      h("p",null,"与第 10 课的同步 agent loop 不同，",h("code",null,"AgentLoopWorkerTQ.generate_sequences")," 为 batch 里每个样本起一个后台 task 后立刻返回，不等结果（fire-and-forget）。每条轨迹完成后由 ",h("code",null,"_agent_loop_postprocess")," 把输出 ",h("code",null,"async_kv_batch_put")," 进 transfer-queue，并在 tag 里写入用于陈旧度控制的 ",h("code",null,"global_steps"),"、",h("code",null,"min_global_steps"),"、",h("code",null,"max_global_steps"),"。"),
+      h(Code,null,"# 即发即弃: 不等生成结果\nfor i in range(len(batch)):\n    task = asyncio.create_task(self._run_prompt(prompt, sampling_params, ...))\n    self.background_tasks.add(task)\n    task.add_done_callback(self.background_tasks.discard)\n\n# 轨迹完成后写入 transfer-queue, tag 携带陈旧度信息\ntags.append({\n    \"status\": \"success\",\n    \"global_steps\": kwargs[\"global_steps\"],         # 该 prompt 来自哪个训练步\n    \"min_global_steps\": field[\"extra_fields\"].get(\"min_global_steps\"),  # 生成起始权重版本\n    \"max_global_steps\": field[\"extra_fields\"].get(\"max_global_steps\"),  # 生成结束权重版本\n})"),
+      h("h4",null,"replay_buffer.py：消费侧的陈旧度门控"),
+      h("p",null,"ReplayBuffer 不存数据本体（数据在 transfer-queue 里），它只同步元数据并按 GRPO 组的状态（pending/running/finished/failure）决定哪些轨迹可被采样。陈旧度过滤是它的关键职责，由两个参数控制："),
+      h("ul",null,
+        h("li",null,h("code",null,"max_off_policy_threshold"),"：一条轨迹允许横跨的最大模型版本数。"),
+        h("li",null,h("code",null,"max_off_policy_strategy"),"：超限时 ",h("code",null,"drop"),"（丢弃）还是 ",h("code",null,"wait"),"（等它跑完再训）。")),
+      h(Formula,{cap:"轨迹陈旧度的判定（以同步周期归一化的版本跨度）"},"$$ \\text{staleness} = \\frac{v_{\\text{train}} - v_{\\text{gen}} + 1}{\\text{parameter\\_sync\\_step}} $$"),
+      h(Code,null,"def _drop_max_off_policy_samples(self, global_steps, partition_id, batch):\n    for key, tag in zip(batch.keys, batch.tags):\n        prompt_global_steps = tag[\"global_steps\"]\n        staleness = (global_steps - prompt_global_steps + 1) / self.parameter_sync_step\n        if staleness > self.max_off_policy_threshold:\n            dropped_keys.append(key)        # 超陈旧度阈值, 丢弃\n        else:\n            kept_keys.append(key)\n    if dropped_keys:\n        tq.kv_clear(partition_id=batch.partition_id, keys=dropped_keys)\n    ...\n\ndef sample(self, global_steps, partition_id, batch_size):\n    # 优先采样最旧的 prompt 以降低平均陈旧度\n    sampleable_keys = sorted(finished_keys.union(failure_keys),\n                             key=lambda key: prompt_global_steps.get(key, 0))\n    selected_prompt_uids = sampleable_keys[:batch_size]"),
+      h("p",null,"采样策略上还有一个细节：从可采样集合里优先取 ",h("code",null,"global_steps")," 最小（最旧）的 prompt。这是为了让旧样本尽快被消费掉，避免它们在队列里越积越陈旧，从而压低整批数据的平均陈旧度。"),
+      h("div",null,h(Src,{label:"AgentLoopWorkerTQ.generate_sequences",path:"verl/trainer/ppo/v1/agent_loop_tq.py",line:54}),h(Src,{label:"_agent_loop_postprocess（写 tag）",path:"verl/trainer/ppo/v1/agent_loop_tq.py",line:130}),h(Src,{label:"ReplayBuffer",path:"verl/trainer/ppo/v1/replay_buffer.py",line:34}),h(Src,{label:"_has_enough_samples（wait 策略）",path:"verl/trainer/ppo/v1/replay_buffer.py",line:142}),h(Src,{label:"_drop_max_off_policy_samples（drop 策略）",path:"verl/trainer/ppo/v1/replay_buffer.py",line:152}),h(Src,{label:"sample（优先采旧）",path:"verl/trainer/ppo/v1/replay_buffer.py",line:185}))
+    ];}}
+  ];
+  function V1Explorer(){const [s,setS]=useState(0);const d=V1[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},V1.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 取舍表 =====
+  function TradeoffSection(){
+    return h("div",null,
+      h("p",null,"把四种范式放在同一组维度下比较，能看清它们沿陈旧度连续谱的排布。吞吐与利用率随陈旧度上升，正确性保障与实现简洁度随之下降。没有普遍最优解，选择取决于任务的生成-训练时间比与对陈旧度的容忍度。"),
+      h("table",{className:"cmp"},
+        h("thead",null,h("tr",null,h("th",null,"范式"),h("th",null,"陈旧度"),h("th",null,"吞吐 / 利用率"),h("th",null,"是否 colocate"),h("th",null,"实现复杂度"),h("th",null,"正确性保障"))),
+        h("tbody",null,
+          h("tr",null,h("td",null,"同步（主库 ray_trainer）"),h("td",null,h("span",{className:"hl-green"},"s = 0")),h("td",null,"低（生成/训练交替空转）"),h("td",null,"可 colocate"),h("td",null,"最低"),h("td",null,"最强（严格 on-policy）")),
+          h("tr",null,h("td",null,"one_step_off_policy"),h("td",null,h("span",{className:"hl-teal"},"s = 1（恒定）")),h("td",null,"中高（重叠一步）"),h("td",null,"必须分离"),h("td",null,"中"),h("td",null,"强（rollout log_probs 修正）")),
+          h("tr",null,h("td",null,"fully_async_policy"),h("td",null,h("span",{className:"hl-amber"},"s ≤ 阈值（可调）")),h("td",null,"高（生产/消费完全解耦）"),h("td",null,"必须分离"),h("td",null,"高（队列 + 双 actor + MIS）"),h("td",null,"中（阈值越大越弱）")),
+          h("tr",null,h("td",null,"v1 separate_async"),h("td",null,h("span",{className:"hl-blue"},"s ≤ off_policy_threshold")),h("td",null,"高（空闲 trainer 可转推理）"),h("td",null,"分离 + 弹性切换"),h("td",null,"高（注册表 + TQ + replay buffer）"),h("td",null,"中（当前 bypass_mode，待接 Decoupled PPO）")))),
+      h("h3",null,"为后续横评埋下的对比维度"),
+      h("p",null,"本课刻意把以下几个维度讲透，正是为了后面与 slime、AReaL 横向比较时有共同坐标系："),
+      h("ul",null,
+        h("li",null,h("strong",null,"陈旧度的定义粒度"),"：以参数版本计（verl），还是以 rollout 步计（slime 的 ",h("code",null,"update_weights_interval"),"）。"),
+        h("li",null,h("strong",null,"陈旧度的约束位置"),"：生产侧暂停（fully-async 的 ",h("code",null,"_should_pause_generation"),"）vs 消费侧过滤（v1 replay buffer 的 drop/wait）。"),
+        h("li",null,h("strong",null,"解耦机制"),"：消息队列（verl fully-async）vs transfer-queue + replay buffer（verl v1）vs Data Buffer（slime）。"),
+        h("li",null,h("strong",null,"陈旧度修正算法"),"：rollout log_probs 重要性采样、MIS 多版本重算、bypass、以及 AReaL 的 Decoupled PPO（arxiv 2505.24298）。")),
+      h("div",null,h(Ext,{href:"https://arxiv.org/pdf/2505.24298"},"AReaL 全异步 RL 论文（Decoupled PPO）"),h(Ext,{href:"https://arxiv.org/abs/2409.19256"},"HybridFlow 论文"))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"AReaL 全异步 RL 论文",d:"Decoupled PPO 与陈旧度修正, 本课多处 TODO 的来源",href:"https://arxiv.org/pdf/2505.24298"},
+    {t:"HybridFlow 论文",d:"verl 的设计论文, 混合控制器与单控制器编程模型",href:"https://arxiv.org/abs/2409.19256"},
+    {t:"fully_async README（本机）",d:"全异步范式的完整设计说明与配置",href:srcUrl("verl/experimental/fully_async_policy/README.md",null)},
+    {t:"fully_async README 中文（本机）",d:"中文版设计说明",href:srcUrl("verl/experimental/fully_async_policy/README_zh.md",null)},
+    {t:"one_step_off README（本机）",d:"一步重叠的动机与基准结果",href:srcUrl("verl/experimental/one_step_off_policy/README.md",null)},
+    {t:"reward_loop 文档",d:"流式奖励计算, 全异步与 one-step-off 都依赖",href:"https://verl.readthedocs.io/en/latest/advance/reward_loop.html"},
+    {t:"TransferQueue",d:"v1 家族的 kv 存储, 轨迹的生产消费通路",href:"https://github.com/Ascend/TransferQueue"},
+    {t:"Ray 文档",d:"actor / wait / cancel, 异步编排的基座",href:"https://docs.ray.io/"}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:11}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 11 课 / 共 12 · 异步训练范式"),
+          h("h1",null,"异步训练范式"),
+          h("p",{className:"lead"},"这是回答“verl 异步是否已实现”的核心一课。结论先行：已经实现，且不是单一开关，而是沿陈旧度连续谱排布的一组范式。本课逐文件精读 one_step_off_policy（恒一步重叠）、fully_async_policy（消息队列解耦的全异步）、separation（物理分离骨架）、以及 trainer/ppo/v1 家族（sync / colocate_async / separate_async，由 transfer-queue 与 replay buffer 支撑），并给出同步 / 一步off / 全异步 / 分离的取舍表，为后续与 slime、AReaL 的横评建立共同坐标系。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"experimental/one_step_off_policy/"),"（main_ppo + ray_trainer）、",h("code",null,"experimental/fully_async_policy/"),"（rollouter + trainer + main + message_queue + detach_utils）、",h("code",null,"experimental/separation/ray_trainer.py"),"、",h("code",null,"trainer/ppo/v1/"),"（trainer_base + sync/colocate_async/separate_async + agent_loop_tq + replay_buffer）。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部文档, 蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/verl")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"动机 · 全局图"),
+          h("h2",null,"为什么需要异步, verl 实现了吗"),
+          h(WhySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"统一尺度 · 陈旧度"),
+          h("h2",null,"陈旧度：衡量所有范式的同一把尺子"),
+          h(StalenessSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"范式一 · one_step_off_policy"),
+          h("h2",null,"一步重叠：陈旧度恰好为一"),
+          h("p",null,"最接近同步的异步范式：生成与训练重叠一步，陈旧度恒为一。点 Tab 看入口、重叠机制与设计动机。"),
+          h(OSOExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"范式二 · fully_async_policy"),
+          h("h2",null,"全异步：rollouter 与 trainer 经消息队列解耦"),
+          h(FullyAsyncSection),
+          h("h3",null,"两个 actor 的协程结构与陈旧度协调"),
+          h("p",null,"点 Tab 看 rollouter 的三条协程、生产侧的陈旧度约束、以及 trainer 的消费循环与周期权重同步。"),
+          h(FAExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"范式三 · separation"),
+          h("h2",null,"物理分离骨架：共享的模板方法基类"),
+          h(SeparationSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"范式四 · trainer/ppo/v1"),
+          h("h2",null,"v1 家族：异步能力收敛进主库的形态"),
+          h("p",null,"v1 用注册表 + 钩子把 sync / colocate_async / separate_async 统一在同一基类下, 由 transfer-queue 驱动的 agent loop 与 replay buffer 支撑。点 Tab 逐层展开。"),
+          h(V1Explorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"取舍表"),
+          h("h2",null,"四种范式的取舍与横评维度"),
+          h(TradeoffSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档理解异步训练的算法与系统基础, 尤其是陈旧度修正的论文来源。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"异步是连续谱, 不是开关"),"：verl 的异步沿陈旧度从 0（同步）到一步（one-step-off）再到可调上界（fully-async / v1 separate_async）连续排布, 每一档用同一把尺子（参数版本差）衡量。"),
+            h("li",null,h("strong",null,"已实现且分层落位"),"：experimental 下的 one_step_off / fully_async / separation 是先行实现, trainer/ppo/v1 是收敛进主库的形态; 三者共享 PPO 计算内核, 差异只在取数与权重同步。"),
+            h("li",null,h("strong",null,"解耦靠队列, 约束靠陈旧度门控"),"：fully-async 用 MessageQueue（满则丢最旧）解耦双 actor, v1 用 transfer-queue + ReplayBuffer（drop/wait + 优先采旧）解耦生产消费; 陈旧度上界既可在生产侧暂停, 也可在消费侧过滤。"),
+            h("li",null,h("strong",null,"复用胜过重写"),"：separation 的模板方法、v1 的注册表 + 钩子, 都把不变的训练计算抽出, 把可变行为留给子类覆写, 使新增范式只需填差异。"),
+            h("li",null,h("strong",null,"正确性靠重要性采样修正"),"：陈旧数据需要 rollout log_probs 重要性采样、MIS 多版本重算等修正; v1 separate_async 当前用 bypass_mode 并留有指向 Decoupled PPO 的 TODO, 这是与 AReaL 横评的接续点。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"verl-lesson-10-agent-loop.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 10 课：Agent Loop（Agentic RL）")),
+            h("a",{href:"verl-lesson-12-trainer-e2e.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 12 课：PPO Trainer 主循环与端到端"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

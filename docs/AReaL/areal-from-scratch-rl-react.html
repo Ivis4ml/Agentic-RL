@@ -1,0 +1,2335 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 到自研 RL 训练框架 · React 讲解页</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f14;
+      --panel: #121820;
+      --panel-2: #17212c;
+      --panel-3: #0f151d;
+      --line: #273240;
+      --line-2: #3a4656;
+      --ink: #f1f5f9;
+      --muted: #a7b1bf;
+      --faint: #707c8d;
+      --amber: #f1b65c;
+      --teal: #5fd3cf;
+      --green: #72d17d;
+      --red: #ef7e75;
+      --blue: #8bb8ff;
+      --purple: #c59bff;
+      --shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.025), transparent 360px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.026) 0 1px, transparent 1px 64px),
+        repeating-linear-gradient(180deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 64px),
+        var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.68;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--teal); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      font-family: var(--mono);
+      font-size: 0.9em;
+      color: #ffe0a6;
+      background: #101722;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 1px 6px;
+    }
+    pre {
+      margin: 0;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: #dce7f5;
+    }
+    button, input, select { font: inherit; }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      max-width: 1460px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+    .side {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 16px 24px 24px;
+      border-right: 1px solid var(--line);
+      background: rgba(11, 15, 20, 0.72);
+      backdrop-filter: blur(16px);
+      overflow: auto;
+    }
+    .brand {
+      display: grid;
+      gap: 6px;
+      padding: 8px 8px 20px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 14px;
+    }
+    .brand-title {
+      font-weight: 850;
+      font-size: 24px;
+      letter-spacing: -0.02em;
+    }
+    .brand-sub {
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .nav-link {
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      margin: 3px 0;
+      border-radius: 8px;
+      color: var(--muted);
+      border: 1px solid transparent;
+      font-size: 14px;
+    }
+    .nav-link:hover {
+      text-decoration: none;
+      color: var(--ink);
+      background: var(--panel);
+      border-color: var(--line);
+    }
+    .nav-num {
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .side-note {
+      margin-top: 24px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--faint);
+      font-size: 12px;
+      background: var(--panel-3);
+    }
+    main { min-width: 0; }
+    section {
+      padding: 56px;
+      border-bottom: 1px solid var(--line);
+      scroll-margin-top: 24px;
+    }
+    .section-kicker {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 12px;
+    }
+    .section-kicker::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: var(--amber);
+      display: block;
+    }
+    h1, h2, h3 { margin: 0; letter-spacing: -0.025em; line-height: 1.12; }
+    h1 { font-size: clamp(40px, 6vw, 76px); max-width: 980px; }
+    h2 { font-size: clamp(30px, 4vw, 46px); }
+    h3 { font-size: 20px; margin-bottom: 8px; }
+    p { color: var(--muted); margin: 12px 0 0; max-width: 84ch; }
+    .lead {
+      color: #d8e0ea;
+      font-size: 18px;
+      max-width: 86ch;
+    }
+    .hero {
+      min-height: 620px;
+      display: grid;
+      align-content: end;
+      gap: 28px;
+      background:
+        linear-gradient(90deg, rgba(11,15,20,0.92), rgba(11,15,20,0.74) 58%, rgba(11,15,20,0.9)),
+        url("AReaL/assets/figures/arch.png");
+      background-size: cover;
+      background-position: center;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border: 1px solid var(--line-2);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(18, 24, 32, 0.85);
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .pill.amber { color: var(--amber); border-color: rgba(241,182,92,0.45); }
+    .pill.teal { color: var(--teal); border-color: rgba(95,211,207,0.45); }
+    .pill.green { color: var(--green); border-color: rgba(114,209,125,0.45); }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+    .btn {
+      border: 1px solid var(--line-2);
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--ink);
+      padding: 9px 14px;
+      cursor: pointer;
+      text-decoration: none;
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn:hover { border-color: var(--amber); text-decoration: none; }
+    .btn.primary {
+      background: var(--amber);
+      color: #201407;
+      border-color: var(--amber);
+      font-weight: 750;
+    }
+
+    .grid { display: grid; gap: 16px; }
+    .grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card {
+      background: linear-gradient(180deg, var(--panel), var(--panel-3));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.025) inset;
+    }
+    .card.compact { padding: 14px; }
+    .card-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      font-weight: 780;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+    .card-label {
+      color: var(--faint);
+      font-size: 11px;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .muted { color: var(--muted); }
+    .faint { color: var(--faint); }
+    .mono { font-family: var(--mono); }
+    .accent { color: var(--amber); }
+    .teal-text { color: var(--teal); }
+    .green-text { color: var(--green); }
+    .red-text { color: var(--red); }
+    .blue-text { color: var(--blue); }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: 1fr 28px 1fr 28px 1fr;
+      gap: 12px;
+      align-items: stretch;
+      margin-top: 24px;
+    }
+    .arrow {
+      display: grid;
+      place-items: center;
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 24px;
+    }
+    .lane {
+      min-height: 230px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: var(--panel-3);
+    }
+    .lane h3 { color: var(--ink); }
+    .lane-list {
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+    .lane-list li {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 22px 0 16px;
+    }
+    .tab {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      min-height: 38px;
+    }
+    .tab:hover { border-color: var(--line-2); color: var(--ink); }
+    .tab.active {
+      background: var(--amber);
+      border-color: var(--amber);
+      color: #211506;
+      font-weight: 780;
+    }
+    .detail {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .code-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0a111a;
+      padding: 16px;
+      min-width: 0;
+    }
+    .code-head {
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 11px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .code-highlight code {
+      display: block;
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      border-radius: 0;
+    }
+    .tok-comment { color: #738195; font-style: italic; }
+    .tok-string { color: #8ee6a8; }
+    .tok-keyword { color: #ff9aa8; font-weight: 750; }
+    .tok-type { color: #8bb8ff; }
+    .tok-fn { color: #f3d17b; }
+    .tok-class { color: #c9a4ff; font-weight: 760; }
+    .tok-decorator { color: #5fd3cf; }
+    .tok-number { color: #f1b65c; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(110px, 1fr));
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .flow-step {
+      min-height: 128px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px;
+      background: var(--panel);
+      position: relative;
+    }
+    .flow-step::after {
+      content: ">";
+      position: absolute;
+      right: -10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--amber);
+      font-family: var(--mono);
+    }
+    .flow-step:last-child::after { content: ""; }
+    .flow-step .num {
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .flow-step strong { display: block; color: var(--ink); margin-bottom: 5px; }
+    .flow-step span { color: var(--muted); font-size: 12.5px; }
+
+    .timeline {
+      display: grid;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 122px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+    .bar-label {
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-align: right;
+    }
+    .bar-track {
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0d141d;
+      position: relative;
+      overflow: hidden;
+    }
+    .bar {
+      position: absolute;
+      top: 7px;
+      height: 26px;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      color: #091015;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .bar.rollout { background: var(--amber); }
+    .bar.train { background: var(--teal); }
+    .bar.comm { background: var(--green); }
+    .bar.pause {
+      background: repeating-linear-gradient(45deg, #2a3340, #2a3340 6px, #1d2632 6px, #1d2632 12px);
+      color: var(--muted);
+      border: 1px dashed var(--line-2);
+    }
+
+    .matrix {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 13px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .matrix th, .matrix td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+    .matrix th {
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: #0f1620;
+    }
+    .matrix tr:last-child td { border-bottom: 0; }
+    .matrix td { color: var(--muted); }
+
+    .calc {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+    .field label {
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .field input, .field select {
+      width: 100%;
+      min-height: 40px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #0d141d;
+      color: var(--ink);
+      padding: 8px 10px;
+    }
+    .result {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-3);
+      padding: 13px;
+    }
+    .metric .value {
+      font-size: 24px;
+      font-weight: 850;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    .metric .name {
+      color: var(--faint);
+      font-family: var(--mono);
+      font-size: 11px;
+      margin-top: 6px;
+    }
+
+    .source-list {
+      columns: 2;
+      column-gap: 24px;
+      margin-top: 18px;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+    .source-list li {
+      break-inside: avoid;
+      margin: 0 0 10px;
+    }
+
+    .fallback {
+      max-width: 980px;
+      padding: 56px;
+    }
+    .fallback h1 { font-size: 44px; }
+    .fallback ul { color: var(--muted); }
+
+    @media (max-width: 1120px) {
+      .shell { grid-template-columns: 1fr; }
+      .side {
+        position: relative;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .side nav {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+      }
+      section { padding: 42px 24px; }
+      .hero { min-height: 560px; }
+      .grid.cols-4, .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
+      .architecture { grid-template-columns: 1fr; }
+      .arrow { transform: rotate(90deg); height: 26px; }
+      .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow-step::after { content: ""; }
+      .detail { grid-template-columns: 1fr; }
+      .calc, .result { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .source-list { columns: 1; }
+    }
+
+    @media (max-width: 640px) {
+      .side nav { grid-template-columns: 1fr 1fr; }
+      .nav-link { font-size: 12px; grid-template-columns: 22px 1fr; }
+      .hero { min-height: 620px; }
+      .flow, .calc, .result { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 1fr; }
+      .bar-label { text-align: left; }
+      h1 { font-size: 36px; }
+      h2 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <main class="fallback">
+      <p class="section-kicker">Static fallback</p>
+      <h1>从 AReaL 到你自己的 RL 训练框架</h1>
+      <p class="lead">这个文件是一个 React 单页讲解。如果浏览器能访问 React CDN，会自动切换成完整交互版；否则仍可阅读这份静态摘要。</p>
+      <ul>
+        <li>AReaL 的核心分层：Scheduler、InferenceEngine、TrainEngine、Workflow、PPO/GRPO controller。</li>
+        <li>从零搭建时先做同步 GRPO，再拆 rollout 和 training，最后引入异步 staleness、权重同步和 tree attention。</li>
+        <li>新版增加了核心算法代码章节：trajectory packing、rollout、staleness、PPO/GRPO/GSPO、decoupled PPO、TrainEngine、权重同步、KV routing、varlen/tree attention。</li>
+        <li>KV cache 建议交给 SGLang/vLLM；训练侧不要用 generation KV cache，使用 packed varlen attention、FlexAttention 或 tree attention 解决前缀重复。</li>
+        <li>A100 优先 FlashAttention 2 + bf16；H100 可以加 FlashAttention 3、FP8、torch.compile、CUDA graph 和更激进的 fused kernels。</li>
+      </ul>
+    </main>
+  </div>
+
+  <script>
+    const DATA = {
+      nav: [
+        ["01", "总览", "overview"],
+        ["02", "AReaL 拆解", "areal"],
+        ["03", "从零路线", "roadmap"],
+        ["04", "Class 设计", "classes"],
+        ["05", "训练主循环", "loop"],
+        ["06", "核心代码", "core-code"],
+        ["07", "KV 与权重", "kv"],
+        ["08", "Attention Kernel", "kernels"],
+        ["09", "集群落地", "cluster"],
+        ["10", "源码锚点", "sources"]
+      ],
+      sourceAnchors: [
+        ["README 与能力矩阵", "AReaL/README.md"],
+        ["异步 RL 与 off-policyness", "AReaL/docs/en/algorithms/async.md"],
+        ["PPOTrainer 主循环", "AReaL/areal/trainer/rl_trainer.py"],
+        ["TrainEngine / InferenceEngine 接口", "AReaL/areal/api/engine_api.py"],
+        ["Scheduler 抽象", "AReaL/areal/api/scheduler_api.py"],
+        ["RolloutWorkflow 与 AgentWorkflow", "AReaL/areal/api/workflow_api.py"],
+        ["RemoteInfEngine 统一远程推理", "AReaL/areal/infra/remote_inf_engine.py"],
+        ["SGLang 适配器", "AReaL/areal/engine/sglang_remote.py"],
+        ["vLLM 适配器", "AReaL/areal/engine/vllm_remote.py"],
+        ["PPO/GRPO actor controller", "AReaL/areal/trainer/ppo/actor.py"],
+        ["PPO loss 与 GSPO ratio", "AReaL/areal/utils/functional/functional.py"],
+        ["micro-batch packing", "AReaL/areal/utils/data.py"],
+        ["FFD / KK sequence packing", "AReaL/areal/utils/seqpack.py"],
+        ["allocation mode", "AReaL/areal/api/alloc_mode.py"],
+        ["tree training 文档", "AReaL/docs/en/reference/tree_training.md"],
+        ["tree attention 实现", "AReaL/areal/models/tree_attn"],
+        ["Archon varlen FlashAttention wrapper", "AReaL/areal/experimental/models/archon/attention/varlen.py"],
+        ["attention impl 校验", "AReaL/areal/engine/fsdp_utils/attn_impl.py"],
+        ["staleness manager", "AReaL/areal/infra/staleness_manager.py"],
+        ["proximal logp approximation", "AReaL/docs/en/algorithms/prox_approx.md"]
+      ],
+      layers: [
+        {
+          name: "控制面",
+          label: "Scheduler / Controller",
+          items: [
+            "Local / Ray / Slurm 创建 actor、rollout、ref、critic worker",
+            "解析 backend 字符串：sglang:d2t4、fsdp:d8、megatron:d2p2t4e4",
+            "负责 worker env、端口、RPC、进程生命周期"
+          ]
+        },
+        {
+          name: "数据面",
+          label: "Rollout / Proxy / Inference",
+          items: [
+            "RemoteInfEngine 统一封装 SGLang/vLLM HTTP API",
+            "WorkflowExecutor 异步提交任务、等待可训练 trajectory",
+            "Agent workflow 通过 OpenAI-compatible proxy 抓 token/logprob/reward"
+          ]
+        },
+        {
+          name: "训练面",
+          label: "Actor / Critic / Ref / Teacher",
+          items: [
+            "TrainEngine 接口隐藏 FSDP、Megatron、Archon 差异",
+            "PPOActor 计算 advantage、GRPO/PPO loss、proximal logp",
+            "MicroBatchList + packed cu_seqlens 做变长训练"
+          ]
+        }
+      ],
+      roadmap: [
+        {
+          title: "M0：单机同步 GRPO 骨架",
+          tag: "1 GPU 到 1 节点",
+          body: "先不要异步。用 Hugging Face/PyTorch 跑 actor.forward，外接一个本地 vLLM 或 SGLang 生成 response，保存 input_ids、loss_mask、logprobs、reward。目标是把数学题或简单工具任务训通。",
+          checks: ["Trajectory schema 固定", "loss 对齐逐 token", "reward 曲线能复现", "能断点保存/恢复"],
+          code: `class SyncGRPOTrainer:
+    def step(self):
+        batch = self.rollout.collect(self.dataset.next_batch())
+        batch = self.actor.compute_advantages(batch)
+        self.actor.update(batch)
+        self.rollout.load_weights(self.actor.export_weights())`
+        },
+        {
+          title: "M1：拆出 Engine 接口",
+          tag: "抽象边界",
+          body: "把训练、推理、调度、workflow 拆成接口。此时你已经能替换 vLLM/SGLang、FSDP/Megatron，而算法层不关心底层后端。",
+          checks: ["InferenceEngine.agenerate", "TrainEngine.train_batch", "Scheduler.create_workers", "Workflow.arun_episode"],
+          code: `class InferenceEngine(Protocol):
+    async def agenerate(self, req: ModelRequest) -> ModelResponse: ...
+    def pause_generation(self) -> None: ...
+    def update_weights(self, meta: WeightUpdateMeta) -> None: ...
+
+class TrainEngine(Protocol):
+    def forward_batch(self, trajs: list[Trajectory]) -> list[Tensor]: ...
+    def train_batch(self, mb: MicroBatch, loss_fn) -> dict[str, float]: ...`
+        },
+        {
+          title: "M2：多 GPU 训练后端",
+          tag: "A100/H100",
+          body: "小模型用 FSDP2 最快落地；大 MoE 或强 PP/EP 需求用 Megatron-Core；想控制 PyTorch-native kernel/compile 则参考 AReaL 的 Archon 路径。",
+          checks: ["DP/TP/PP/CP/EP mesh", "optimizer/grad sharding", "activation checkpoint", "sequence packing"],
+          code: `actor.backend = "fsdp:d8"          # 简单、稳定、默认首选
+actor.backend = "megatron:d2p2t4"  # 大模型 PP/TP
+actor.backend = "archon:d2p2t4e4"  # PyTorch-native + compile/EP 实验`
+        },
+        {
+          title: "M3：异步 rollout 与 staleness",
+          tag: "吞吐核心",
+          body: "把 rollout GPU 和 training GPU 解耦。训练消费旧版本样本，推理同时生成新样本。用 max_head_offpolicyness 控制版本落后，用 decoupled PPO 或 proximal approximation 稳住 loss。",
+          checks: ["每个 token 记录 version", "pause/update/resume 原子化", "staleness capacity", "动态过滤 bad trajectory"],
+          code: `capacity = min(
+    max_concurrent_rollouts - running,
+    (max_staleness + current_version + 1) * batch_size
+      - accepted - running,
+)`
+        },
+        {
+          title: "M4：KV、权重同步、在线 agent",
+          tag: "系统工程",
+          body: "KV cache 不要自己在训练框架里重造一遍，除非你要写推理引擎。把 KV 页管理交给 SGLang/vLLM；你要做的是 rid 路由、版本隔离、更新权重时暂停/中止旧请求、恢复后重新 prefill。",
+          checks: ["same rid sticky routing", "LoRA versioned name", "disk/NCCL/AWEX weight update", "proxy session 生命周期"],
+          code: `# rollout token carries policy version
+ModelResponse(
+    output_tokens=tokens,
+    output_logprobs=logps,
+    output_versions=[engine.version] * len(tokens),
+)`
+        },
+        {
+          title: "M5：kernel 与性能收敛",
+          tag: "最后 40%",
+          body: "在 loss 正确、异步正确之后再动 kernel。优先吃现成能力：FlashAttention varlen、PyTorch SDPA/FlexAttention、SGLang radix cache、vLLM paged attention。再做 fused RMSNorm/RoPE/CE、FP8、CUDA graph。",
+          checks: ["torch.profiler/Nsight Systems", "tokens/s 和 MFU", "OOM replay", "数值一致性测试"],
+          code: `actor:
+  attn_impl: flash_attention_2   # A100
+  # H100 可测 flash_attention_3 / HF kernels repo
+  mb_spec:
+    max_tokens_per_mb: 8192
+    packing_algorithm: kk`
+        }
+      ],
+      classes: [
+        {
+          name: "配置与拓扑",
+          key: "config",
+          why: "先把 cluster、backend、parallel dims、算法参数收敛到 typed config，后续所有进程只读 config，不拼魔法字符串。",
+          code: `@dataclass
+class ParallelSpec:
+    dp: int = 1
+    tp: int = 1
+    pp: int = 1
+    cp: int = 1
+    ep: int = 1
+
+@dataclass
+class EngineSpec:
+    role: Literal["actor", "rollout", "critic", "ref", "teacher"]
+    backend: Literal["fsdp", "megatron", "archon", "sglang", "vllm"]
+    parallel: ParallelSpec
+    colocate_with: str | None = None
+
+@dataclass
+class ExperimentConfig:
+    model_path: str
+    tokenizer_path: str
+    actor: EngineSpec
+    rollout: EngineSpec
+    algorithm: PPOAlgorithmConfig
+    cluster: ClusterConfig`
+        },
+        {
+          name: "Trajectory Schema",
+          key: "trajectory",
+          why: "训练库最重要的契约。不要只存文本，必须存真实 token、logprob、loss_mask、版本和 reward，否则 rollout 和 training 会错位。",
+          code: `@dataclass
+class Trajectory:
+    input_ids: torch.IntTensor        # [B, S]
+    attention_mask: torch.BoolTensor  # [B, S]
+    loss_mask: torch.BoolTensor       # completion tokens
+    logprobs: torch.FloatTensor       # behavior policy
+    rewards: torch.FloatTensor        # [B]
+    versions: torch.IntTensor         # per generated token
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def pack(self) -> PackedTrajectory:
+        # [B, S] -> [total_tokens], with cu_seqlens
+        return pack_tensor_dict(asdict(self))`
+        },
+        {
+          name: "Rollout Workflow",
+          key: "workflow",
+          why: "workflow 负责把一条 dataset sample 变成一条可训练轨迹。agentic RL 时它还要处理多轮、工具调用、reward backprop。",
+          code: `class RolloutWorkflow(ABC):
+    @abstractmethod
+    async def arun_episode(
+        self,
+        engine: InferenceEngine,
+        data: dict[str, Any],
+    ) -> Trajectory | None:
+        ...
+
+class AgentWorkflow:
+    async def run(self, data, *, base_url, api_key, http_client):
+        client = AsyncOpenAI(base_url=base_url, api_key=api_key)
+        response = await client.chat.completions.create(...)
+        return compute_reward(response, data)`
+        },
+        {
+          name: "Inference Adapter",
+          key: "inference",
+          why: "AReaL 做得很对的一点是把 SGLang/vLLM 差异压到 backend adapter，主逻辑只看 ModelRequest/ModelResponse。",
+          code: `class RemoteBackend(Protocol):
+    def build_generation_request(self, req, version) -> HttpRequest: ...
+    def parse_generation_response(self, raw) -> GenerationResult: ...
+    def build_weight_update_requests(self, meta) -> list[HttpRequest]: ...
+    def get_pause_request(self) -> HttpRequest: ...
+    def get_resume_request(self) -> HttpRequest: ...
+
+class RemoteInferenceEngine:
+    async def agenerate(self, req):
+        server = self.route(req.rid)
+        raw = await self.http.post(server, self.backend.build_generation_request(req, self.version))
+        return self.backend.parse_generation_response(raw).to_model_response(self.version)`
+        },
+        {
+          name: "Train Engine",
+          key: "train",
+          why: "TrainEngine 是算法层和分布式训练后端的隔离层。FSDP/Megatron/Archon 都必须提供相同 forward/train/update/save 语义。",
+          code: `class TrainEngine(ABC):
+    def create_process_group(self, mesh: ParallelSpec): ...
+    def initialize(self, ft_spec: FinetuneSpec): ...
+    def forward_batch(self, trajs, output_seqlens=None): ...
+    def train_batch(self, input_, loss_fn, loss_weight_fn): ...
+    def update_weights(self, meta: WeightUpdateMeta): ...
+    def onload(self): ...
+    def offload(self): ...
+    def export_stats(self) -> dict[str, float]: ...`
+        },
+        {
+          name: "Algorithm Controller",
+          key: "algo",
+          why: "PPOActor/PPOCritic 只做数学：advantage、KL、ratio、clip、统计。不要让它知道 Ray、Slurm、HTTP 或 NCCL 细节。",
+          code: `class PPOActorController:
+    def compute_logp(self, trajs): ...
+    def compute_advantages(self, trajs):
+        old_logp = trajs.logprobs
+        ref_logp = trajs.get("ref_logp", zeros_like(old_logp))
+        rewards = task_reward - kl_ctl * kl(old_logp, ref_logp)
+        trajs.advantages = gae(rewards, values, loss_mask)
+        return trajs
+
+    def update(self, trajs):
+        return self.engine.train_batch(trajs, loss_fn=ppo_actor_loss)`
+        }
+      ],
+      coreAlgorithms: [
+        {
+          name: "Trajectory + Packing",
+          short: "Trajectory",
+          goal: "固定训练数据契约：prompt+completion token、loss mask、behavior logprob、policy version、reward。然后把 [B,S] padded batch 压成 [T] packed batch，给 FlashAttention varlen / packed loss 用。",
+          code: `from dataclasses import dataclass, field
+from typing import Any
+import torch
+import torch.nn.functional as F
+
+@dataclass
+class Trajectory:
+    input_ids: torch.Tensor       # int32, [B, S], prompt + completion
+    attention_mask: torch.Tensor  # bool,  [B, S], valid token mask
+    loss_mask: torch.Tensor       # bool,  [B, S], completion-token mask
+    logprobs: torch.Tensor        # fp32,  [B, S], behavior logp, prompt can be 0
+    rewards: torch.Tensor         # fp32,  [B], sequence/task reward
+    versions: torch.Tensor        # int32, [B, S], -1 for prompt, rollout version for output
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to(self, device: torch.device) -> "Trajectory":
+        return Trajectory(
+            input_ids=self.input_ids.to(device),
+            attention_mask=self.attention_mask.to(device),
+            loss_mask=self.loss_mask.to(device),
+            logprobs=self.logprobs.to(device),
+            rewards=self.rewards.to(device),
+            versions=self.versions.to(device),
+            metadata=self.metadata,
+        )
+
+def build_trajectory(prompt_ids, output_ids, output_logps, reward, version) -> Trajectory:
+    ids = torch.tensor(prompt_ids + output_ids, dtype=torch.int32)[None, :]
+    prompt_len = len(prompt_ids)
+    out_len = len(output_ids)
+    attention_mask = torch.ones_like(ids, dtype=torch.bool)
+    loss_mask = torch.zeros_like(ids, dtype=torch.bool)
+    loss_mask[:, prompt_len:] = True
+    logprobs = torch.zeros_like(ids, dtype=torch.float32)
+    if out_len:
+        logprobs[:, prompt_len:] = torch.tensor(output_logps, dtype=torch.float32)
+    versions = torch.full_like(ids, -1, dtype=torch.int32)
+    versions[:, prompt_len:] = int(version)
+    return Trajectory(
+        input_ids=ids,
+        attention_mask=attention_mask,
+        loss_mask=loss_mask,
+        logprobs=logprobs,
+        rewards=torch.tensor([reward], dtype=torch.float32),
+        versions=versions,
+    )
+
+def pad_cat_trajectories(trajs: list[Trajectory], pad_token_id: int = 0) -> dict[str, torch.Tensor]:
+    # Concatenate variable-length single-sample trajectories into a padded batch.
+    max_len = max(t.input_ids.shape[1] for t in trajs)
+    rows = []
+    for t in trajs:
+        pad = max_len - t.input_ids.shape[1]
+        rows.append({
+            "input_ids": F.pad(t.input_ids, (0, pad), value=pad_token_id),
+            "attention_mask": F.pad(t.attention_mask, (0, pad), value=False),
+            "loss_mask": F.pad(t.loss_mask, (0, pad), value=False),
+            "logprobs": F.pad(t.logprobs, (0, pad), value=0.0),
+            "versions": F.pad(t.versions, (0, pad), value=-1),
+            "rewards": t.rewards,
+        })
+    return {k: torch.cat([r[k] for r in rows], dim=0) for k in rows[0]}
+
+def pack_tensor_dict(batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor | int]:
+    # [B, S] padded tensors -> [T] packed tensors + cu_seqlens.
+    attention_mask = batch["attention_mask"]
+    assert attention_mask.ndim == 2
+    B, S = attention_mask.shape
+    seqlens = attention_mask.sum(dim=1, dtype=torch.int32)
+    cu_seqlens = F.pad(torch.cumsum(seqlens, dim=0, dtype=torch.int32), (1, 0))
+    total = int(cu_seqlens[-1].item())
+    packed = {"cu_seqlens": cu_seqlens, "max_seqlen": int(seqlens.max().item())}
+
+    for key, value in batch.items():
+        if key == "attention_mask":
+            continue
+        if torch.is_tensor(value) and value.ndim >= 2 and value.shape[:2] == (B, S):
+            out = torch.empty((total, *value.shape[2:]), dtype=value.dtype, device=value.device)
+            for i in range(B):
+                start, end = int(cu_seqlens[i]), int(cu_seqlens[i + 1])
+                out[start:end] = value[i, : end - start]
+            packed[key] = out
+        else:
+            packed[key] = value
+    return packed`
+        },
+        {
+          name: "FFD / KK Microbatch",
+          short: "Packing",
+          goal: "RL rollout 长度差异极大，micro-batch 不按 token 均衡会导致 DP rank 等最慢 rank。FFD 快，KK 更均衡；训练库要把 packing 当成一等公民。",
+          code: `import bisect
+import heapq
+import math
+
+def ffd_allocate(lengths: list[int], capacity: int, min_groups: int) -> list[list[int]]:
+    # First-Fit Decreasing: sort by length, place into the least-filled feasible bin.
+    order = sorted(range(len(lengths)), key=lambda i: lengths[i], reverse=True)
+    groups: list[list[int]] = []
+    loads: list[tuple[int, int]] = []  # sorted by load: (tokens, group_id)
+
+    for idx in order:
+        L = lengths[idx]
+        if L > capacity:
+            raise ValueError(f"single sequence length {L} exceeds capacity {capacity}")
+        if len(groups) < min_groups:
+            gid = len(groups)
+            groups.append([idx])
+            bisect.insort(loads, (L, gid))
+            continue
+        # Find all groups that can fit; among them choose the smallest load.
+        pos = bisect.bisect_right(loads, (capacity - L, 10**9))
+        if pos == 0:
+            gid = len(groups)
+            groups.append([idx])
+            bisect.insort(loads, (L, gid))
+        else:
+            load, gid = loads.pop(0)
+            groups[gid].append(idx)
+            bisect.insort(loads, (load + L, gid))
+    return groups
+
+class KKState:
+    # A partial k-way partition. Largest spread is popped first.
+    def __init__(self, items: list[tuple[int, int]], k: int):
+        self.sets = [[] for _ in range(k)]
+        self.loads = [0 for _ in range(k)]
+        for i, (idx, val) in enumerate(items):
+            self.sets[i].append(idx)
+            self.loads[i] += val
+        self._sort()
+
+    def _sort(self):
+        zipped = sorted(zip(self.loads, self.sets), reverse=True)
+        self.loads = [z[0] for z in zipped]
+        self.sets = [z[1] for z in zipped]
+
+    @property
+    def spread(self):
+        return self.loads[0] - self.loads[-1]
+
+    def merge(self, other: "KKState"):
+        k = len(self.loads)
+        # Pair largest with smallest to reduce spread.
+        for i in range(k):
+            self.sets[i].extend(other.sets[k - 1 - i])
+            self.loads[i] += other.loads[k - 1 - i]
+        self._sort()
+
+    def __lt__(self, other: "KKState"):
+        return self.spread > other.spread  # max heap by spread via heapq
+
+def kk_allocate(lengths: list[int], capacity: int, min_groups: int) -> list[list[int]]:
+    k = max(min_groups, math.ceil(sum(lengths) / capacity))
+    if k > len(lengths):
+        k = len(lengths)
+    pq = []
+    for idx, val in sorted(enumerate(lengths), key=lambda x: x[1]):
+        heapq.heappush(pq, KKState([(idx, val)], k))
+    while len(pq) > 1:
+        a = heapq.heappop(pq)
+        b = heapq.heappop(pq)
+        a.merge(b)
+        heapq.heappush(pq, a)
+    groups = pq[0].sets
+    if any(sum(lengths[i] for i in g) > capacity for g in groups):
+        return ffd_allocate(lengths, capacity, min_groups)
+    return [g for g in groups if g]
+
+def split_into_microbatches(batch: dict[str, torch.Tensor], max_tokens: int, n_mbs: int, algo="kk"):
+    lens = batch["attention_mask"].sum(dim=1).cpu().tolist()
+    groups = kk_allocate(lens, max_tokens, n_mbs) if algo == "kk" else ffd_allocate(lens, max_tokens, n_mbs)
+    mbs = []
+    for g in groups:
+        sub = {k: (v[g] if torch.is_tensor(v) and v.shape[0] == len(lens) else v) for k, v in batch.items()}
+        mbs.append(pack_tensor_dict(sub))
+    return mbs`
+        },
+        {
+          name: "Rollout Workflow",
+          short: "Rollout",
+          goal: "把 dataset sample 变成可训练 trajectory。关键点：生成时拿到 token logprob；prompt 部分 loss_mask=0；completion 部分 loss_mask=1；版本号写到每个输出 token。",
+          code: `import asyncio
+import uuid
+from dataclasses import dataclass
+
+@dataclass
+class ModelRequest:
+    rid: str
+    input_ids: list[int]
+    max_new_tokens: int
+    temperature: float
+    top_p: float
+    stop_token_ids: list[int]
+
+@dataclass
+class ModelResponse:
+    input_tokens: list[int]
+    output_tokens: list[int]
+    output_logprobs: list[float]
+    output_versions: list[int]
+    stop_reason: str
+
+class MathRolloutWorkflow:
+    def __init__(self, tokenizer, reward_fn, gconfig):
+        self.tokenizer = tokenizer
+        self.reward_fn = reward_fn
+        self.gconfig = gconfig
+
+    async def arun_episode(self, engine, data: dict) -> Trajectory | None:
+        prompt = data["prompt"]
+        answer = data["answer"]
+        prompt_ids = self.tokenizer.encode(prompt)
+        req = ModelRequest(
+            rid=uuid.uuid4().hex,
+            input_ids=prompt_ids,
+            max_new_tokens=self.gconfig.max_new_tokens,
+            temperature=self.gconfig.temperature,
+            top_p=self.gconfig.top_p,
+            stop_token_ids=[self.tokenizer.eos_token_id],
+        )
+        resp = await engine.agenerate(req)
+        completion = self.tokenizer.decode(resp.output_tokens)
+        reward = float(self.reward_fn(completion, answer))
+
+        if not resp.output_tokens:
+            return None
+        return build_trajectory(
+            prompt_ids=resp.input_tokens,
+            output_ids=resp.output_tokens,
+            output_logps=resp.output_logprobs,
+            reward=reward,
+            version=resp.output_versions[-1],
+        )
+
+class GroupedRolloutWorkflow:
+    # GRPO needs multiple samples per prompt.
+    def __init__(self, workflow, group_size: int):
+        self.workflow = workflow
+        self.group_size = group_size
+
+    async def arun_episode(self, engine, data):
+        results = await asyncio.gather(*[
+            self.workflow.arun_episode(engine, data)
+            for _ in range(self.group_size)
+        ])
+        valid = [x for x in results if x is not None]
+        if not valid:
+            return None
+        return pad_cat_trajectories(valid)`
+        },
+        {
+          name: "Async Staleness",
+          short: "Staleness",
+          goal: "异步 RL 的容量控制。它限制并发 rollout，也限制 pending 样本相对当前训练版本最多落后多少步，避免吞吐上去了但训练彻底 off-policy。",
+          code: `from dataclasses import dataclass
+from threading import Lock
+
+@dataclass
+class RolloutStat:
+    accepted: int = 0
+    enqueued: int = 0
+    rejected: int = 0
+    running: int = 0
+
+class VersionProvider:
+    def get_version(self) -> int:
+        raise NotImplementedError
+
+class StalenessManager:
+    def __init__(self, version_provider: VersionProvider, max_concurrent: int, batch_size: int, max_staleness: int):
+        self.version_provider = version_provider
+        self.max_concurrent = max(1, max_concurrent)
+        self.batch_size = max(1, batch_size)
+        self.max_staleness = max_staleness
+        self.stat = RolloutStat()
+        self.lock = Lock()
+
+    def pending_limit(self) -> int:
+        return (self.max_staleness + 1) * self.batch_size
+
+    def capacity(self) -> int:
+        with self.lock:
+            current_v = self.version_provider.get_version()
+            concurrency_cap = self.max_concurrent - self.stat.running
+            sample_cnt = self.stat.accepted + self.stat.running
+            staleness_cap = (self.max_staleness + current_v + 1) * self.batch_size - sample_cnt
+            return min(concurrency_cap, staleness_cap)
+
+    def on_recover(self, recovered_version: int):
+        # If version jumps after checkpoint recovery, keep capacity bounded.
+        with self.lock:
+            self.stat.accepted = recovered_version * self.batch_size
+
+    def on_enqueued(self):
+        with self.lock:
+            self.stat.enqueued += 1
+
+    def on_submitted(self):
+        with self.lock:
+            self.stat.enqueued -= 1
+            self.stat.running += 1
+
+    def on_accepted(self):
+        with self.lock:
+            self.stat.running -= 1
+            self.stat.accepted += 1
+
+    def on_rejected(self):
+        with self.lock:
+            self.stat.running -= 1
+            self.stat.rejected += 1
+
+async def producer_loop(dataloader, rollout_engine, workflow, stale: StalenessManager):
+    for sample in dataloader:
+        while stale.capacity() <= 0:
+            await asyncio.sleep(0.05)
+        stale.on_enqueued()
+        rollout_engine.submit(sample, workflow=workflow)`
+        },
+        {
+          name: "KL + GAE Advantage",
+          short: "Advantage",
+          goal: "把任务 reward 放到 completion 的末尾 token，同时对每个生成 token 加 KL penalty。critic 可选；没有 critic 时 values=0，就是 GRPO/REINFORCE 风格。",
+          code: `def approx_kl(logp: torch.Tensor, ref_logp: torch.Tensor, estimator="k1") -> torch.Tensor:
+    # logp/ref_logp are already shifted to next-token positions.
+    if estimator == "k1":
+        return logp - ref_logp
+    if estimator == "k2":
+        return 0.5 * (logp - ref_logp).square()
+    if estimator == "k3":
+        ratio = torch.exp(ref_logp - logp)
+        return ratio - 1.0 - torch.log(ratio.clamp_min(1e-20))
+    raise ValueError(estimator)
+
+def compute_token_rewards(batch, kl_ctl: float, ref_logp: torch.Tensor | None):
+    loss_mask = torch.roll(batch["loss_mask"].bool(), shifts=-1, dims=-1)
+    old_logp = torch.roll(batch["logprobs"], shifts=-1, dims=-1) * loss_mask
+    if ref_logp is None:
+        ref_logp = torch.zeros_like(old_logp)
+    ref_logp = ref_logp * loss_mask
+
+    B, S = batch["input_ids"].shape
+    seqlens = batch["attention_mask"].sum(dim=-1).long()
+    rewards = -kl_ctl * approx_kl(old_logp, ref_logp)
+    rewards = rewards * loss_mask
+
+    # Add sequence-level task reward to the token right before EOS/final token.
+    task_reward = batch["rewards"].to(rewards.device)
+    idx = torch.clamp(seqlens - 2, min=0)
+    rewards[torch.arange(B, device=rewards.device), idx] += task_reward
+    return rewards, old_logp, loss_mask
+
+def generalized_advantage_estimation(rewards, values, loss_mask, gamma=1.0, lam=1.0):
+    B, S = rewards.shape
+    adv = torch.zeros_like(rewards)
+    lastgaelam = torch.zeros(B, device=rewards.device)
+    next_value = torch.zeros(B, device=rewards.device)
+    for t in reversed(range(S - 1)):
+        delta = rewards[:, t] + gamma * next_value - values[:, t]
+        new_adv = delta + gamma * lam * lastgaelam
+        m = loss_mask[:, t].float()
+        lastgaelam = new_adv * m + lastgaelam * (1.0 - m)
+        next_value = values[:, t] * m + next_value * (1.0 - m)
+        adv[:, t] = lastgaelam
+    returns = adv + values
+    return adv, returns
+
+def masked_whiten(x, mask, eps=1e-6):
+    mask = mask.float()
+    n = mask.sum().clamp_min(1.0)
+    mean = (x * mask).sum() / n
+    var = ((x - mean).square() * mask).sum() / n
+    return (x - mean) / torch.sqrt(var + eps)
+
+def compute_advantages(batch, values=None, ref_logp=None, kl_ctl=0.0, adv_norm=True):
+    token_rewards, old_logp, loss_mask = compute_token_rewards(batch, kl_ctl, ref_logp)
+    if values is None:
+        values = torch.zeros_like(token_rewards)
+    adv, returns = generalized_advantage_estimation(token_rewards, values, loss_mask)
+    if adv_norm:
+        adv = masked_whiten(adv, loss_mask)
+    batch["advantages"] = adv
+    batch["returns"] = returns
+    batch["logprobs"] = old_logp
+    batch["loss_mask"] = loss_mask
+    return batch`
+        },
+        {
+          name: "PPO / GRPO / GSPO Loss",
+          short: "Loss",
+          goal: "核心 loss。token-level 是标准 PPO；sequence-level ratio 是 GSPO/GRPO 常用稳定化技巧；dual clip 和 asymmetric clip 可按需打开。",
+          code: `def sequence_level_ratio(log_ratio, advantages, loss_mask, cu_seqlens=None):
+    # GSPO: geometric mean ratio over valid response tokens.
+    if log_ratio.ndim == 2:
+        denom = loss_mask.sum(dim=-1, keepdim=True).clamp_min(1)
+        mean_log_ratio = (log_ratio * loss_mask).sum(dim=-1, keepdim=True) / denom
+        ratio = torch.exp(mean_log_ratio).expand_as(log_ratio)
+        adv = (advantages * loss_mask).sum(dim=-1, keepdim=True) / denom
+        return ratio * loss_mask, adv.expand_as(advantages) * loss_mask
+
+    assert cu_seqlens is not None, "packed 1D needs cu_seqlens"
+    n_seq = cu_seqlens.numel() - 1
+    lens = cu_seqlens[1:] - cu_seqlens[:-1]
+    seq_id = torch.arange(n_seq, device=log_ratio.device).repeat_interleave(lens)
+    denom = torch.zeros(n_seq, device=log_ratio.device).scatter_add_(0, seq_id, loss_mask.float()).clamp_min(1)
+    lr_sum = torch.zeros(n_seq, device=log_ratio.device).scatter_add_(0, seq_id, log_ratio * loss_mask)
+    adv_sum = torch.zeros(n_seq, device=log_ratio.device).scatter_add_(0, seq_id, advantages * loss_mask)
+    ratio = torch.exp(lr_sum / denom)[seq_id]
+    adv = (adv_sum / denom)[seq_id]
+    return ratio * loss_mask, adv * loss_mask
+
+def ppo_actor_loss(
+    new_logp: torch.Tensor,
+    old_logp: torch.Tensor,
+    advantages: torch.Tensor,
+    loss_mask: torch.Tensor,
+    eps_clip: float = 0.2,
+    eps_clip_high: float | None = None,
+    c_clip: float | None = None,
+    proximal_logp: torch.Tensor | None = None,
+    importance_level: str = "token",
+    cu_seqlens: torch.Tensor | None = None,
+):
+    # old_logp = behavior policy in async mode; proximal_logp = policy used for PPO ratio.
+    if proximal_logp is None:
+        proximal_logp = old_logp
+    loss_mask = loss_mask.bool()
+    advantages = advantages.detach()
+
+    if importance_level == "sequence":
+        ratio, advantages = sequence_level_ratio(new_logp - proximal_logp, advantages, loss_mask, cu_seqlens)
+    else:
+        ratio = torch.where(loss_mask, torch.exp(new_logp - proximal_logp), 0.0)
+
+    hi = eps_clip if eps_clip_high is None else eps_clip_high
+    clipped = torch.clamp(ratio, 1.0 - eps_clip, 1.0 + hi)
+
+    pg1 = -advantages * ratio
+    pg2 = -advantages * clipped
+    loss_tok = torch.maximum(pg1, pg2)
+    clip_mask = (pg1.detach() < pg2.detach()) & loss_mask
+
+    if c_clip is not None:
+        # Dual-clip PPO: useful for noisy negative advantages.
+        pg3 = torch.sign(advantages) * c_clip * advantages
+        dual_mask = pg3.detach() < loss_tok.detach()
+        loss_tok = torch.minimum(loss_tok, pg3)
+    else:
+        dual_mask = torch.zeros_like(loss_mask)
+
+    denom = loss_mask.sum().clamp_min(1)
+    loss = torch.where(loss_mask, loss_tok, 0.0).sum() / denom
+    stats = {
+        "ratio": ratio.detach(),
+        "approx_kl": (new_logp - proximal_logp).detach(),
+        "clip_mask": clip_mask,
+        "dual_clip_mask": dual_mask & loss_mask,
+        "loss_tok": loss_tok.detach(),
+    }
+    return loss, stats`
+        },
+        {
+          name: "Decoupled PPO",
+          short: "Decoupled",
+          goal: "异步场景有三套策略：behavior 生成样本、proximal 作为 PPO old policy、theta 是当前训练 policy。proximal 可重算，也可按版本做 log-linear 近似。",
+          code: `def approximate_proximal_logp(old_logp, new_logp, versions, current_version: int, method="loglinear"):
+    # old_logp: log pi_behave from rollout
+    # new_logp: log pi_theta from current forward, detach before approximation
+    # versions: per-token rollout policy version, -1 for prompt
+    v_theta = float(current_version)
+    v_prox = float(current_version - 1)
+    v_behave = versions.float()
+    gen_mask = versions >= 0
+
+    # alpha=0 means use behavior; alpha=1 means use current.
+    denom = (v_theta - v_behave).clamp_min(1.0)
+    alpha = torch.where(gen_mask, (v_prox - v_behave) / denom, torch.zeros_like(v_behave))
+    alpha = alpha.clamp(0.0, 1.0)
+
+    if method == "loglinear":
+        return old_logp + alpha * (new_logp - old_logp)
+    if method == "linear":
+        p_old = torch.exp(old_logp)
+        p_new = torch.exp(new_logp)
+        return torch.log((1.0 - alpha) * p_old + alpha * p_new + 1e-10)
+    if method == "rollout":
+        return old_logp
+    raise ValueError(method)
+
+def rejection_sampling_mask(prox_logp, behave_logp, loss_mask, upper=2.0, lower=None, level="token"):
+    # Filter very stale tokens/sequences based on pi_prox / pi_behave.
+    ratio = torch.exp((prox_logp - behave_logp).float())
+    if lower is None:
+        ok = ratio <= upper
+    else:
+        ok = (ratio >= lower) & (ratio <= upper)
+
+    if level == "sequence" and loss_mask.ndim == 2:
+        seq_ok = (ok | ~loss_mask.bool()).all(dim=-1, keepdim=True)
+        ok = seq_ok.expand_as(loss_mask)
+    return loss_mask.bool() & ok
+
+def decoupled_ppo_loss(new_logp, batch, current_version, prox_method="loglinear", rs_cfg=None):
+    behave_logp = batch["logprobs"]          # pi_behave
+    versions = batch["versions"]
+    loss_mask = batch["loss_mask"].bool()
+    advantages = batch["advantages"]
+
+    if prox_method == "recompute":
+        prox_logp = batch["prox_logp"]       # exact pi_prox from an extra forward pass
+    else:
+        prox_logp = approximate_proximal_logp(
+            old_logp=behave_logp,
+            new_logp=new_logp.detach(),
+            versions=versions,
+            current_version=current_version,
+            method=prox_method,
+        )
+
+    if rs_cfg is not None:
+        loss_mask = rejection_sampling_mask(
+            prox_logp, behave_logp, loss_mask,
+            upper=rs_cfg["upper"],
+            lower=rs_cfg.get("lower"),
+            level=rs_cfg.get("level", "token"),
+        )
+
+    return ppo_actor_loss(
+        new_logp=new_logp,
+        old_logp=behave_logp,
+        proximal_logp=prox_logp,
+        advantages=advantages,
+        loss_mask=loss_mask,
+        eps_clip=0.2,
+        importance_level="sequence",  # GSPO-style; set token for standard PPO
+    )`
+        },
+        {
+          name: "TrainEngine Step",
+          short: "TrainEngine",
+          goal: "训练后端最小实现：packed microbatch forward，拿 logits gather chosen-token logprob，再把 loss backward。实际 FSDP/Megatron 只是在这里替换 distributed forward/backward。",
+          code: `def gather_logprobs_from_logits(logits: torch.Tensor, input_ids: torch.Tensor):
+    # logits[t] predicts input_ids[t+1]. Last position has no label.
+    labels = torch.roll(input_ids, shifts=-1, dims=0)
+    logp_all = torch.log_softmax(logits.float(), dim=-1)
+    token_logp = logp_all.gather(dim=-1, index=labels.long().unsqueeze(-1)).squeeze(-1)
+    token_logp[-1] = 0.0
+    entropy = -(torch.exp(logp_all) * logp_all).sum(dim=-1)
+    entropy[-1] = 0.0
+    return token_logp, entropy
+
+class TorchTrainEngine:
+    def __init__(self, model, optimizer, lr_scheduler=None, grad_clip=1.0):
+        self.model = model
+        self.optimizer = optimizer
+        self.lr_scheduler = lr_scheduler
+        self.grad_clip = grad_clip
+        self.version = 0
+
+    def forward_packed(self, mb: dict):
+        out = self.model(
+            input_ids=mb["input_ids"].long().unsqueeze(0),
+            cu_seqlens=mb["cu_seqlens"],
+            max_seqlen=mb["max_seqlen"],
+            use_cache=False,
+        )
+        logits = out.logits.squeeze(0)  # [T, vocab]
+        return gather_logprobs_from_logits(logits, mb["input_ids"])
+
+    def train_microbatch(self, mb: dict, loss_fn):
+        token_logp, entropy = self.forward_packed(mb)
+        loss, stats = loss_fn(token_logp, entropy, mb)
+        loss.backward()
+        return {k: v.float().mean().item() for k, v in stats.items() if torch.is_tensor(v)}
+
+    def optimizer_step(self):
+        grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
+        self.optimizer.step()
+        self.optimizer.zero_grad(set_to_none=True)
+        if self.lr_scheduler is not None:
+            self.lr_scheduler.step()
+        self.version += 1
+        return {"grad_norm": float(grad_norm), "version": self.version}
+
+def actor_update(engine: TorchTrainEngine, batch: dict, mb_spec, current_version: int):
+    mbs = split_into_microbatches(batch, mb_spec.max_tokens_per_mb, mb_spec.n_mbs, algo=mb_spec.algo)
+    scalars = []
+    for mb in mbs:
+        def loss_fn(new_logp, entropy, input_data):
+            return decoupled_ppo_loss(new_logp, input_data, current_version=current_version)
+        scalars.append(engine.train_microbatch(mb, loss_fn))
+    step_stats = engine.optimizer_step()
+    return {"microbatches": scalars, **step_stats}`
+        },
+        {
+          name: "Trainer Loop",
+          short: "Trainer",
+          goal: "把 AReaL PPOTrainer 的主干写成最小可读版本。同步/异步差异主要在 rollout.prepare_batch 是否后台持续填充，以及 update_weights 前后的 pause/resume。",
+          code: `class RLTrainer:
+    def __init__(self, actor, rollout, dataloader, workflow, ref=None, critic=None, saver=None, stats=None):
+        self.actor = actor
+        self.rollout = rollout
+        self.dataloader = dataloader
+        self.workflow = workflow
+        self.ref = ref
+        self.critic = critic
+        self.saver = saver
+        self.stats = stats
+        self.global_step = 0
+
+    def train_step(self):
+        # 1. Collect a train batch. In async mode this drains accepted trajectories.
+        trajs = self.rollout.prepare_batch(
+            dataloader=self.dataloader,
+            workflow=self.workflow,
+            group_size=self.cfg.n_samples,
+            dynamic_filter_fn=self.cfg.dynamic_filter_fn,
+        )
+        batch = pad_cat_trajectories(trajs) if isinstance(trajs[0], Trajectory) else trajs
+
+        # 2. Optional critic/ref/teacher forward.
+        if self.critic is not None:
+            batch["values"] = self.critic.forward_values(batch)
+        if self.ref is not None:
+            batch["ref_logp"] = self.ref.forward_logprobs(batch)
+
+        # 3. If exact decoupled PPO, recompute proximal logp before actor update.
+        if self.cfg.prox_logp_method == "recompute":
+            batch["prox_logp"] = self.actor.forward_logprobs(batch)
+
+        # 4. Advantage.
+        batch = compute_advantages(
+            batch,
+            values=batch.get("values"),
+            ref_logp=batch.get("ref_logp"),
+            kl_ctl=self.cfg.kl_ctl,
+            adv_norm=True,
+        )
+
+        # 5. Actor update.
+        update_stats = actor_update(
+            engine=self.actor,
+            batch=batch,
+            mb_spec=self.cfg.actor_mb_spec,
+            current_version=self.actor.version,
+        )
+
+        # 6. Critic update, if any.
+        if self.critic is not None:
+            self.critic.update_value_function(batch)
+
+        # 7. Broadcast weights to rollout engine.
+        next_v = self.actor.version
+        self.rollout.pause()
+        self.rollout.pause_generation()
+        self.actor.update_rollout_weights(self.rollout, version=next_v)
+        self.rollout.set_version(next_v)
+        self.rollout.continue_generation()
+        self.rollout.resume()
+
+        # 8. Save/eval/log.
+        if self.saver and self.global_step % self.cfg.save_every == 0:
+            self.saver.save(self.actor, step=self.global_step)
+        if self.stats:
+            self.stats.log({"step": self.global_step, **update_stats})
+        self.global_step += 1`
+        },
+        {
+          name: "Weight Sync",
+          short: "WeightSync",
+          goal: "权重同步是系统正确性的硬边界。磁盘更新简单但慢；NCCL/XCCL 快但要严格管理 rank、group、version；LoRA 要用 versioned adapter name。",
+          code: `from dataclasses import dataclass
+
+@dataclass
+class WeightUpdateMeta:
+    type: str                  # "disk", "xccl", "awex"
+    path: str | None = None
+    version: int | None = None
+    group_name: str | None = None
+    master_addr: str | None = None
+    master_port: int | None = None
+    use_lora: bool = False
+    lora_name: str = ""
+
+def versioned_lora_name(name: str, version: int):
+    return f"{name}-v{version}"
+
+class ActorWeightExporter:
+    def export_to_disk(self, model, path: str):
+        # In production: save sharded FSDP/Megatron checkpoint or HF weights.
+        model.save_pretrained(path, safe_serialization=True)
+
+    def param_specs(self, model):
+        return [
+            {"name": n, "shape": tuple(p.shape), "dtype": str(p.dtype).replace("torch.", "")}
+            for n, p in model.named_parameters()
+        ]
+
+    def update_rollout_weights(self, rollout, model, meta: WeightUpdateMeta):
+        if meta.type == "disk":
+            self.export_to_disk(model, meta.path)
+            rollout.update_weights_from_disk(meta)
+        elif meta.type == "xccl":
+            specs = self.param_specs(model)
+            rollout.init_weights_update_group(meta)
+            # Training ranks send tensors; inference ranks receive into live model weights.
+            for name, p in model.named_parameters():
+                distributed_send_to_rollout_group(name, p.data, group=meta.group_name)
+            rollout.update_weights_from_distributed(meta, specs)
+        else:
+            rollout.update_weights_awex(meta)
+
+def safe_weight_update(actor, rollout, exporter, version: int, meta: WeightUpdateMeta):
+    meta.version = version
+    try:
+        rollout.pause()
+        rollout.pause_generation()
+        exporter.update_rollout_weights(rollout, actor.model, meta)
+        actor.version = version
+        rollout.set_version(version)
+    finally:
+        rollout.continue_generation()
+        rollout.resume()`
+        },
+        {
+          name: "KV Routing",
+          short: "KV",
+          goal: "训练框架不管理每页 KV，但必须管理请求路由。多轮同一个 rid 回到同一推理 server，才能让 SGLang/vLLM 复用 prefix/radix/paged KV。",
+          code: `import random
+from collections import OrderedDict
+
+class StickyRouter:
+    def __init__(self, addresses: list[str], cache_size: int = 128):
+        self.addresses = addresses
+        self.next_idx = random.randrange(len(addresses))
+        self.cache_size = cache_size
+        self.rid_to_addr = OrderedDict()
+
+    def choose(self, rid: str) -> str:
+        if rid in self.rid_to_addr:
+            addr = self.rid_to_addr.pop(rid)
+            self.rid_to_addr[rid] = addr
+            return addr
+        addr = self.addresses[self.next_idx]
+        self.next_idx = (self.next_idx + 1) % len(self.addresses)
+        self.rid_to_addr[rid] = addr
+        while len(self.rid_to_addr) > self.cache_size:
+            self.rid_to_addr.popitem(last=False)
+        return addr
+
+class RemoteInferenceEngine:
+    def __init__(self, backend, addresses):
+        self.backend = backend
+        self.router = StickyRouter(addresses)
+        self.version = 0
+
+    async def agenerate(self, req: ModelRequest):
+        addr = self.router.choose(req.rid)
+        out_tokens, out_logps, out_versions = [], [], []
+        stop = None
+        while stop not in ("stop", "length", "tool_calls"):
+            while self.is_paused:
+                await asyncio.sleep(0.05)
+            raw = await self.backend.generate(addr, req, version=self.version)
+            parsed = self.backend.parse(raw)
+            out_tokens.extend(parsed.tokens)
+            out_logps.extend(parsed.logprobs)
+            out_versions.extend([self.version] * len(parsed.tokens))
+            req.input_ids.extend(parsed.tokens)
+            req.max_new_tokens -= len(parsed.tokens)
+            stop = parsed.stop_reason
+            if req.max_new_tokens <= 0:
+                stop = "length"
+        return ModelResponse(req.input_ids[:-len(out_tokens)], out_tokens, out_logps, out_versions, stop)`
+        },
+        {
+          name: "Varlen Attention",
+          short: "VarlenAttn",
+          goal: "训练侧 packed batch 的 attention。真实工程中直接调用 FlashAttention varlen；这里写出 wrapper 的关键 shape 变换和 block-diagonal causal fallback。",
+          code: `def flash_varlen_attention(q, k, v, cu_seqlens, max_seqlen, scale=None):
+    # q/k/v: [T, H, D], cu_seqlens: int32 [B+1]
+    # In production call flash_attn_varlen_func or torch.ops.aten._flash_attention_forward.
+    out, lse, rng, _, _ = torch.ops.aten._flash_attention_forward(
+        q, k, v,
+        cu_seqlens.to(torch.int32),
+        cu_seqlens.to(torch.int32),
+        max_seqlen,
+        max_seqlen,
+        0.0,       # dropout
+        True,      # causal
+        False,     # return_debug_mask
+        scale=scale,
+    )
+    return out
+
+def block_diag_causal_mask(cu_seqlens, total_len, device, dtype):
+    pos = torch.arange(total_len, device=device)
+    seq_id = torch.searchsorted(cu_seqlens, pos, right=True) - 1
+    same_seq = seq_id[:, None] == seq_id[None, :]
+    causal = pos[None, :] <= pos[:, None]
+    mask = torch.full((total_len, total_len), float("-inf"), device=device, dtype=dtype)
+    return mask.masked_fill(same_seq & causal, 0.0)
+
+def sdpa_packed_fallback(q, k, v, cu_seqlens, max_seqlen, scale=None):
+    # q/k/v: [1, H, T, D] for torch SDPA.
+    T = q.shape[2]
+    mask = block_diag_causal_mask(cu_seqlens, T, q.device, q.dtype)
+    return torch.nn.functional.scaled_dot_product_attention(
+        q, k, v,
+        attn_mask=mask,
+        is_causal=False,
+        scale=scale,
+        enable_gqa=q.size(1) != k.size(1),
+    )
+
+class PackedSelfAttention(torch.nn.Module):
+    def forward(self, q, k, v, cu_seqlens, max_seqlen, backend="flash"):
+        # model internal often has [1, H, T, D]; flash varlen wants [T, H, D].
+        if backend == "flash":
+            q3 = q.squeeze(0).transpose(0, 1).contiguous()
+            k3 = k.squeeze(0).transpose(0, 1).contiguous()
+            v3 = v.squeeze(0).transpose(0, 1).contiguous()
+            out = flash_varlen_attention(q3, k3, v3, cu_seqlens, max_seqlen)
+            return out.transpose(0, 1).unsqueeze(0)
+        return sdpa_packed_fallback(q, k, v, cu_seqlens, max_seqlen)`
+        },
+        {
+          name: "Tree Attention",
+          short: "TreeAttn",
+          goal: "多轮 agent / n samples per prompt 会共享长 prefix。Tree training 把 prefix 建成 trie，公共 token 只算一次；logprob gather 要从树位置映射回原序列位置。",
+          code: `@dataclass
+class TrieNode:
+    token: int | None
+    children: dict[int, "TrieNode"] = field(default_factory=dict)
+    seq_ids: list[int] = field(default_factory=list)
+    flat_pos: int = -1
+    parent: "TrieNode | None" = None
+
+def insert_sequence(root: TrieNode, seq: list[int], seq_id: int):
+    node = root
+    node.seq_ids.append(seq_id)
+    for tok in seq:
+        if tok not in node.children:
+            node.children[tok] = TrieNode(token=tok, parent=node)
+        node = node.children[tok]
+        node.seq_ids.append(seq_id)
+
+def build_prefix_tree(seqs: list[list[int]]) -> TrieNode:
+    root = TrieNode(token=None)
+    for i, seq in enumerate(seqs):
+        insert_sequence(root, seq, i)
+    return root
+
+def flatten_tree(root: TrieNode):
+    # preorder flatten, root has no token.
+    flat_tokens, nodes = [], []
+    def dfs(node):
+        for child in node.children.values():
+            child.flat_pos = len(flat_tokens)
+            flat_tokens.append(child.token)
+            nodes.append(child)
+            dfs(child)
+    dfs(root)
+    return torch.tensor(flat_tokens, dtype=torch.int32), nodes
+
+def ancestors(node: TrieNode) -> set[int]:
+    out = set()
+    while node is not None and node.flat_pos >= 0:
+        out.add(node.flat_pos)
+        node = node.parent
+    return out
+
+def build_tree_attention_mask(nodes: list[TrieNode], device):
+    # Dense version for clarity. Production uses FlexAttention BlockMask or Triton.
+    T = len(nodes)
+    mask = torch.full((T, T), float("-inf"), device=device)
+    for q_node in nodes:
+        allowed = ancestors(q_node)
+        if q_node.flat_pos in allowed:
+            mask[q_node.flat_pos, list(allowed)] = 0.0
+    return mask
+
+def sequence_tree_positions(root: TrieNode, seq: list[int]) -> list[int]:
+    node = root
+    pos = []
+    for tok in seq:
+        node = node.children[tok]
+        pos.append(node.flat_pos)
+    return pos
+
+def gather_tree_logprobs(logits, root: TrieNode, seqs: list[list[int]]):
+    # logits are produced for flattened tree positions.
+    per_seq_logp = []
+    logp_all = torch.log_softmax(logits.float(), dim=-1)
+    for seq in seqs:
+        positions = sequence_tree_positions(root, seq)
+        vals = []
+        for i in range(len(seq) - 1):
+            vals.append(logp_all[positions[i], seq[i + 1]])
+        vals.append(torch.zeros((), device=logits.device))
+        per_seq_logp.append(torch.stack(vals))
+    return per_seq_logp
+
+def tree_training_forward(model, padded_batch):
+    seqs = [
+        row[mask].tolist()
+        for row, mask in zip(padded_batch["input_ids"], padded_batch["attention_mask"])
+    ]
+    root = build_prefix_tree(seqs)
+    flat_ids, nodes = flatten_tree(root)
+    tree_mask = build_tree_attention_mask(nodes, device=flat_ids.device)
+    logits = model(input_ids=flat_ids[None, :], attention_mask=tree_mask).logits[0]
+    return gather_tree_logprobs(logits, root, seqs)`
+        }
+      ],
+      kernels: [
+        {
+          name: "训练 prefill：FlashAttention varlen",
+          fit: "最常用路径",
+          details: "把 padded [B,S] 压成 [T,H,D]，用 cu_seqlens 分隔样本。AReaL 的 Archon varlen wrapper 直接调用 torch.ops.aten._flash_attention_forward/backward。",
+          tips: ["A100：FlashAttention 2 + bf16 是稳态首选", "H100：评估 FlashAttention 3，长上下文可见收益", "loss 侧要处理 shifted loss_mask 和 cu_seqlens"],
+          risk: "varlen kernel 对 shape、dtype、causal mask 要求严格；先写 packed/padded 一致性测试。"
+        },
+        {
+          name: "训练 fallback：PyTorch SDPA",
+          fit: "正确性与小规模",
+          details: "用 block-diagonal causal mask 防止 packed sequences 互相 attend。实现简单，适合 debug，但长序列 mask 会吃显存。",
+          tips: ["用 sdpa_kernel 指定 CUDNN/FLASH/EFFICIENT/MATH 优先级", "GQA 时 enable_gqa=True", "只在 debug 或小 batch 上长期使用"],
+          risk: "显式 [T,T] mask 对 16k/32k token micro-batch 很贵。"
+        },
+        {
+          name: "Tree Attention：前缀共享训练",
+          fit: "多采样、多轮 agent",
+          details: "把共享 prefix 建成 trie，公共 token 只 forward 一次。FSDP 默认走 FlexAttention BlockMask；Megatron 走 dense/tree path；Archon 用 TreeAttentionMeta。",
+          tips: ["enable_tree_training=true", "pad_to_maximum=true", "max_tokens_per_mb 是 128 的倍数", "用 tree_token_ratio 衡量省了多少 token"],
+          risk: "当前 tree training 不适合 CP>1；MoE 上 FlexAttention 数值差异可能带来不稳定。"
+        },
+        {
+          name: "推理 decode：paged/radix KV",
+          fit: "吞吐瓶颈",
+          details: "这里不在训练库里手写，交给 vLLM/SGLang。你的框架负责 sticky routing、版本、暂停、恢复、权重更新与请求重试。",
+          tips: ["vLLM：paged attention、continuous batching", "SGLang：radix/prefix cache，agent 多轮很有用", "同一个 rid 固定到同一 server 以复用 KV"],
+          risk: "权重更新后旧 KV 和旧 logits 属于旧 policy；必须用 version 和 pause/resume 管住。"
+        },
+        {
+          name: "H100 专项：FP8 与 compile",
+          fit: "规模化后再做",
+          details: "Hopper 上可评估 FP8 GEMM、FA3、torch.compile/Inductor、CUDA graph、TMA/WGMMA 路径。先保证 loss 数值，再追 kernel。",
+          tips: ["FP8 先用于 matmul，不要一上来量化 logprob/loss", "compile warmup 要单独统计", "保存 deterministic 开关用于复现 bug"],
+          risk: "compile + activation checkpoint + split backward 容易出现内存生命周期冲突。"
+        }
+      ],
+      kv: [
+        {
+          title: "训练侧不要依赖 generation KV cache",
+          text: "PPO/GRPO 更新需要当前 actor 对整段 prompt+completion 重新算 logprob。训练 forward 应设置 use_cache=False，靠 sequence packing、activation checkpoint、context parallel 和 tree attention 降成本。"
+        },
+        {
+          title: "推理侧 KV cache 交给后端",
+          text: "SGLang/vLLM 已经实现 continuous batching、paged KV、prefix/radix cache、TP/PP。自研训练框架只封装请求、路由和版本，不直接管理每一页 KV。"
+        },
+        {
+          title: "同一 rid 固定路由",
+          text: "AReaL 的 RemoteInfEngine 保存 rid_to_address，最近 128 个 rid 会回到同一 server。这对多轮 agent 的 prefix/KV 复用很关键。"
+        },
+        {
+          title: "权重更新要切断旧 KV",
+          text: "训练后更新 rollout 权重时，先 pause generation，中止或等待旧请求，更新权重，再 resume。已经生成的 token 带旧 version，loss 用 decoupled PPO 或过滤控制 off-policy。"
+        }
+      ],
+      tools: [
+        ["环境与依赖", "uv、PyTorch CUDA wheel、flash-attn wheel、NCCL tests、container image 固化"],
+        ["调度", "Slurm 是裸机集群首选；Ray 适合弹性实验；Kubernetes 适合服务化 agent/proxy"],
+        ["推理", "SGLang 默认适合 agentic RL 和 prefix/radix cache；vLLM 生态成熟、paged attention 稳"],
+        ["训练", "FSDP2 快速落地；Megatron-Core 做大模型 TP/PP/EP；Archon 做 PyTorch-native 实验"],
+        ["观测", "W&B/TensorBoard、torch.profiler、Nsight Systems、Prometheus DCGM、AReaL perf tracer"],
+        ["存储", "共享 NFS/Lustre/对象存储用于 checkpoint；权重同步优先 NCCL/XCCL，磁盘更新作 fallback"]
+      ]
+    };
+
+    const PY_KEYWORDS = [
+      "and", "as", "assert", "async", "await", "break", "class", "continue", "def",
+      "elif", "else", "except", "finally", "for", "from", "if", "import", "in",
+      "is", "lambda", "None", "not", "or", "pass", "raise", "return", "try",
+      "while", "with", "yield", "True", "False"
+    ];
+    const PY_TYPES = [
+      "Any", "ABC", "Protocol", "Literal", "Tensor", "Trajectory", "ModelRequest",
+      "ModelResponse", "WeightUpdateMeta", "TrieNode", "torch", "F", "list", "dict",
+      "tuple", "set", "int", "float", "str", "bool", "dataclass", "field"
+    ];
+    const PY_KEYWORD_RE = PY_KEYWORDS.join("|");
+    const PY_TYPE_RE = PY_TYPES.join("|");
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function highlightPlainPython(text) {
+      const escaped = escapeHtml(text);
+      const tokenRe = new RegExp(
+        "(@[A-Za-z_]\\w*)" +
+        "|\\b(class|def)\\s+([A-Za-z_]\\w*)" +
+        "|\\b(" + PY_KEYWORD_RE + ")\\b" +
+        "|\\b(" + PY_TYPE_RE + ")\\b" +
+        "|\\b([A-Za-z_]\\w*)(?=\\s*\\()" +
+        "|\\b(\\d+(?:\\.\\d+)?)\\b",
+        "g"
+      );
+      return escaped.replace(tokenRe, (match, decorator, kind, declared, keyword, typeName, fnName, number) => {
+        if (decorator) return `<span class="tok-decorator">${decorator}</span>`;
+        if (kind && declared) {
+          return `<span class="tok-keyword">${kind}</span> <span class="${kind === "class" ? "tok-class" : "tok-fn"}">${declared}</span>`;
+        }
+        if (keyword) return `<span class="tok-keyword">${keyword}</span>`;
+        if (typeName) return `<span class="tok-type">${typeName}</span>`;
+        if (fnName) return `<span class="tok-fn">${fnName}</span>`;
+        if (number) return `<span class="tok-number">${number}</span>`;
+        return match;
+      });
+    }
+
+    function highlightPython(code) {
+      let out = "";
+      let plain = "";
+      let i = 0;
+      const flushPlain = () => {
+        if (plain) {
+          out += highlightPlainPython(plain);
+          plain = "";
+        }
+      };
+
+      while (i < code.length) {
+        const ch = code[i];
+        if (ch === "#") {
+          flushPlain();
+          let j = i;
+          while (j < code.length && code[j] !== "\n") j++;
+          out += `<span class="tok-comment">${escapeHtml(code.slice(i, j))}</span>`;
+          i = j;
+          continue;
+        }
+        if (ch === "\"" || ch === "'") {
+          flushPlain();
+          const quote = ch;
+          const triple = code.slice(i, i + 3) === quote + quote + quote;
+          let j = i + (triple ? 3 : 1);
+          while (j < code.length) {
+            if (!triple && code[j] === "\\") {
+              j += 2;
+              continue;
+            }
+            if (triple && code.slice(j, j + 3) === quote + quote + quote) {
+              j += 3;
+              break;
+            }
+            if (!triple && code[j] === quote) {
+              j += 1;
+              break;
+            }
+            j += 1;
+          }
+          out += `<span class="tok-string">${escapeHtml(code.slice(i, j))}</span>`;
+          i = j;
+          continue;
+        }
+        plain += ch;
+        i += 1;
+      }
+      flushPlain();
+      return out;
+    }
+
+    function App() {
+      const h = React.createElement;
+      const [road, setRoad] = React.useState(0);
+      const [klass, setKlass] = React.useState("config");
+      const [algo, setAlgo] = React.useState(0);
+      const [kernel, setKernel] = React.useState(0);
+      const [gpu, setGpu] = React.useState(64);
+      const [ratio, setRatio] = React.useState(0.33);
+      const [tp, setTp] = React.useState(4);
+      const [pp, setPp] = React.useState(1);
+      const inferGpus = Math.max(1, Math.round(gpu * ratio));
+      const trainGpus = Math.max(1, gpu - inferGpus);
+      const instanceSize = Math.max(1, tp * pp);
+      const rolloutReplicas = Math.max(1, Math.floor(inferGpus / instanceSize));
+      const trainDp = Math.max(1, Math.floor(trainGpus / instanceSize));
+      const activeClass = DATA.classes.find((x) => x.key === klass) || DATA.classes[0];
+      const activeAlgo = DATA.coreAlgorithms[algo];
+      const activeKernel = DATA.kernels[kernel];
+
+      const CodeBlock = ({ code }) => h("pre", { className: "code-highlight" },
+        h("code", { dangerouslySetInnerHTML: { __html: highlightPython(code) } })
+      );
+
+      const SectionTitle = ({ id, kicker, title, children }) => h("section", { id },
+        h("div", { className: "section-kicker" }, kicker),
+        h("h2", null, title),
+        children
+      );
+
+      return h("div", { className: "shell" },
+        h("aside", { className: "side" },
+          h("div", { className: "brand" },
+            h("div", { className: "brand-title" }, "AReaL -> 自研 RL"),
+            h("div", { className: "brand-sub" }, "React + HTML field guide")
+          ),
+          h("nav", null, DATA.nav.map(([n, text, id]) =>
+            h("a", { className: "nav-link", href: "#" + id, key: id },
+              h("span", { className: "nav-num" }, n),
+              h("span", null, text)
+            )
+          )),
+          h("div", { className: "side-note" },
+            "这页基于本地 AReaL 源码和 docs 生成；重点是教你怎么从零搭一个适配自己 A100/H100 集群的训练库。"
+          )
+        ),
+        h("main", null,
+          h("section", { id: "overview", className: "hero" },
+            h("div", null,
+              h("div", { className: "section-kicker" }, "From reference to your system"),
+              h("h1", null, "从 AReaL 拆出一套你自己的 RL 训练框架"),
+              h("p", { className: "lead" },
+                "把 AReaL 当作参考实现，而不是直接照搬：学习它的异步 rollout、token 级版本记录、训练/推理后端隔离、agent proxy、sequence packing 和 tree attention，然后按你的集群拓扑一点点搭起来。"
+              ),
+              h("div", { className: "hero-meta" },
+                h("span", { className: "pill amber" }, "A100/H100 cluster"),
+                h("span", { className: "pill teal" }, "SGLang / vLLM inference"),
+                h("span", { className: "pill green" }, "FSDP / Megatron / Archon"),
+                h("span", { className: "pill" }, "PPO / GRPO / GSPO / DPO")
+              ),
+              h("div", { className: "hero-actions" },
+                h("a", { className: "btn primary", href: "#roadmap" }, "看从零路线"),
+                h("a", { className: "btn", href: "#core-code" }, "看核心代码"),
+                h("a", { className: "btn", href: "#kv" }, "看 KV 处理"),
+                h("a", { className: "btn", href: "#kernels" }, "看 attention kernels")
+              )
+            )
+          ),
+
+          h(SectionTitle, { id: "areal", kicker: "What AReaL teaches", title: "AReaL 的真正价值：边界切得很干净" },
+            h("p", { className: "lead" },
+              "AReaL 不是一个单纯的 PPO 脚本。它的核心思想是把 RL 训练拆成可替换的系统积木：控制面调度资源，数据面跑异步 rollout，训练面做分布式反向传播，算法层只处理 logprob、advantage 和 loss。"
+            ),
+            h("div", { className: "architecture" },
+              DATA.layers.map((layer, i) => [
+                h("div", { className: "lane", key: layer.name },
+                  h("div", { className: "card-label" }, layer.label),
+                  h("h3", null, layer.name),
+                  h("ul", { className: "lane-list" }, layer.items.map((it) => h("li", { key: it }, it)))
+                ),
+                i < DATA.layers.length - 1 ? h("div", { className: "arrow", key: "a" + i }, ">") : null
+              ])
+            ),
+            h("div", { className: "grid cols-3", style: { marginTop: 18 } },
+              h("div", { className: "card" },
+                h("div", { className: "card-title" }, "你该直接借鉴", h("span", { className: "card-label" }, "keep")),
+                h("p", null, "接口设计、版本化 trajectory、异步 staleness、后端 adapter、sequence packing、tree attention 思路。")
+              ),
+              h("div", { className: "card" },
+                h("div", { className: "card-title" }, "你要重新适配", h("span", { className: "card-label" }, "adapt")),
+                h("p", null, "调度器、网络拓扑、checkpoint 存储、容器镜像、NCCL 参数、SGLang/vLLM 参数、监控和报警。")
+              ),
+              h("div", { className: "card" },
+                h("div", { className: "card-title" }, "不要过早重写", h("span", { className: "card-label" }, "delay")),
+                h("p", null, "KV cache 管理、paged attention kernel、MoE expert kernel。先吃成熟推理引擎和 PyTorch/FlashAttention 的红利。")
+              )
+            )
+          ),
+
+          h(SectionTitle, { id: "roadmap", kicker: "Build order", title: "从 0 到可用：按里程碑搭，不要一口吃成分布式巨兽" },
+            h("p", { className: "lead" },
+              "最佳顺序是先把 loss 和数据契约训对，再拆系统，再追吞吐。下面每一步都应该能单独跑通、单独测试、单独回滚。"
+            ),
+            h("div", { className: "tabs" }, DATA.roadmap.map((r, i) =>
+              h("button", {
+                className: "tab" + (road === i ? " active" : ""),
+                onClick: () => setRoad(i),
+                key: r.title
+              }, r.title.split("：")[0])
+            )),
+            h("div", { className: "detail" },
+              h("div", { className: "card" },
+                h("div", { className: "card-label" }, DATA.roadmap[road].tag),
+                h("h3", null, DATA.roadmap[road].title),
+                h("p", null, DATA.roadmap[road].body),
+                h("table", { className: "matrix" },
+                  h("thead", null, h("tr", null, h("th", null, "验收点"), h("th", null, "为什么重要"))),
+                  h("tbody", null, DATA.roadmap[road].checks.map((c) =>
+                    h("tr", { key: c }, h("td", null, c), h("td", null, "这一项失败时，后续异步/分布式放大后会很难定位。"))
+                  ))
+                )
+              ),
+              h("div", { className: "code-panel" },
+                h("div", { className: "code-head" }, h("span", null, "blueprint.py"), h("span", null, "milestone sketch")),
+                h(CodeBlock, { code: DATA.roadmap[road].code })
+              )
+            )
+          ),
+
+          h(SectionTitle, { id: "classes", kicker: "Class blueprint", title: "Class 怎么设计：让算法层远离系统细节" },
+            h("p", { className: "lead" },
+              "你自研时最容易犯的错，是把 HTTP、NCCL、reward、PPO loss、checkpoint 全塞进一个 trainer。建议按下面这些类切开，AReaL 的源码也是类似边界。"
+            ),
+            h("div", { className: "tabs" }, DATA.classes.map((c) =>
+              h("button", {
+                className: "tab" + (klass === c.key ? " active" : ""),
+                onClick: () => setKlass(c.key),
+                key: c.key
+              }, c.name)
+            )),
+            h("div", { className: "detail" },
+              h("div", { className: "card" },
+                h("div", { className: "card-label" }, "responsibility"),
+                h("h3", null, activeClass.name),
+                h("p", null, activeClass.why),
+                h("p", null,
+                  "落地原则：接口参数尽量是 typed dataclass 或 tensor dict；跨进程传输时只传可序列化对象；训练后端内部可以复杂，但暴露给算法层的方法要少。"
+                )
+              ),
+              h("div", { className: "code-panel" },
+                h("div", { className: "code-head" }, h("span", null, activeClass.key + ".py"), h("span", null, "minimal interface")),
+                h(CodeBlock, { code: activeClass.code })
+              )
+            )
+          ),
+
+          h(SectionTitle, { id: "loop", kicker: "Training loop", title: "训练主循环：同步版能 debug，异步版吃吞吐" },
+            h("p", { className: "lead" },
+              "AReaL 的 PPOTrainer 主循环可以抽象为六段：rollout、补 critic/ref/teacher logprob、算 advantage、actor update、critic update、暂停推理并更新权重。异步版让 rollout 和 train 重叠，但用版本号守住 off-policy 边界。"
+            ),
+            h("div", { className: "flow" },
+              [
+                ["1", "Rollout", "Workflow 调 inference engine 生成 token/logprob/version/reward"],
+                ["2", "Ref/Critic", "补 ref_logp、values 或 teacher_logp"],
+                ["3", "Advantage", "KL reward + task reward + GAE/GRPO normalization"],
+                ["4", "Actor Update", "PPO/GRPO/GSPO ratio、clip、反向传播"],
+                ["5", "Weight Sync", "disk / XCCL / AWEX 更新 rollout 权重"],
+                ["6", "Resume", "set_version，恢复 rollout，记录 stats/checkpoint"]
+              ].map(([n, t, s]) => h("div", { className: "flow-step", key: n },
+                h("div", { className: "num" }, n),
+                h("strong", null, t),
+                h("span", null, s)
+              ))
+            ),
+            h("div", { className: "timeline" },
+              h("div", { className: "bar-row" },
+                h("div", { className: "bar-label" }, "rollout GPUs"),
+                h("div", { className: "bar-track" },
+                  h("div", { className: "bar rollout", style: { left: "0%", width: "34%" } }, "gen v0"),
+                  h("div", { className: "bar rollout", style: { left: "34%", width: "31%" } }, "gen v0/v1"),
+                  h("div", { className: "bar pause", style: { left: "65%", width: "8%" } }, "pause"),
+                  h("div", { className: "bar rollout", style: { left: "73%", width: "27%" } }, "gen v1")
+                )
+              ),
+              h("div", { className: "bar-row" },
+                h("div", { className: "bar-label" }, "training GPUs"),
+                h("div", { className: "bar-track" },
+                  h("div", { className: "bar pause", style: { left: "0%", width: "18%" } }, "wait batch"),
+                  h("div", { className: "bar train", style: { left: "18%", width: "37%" } }, "ppo update"),
+                  h("div", { className: "bar comm", style: { left: "55%", width: "18%" } }, "sync weights"),
+                  h("div", { className: "bar train", style: { left: "73%", width: "27%" } }, "next update")
+                )
+              )
+            ),
+            h("div", { className: "grid cols-2", style: { marginTop: 18 } },
+              h("div", { className: "card" },
+                h("div", { className: "card-title" }, "标准 PPO/GRPO", h("span", { className: "card-label" }, "on-policy")),
+                h("p", null, "ratio 用当前训练 forward 的 logprob 和 rollout 时缓存的 old_logprob。同步训练最简单，调试友好，但 rollout 期间训练 GPU 空转。")
+              ),
+              h("div", { className: "card" },
+                h("div", { className: "card-title" }, "Decoupled PPO", h("span", { className: "card-label" }, "async")),
+                h("p", null, "把 behavior policy、proximal policy、current policy 分开。token 上记录生成版本；需要 recompute prox_logp，或用 loglinear approximation 降掉一次 forward。")
+              )
+            )
+          ),
+
+          h(SectionTitle, { id: "core-code", kicker: "Core algorithm code", title: "核心算法代码：这些模块照着实现，就能搭起第一版训练库" },
+            h("p", { className: "lead" },
+              "下面不是只画框图，而是把关键算法和系统状态机写成可运行风格的 Python/PyTorch 代码。真实工程里你会把它们拆进不同文件：data.py、rollout.py、staleness.py、losses.py、engine.py、trainer.py、weight_sync.py、attention.py。"
+            ),
+            h("div", { className: "tabs" }, DATA.coreAlgorithms.map((item, i) =>
+              h("button", {
+                className: "tab" + (algo === i ? " active" : ""),
+                onClick: () => setAlgo(i),
+                key: item.name
+              }, item.short)
+            )),
+            h("div", { className: "detail" },
+              h("div", { className: "card" },
+                h("div", { className: "card-label" }, "implementation target"),
+                h("h3", null, activeAlgo.name),
+                h("p", null, activeAlgo.goal),
+                h("table", { className: "matrix" },
+                  h("thead", null, h("tr", null, h("th", null, "模块"), h("th", null, "验收方式"))),
+                  h("tbody", null,
+                    h("tr", null, h("td", null, "数据契约"), h("td", null, "同一条 trajectory 的 text decode、token ids、loss_mask、logprob 长度完全一致")),
+                    h("tr", null, h("td", null, "数值正确"), h("td", null, "padded 与 packed forward 的 logprob/loss 在容差内一致")),
+                    h("tr", null, h("td", null, "异步正确"), h("td", null, "不同 versions 的 token 不丢失，staleness 超阈值时能停止提交")),
+                    h("tr", null, h("td", null, "可替换后端"), h("td", null, "SGLang/vLLM、FSDP/Megatron/Archon 任一替换时算法代码不改"))
+                  )
+                ),
+                h("p", null,
+                  "建议你先把这些代码单独做成小测试：shape 测试、mask 测试、loss 与手算对齐测试、保存恢复测试。等这些都稳了，再接 Slurm、NCCL、推理服务。"
+                )
+              ),
+              h("div", { className: "code-panel" },
+                h("div", { className: "code-head" }, h("span", null, activeAlgo.short + ".py"), h("span", null, "core implementation")),
+                h(CodeBlock, { code: activeAlgo.code })
+              )
+            )
+          ),
+
+          h(SectionTitle, { id: "kv", kicker: "KV and weights", title: "KV 怎么处理：推理用 KV cache，训练用 packed/tree attention" },
+            h("p", { className: "lead" },
+              "这里要分清两个概念：推理引擎里的 KV cache 是为了低延迟/高吞吐 decode；训练 actor 重新算 logprob 时不应该复用旧 policy 的 KV。AReaL 的选择是把 KV cache 交给 SGLang/vLLM，同时在训练侧做 packed sequence 和 tree training。"
+            ),
+            h("div", { className: "grid cols-4", style: { marginTop: 22 } },
+              DATA.kv.map((item) => h("div", { className: "card compact", key: item.title },
+                h("div", { className: "card-title" }, item.title),
+                h("p", null, item.text)
+              ))
+            ),
+            h("table", { className: "matrix" },
+              h("thead", null, h("tr", null, h("th", null, "场景"), h("th", null, "KV 策略"), h("th", null, "你要实现什么"))),
+              h("tbody", null,
+                h("tr", null, h("td", null, "单轮 rollout"), h("td", null, "后端 paged KV/continuous batching"), h("td", null, "ModelRequest/Response、logprob parsing、stop reason")),
+                h("tr", null, h("td", null, "多轮 agent"), h("td", null, "same rid sticky routing + prefix/radix cache"), h("td", null, "session cache、parent-child interaction、reward backprop")),
+                h("tr", null, h("td", null, "权重更新"), h("td", null, "旧 KV 对旧权重有效，更新后应中止/重算"), h("td", null, "pause_generation、update_weights、set_version、resume")),
+                h("tr", null, h("td", null, "训练 logprob"), h("td", null, "不用 generation KV；use_cache=False"), h("td", null, "cu_seqlens、loss_mask、tree attention、activation checkpoint"))
+              )
+            ),
+            h("div", { className: "code-panel", style: { marginTop: 18 } },
+              h("div", { className: "code-head" }, h("span", null, "weight_update_state_machine.py"), h("span", null, "关键顺序")),
+              h(CodeBlock, { code: `rollout.pause()                    # 停止接新任务
+rollout.pause_generation()         # 推理后端中止/暂停 decode
+actor.update_weights(meta_v_next)  # disk / XCCL / AWEX
+actor.set_version(v_next)
+rollout.set_version(v_next)
+rollout.continue_generation()
+rollout.resume()
+
+# 已完成 trajectory 仍带旧 versions；
+# loss 层用 decoupled PPO / rejection sampling / staleness limit 处理。` })
+            )
+          ),
+
+          h(SectionTitle, { id: "kernels", kicker: "Attention kernels", title: "Attention kernel 技巧：先选对路径，再做融合" },
+            h("p", { className: "lead" },
+              "AReaL 暴露的 attention impl 包括 eager、sdpa、flash_attention_2、flash_attention_3、flex_attention，也支持 Hugging Face kernels repo ID。你自研时建议按硬件和场景做一个 kernel policy。"
+            ),
+            h("div", { className: "tabs" }, DATA.kernels.map((k, i) =>
+              h("button", {
+                className: "tab" + (kernel === i ? " active" : ""),
+                onClick: () => setKernel(i),
+                key: k.name
+              }, k.name.split("：")[0])
+            )),
+            h("div", { className: "detail" },
+              h("div", { className: "card" },
+                h("div", { className: "card-label" }, activeKernel.fit),
+                h("h3", null, activeKernel.name),
+                h("p", null, activeKernel.details),
+                h("table", { className: "matrix" },
+                  h("thead", null, h("tr", null, h("th", null, "技巧"), h("th", null, "说明"))),
+                  h("tbody", null, activeKernel.tips.map((t) =>
+                    h("tr", { key: t }, h("td", null, t), h("td", null, "先 profiling，再确认数值一致性。"))
+                  ))
+                ),
+                h("p", { className: "red-text" }, "风险：", h("span", { className: "muted" }, " " + activeKernel.risk))
+              ),
+              h("div", { className: "code-panel" },
+                h("div", { className: "code-head" }, h("span", null, "kernel_policy.yaml"), h("span", null, "A100/H100")),
+                h(CodeBlock, { code: `# A100 baseline
+actor:
+  attn_impl: flash_attention_2
+  dtype: bf16
+  gradient_checkpointing: true
+
+# H100 experiment
+actor:
+  attn_impl: flash_attention_3
+  fp8:
+    enabled: true
+    target: ["linear", "mlp"]
+  archon:
+    enable_compile: true
+
+# Tree / agentic RL
+actor:
+  enable_tree_training: true
+  pad_to_maximum: true
+  mb_spec:
+    max_tokens_per_mb: 8192
+    packing_algorithm: kk` })
+              )
+            )
+          ),
+
+          h(SectionTitle, { id: "cluster", kicker: "Cluster fit", title: "落到你自己的 A100/H100 集群：先做资源模型" },
+            h("p", { className: "lead" },
+              "不要一开始就讨论“用几张卡训 70B”。先按 rollout:train 的比例、TP/PP instance size、DP 副本数估算资源，然后再根据实际 tokens/s 调整。"
+            ),
+            h("div", { className: "calc" },
+              h("div", { className: "field" },
+                h("label", null, "Total GPUs"),
+                h("input", { type: "number", min: 1, value: gpu, onChange: (e) => setGpu(Number(e.target.value || 1)) })
+              ),
+              h("div", { className: "field" },
+                h("label", null, "Rollout ratio"),
+                h("input", { type: "number", min: 0.05, max: 0.9, step: 0.05, value: ratio, onChange: (e) => setRatio(Number(e.target.value || 0.1)) })
+              ),
+              h("div", { className: "field" },
+                h("label", null, "TP size"),
+                h("input", { type: "number", min: 1, value: tp, onChange: (e) => setTp(Number(e.target.value || 1)) })
+              ),
+              h("div", { className: "field" },
+                h("label", null, "PP size"),
+                h("input", { type: "number", min: 1, value: pp, onChange: (e) => setPp(Number(e.target.value || 1)) })
+              )
+            ),
+            h("div", { className: "result" },
+              h("div", { className: "metric" }, h("div", { className: "value" }, inferGpus), h("div", { className: "name" }, "rollout GPUs")),
+              h("div", { className: "metric" }, h("div", { className: "value" }, trainGpus), h("div", { className: "name" }, "training GPUs")),
+              h("div", { className: "metric" }, h("div", { className: "value" }, rolloutReplicas), h("div", { className: "name" }, "rollout replicas")),
+              h("div", { className: "metric" }, h("div", { className: "value" }, trainDp), h("div", { className: "name" }, "train DP replicas"))
+            ),
+            h("div", { className: "grid cols-3", style: { marginTop: 18 } },
+              h("div", { className: "card" },
+                h("div", { className: "card-title" }, "A100 建议起点"),
+                h("p", null, "bf16、FlashAttention 2、FSDP2 或 Megatron TP，NCCL 参数保守，优先把通信拓扑和 checkpoint 跑稳。")
+              ),
+              h("div", { className: "card" },
+                h("div", { className: "card-title" }, "H100 建议起点"),
+                h("p", null, "bf16 baseline 后再试 FP8、FA3、compile、CUDA graph。H100 更容易被 CPU/proxy/存储拖住。")
+              ),
+              h("div", { className: "card" },
+                h("div", { className: "card-title" }, "调参顺序"),
+                h("p", null, "先 max_tokens_per_mb 和 packing，再 rollout concurrency，再 staleness，再 kernel。不要同时改五个变量。")
+              )
+            ),
+            h("table", { className: "matrix" },
+              h("thead", null, h("tr", null, h("th", null, "工具"), h("th", null, "建议"))),
+              h("tbody", null, DATA.tools.map(([name, advice]) =>
+                h("tr", { key: name }, h("td", null, name), h("td", null, advice))
+              ))
+            )
+          ),
+
+          h(SectionTitle, { id: "sources", kicker: "Local anchors", title: "本页参考的 AReaL 源码锚点" },
+            h("p", { className: "lead" },
+              "下面这些文件是你继续深挖时最值得看的入口。先看接口和 trainer 主循环，再看 remote inference、packing、attention。"
+            ),
+            h("ol", { className: "source-list" },
+              DATA.sourceAnchors.map(([label, path]) =>
+                h("li", { key: path }, h("a", { href: path }, label), h("span", { className: "faint" }, " · " + path))
+              )
+            ),
+            h("div", { className: "card", style: { marginTop: 18 } },
+              h("div", { className: "card-title" }, "我会怎么真正开工"),
+              h("p", null, "第一周：单机同步 GRPO + trajectory schema 测试。第二周：FSDP2 多卡 + SGLang rollout adapter。第三周：Slurm scheduler + XCCL weight update。第四周：异步 staleness + prox_logp approximation。第五周以后：tree attention、KK packing、kernel profiling、H100 FP8。")
+            )
+          )
+        )
+      );
+    }
+
+    window.addEventListener("load", function () {
+      if (!window.React || !window.ReactDOM) return;
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(React.createElement(App));
+    });
+  </script>
+</body>
+</html>

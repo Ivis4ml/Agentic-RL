@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 第 12 课：PPO Trainer 主循环与端到端</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    .stepnum{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--teal);color:#08201f;font-weight:800;font-size:12px;font-family:var(--mono);margin-right:8px;flex:none;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 12 课</p><h1>PPO Trainer 主循环与端到端</h1><p>能访问 CDN 时切换为交互版。本课讲清 verl 的训练主循环：RayPPOTrainer 与 v1 PPOTrainer 的构造与 fit()，一次 PPO 步的完整控制流（取批、生成、计算 old/ref log-prob 与 value、估计 advantage、更新 critic 与 actor、记录指标），奖励计算、指标统计、checkpoint 管理与 checkpoint engine、模型合并导出 HF，并把第 1 至 11 课串成一条端到端数据流。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const VERL="vscode://file/Users/xinyu/Code/Agentic-RL/verl/";
+  function srcUrl(p,l){return VERL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","DataProto","WorkerGroup","ResourcePool","RayWorkerGroup","AgentLoop","RayPPOTrainer","PPOTrainer","KVBatchMeta","ResourcePoolManager","AdvantageEstimator","CheckpointEngineManager","LLMServerManager","ReplayBuffer","TensorDict","np","ray","tq","Role"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与HybridFlow","verl-lesson-01-foundations.html"],[2,"DataProto","verl-lesson-02-dataproto.html"],[3,"混合控制器","verl-lesson-03-single-controller.html"],[4,"配置","verl-lesson-04-config.html"],[5,"RL数学","verl-lesson-05-core-algos.html"],[6,"训练引擎","verl-lesson-06-engines.html"],[7,"Workers","verl-lesson-07-workers.html"],[8,"Rollout","verl-lesson-08-rollout.html"],[9,"异步服务","verl-lesson-09-async-server.html"],[10,"Agent Loop","verl-lesson-10-agent-loop.html"],[11,"异步训练","verl-lesson-11-async-train.html"],[12,"Trainer与端到端","verl-lesson-12-trainer-e2e.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"verl-course-index.html"},"verl",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 入口与两代 Trainer 的关系 =====
+  function EntrySection(){
+    return h("div",null,
+      h("p",null,"训练从命令行入口 ",h("code",null,"verl/trainer/main_ppo.py")," 进入。该文件用 Hydra 读取并校验配置，然后由 ",h("code",null,"run_ppo")," 启动 Ray 集群，再创建一个 ",h("strong",null,"驱动进程（driver）"),"角色的 Ray actor 来承载真正的训练循环。这正是第 1 课讲过的 HybridFlow 单控制器思想：一个中心驱动进程通过 RPC 调度散布在多机多卡上的 worker，把分布式系统编排成可读的单线程控制流。"),
+      h("p",null,"verl 此刻有两代 Trainer 并存，本课都覆盖："),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-amber"},"v0 旧版（已弃用但仍是教学基准）"),"：",h("code",null,"verl/trainer/ppo/ray_trainer.py")," 中的 ",h("code",null,"RayPPOTrainer"),"，其 ",h("code",null,"fit()")," 是一段经典、可逐行阅读的同步 PPO 主循环。",h("code",null,"@deprecated")," 装饰器标注它将在 v0.9.0 移除，但它的控制流仍是最清晰的入门读物。"),
+        h("li",null,h("strong",{className:"hl-teal"},"v1 新版（默认路径）"),"：",h("code",null,"verl/trainer/ppo/v1/trainer_base.py")," 中的抽象基类 ",h("code",null,"PPOTrainer")," 与三个子类（",h("code",null,"sync"),"、",h("code",null,"colocate_async"),"、",h("code",null,"separate_async"),"），把同样的 PPO 步拆成 ",h("code",null,"step()")," 与一组生命周期回调，并引入 ",h("code",null,"TransferQueue")," 作为数据中转、",h("code",null,"CheckpointEngineManager")," 作为权重同步层。")
+      ),
+      h("p",null,"入口逻辑：",h("code",null,"main()")," 先调用 ",h("code",null,"auto_set_device")," 与 ",h("code",null,"validate_config"),"，再根据 ",h("code",null,"trainer.use_v1")," 选择 ",h("code",null,"TaskRunnerV1")," 或旧版 ",h("code",null,"TaskRunner"),"。",h("code",null,"run_ppo")," 把 ",h("code",null,"TaskRunner")," 实例化为一个远程 actor 并阻塞等待 ",h("code",null,"runner.run.remote(config)"),"。"),
+      h(Code,null,"# main_ppo.py：选择 v1 或 v0 TaskRunner\n@hydra.main(config_path=\"config\", config_name=\"ppo_trainer\", version_base=None)\ndef main(config):\n    auto_set_device(config)\n    validate_config(config,\n        use_reference_policy=need_reference_policy(config),\n        use_critic=need_critic(config))\n    if config.trainer.use_v1:\n        run_ppo(config, task_runner_class=TaskRunnerV1)\n    else:\n        from verl.trainer.main_ppo_v0 import TaskRunner   # 旧版, 将移除\n        run_ppo(config, task_runner_class=TaskRunner)"),
+      h("p",null,"v1 的 ",h("code",null,"TaskRunnerV1.run")," 还多做三件事：开启 ",h("code",null,"transfer_queue"),"、按 ",h("code",null,"trainer.v1.trainer_mode")," 用 ",h("code",null,"get_trainer_cls")," 取出对应 Trainer 子类、构造 agent loop manager 并把它注入 ",h("code",null,"fit()"),"。这把第 10 课的 Agent Loop 与本课的训练循环连接起来。"),
+      h(Code,null,"# main_ppo.py：TaskRunnerV1.run（精简）\ndef run(self, config):\n    import transfer_queue as tq\n    from verl.trainer.ppo.v1 import get_trainer_cls\n    trainer_cls = get_trainer_cls(config.trainer.v1.trainer_mode)   # sync / colocate_async / separate_async\n    config.transfer_queue.enable = True\n    self.config = config\n    tq.init(config.transfer_queue)\n    try:\n        self.trainer = trainer_cls(config=config)\n        self.trainer.init()                      # 建 worker / server / checkpoint engine\n        self.init_agent_loop_manager()           # 第 10 课的 agent loop\n        self.trainer.fit(self.agent_loop_manager)\n    finally:\n        tq.close()"),
+      h("div",null,
+        h(Src,{label:"main()",path:"verl/trainer/main_ppo.py",line:145}),
+        h(Src,{label:"run_ppo",path:"verl/trainer/main_ppo.py",line:33}),
+        h(Src,{label:"TaskRunnerV1",path:"verl/trainer/main_ppo.py",line:90}),
+        h(Src,{label:"TaskRunnerV1.run",path:"verl/trainer/main_ppo.py",line:120}),
+        h(Src,{label:"get_trainer_cls",path:"verl/trainer/ppo/v1/trainer_base.py",line:1500}),
+        h(Src,{label:"register_trainer",path:"verl/trainer/ppo/v1/trainer_base.py",line:1482})
+      ),
+      h("div",{className:"note"},"为何保留两代？v0 的 ",h("code",null,"RayPPOTrainer.fit()")," 是一段把所有阶段写在一个 ",h("code",null,"for")," 循环里的同步控制流，便于读懂 PPO 的数据流；v1 把同样的步骤拆进 ",h("code",null,"step()")," 与回调，并用 ",h("code",null,"TransferQueue")," 取代显式的 ",h("code",null,"DataProto.union")," 拼接，从而支持同步、共置异步、分离异步三种模式共用同一套主循环。本课先用 v0 把控制流讲透，再说明 v1 如何抽象同一件事。")
+    );
+  }
+
+  // ===== RayPPOTrainer 构造与组件装配 =====
+  function ConstructSection(){
+    return h("div",null,
+      h("p",null,"无论 v0 还是 v1，Trainer 的构造与初始化都在做同一件事：把第 3 至 9 课的组件装配成一个可调度的系统。理解装配顺序，就理解了整个训练系统的拓扑。"),
+      h("h3",null,"v0：RayPPOTrainer.__init__ 与 init_workers"),
+      h("p",null,"v0 构造函数接收 ",h("code",null,"role_worker_mapping")," 与 ",h("code",null,"resource_pool_manager")," 两个核心参数：前者把逻辑角色（",h("code",null,"Role.ActorRollout"),"、",h("code",null,"Role.Critic"),"、",h("code",null,"Role.RefPolicy"),"、",h("code",null,"Role.RewardModel"),"）映射到具体的 worker 类；后者管理 Ray 资源池（第 3 课）。构造时先据配置算出 ",h("code",null,"use_critic"),"、",h("code",null,"use_reference_policy"),"、",h("code",null,"use_rm")," 等开关，再创建 dataloader。",h("code",null,"assert self.hybrid_engine")," 表明 v0 只支持混合引擎（actor 与 rollout 共置在同一 worker，第 7、8 课）。"),
+      h("p",null,"真正的资源分配在 ",h("code",null,"init_workers()"),"：它把同一资源池上的多个角色用 ",h("code",null,"create_colocated_worker_cls")," 合成一个共置 worker 类（第 3 课的 colocate 技术），再 ",h("code",null,"spawn")," 出各角色的 ",h("code",null,"WorkerGroup"),"。这一步之后，",h("code",null,"self.actor_rollout_wg"),"、",h("code",null,"self.critic_wg")," 等就成了驱动进程手里的远程句柄，后续 ",h("code",null,"fit()")," 里所有 ",h("code",null,"self.xxx_wg.method(...)")," 都是对它们的 RPC。"),
+      h("div",null,
+        h(Src,{label:"RayPPOTrainer",path:"verl/trainer/ppo/ray_trainer.py",line:286}),
+        h(Src,{label:"__init__",path:"verl/trainer/ppo/ray_trainer.py",line:296}),
+        h(Src,{label:"_create_dataloader",path:"verl/trainer/ppo/ray_trainer.py",line:374}),
+        h(Src,{label:"init_workers",path:"verl/trainer/ppo/ray_trainer.py",line:772})
+      ),
+      h("h3",null,"v1：PPOTrainer.__init__ 与 _setup 的十步装配"),
+      h("p",null,"v1 的初始化分两层：",h("code",null,"__init__")," 只读配置、建 ",h("code",null,"ReplayBuffer"),"（off-policy 采样器，第 11 课），重活全在 ",h("code",null,"init() → _setup()")," 里，按编号依次装配十个组件。这段代码是理解 v1 全系统拓扑最直接的索引。"),
+      h(Code,null,"# trainer_base.py：_setup() 的装配顺序（节选）\nself._init_tokenizer(); self._init_dataloader(); self._init_dump_executor()\nself._init_resource_pool_mgr(); self.resource_pool_manager.create_resource_pool()\n# 1-3. actor/rollout + critic 的 RayClassWithInitArgs, 共置后 spawn 出 WorkerGroup\nfor resource_pool, class_dict in self.resource_pool_to_cls.items():\n    worker_dict_cls = create_colocated_worker_cls(class_dict=class_dict)\n    wg_dict = RayWorkerGroup(resource_pool=resource_pool, ray_cls_with_init=worker_dict_cls, **wg_kwargs)\n    all_wg.update(wg_dict.spawn(prefix_set=class_dict.keys()))\n# 5-6. critic / actor 模型引擎初始化\nself.actor_rollout_wg = all_wg[str(actor_role)]; self.actor_rollout_wg.init_model()\n# 7-8. reward loop manager / teacher model manager\nself.reward_loop_manager = RewardLoopManager(config=self.config, rm_resource_pool=resource_pool)\n# 9. LLM server manager（rollout 服务, 第 9 课）\nself.llm_server_manager = LLMServerManager.create(config=self.config, worker_group=self.actor_rollout_wg, ...)\n# 10. checkpoint engine manager（权重同步, 见下文）\nself.checkpoint_manager = CheckpointEngineManager(config=..., actor_wg=self.actor_rollout_wg,\n                                                  replicas=self.llm_server_manager.get_replicas())\nself.checkpoint_manager.sleep_replicas(); self._load_checkpoint()"),
+      h("div",null,
+        h(Src,{label:"PPOTrainer.__init__",path:"verl/trainer/ppo/v1/trainer_base.py",line:108}),
+        h(Src,{label:"init",path:"verl/trainer/ppo/v1/trainer_base.py",line:140}),
+        h(Src,{label:"_setup",path:"verl/trainer/ppo/v1/trainer_base.py",line:152}),
+        h(Src,{label:"_build_replay_buffer",path:"verl/trainer/ppo/v1/trainer_base.py",line:120}),
+        h(Src,{label:"_init_dataloader",path:"verl/trainer/ppo/v1/trainer_base.py",line:512})
+      ),
+      h("div",{className:"note"},"装配顺序体现依赖关系：先有资源池才能 spawn worker；先有 worker 才能建 ",h("code",null,"LLMServerManager"),"（rollout 服务需要 actor 权重）；先有 server replicas 才能建 ",h("code",null,"CheckpointEngineManager"),"（它要在 actor worker 与 rollout replicas 之间同步权重）。这正是后文“端到端追踪”一节里数据流的物理基础。")
+    );
+  }
+
+  // ===== fit() 主循环：一次 PPO 步的控制流 =====
+  const STEPS=[
+    {key:"loop",name:"主循环骨架",render:function(){return [
+      h("p",null,"v0 的 ",h("code",null,"fit()")," 是双重循环：外层 ",h("code",null,"epoch"),"，内层遍历 ",h("code",null,"train_dataloader")," 的每个 batch。循环开始前先 ",h("code",null,"_load_checkpoint()")," 续训、把权重同步给 rollout、（可选）跑一次训练前验证。每个 batch 即一次 PPO 步，所有阶段被 ",h("code",null,"marked_timer")," 包裹以记录耗时。"),
+      h(Code,null,"# ray_trainer.py：fit() 骨架（精简）\nself.global_steps = 0\nself._load_checkpoint()\nself.checkpoint_manager.update_weights(self.global_steps)   # 训练前先同步一次权重给 rollout\nif self.config.trainer.val_before_train:\n    val_metrics = self._validate()\n    logger.log(data=val_metrics, step=self.global_steps)\nself.global_steps += 1                                       # 从 step 1 开始\nfor epoch in range(current_epoch, self.config.trainer.total_epochs):\n    for batch_dict in self.train_dataloader:\n        batch = DataProto.from_single_dict(batch_dict)\n        batch.non_tensor_batch[\"uid\"] = np.array([str(uuid.uuid4()) for _ in range(len(batch.batch))])\n        with marked_timer(\"step\", timing_raw):\n            ...   # 见后续 Tab：生成 / 奖励 / log-prob / advantage / 更新\n        logger.log(data=metrics, step=self.global_steps)\n        self.global_steps += 1\n        if is_last_step:\n            return"),
+      h("p",null,"两个细节值得注意。第一，每个 prompt 在批内被赋予一个 ",h("code",null,"uid"),"（uuid4），它是 GRPO 等组内归一化算法分组的依据：同一 prompt 重复采样 ",h("code",null,"rollout.n")," 次后，靠 ",h("code",null,"uid")," 把它们归回一组。第二，",h("code",null,"global_steps")," 从 1 开始计数，",h("code",null,"is_last_step")," 在末步触发收尾（关闭 dump executor、打印最终验证指标）。"),
+      h("div",null,
+        h(Src,{label:"fit()",path:"verl/trainer/ppo/ray_trainer.py",line:1359}),
+        h(Src,{label:"外层 epoch 循环",path:"verl/trainer/ppo/ray_trainer.py",line:1419}),
+        h(Src,{label:"赋 uid",path:"verl/trainer/ppo/ray_trainer.py",line:1436}),
+        h(Src,{label:"is_last_step 收尾",path:"verl/trainer/ppo/ray_trainer.py",line:1753})
+      )
+    ];}},
+    {key:"gen",name:"1·生成 rollout",render:function(){return [
+      h("p",null,"第一阶段是生成。先用 ",h("code",null,"_get_gen_batch")," 从完整 batch 切出只含生成所需字段（prompt token 等）的 ",h("code",null,"gen_batch"),"，再 ",h("code",null,"repeat(repeat_times=rollout.n, interleave=True)")," 把每个 prompt 复制 ",h("code",null,"n")," 份（GRPO 一组多采样），随后交给 ",h("code",null,"async_rollout_manager.generate_sequences")," 调用 rollout 服务（第 8 至 10 课）。生成结束后 ",h("code",null,"sleep_replicas()")," 让推理 replica 让出显存（同步/共置模式下训练与推理交替占卡）。"),
+      h(Code,null,"with marked_timer(\"gen\", timing_raw, color=\"red\"):\n    combined_gen_output = self.async_rollout_manager.generate_sequences(combined_gen_batch)\n    self.checkpoint_manager.sleep_replicas()                 # 推理 replica 让出显存\n    timing_raw.update(combined_gen_output.meta_info[\"timing\"])\n# 把生成结果并回训练 batch\nbatch = batch.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n, interleave=True)\nbatch = batch.union(gen_batch_output)\nif \"response_mask\" not in batch.batch.keys():\n    batch.batch[\"response_mask\"] = compute_response_mask(batch)\nif self.config.trainer.balance_batch:\n    self._balance_batch(batch, metrics=metrics)            # 按有效 token 数在 DP rank 间均衡"),
+      h("p",null,"REMAX 估计器是一个特例：它每个 prompt 既要一份采样轨迹又要一份贪婪基线，因此把基线请求与采样请求拼成一个组合 batch 一次发出（注释解释这是为避免 replica 进入睡眠后再发第二次请求导致异步引擎状态非法）。",h("code",null,"_balance_batch")," 按有效 token 数在数据并行 rank 间重排，使各卡负载均衡（第 5 课 ",h("code",null,"seqlen_balancing"),"），它会改变批内顺序，但 advantage 基于 ",h("code",null,"uid")," 分组因而不受影响。"),
+      h("div",null,
+        h(Src,{label:"gen 计时块",path:"verl/trainer/ppo/ray_trainer.py",line:1464}),
+        h(Src,{label:"_get_gen_batch",path:"verl/trainer/ppo/ray_trainer.py",line:572}),
+        h(Src,{label:"repeat + union",path:"verl/trainer/ppo/ray_trainer.py",line:1494}),
+        h(Src,{label:"compute_response_mask",path:"verl/trainer/ppo/ray_trainer.py",line:120}),
+        h(Src,{label:"_balance_batch",path:"verl/trainer/ppo/ray_trainer.py",line:1145})
+      )
+    ];}},
+    {key:"reward",name:"2·奖励",render:function(){return [
+      h("p",null,"生成结果到手后计算奖励。若启用奖励模型（",h("code",null,"use_rm"),"），先用 ",h("code",null,"_compute_reward_colocate")," 跑奖励模型打分写入 ",h("code",null,"rm_scores"),"；随后 ",h("code",null,"extract_reward(batch)")," 取出 token 级奖励张量与附加信息字典。",h("code",null,"extract_reward")," 的实现极简：从 ",h("code",null,"batch.batch[\"rm_scores\"]")," 取分数，从 ",h("code",null,"meta_info[\"reward_extra_keys\"]")," 取出额外字段（如分项奖励、verifier 标记）。"),
+      h(Code,null,"# reward.py：extract_reward\ndef extract_reward(batch: DataProto):\n    reward_tensor = batch.batch[\"rm_scores\"]\n    reward_extra_keys = batch.meta_info.get(\"reward_extra_keys\", [])\n    reward_extra_infos_dict = {key: batch.non_tensor_batch[key] for key in reward_extra_keys}\n    return reward_tensor, reward_extra_infos_dict"),
+      h("p",null,"奖励的“来源”则由 ",h("code",null,"load_reward_manager")," 在初始化阶段确定：它可以是规则函数（数学/代码的可验证答案）、沙箱执行（",h("code",null,"sandbox_fusion"),"）、用户自定义函数（",h("code",null,"custom_reward_function")," 按路径动态导入），或注册表里的奖励管理器。这与第 1 课“数据生成自由度最大化”的设计动机一致：奖励作为可插拔的数据生成/打分工作流接入，而不改训练内核。"),
+      h("div",null,
+        h(Src,{label:"reward 计时块",path:"verl/trainer/ppo/ray_trainer.py",line:1515}),
+        h(Src,{label:"extract_reward",path:"verl/trainer/ppo/reward.py",line:160}),
+        h(Src,{label:"load_reward_manager",path:"verl/trainer/ppo/reward.py",line:111}),
+        h(Src,{label:"get_custom_reward_fn",path:"verl/trainer/ppo/reward.py",line:50}),
+        h(Src,{label:"resolve_reward_manager_cls",path:"verl/trainer/ppo/reward.py",line:89})
+      )
+    ];}},
+    {key:"logprob",name:"3·old/ref log-prob 与 value",render:function(){return [
+      h("p",null,"PPO 需要三类前向量：",h("code",null,"old_log_probs"),"（生成时策略的对数概率，作为重要性采样比的分母与近端锚点）、",h("code",null,"ref_log_prob"),"（参考策略，用于 KL 惩罚）、",h("code",null,"values"),"（critic 估计的状态价值，仅 GAE 需要）。这三步都是无梯度的前向，分别由 actor、ref、critic 三个 worker group 远程计算。"),
+      h(Code,null,"# old_log_probs：默认重算（decoupled）, 也可 bypass 直接用 rollout_log_probs\nwith marked_timer(\"old_log_prob\", timing_raw, color=\"blue\"):\n    old_log_prob, old_log_prob_mfu = self._compute_old_log_prob(batch)\n    batch = batch.union(old_log_prob)\n# ref_log_prob：仅当启用参考策略\nif self.use_reference_policy:\n    with marked_timer(str(Role.RefPolicy), timing_raw, color=\"olive\"):\n        batch = batch.union(self._compute_ref_log_prob(batch))\n# values：仅当使用 critic（GAE）\nif self.use_critic:\n    with marked_timer(\"values\", timing_raw, color=\"cyan\"):\n        batch = batch.union(self._compute_values(batch))"),
+      h("p",null,"为何要在训练侧“重算” old_log_probs 而非直接用生成时的概率？因为推理引擎（vLLM/SGLang）与训练引擎（FSDP/Megatron）的数值实现存在差异，直接复用会引入系统性偏差。verl 提供两种模式：",h("strong",null,"解耦模式（decoupled）"),"重算 ",h("code",null,"old_log_probs")," 作为稳定的近端锚点（每批算一次，在 mini-batch 更新中保持不变）；",h("strong",null,"旁路模式（bypass）"),"直接令 ",h("code",null,"old_log_probs = rollout_log_probs"),"，省去一次前向但接受偏差。第 5 课的 rollout correction 处理由此产生的 off-policy 修正。"),
+      h("div",null,
+        h(Src,{label:"old_log_prob 计时块",path:"verl/trainer/ppo/ray_trainer.py",line:1539}),
+        h(Src,{label:"_compute_old_log_prob",path:"verl/trainer/ppo/ray_trainer.py",line:1253}),
+        h(Src,{label:"_compute_ref_log_prob",path:"verl/trainer/ppo/ray_trainer.py",line:1229}),
+        h(Src,{label:"_compute_values",path:"verl/trainer/ppo/ray_trainer.py",line:1215})
+      )
+    ];}},
+    {key:"adv",name:"4·KL 惩罚与 advantage",render:function(){return [
+      h("p",null,"拿到奖励与各路 log-prob 后，在 ",h("code",null,"adv")," 计时块里组装优势函数。先把 ",h("code",null,"reward_tensor")," 写成 ",h("code",null,"token_level_scores"),"；若 ",h("code",null,"use_kl_in_reward")," 为真，用 ",h("code",null,"apply_kl_penalty")," 把 KL 散度作为逐 token 惩罚扣减进奖励，得到 ",h("code",null,"token_level_rewards"),"；否则两者相等。最后调用第 5 课的 ",h("code",null,"compute_advantage")," 按 ",h("code",null,"adv_estimator")," 计算优势与回报。"),
+      h(Formula,{cap:"in-reward KL 惩罚（apply_kl_penalty）：把参考策略的 KL 扣进逐 token 奖励"},"$$ r_t \\;=\\; s_t \\;-\\; \\beta\\,\\mathrm{KL}\\!\\big(\\pi_{\\theta_{\\text{old}}}(\\cdot\\mid x_{<t})\\,\\Vert\\,\\pi_{\\text{ref}}(\\cdot\\mid x_{<t})\\big) $$"),
+      h("p",null,"其中 ",h("code",null,"s_t")," 为 token 级原始分数，",h("code",null,"β")," 由自适应 KL 控制器 ",h("code",null,"AdaptiveKLController")," 按实测 KL 动态调整。优势估计在 ",h("strong",null,"驱动进程"),"上完成（轻量、无需 GPU），这是 HybridFlow 单控制器的体现：worker 算重活（前向/反向），driver 做轻量的算法编排。GAE 是最经典的估计器："),
+      h(Formula,{cap:"GAE（compute_gae_advantage_return）：TD 残差的指数加权和"},"$$ \\delta_t = r_t + \\gamma V(s_{t+1}) - V(s_t), \\qquad \\hat{A}_t = \\sum_{l=0}^{T-t-1}(\\gamma\\lambda)^{l}\\,\\delta_{t+l} $$"),
+      h("p",null,"源码以反向递推实现：",h("code",null,"lastgaelam = delta + gamma*lam*lastgaelam"),"，并用 ",h("code",null,"response_mask")," 在观测 token 处跳过 TD 误差；",h("code",null,"returns = advantages + values"),"，优势再经 ",h("code",null,"masked_whiten")," 白化。GRPO 等无 critic 估计器则改用组内（按 ",h("code",null,"uid"),"）归一化，不需要 ",h("code",null,"values"),"。"),
+      h("div",null,
+        h(Src,{label:"adv 计时块",path:"verl/trainer/ppo/ray_trainer.py",line:1585}),
+        h(Src,{label:"apply_kl_penalty",path:"verl/trainer/ppo/ray_trainer.py",line:78}),
+        h(Src,{label:"compute_advantage（driver）",path:"verl/trainer/ppo/ray_trainer.py",line:187}),
+        h(Src,{label:"compute_gae_advantage_return",path:"verl/trainer/ppo/core_algos.py",line:216}),
+        h(Src,{label:"compute_grpo_outcome_advantage",path:"verl/trainer/ppo/core_algos.py",line:268})
+      )
+    ];}},
+    {key:"update",name:"5·更新 critic 与 actor",render:function(){return [
+      h("p",null,"最后是参数更新。若用 critic，先 ",h("code",null,"_update_critic")," 用回报回归 value（均方误差）。actor 更新前有一个 ",h("strong",null,"critic warmup")," 机制：在 ",h("code",null,"critic_warmup")," 步之前只更新 critic、不更新 actor（仅唤醒 rollout 同步权重），让 value 估计先稳定，避免 actor 被噪声很大的早期优势误导。warmup 结束后 ",h("code",null,"_update_actor")," 用 PPO 裁剪目标更新策略。"),
+      h(Code,null,"# update critic\nif self.use_critic:\n    with marked_timer(\"update_critic\", timing_raw, color=\"pink\"):\n        critic_output = self._update_critic(batch)\n    metrics.update(reduce_metrics(critic_output.meta_info[\"metrics\"]))\n# critic warmup：未到 warmup 步则只同步权重, 不更新 actor\nif self.config.trainer.critic_warmup > self.global_steps:\n    self.checkpoint_manager.update_weights(self.global_steps)\nelse:\n    with marked_timer(\"update_actor\", timing_raw, color=\"red\"):\n        actor_output = self._update_actor(batch)\n    # 满足条件则存档（末步 / 整除 save_freq / ESI 临近过期）\n    if self.config.trainer.save_freq > 0 and (is_last_step or ...):\n        with marked_timer(\"save_checkpoint\", timing_raw, color=\"green\"):\n            self._save_checkpoint()\n    # 把训练后的权重同步回 rollout\n    with marked_timer(\"update_weights\", timing_raw, color=\"red\"):\n        self.checkpoint_manager.update_weights(self.global_steps)"),
+      h("p",null,"actor 更新之后是本步的两件收尾：按条件存档（",h("code",null,"_save_checkpoint"),"），以及把更新后的权重通过 ",h("code",null,"checkpoint_manager.update_weights")," 同步回 rollout 服务，使下一步生成用上最新策略，从而保持同步 PPO 的 on-policy 性质。",h("code",null,"reduce_metrics")," 把 worker 各 DP rank 返回的指标列表规约成标量。"),
+      h(Formula,{cap:"PPO 裁剪目标（actor 更新, 第 5 课展开）"},"$$ L^{\\text{CLIP}}(\\theta) = \\mathbb{E}_t\\Big[\\min\\big(\\rho_t \\hat{A}_t,\\; \\mathrm{clip}(\\rho_t, 1-\\epsilon, 1+\\epsilon)\\,\\hat{A}_t\\big)\\Big],\\quad \\rho_t = \\frac{\\pi_\\theta(a_t\\mid s_t)}{\\pi_{\\theta_{\\text{old}}}(a_t\\mid s_t)} $$"),
+      h("div",null,
+        h(Src,{label:"update_critic 块",path:"verl/trainer/ppo/ray_trainer.py",line:1632}),
+        h(Src,{label:"critic warmup",path:"verl/trainer/ppo/ray_trainer.py",line:1640}),
+        h(Src,{label:"_update_actor",path:"verl/trainer/ppo/ray_trainer.py",line:1290}),
+        h(Src,{label:"_update_critic",path:"verl/trainer/ppo/ray_trainer.py",line:1332}),
+        h(Src,{label:"_save_checkpoint",path:"verl/trainer/ppo/ray_trainer.py",line:971}),
+        h(Src,{label:"update_weights 块",path:"verl/trainer/ppo/ray_trainer.py",line:1671})
+      )
+    ];}}
+  ];
+  function StepExplorer(){const [s,setS]=useState(0);const d=STEPS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},STEPS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== v1：同一件事的抽象 =====
+  function V1Section(){
+    return h("div",null,
+      h("p",null,"v1 把上面这条线性控制流拆成两层：",h("code",null,"fit()")," 负责 epoch/step 循环、验证、存档、记录指标的外壳；",h("code",null,"step()")," 负责单步的 PPO 数据流。两者之间靠 ",h("code",null,"on_step_begin/on_step_end"),"、",h("code",null,"on_sample_begin/on_sample_end")," 等生命周期回调连接，三个子类各自实现回调以表达不同模式。"),
+      h(Code,null,"# trainer_base.py：step() 与 v0 fit 内层完全对应\ndef step(self, metrics, timing_raw):\n    self._add_batch_to_generate()                                  # 把新 prompt 投入生成\n    with marked_timer(\"gen\", timing_raw, color=\"red\"):\n        batch, off_policy_metrics = self.replay_buffer.sample(...)  # 从 replay buffer 取批\n    if self.reward_loop_manager.reward_loop_worker_handles is None:\n        batch = self._compute_reward_colocate(batch)               # 2. 奖励\n    batch = self._balance_batch(batch, metrics=metrics)\n    batch = self._compute_old_log_prob(batch, metrics=metrics)     # 3. old log-prob\n    if self.use_reference_policy: batch = self._compute_ref_log_prob(batch, metrics=metrics)\n    if self.use_critic:          batch = self._compute_values(batch, metrics=metrics)\n    batch = self._compute_advantage(batch, metrics=metrics)        # 4. advantage\n    if self.use_critic:          batch = self._update_critic(batch, metrics=metrics)\n    if self.config.trainer.critic_warmup <= self.global_steps:\n        batch = self._update_actor(batch, metrics=metrics)         # 5. 更新 actor\n    return batch"),
+      h("p",null,"两处关键差异。其一，数据载体从 v0 的 ",h("code",null,"DataProto")," 显式 ",h("code",null,"union")," 拼接，换成 ",h("code",null,"KVBatchMeta")," 句柄 + ",h("code",null,"TransferQueue"),"：每个 worker 直接把结果 ",h("code",null,"kv_batch_put")," 进队列、按字段 ",h("code",null,"kv_batch_get")," 取回，driver 只传递轻量的 key 与 partition_id，避免把大张量在 driver 与 worker 之间反复搬运。其二，权重同步与睡眠/唤醒被移进回调：",h("code",null,"sync")," 子类在 ",h("code",null,"on_step_end")," 唤醒所有 replica 同步权重、在 ",h("code",null,"on_sample_end")," 让 replica 睡眠丢弃旧权重与 KV cache，从而把同步 PPO 的“生成与训练交替占卡”表达为回调。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"sync"),"PPOTrainerSync"),
+          h("p",null,"actor 与 rollout 共置、关闭 partial rollout。",h("code",null,"on_step_end")," 唤醒全部 replica 同步权重，",h("code",null,"on_sample_end")," 让 replica 睡眠。对应 v0 的同步 PPO。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"async"),"Colocate / Separate"),
+          h("p",null,"共置异步与分离异步两个子类把生成与训练重叠，并按 ",h("code",null,"parameter_sync_step")," 周期同步权重，配合 ",h("code",null,"ReplayBuffer")," 的陈旧度阈值。详见第 11 课。")
+        )
+      ),
+      h("div",null,
+        h(Src,{label:"fit()",path:"verl/trainer/ppo/v1/trainer_base.py",line:299}),
+        h(Src,{label:"step()",path:"verl/trainer/ppo/v1/trainer_base.py",line:404}),
+        h(Src,{label:"_compute_advantage",path:"verl/trainer/ppo/v1/trainer_base.py",line:1268}),
+        h(Src,{label:"_compute_old_log_prob",path:"verl/trainer/ppo/v1/trainer_base.py",line:1165}),
+        h(Src,{label:"PPOTrainerSync",path:"verl/trainer/ppo/v1/trainer_sync.py",line:25}),
+        h(Src,{label:"PPOTrainerSeparateAsync",path:"verl/trainer/ppo/v1/trainer_separate_async.py",line:37})
+      )
+    );
+  }
+
+  // ===== 指标 =====
+  function MetricSection(){
+    return h("div",null,
+      h("p",null,"每步末尾，v0 在 ",h("code",null,"fit()")," 内联调用 ",h("code",null,"metric_utils")," 的若干函数，v1 则集中在 ",h("code",null,"_compute_metrics")," 里。指标分四类：数据统计、时间、吞吐、方差代理。"),
+      h("ul",null,
+        h("li",null,h("code",null,"compute_data_metrics"),"：从 batch 统计分数（",h("code",null,"token_level_scores.sum"),"）、奖励、优势、回报、value 的均值/最大/最小，以及响应长度、prompt 长度、多轮对话轮数。会用 ",h("code",null,"non_aborted_mask")," 排除被中断（长度为 0）的样本，避免污染统计。critic 还报告 ",h("code",null,"vf_explained_var"),"（value 函数解释方差）。"),
+        h("li",null,h("code",null,"compute_timing_metrics"),"：把 ",h("code",null,"timing_raw")," 里各阶段（gen / reward / old_log_prob / adv / update_actor 等）的耗时按 token 数归一，便于横向比较各阶段开销。"),
+        h("li",null,h("code",null,"compute_throughout_metrics"),"：吞吐 ",h("code",null,"perf/throughput = total_num_tokens / (time * n_gpus)"),"，即每 GPU 每秒处理的 token 数。"),
+        h("li",null,h("code",null,"compute_variance_proxy_metrics"),"：用梯度范数等作为训练稳定性的方差代理指标。"),
+        h("li",null,h("code",null,"process_validation_metrics"),"：验证侧把多次采样按 ",h("code",null,"uid")," 聚合，配合 ",h("code",null,"bootstrap_metric")," 与 ",h("code",null,"calc_maj_val")," 计算 pass@k、maj@k 等。")
+      ),
+      h("p",null,"指标设计的动机：RL 训练的失败往往是静默的（reward hacking、value 崩溃、长度爆炸都不抛异常），因此 verl 把数据分布、时间、吞吐、稳定性都显式记录到 wandb/TensorBoard，使问题能在曲线上被看见。"),
+      h("div",null,
+        h(Src,{label:"compute_data_metrics",path:"verl/trainer/ppo/metric_utils.py",line:89}),
+        h(Src,{label:"compute_timing_metrics",path:"verl/trainer/ppo/metric_utils.py",line:271}),
+        h(Src,{label:"compute_throughout_metrics",path:"verl/trainer/ppo/metric_utils.py",line:315}),
+        h(Src,{label:"compute_variance_proxy_metrics",path:"verl/trainer/ppo/metric_utils.py",line:351}),
+        h(Src,{label:"process_validation_metrics",path:"verl/trainer/ppo/metric_utils.py",line:556}),
+        h(Src,{label:"_compute_metrics（v1）",path:"verl/trainer/ppo/v1/trainer_base.py",line:1383})
+      )
+    );
+  }
+
+  // ===== checkpoint =====
+  function CkptSection(){
+    return h("div",null,
+      h("p",null,"verl 的存档分两条彼此独立的路径，理解它们的分工是本节关键：",h("strong",{className:"hl-amber"},"checkpoint manager")," 负责把训练态写入磁盘与续训（持久化），",h("strong",{className:"hl-teal"},"checkpoint engine")," 负责把训练侧权重高速同步给推理侧（在线传输）。两者名字相近但目的不同。"),
+      h("h3",null,"checkpoint manager：持久化与续训"),
+      h("p",null,"按训练后端分两套：",h("code",null,"FSDPCheckpointManager")," 与 ",h("code",null,"MegatronCheckpointManager"),"，均继承 ",h("code",null,"BaseCheckpointManager"),"。它们的 ",h("code",null,"save_checkpoint")," / ",h("code",null,"load_checkpoint")," 负责把分片的模型权重、优化器状态、RNG 状态、以及 dataloader 进度（",h("code",null,"data.pt"),"）写入 ",h("code",null,"global_step_N/")," 目录，支持本地与 HDFS，以及 ",h("code",null,"max_ckpt_to_keep")," 滚动删除旧档。Megatron 版还能可选地同时写出 HF 格式（",h("code",null,"should_save_hf_model"),"）或分布式 dist-checkpoint 格式。",h("code",null,"_save_checkpoint")," 会同时保存 actor 与 critic。"),
+      h("div",null,
+        h(Src,{label:"FSDPCheckpointManager",path:"verl/utils/checkpoint/fsdp_checkpoint_manager.py",line:57}),
+        h(Src,{label:"FSDP.save_checkpoint",path:"verl/utils/checkpoint/fsdp_checkpoint_manager.py",line:220}),
+        h(Src,{label:"MegatronCheckpointManager",path:"verl/utils/checkpoint/megatron_checkpoint_manager.py",line:115}),
+        h(Src,{label:"Megatron.save_checkpoint",path:"verl/utils/checkpoint/megatron_checkpoint_manager.py",line:1169}),
+        h(Src,{label:"CheckpointHandler",path:"verl/utils/checkpoint/checkpoint_handler.py"})
+      ),
+      h("h3",null,"checkpoint engine：训练→推理的权重同步"),
+      h("p",null,h("code",null,"verl/checkpoint_engine/")," 是一个统一抽象层，把“如何把刚更新的权重送到推理引擎”封装成三个 API：",h("code",null,"send_weights")," / ",h("code",null,"receive_weights")," / ",h("code",null,"get_weights"),"（流式逐张量传输）。它有多个后端，对应不同的训练/推理拓扑与硬件："),
+      h("ul",null,
+        h("li",null,h("code",null,"naive"),"：基于 ",h("code",null,"torch.distributed")," 的 all_gather，用于 actor/rollout 共置的同步训练（v1 ",h("code",null,"sync")," 默认即用 ",h("code",null,"backend=\"naive\""),"）。"),
+        h("li",null,h("code",null,"nccl")," / ",h("code",null,"hccl"),"：all_gather + broadcast，用于 actor/rollout 分离的异步训练（NVIDIA / Ascend）。"),
+        h("li",null,h("code",null,"nixl")," / ",h("code",null,"mooncake"),"：环形 P2P，支持弹性 rollout 与异构硬件、容错。"),
+        h("li",null,h("code",null,"kimi_ckpt_engine"),"：Mooncake + NCCL/HCCL，actor 先卸载到 CPU 再 P2P 传到一个 rollout worker 后广播。")
+      ),
+      h("p",null,"对外则由 ",h("code",null,"CheckpointEngineManager")," 封装，提供 ",h("code",null,"update_weights"),"、",h("code",null,"sleep_replicas"),"、",h("code",null,"wake_up_replicas")," 等方法，这正是主循环里反复出现的 ",h("code",null,"self.checkpoint_manager.update_weights(...)")," 与 ",h("code",null,"sleep_replicas()")," 的来源。它把第 7 课的训练 worker 与第 9 课的推理 server 在权重维度上连接起来。"),
+      h("div",null,
+        h(Src,{label:"CheckpointEngine（基类）",path:"verl/checkpoint_engine/base.py",line:96}),
+        h(Src,{label:"CheckpointEngineManager",path:"verl/checkpoint_engine/base.py",line:345}),
+        h(Src,{label:"Manager.update_weights",path:"verl/checkpoint_engine/base.py",line:470}),
+        h(Src,{label:"NCCLCheckpointEngine",path:"verl/checkpoint_engine/nccl_checkpoint_engine.py",line:103}),
+        h(Src,{label:"checkpoint_engine README",path:"verl/checkpoint_engine/README.md"})
+      ),
+      h("h3",null,"model_merger：合并分片，导出 HuggingFace"),
+      h("p",null,"训练存档是按并行策略分片的（FSDP shard 或 Megatron 的 TP/PP/DP 切分），无法直接被 HF/vLLM 加载。",h("code",null,"verl/model_merger/")," 提供命令行工具把分片 checkpoint 合并成标准的 HuggingFace 模型，支持 ",h("code",null,"FSDPModelMerger")," 与 ",h("code",null,"MegatronModelMerger")," 两个后端，可选 ",h("code",null,"save_lora_adapter")," 单独导出 LoRA、",h("code",null,"upload_to_huggingface")," 直接上传 Hub，大模型还可用 ",h("code",null,"torchrun")," 分布式合并。"),
+      h(Code,null,"# 合并 Megatron checkpoint 为 HF 格式\npython -m verl.model_merger merge \\\n    --backend megatron \\\n    --local_dir checkpoints/.../global_step_1/actor \\\n    --target_dir /path/to/merged_hf_model"),
+      h("div",null,
+        h(Src,{label:"BaseModelMerger",path:"verl/model_merger/base_model_merger.py",line:175}),
+        h(Src,{label:"save_hf_model_and_tokenizer",path:"verl/model_merger/base_model_merger.py",line:390}),
+        h(Src,{label:"merge 命令行入口",path:"verl/model_merger/__main__.py"}),
+        h(Ext,{href:"https://verl.readthedocs.io/en/latest/advance/checkpoint.html"},"verl checkpoint 文档")
+      )
+    );
+  }
+
+  // ===== 端到端追踪 =====
+  function E2ESection(){
+    const flow=[
+      ["命令行入口（第 1 课）",h("span",null,h("code",null,"main_ppo.py")," 经 Hydra 读配置、",h("code",null,"validate_config")," 校验，",h("code",null,"run_ppo")," 启动 Ray，创建 ",h("code",null,"TaskRunnerV1")," 远程 actor 作为驱动进程。")],
+      ["装配组件（第 3、4、6、7 课）",h("span",null,h("code",null,"_setup()")," 用 ",h("code",null,"ResourcePoolManager")," 分配资源池，",h("code",null,"create_colocated_worker_cls")," 共置后 ",h("code",null,"spawn")," 出 actor/critic/ref 的 ",h("code",null,"WorkerGroup"),"（第 7 课的 worker，引擎见第 6 课），配置经第 4 课的 ",h("code",null,"omega_conf_to_dataclass")," 解析。")],
+      ["启动 rollout 服务（第 8、9 课）",h("span",null,h("code",null,"LLMServerManager.create")," 拉起 vLLM/SGLang 推理 replica，",h("code",null,"CheckpointEngineManager")," 把 actor 权重首次同步给它们。")],
+      ["取批与赋 uid（第 4 课）",h("span",null,h("code",null,"train_dataloader")," 产出一个 batch，",h("code",null,"DataProto.from_single_dict")," 包成第 2 课的 ",h("code",null,"DataProto"),"，每个 prompt 赋 ",h("code",null,"uuid4")," 作为分组键。")],
+      ["生成 rollout（第 8、10 课）",h("span",null,h("code",null,"gen_batch.repeat(n)")," 后交给 ",h("code",null,"agent_loop_manager / async_rollout_manager.generate_sequences"),"（第 10 课 agent loop），生成的 response 经 ",h("code",null,"union")," 并回 batch。")],
+      ["奖励打分",h("span",null,h("code",null,"_compute_reward_colocate")," 或 reward loop worker 打分写 ",h("code",null,"rm_scores"),"，",h("code",null,"extract_reward")," 取出 token 级奖励。")],
+      ["前向量计算（第 6、7 课）",h("span",null,"actor 算 ",h("code",null,"old_log_probs"),"、ref 算 ",h("code",null,"ref_log_prob"),"、critic 算 ",h("code",null,"values"),"，均为无梯度前向，由各 ",h("code",null,"WorkerGroup")," 远程执行。")],
+      ["优势估计（第 5 课, 在 driver）",h("span",null,h("code",null,"apply_kl_penalty")," 扣 KL，",h("code",null,"compute_advantage")," 调 ",h("code",null,"core_algos")," 的 GAE/GRPO 等算出 ",h("code",null,"advantages")," 与 ",h("code",null,"returns"),"。")],
+      ["更新参数（第 5、6、7 课）",h("span",null,h("code",null,"_update_critic")," 回归 value，",h("code",null,"_update_actor")," 用 PPO 裁剪目标更新策略（受 critic warmup 控制），引擎在 worker 侧执行反向与优化器步。")],
+      ["权重同步与存档",h("span",null,h("code",null,"checkpoint_manager.update_weights")," 经 checkpoint engine 把新权重送回 rollout（保持 on-policy），按 ",h("code",null,"save_freq")," 调 ",h("code",null,"_save_checkpoint")," 持久化。")],
+      ["记录指标，进入下一步",h("span",null,h("code",null,"metric_utils")," 统计数据/时间/吞吐，",h("code",null,"logger.log")," 写 wandb/TensorBoard，",h("code",null,"global_steps += 1")," 回到第 4 步；异步训练（第 11 课）则让生成与训练重叠。")]
+    ];
+    return h("div",null,
+      h("p",null,"把前十一课串成一次完整训练步的数据流。下面每一步都标注它来自哪一课，读完即拥有 verl 的全景图。"),
+      h("ol",{style:{listStyle:"none",paddingLeft:0}},flow.map(function(f,i){return h("li",{key:i,style:{margin:"10px 0",display:"flex",alignItems:"flex-start"}},h("span",{className:"stepnum"},i+1),h("span",null,h("strong",null,f[0]),"：",f[1]));})),
+      h("div",{className:"note"},"这条流就是 HybridFlow 论文的核心主张：把 RL 后训练表达为一个由单控制器编排的数据流图，重计算（生成、前向、反向）下放到分布式 worker，轻量的算法逻辑（优势估计、指标、调度）留在 driver。同步与异步（第 11 课）只是这张图在“生成与训练是否重叠”上的两种调度方式。")
+    );
+  }
+
+  // ===== 其他 trainer 与收尾 =====
+  function CodaSection(){
+    return h("div",null,
+      h("h3",null,"distillation 与 sft_trainer"),
+      h("p",null,"除 PPO 外，verl 还内置另外两类训练。",h("strong",null,"在线蒸馏（on-policy distillation）"),"由 ",h("code",null,"verl/trainer/distillation/")," 提供，",h("code",null,"is_distillation_enabled")," 决定是否启用；它用一个或多个 teacher 模型（",h("code",null,"MultiTeacherModelManager"),"，第 8 步生成时由 teacher server 给出 teacher logprob）计算蒸馏损失（topk KL、前向/反向 KL 等），可与 PPO 主循环结合。",h("strong",null,"SFT"),"则由独立的 ",h("code",null,"verl/trainer/sft_trainer.py")," 中的 ",h("code",null,"SFTTrainer.fit()")," 完成，是一个不含 rollout 的标准监督微调器，常作为 RL 前的初始化阶段。"),
+      h("div",null,
+        h(Src,{label:"is_distillation_enabled",path:"verl/trainer/distillation/losses.py",line:39}),
+        h(Src,{label:"distillation_loss",path:"verl/trainer/distillation/losses.py",line:225}),
+        h(Src,{label:"SFTTrainer.fit",path:"verl/trainer/sft_trainer.py",line:308}),
+        h(Src,{label:"MultiTeacherModelManager",path:"verl/experimental/teacher_loop/teacher_model.py",line:154})
+      ),
+      h("h3",null,"experimental：其余实验性模块各一句话"),
+      h("ul",null,
+        h("li",null,h("code",null,"experimental/reward_loop/"),"：把奖励计算抽成独立的 ",h("code",null,"RewardLoopWorker")," 与 ",h("code",null,"RewardLoopManager"),"，让规则奖励、沙箱执行、模型奖励作为异步 worker 与生成重叠，避免在主循环里阻塞。"),
+        h("li",null,h("code",null,"experimental/teacher_loop/"),"：管理 on-policy 蒸馏的 teacher 推理服务（",h("code",null,"MultiTeacherModelManager"),"、",h("code",null,"AsyncTeacherLLMServerManager"),"），与 reward loop 类似地异步给出 teacher logprob。"),
+        h("li",null,h("code",null,"experimental/transfer_queue"),"（即 v1 依赖的 ",h("code",null,"transfer_queue")," 包）：基于 key/partition 的分布式数据中转，让 worker 间直接读写大张量而不经 driver，是 v1 ",h("code",null,"KVBatchMeta")," 数据流的底座。"),
+        h("li",null,h("code",null,"experimental/separation/"),"：actor 与 rollout 物理分离的训练拓扑（",h("code",null,"separation/ray_trainer.py"),"），对应分离异步模式的资源布局。"),
+        h("li",null,h("code",null,"experimental/fully_async_policy/")," 与 ",h("code",null,"one_step_off_policy/"),"：完全异步与单步 off-policy 两种重叠策略的实验实现，第 11 课已展开其思想。"),
+        h("li",null,h("strong",null,"VLA"),"（视觉-语言-动作）等更前沿的训练方案以 recipe 形式存在，见下。")
+      ),
+      h("div",null,
+        h(Src,{label:"RewardLoopManager",path:"verl/experimental/reward_loop/reward_loop.py",line:273}),
+        h(Src,{label:"separation/ray_trainer",path:"verl/experimental/separation/ray_trainer.py"}),
+        h(Src,{label:"experimental 目录",path:"verl/experimental/"})
+      ),
+      h("h3",null,"recipe 是独立 submodule"),
+      h("p",null,"仓库根的 ",h("code",null,"recipe/")," 是一个独立 git submodule（指向 ",h("code",null,"github.com/verl-project/verl-recipe"),"），收录针对具体任务/论文的完整训练配方（如 DAPO、SPPO、检索增强、多智能体、VLA 等）。它不属于核心库，而是基于核心库搭建的可复现实验集合，因此本课程的“逐文件精读”不展开 recipe，读者可按需 ",h("code",null,"git submodule update --init recipe")," 拉取。"),
+      h("div",null,h(Src,{label:".gitmodules（recipe submodule）",path:".gitmodules"}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"HybridFlow 论文",d:"verl 的设计论文：混合编程模型与单控制器数据流",href:"https://arxiv.org/abs/2409.19256"},
+    {t:"verl 官方文档",d:"快速上手、配置、算法、checkpoint 与进阶用法",href:"https://verl.readthedocs.io/en/latest/"},
+    {t:"verl checkpoint 文档",d:"FSDP/Megatron 存档与转 HF 格式",href:"https://verl.readthedocs.io/en/latest/advance/checkpoint.html"},
+    {t:"GAE 论文",d:"Generalized Advantage Estimation（GAE 公式来源）",href:"https://arxiv.org/abs/1506.02438"},
+    {t:"PPO 论文",d:"Proximal Policy Optimization（裁剪目标）",href:"https://arxiv.org/abs/1707.06347"},
+    {t:"main_ppo.py（本机）",d:"训练命令行入口",href:srcUrl("verl/trainer/main_ppo.py",145)},
+    {t:"ray_trainer.py fit()（本机）",d:"v0 同步 PPO 主循环",href:srcUrl("verl/trainer/ppo/ray_trainer.py",1359)},
+    {t:"trainer_base.py（本机）",d:"v1 PPOTrainer 抽象基类与 step()",href:srcUrl("verl/trainer/ppo/v1/trainer_base.py",404)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:12}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 12 课 / 共 12 · Trainer 主循环与端到端"),
+          h("h1",null,"PPO Trainer 主循环与端到端"),
+          h("p",{className:"lead"},"这是全系列的收束课。前十一课各自讲清一块组件，本课把它们装回主循环：从命令行入口到驱动进程，从 RayPPOTrainer / v1 PPOTrainer 的构造到 fit() 的逐阶段控制流（取批、生成、计算 old/ref log-prob 与 value、估计 advantage、更新 critic 与 actor、记录指标、同步权重），再到奖励计算、指标统计、checkpoint 管理与 checkpoint engine、模型合并导出 HF，最后用一条编号数据流把第 1 至 11 课串成一次完整训练步，并交代蒸馏、SFT、experimental 与 recipe 的归属。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"main_ppo.py")," 入口、",h("code",null,"ray_trainer.py")," 的 ",h("code",null,"RayPPOTrainer.fit()"),"（v0，承重）、",h("code",null,"v1/trainer_base.py")," 的 ",h("code",null,"PPOTrainer")," 与 ",h("code",null,"step()"),"、",h("code",null,"reward.py"),"、",h("code",null,"metric_utils.py"),"、",h("code",null,"checkpoint")," 管理器、",h("code",null,"checkpoint_engine"),"、",h("code",null,"model_merger"),"、",h("code",null,"distillation")," 与 ",h("code",null,"sft_trainer.py"),"、",h("code",null,"experimental")," 与 recipe。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/verl")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"main_ppo.py · 两代 Trainer"),
+          h("h2",null,"入口、驱动进程与两代 Trainer"),
+          h(EntrySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"构造与装配"),
+          h("h2",null,"Trainer 的构造：把组件装成系统"),
+          h(ConstructSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"ray_trainer.py · fit()"),
+          h("h2",null,"fit() 主循环：一次 PPO 步的控制流"),
+          h("p",null,"这是全课的核心。点 Tab 逐阶段看 v0 ",h("code",null,"RayPPOTrainer.fit()")," 内层一次 PPO 步的真实代码：从主循环骨架，到生成、奖励、log-prob 与 value、优势估计、参数更新。每个阶段都给出真实源码行。"),
+          h(StepExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"v1/trainer_base.py"),
+          h("h2",null,"v1：同一件事的抽象（step 与回调）"),
+          h(V1Section)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"metric_utils.py"),
+          h("h2",null,"指标：让静默的失败被看见"),
+          h(MetricSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"checkpoint / checkpoint_engine / model_merger"),
+          h("h2",null,"存档、权重同步与导出 HF"),
+          h(CkptSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"端到端"),
+          h("h2",null,"一次完整训练步：把十一课串成一条流"),
+          h(E2ESection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"distillation · sft · experimental · recipe"),
+          h("h2",null,"收尾：其他 trainer 与外围模块"),
+          h(CodaSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合论文与官方文档，能把主循环背后的算法与工程动机补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"主循环即数据流图"),"：",h("code",null,"fit()")," 把生成、奖励、log-prob、value、优势、更新、同步、记录串成一次 PPO 步，重计算下放到 worker，轻量算法（优势估计、调度）留在 driver。这是 HybridFlow 单控制器思想的直接体现。"),
+            h("li",null,h("strong",null,"两代 Trainer，同一控制流"),"：v0 ",h("code",null,"RayPPOTrainer")," 把所有阶段写在一个循环里便于阅读；v1 ",h("code",null,"PPOTrainer")," 拆成 ",h("code",null,"step()")," 与生命周期回调，用 ",h("code",null,"TransferQueue")," 取代显式拼接，使同步、共置异步、分离异步共用一套外壳。"),
+            h("li",null,h("strong",null,"on-policy 由权重同步保证"),"：每步训练后 ",h("code",null,"checkpoint_manager.update_weights")," 把新权重送回 rollout，下一步即用最新策略生成；异步则放宽这一约束以重叠生成与训练，靠重要性采样修正陈旧度。"),
+            h("li",null,h("strong",null,"两条 checkpoint 路径分工明确"),"：checkpoint manager 负责持久化与续训（FSDP/Megatron 分片写入磁盘），checkpoint engine 负责训练→推理的在线权重传输（naive/nccl/nixl/mooncake 等后端），model_merger 负责把分片合并导出为 HuggingFace 模型。"),
+            h("li",null,h("strong",null,"奖励与指标是一等公民"),"：奖励作为可插拔工作流（规则/沙箱/模型/自定义）接入，指标覆盖数据分布、时间、吞吐、稳定性，使 RL 的静默失败能在曲线上被发现。"),
+            h("li",null,h("strong",null,"核心精简，外围实验隔离"),"：蒸馏、SFT 各有独立路径，reward_loop / teacher_loop / transfer_queue / separation 等放在 ",h("code",null,"experimental")," 下，任务级配方以独立 submodule ",h("code",null,"recipe")," 承载，核心库保持稳定。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"verl-lesson-11-async-train.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 11 课：异步训练范式")),
+            h("a",{href:"verl-course-index.html"},h("div",{className:"faint"},"课程总览 →"),h("strong",null,"verl · 逐文件精读"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

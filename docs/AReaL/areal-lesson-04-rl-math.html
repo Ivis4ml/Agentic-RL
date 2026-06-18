@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 逐文件精读 · 第 4 课：RL 数学原语</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:830px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 4 课</p><h1>RL 数学原语</h1><p>能访问 CDN 时切换为交互版。本课讲 utils/functional 的损失与估计、vocab_parallel 取 logprob、以及 seqpack/data 的变长装箱。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const AREAL="vscode://file/Users/xinyu/Code/Agentic-RL/AReaL/";
+  function srcUrl(p,l){return AREAL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Protocol","Literal","Optional","Callable","Enum","str","int","float","bool","dict","list","tuple","torch","np","F","Tensor"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","areal-lesson-01-foundations.html"],[2,"数据契约","areal-lesson-02-contracts.html"],[3,"抽象基类","areal-lesson-03-interfaces.html"],[4,"RL 数学原语","areal-lesson-04-rl-math.html"],[5,"数据与奖励","areal-lesson-05-data-reward.html"],[6,"模型层","areal-lesson-06-models.html"],[7,"训练引擎","areal-lesson-07-train-engine.html"],[8,"推理引擎","areal-lesson-08-inference-engine.html"],[9,"Workflow","areal-lesson-09-workflow.html"],[10,"Trainer","areal-lesson-10-trainer.html"],[11,"编排运行时","areal-lesson-11-orchestration.html"],[12,"进阶与收尾","areal-lesson-12-advanced.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"areal-course-index.html"},"AReaL",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":(L[2]==="#"?"lchip todo":"lchip done");return L[2]==="#"?h("span",{key:L[0],className:cls},L[0]+" "+L[1]):h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  const PRIMS=[
+    {key:"gather",name:"取 logprob",
+      math:function(){return [
+        h("p",null,"一切从这里开始：模型 forward 出 logits ",h("code",null,"z ∈ ℝ^{T×V}"),"，训练要的是每个位置对“实际下一个 token”的对数概率。位置 t 预测 t+1，所以标签是右移一位的 input_ids："),
+        h(Formula,{cap:"逐 token logprob"},"$$ \\log \\pi(y_{t+1} \\mid y_{\\le t}) = z_{t, y_{t+1}} - \\log \\sum_{v=1}^{V} \\exp(z_{t,v}) $$"),
+        h(Formula,{cap:"逐 token 熵（正则与诊断用）"},"$$ H_t = -\\sum_{v} p_{t,v} \\log p_{t,v}, \\qquad p_{t,v} = \\operatorname{softmax}(z_t)_v $$"),
+        h("p",null,"难点在张量并行：词表维 ",h("code",null,"V")," 被切到多张卡上，每张卡只有 logits 的一段。所以 ",h("code",null,"logsumexp")," 和取标签项都要跨 TP 组 all-reduce。",h("code",null,"_VocabParallelLogProbs")," 是一个自定义 autograd.Function，前向做分片 logsumexp、反向算分片梯度，避免把整个 ",h("code",null,"[T,V]")," 概率矩阵物化（V 可达十万级）。"),
+        h("div",{className:"note"},"这就是为什么取 logprob 单独成一个原语而不是随手 log_softmax：词表并行下它是有通信、有定制反向的算子。下游所有 loss 都吃它的输出。")
+      ];},
+      code:"def gather_logprobs(logits, labels, cu_seqlens=None):\n    # logits [T, V] 可能按词表维分片到 TP 组\n    # 返回每个位置对 labels 的 logprob = z[t, y] - logsumexp(z[t])\n    # 词表并行时 logsumexp 跨 TP all-reduce，反向也分片\n    return _vocab_parallel_logprobs(logits, labels, group)\n\ndef gather_logprobs_entropy(logits, labels):\n    # 同时返回 logprob 和熵，省一次 forward\n    ...",
+      links:[["gather_logprobs","areal/utils/functional/vocab_parallel.py",401],["gather_logprobs_entropy","areal/utils/functional/vocab_parallel.py",434],["_VocabParallelLogProbs","areal/utils/functional/vocab_parallel.py",84]]},
+    {key:"kl",name:"KL 估计 k1/k2/k3",
+      math:function(){return [
+        h("p",null,"PPO 用 KL 把策略拉回参考模型。但 KL 无法精确算（要遍历整个词表的期望），只能用采到的 token 做无偏或低方差估计。记 ",h("code",null,"δ = log π(y) − log π_ref(y)"),"，三种估计："),
+        h(Formula,{cap:"k1（无偏，方差大，可正可负）"},"$$ \\widehat{KL}_{k1} = \\delta $$"),
+        h(Formula,{cap:"k2（平方，恒非负）"},"$$ \\widehat{KL}_{k2} = \\tfrac{1}{2}\\,\\delta^2 $$"),
+        h(Formula,{cap:"k3（恒非负且无偏，常用）"},"$$ \\widehat{KL}_{k3} = e^{-\\delta} - 1 + \\delta \\;\\ge\\; 0 $$"),
+        h("p",null,"k3 同时满足无偏与非负，是实践首选。AReaL 的 ",h("code",null,"KLEstimator")," 实现这三种并把结果 clamp 到 ",h("code",null,"[-10, 10]")," 防爆。它住在 data.py，被 PPOActor 当作 KL penalty 的算子。"),
+        h("div",{className:"note"},"注意 KL 在 RL 里有两个用处，别混：一是作为 reward 的 penalty 项（这里的 KLEstimator），二是 PPO 损失里的重要性比 approx_kl 监控（在 ppo_actor_loss_fn 里另算）。")
+      ];},
+      code:"class KLEstimator:   # areal/utils/data.py:1598\n    def _compute_approx_kl(self, logp, logp_base, estimator='k1', clamp=True):\n        d = logp.float() - logp_base.float()\n        if estimator == 'k1':\n            out = d\n        elif estimator == 'k2':\n            out = d**2 / 2.0\n        elif estimator == 'k3':\n            out = (-d).exp() - 1 - (-d)   # = e^{-d} - 1 + d  >= 0\n        if clamp:\n            out = out.clamp(min=-10, max=10)\n        return out",
+      links:[["KLEstimator","areal/utils/data.py",1598]]},
+    {key:"advnorm",name:"优势归一化",math:function(){return [
+        h("p",null,"优势 ",h("code",null,"A_t")," 的尺度在不同 batch、不同任务间漂移，直接用会让梯度尺度不稳。归一化（whitening）把它拉到零均值单位方差，只在有效 token 上统计："),
+        h(Formula,{cap:"带 mask 的白化"},"$$ \\mu = \\frac{\\sum_t A_t m_t}{\\sum_t m_t}, \\quad \\sigma^2 = \\frac{\\sum_t (A_t-\\mu)^2 m_t}{\\sum_t m_t}, \\quad \\hat{A}_t = \\frac{A_t - \\mu}{\\sqrt{\\sigma^2 + \\varepsilon}} $$"),
+        h("p",null,"GRPO 的关键变体是把统计范围限定在“同一 prompt 的一组采样”内（group level），而不是整个 batch（batch level）。NormConfig 还支持 leave-one-out（算第 i 条的均值时排除它自己，减少自相关）和无偏方差开关。"),
+        h(Formula,{cap:"GRPO 组内归一化（每个 prompt 一组 G 条）"},"$$ \\hat{A}_i = \\frac{R_i - \\operatorname{mean}_{j \\in \\text{group}} R_j}{\\operatorname{std}_{j \\in \\text{group}} R_j + \\varepsilon} $$"),
+        h("div",{className:"note"},"masked_normalization 是底层函数，Normalization 类按 NormConfig（batch/group、leave-one-out、unbiased）包装它。这就是“GRPO 不需要 critic”的原因：组内归一化的 reward 本身就当优势用。")
+      ];},
+      code:"def masked_normalization(x, mask, dim=None, eps=1e-5,\n                         unbiased=False, all_reduce=True):\n    # 只在 mask=1 的位置统计均值方差，再白化\n    n = mask.sum(dim)\n    mean = (x * mask).sum(dim) / n\n    var = ((x - mean)**2 * mask).sum(dim) / n\n    return (x - mean) / (var + eps).sqrt()\n\n# Normalization 类按 NormConfig 选 batch / group 级与 leave-one-out\n# 见 areal/utils/data.py:1378",
+      links:[["masked_normalization","areal/utils/functional/functional.py",16],["Normalization","areal/utils/data.py",1378]]},
+    {key:"ppo",name:"PPO actor loss",math:function(){return [
+        h("p",null,"核心损失。重要性比 ",h("code",null,"ρ_t")," 衡量当前策略相对 proximal 策略对该 token 的偏移："),
+        h(Formula,{cap:"重要性比"},"$$ \\rho_t = \\exp\\big(\\log \\pi_\\theta(y_t) - \\log \\pi_{\\text{prox}}(y_t)\\big) $$"),
+        h(Formula,{cap:"裁剪代理损失（loss 形式，取 max）"},"$$ \\mathcal{L}^{\\text{clip}}_t = \\max\\!\\big({-}A_t \\rho_t,\\; {-}A_t\\,\\operatorname{clip}(\\rho_t, 1{-}\\varepsilon_{\\text{lo}}, 1{+}\\varepsilon_{\\text{hi}})\\big) $$"),
+        h(Formula,{cap:"dual-clip（c>1，给损失封顶）"},"$$ \\mathcal{L}_t = \\min\\!\\big(\\mathcal{L}^{\\text{clip}}_t,\\; \\operatorname{sign}(A_t)\\,c\\,A_t\\big) $$"),
+        h("p",null,"上下界可不等（",h("code",null,"ε_lo ≠ ε_hi"),"，DAPO 的 clip-higher）。最终对有效 token 求和，分母用裁剪前的原始 loss_mask token 数，保证与 loss_weight 一致。"),
+        h("div",{className:"warn"},"三套 logprob 别混：logprobs 是 π_θ（当前，带梯度）、proximal_logprobs 是裁剪中心 π_prox、old_logprobs 是采样时的 π_behave。token 级比用前两者；staleness 过滤（拒绝采样）用后两者。")
+      ];},
+      code:"def ppo_actor_loss_fn(logprobs, proximal_logprobs, old_logprobs,\n                      advantages, eps_clip, loss_mask,\n                      eps_clip_higher=None, c_clip=None,\n                      importance_sampling_level='token', cu_seqlens=None):\n    denom = loss_mask.count_nonzero() or 1\n    if importance_sampling_level == 'sequence':\n        ratio, advantages = _compute_sequence_level_ratio_and_advantages(\n            logprobs - proximal_logprobs, advantages, loss_mask, cu_seqlens)\n    else:\n        ratio = torch.where(loss_mask, torch.exp(logprobs - proximal_logprobs), 0)\n    hi = eps_clip if eps_clip_higher is None else eps_clip_higher\n    clipped = torch.clamp(ratio, 1 - eps_clip, 1 + hi)\n    pg = torch.max(-advantages * ratio, -advantages * clipped)\n    if c_clip is not None:\n        pg = torch.min(pg, torch.sign(advantages) * c_clip * advantages)\n    return torch.where(loss_mask, pg, 0).sum() / denom, {...}",
+      links:[["ppo_actor_loss_fn","areal/utils/functional/functional.py",429]]},
+    {key:"gspo",name:"GSPO 序列级",math:function(){return [
+        h("p",null,"逐 token 比在长序列上方差大。GSPO 把 log 比在序列内取平均再取指数，整条序列共用一个标量比，优势也按序列平均："),
+        h(Formula,{cap:"序列级比"},"$$ s_i = \\exp\\!\\Big(\\frac{1}{|y_i|}\\sum_{t\\in y_i}\\big(\\log\\pi_\\theta(y_{i,t}) - \\log\\pi_{\\text{prox}}(y_{i,t})\\big)\\Big) $$"),
+        h(Formula,{cap:"序列级优势"},"$$ \\bar{A}_i = \\frac{1}{|y_i|}\\sum_{t\\in y_i} A_{i,t} $$"),
+        h("p",null,"对 packed 的一维张量，用 ",h("code",null,"cu_seqlens")," 还原每个 token 属于哪条序列（seq_id），再用 ",h("code",null,"scatter_add")," 在序列维上求和。这就是 ppo_actor_loss_fn 里 ",h("code",null,"importance_sampling_level='sequence'")," 调到的函数。")
+      ];},
+      code:"def _compute_sequence_level_ratio_and_advantages(\n        log_ratio, advantages, loss_mask, cu_seqlens):\n    # padded [B,S]: 序列内 mask 加权平均\n    # packed [T]: 用 cu_seqlens 构造 seq_id, scatter_add 求和\n    n = cu_seqlens.numel() - 1\n    seq_id = torch.arange(n).repeat_interleave(cu_seqlens[1:] - cu_seqlens[:-1])\n    denom = scatter_add(loss_mask.float(), seq_id).clamp_min(1)\n    s = torch.exp(scatter_add(log_ratio * loss_mask, seq_id) / denom)[seq_id]\n    a = (scatter_add(advantages * loss_mask, seq_id) / denom)[seq_id]\n    return s * loss_mask, a * loss_mask",
+      links:[["_compute_sequence_level_ratio_and_advantages","areal/utils/functional/functional.py",56]]},
+    {key:"sapo",name:"SAPO 软门控",math:function(){return [
+        h("p",null,"PPO 的硬裁剪在边界处梯度突然归零。SAPO 用平滑的 sigmoid 门替代裁剪，对正负优势用不同温度（非对称）。记 ",h("code",null,"ρ = exp(log π_θ − log π_old)"),"："),
+        h(Formula,{cap:"非对称软门（4/τ 把 ρ=1 处梯度归一化）"},"$$ g_{+} = \\frac{4}{\\tau_{+}}\\,\\sigma\\big(\\tau_{+}(\\rho-1)\\big), \\qquad g_{-} = \\frac{4}{\\tau_{-}}\\,\\sigma\\big(\\tau_{-}(\\rho-1)\\big) $$"),
+        h(Formula,{cap:"按优势符号选门，再加权"},"$$ \\text{gate}_t = \\begin{cases} g_{+} & A_t > 0 \\\\ g_{-} & A_t \\le 0 \\end{cases}, \\qquad \\mathcal{L}_t = -\\,\\text{gate}_t \\cdot A_t $$"),
+        h("p",null,"为什么乘 ",h("code",null,"4/τ"),"？因为 ",h("code",null,"σ'(0)=1/4"),"，在 ",h("code",null,"ρ=1")," 处门的斜率是 ",h("code",null,"(4/τ)·τ·(1/4)=1"),"，使不同温度下初始梯度尺度一致。SAPO 处处可导，没有硬裁剪带来的死区。")
+      ];},
+      code:"# areal/utils/functional/functional.py:562\ngate_pos = torch.sigmoid(tau_pos * (ratio - 1.0))\ngate_neg = torch.sigmoid(tau_neg * (ratio - 1.0))\nscaled_pos = gate_pos * (4.0 / tau_pos)\nscaled_neg = gate_neg * (4.0 / tau_neg)\nsoft_gate = torch.where(advantages > 0, scaled_pos, scaled_neg)\npg_loss = -soft_gate * advantages\nloss = torch.where(loss_mask, pg_loss, 0).sum() / loss_mask_count",
+      links:[["sapo_loss_fn","areal/utils/functional/functional.py",562]]},
+    {key:"critic",name:"PPO critic loss",math:function(){return [
+        h("p",null,"critic 回归 GAE 算出的回报 ",h("code",null,"R̂_t"),"。和 actor 一样做裁剪，防止 value 一步更新过大："),
+        h(Formula,{cap:"裁剪后的 value"},"$$ V^{\\text{clip}}_t = V^{\\text{old}}_t + \\operatorname{clip}\\big(V_t - V^{\\text{old}}_t,\\, -\\varepsilon_v,\\, \\varepsilon_v\\big) $$"),
+        h(Formula,{cap:"取两者较大的损失（悲观）"},"$$ \\mathcal{L}^{V}_t = \\max\\!\\big(\\ell(V_t, \\hat{R}_t),\\; \\ell(V^{\\text{clip}}_t, \\hat{R}_t)\\big) $$"),
+        h("p",null,"逐元素损失 ",h("code",null,"ℓ")," 可选 MSE ",h("code",null,"½(x−y)²")," 或 Huber（δ=10，对离群回报更稳）。GRPO 没有 critic（用组内归一化代替），所以这条只在带 value 的 PPO 用。")
+      ];},
+      code:"def ppo_critic_loss_fn(value, old_value, target_value,\n                       value_eps_clip, loss_mask=None, loss_fn_type='mse'):\n    loss_fn = _huber_loss if loss_fn_type == 'huber' else _mse_loss\n    l_orig = loss_fn(value, target_value)\n    v_clip = old_value + (value - old_value).clamp(-value_eps_clip, value_eps_clip)\n    l_clip = loss_fn(v_clip, target_value)\n    value_loss = torch.max(l_orig, l_clip)   # 悲观取大\n    # 再 mask 求平均",
+      links:[["ppo_critic_loss_fn","areal/utils/functional/functional.py",714]]},
+    {key:"overlong",name:"超长惩罚",math:function(){return [
+        h("p",null,"模型会学会“写很长来骗 reward”。DAPO 式软超长惩罚：在接近上限的缓冲区内线性扣分，超过缓冲全扣。设最大长度 ",h("code",null,"L_max"),"、缓冲 ",h("code",null,"L_buf = overlong_tokens"),"、强度 ",h("code",null,"α"),"，响应长度 ",h("code",null,"L"),"："),
+        h(Formula,{cap:"软超长惩罚（加到序列 reward 上）"},"$$ \\text{penalty}(L) = \\min\\!\\Big(0,\\; -\\,\\frac{L - (L_{\\max} - L_{\\text{buf}})}{L_{\\text{buf}}}\\cdot \\alpha\\Big) $$"),
+        h("p",null,"当 ",h("code",null,"L ≤ L_max − L_buf")," 时分子为负，min 取 0，不罚；进入缓冲区后从 0 线性降到 ",h("code",null,"−α"),"。这是一个 reward 整形原语，在算优势之前作用于 ",h("code",null,"data['rewards']"),"。"),
+        h("div",{className:"note"},"它和长度无关的任务 reward 相加，再进 GAE。把“别写太长”做成可微外的 reward 项，而不是硬截断，训练更平滑。")
+      ];},
+      code:"def reward_overlong_penalty(data, overlong_tokens,\n                            overlong_penalty_factor, max_response_length):\n    lengths = data['loss_mask'].sum(-1).long()\n    for i in range(len(lengths)):\n        expected = max_response_length - overlong_tokens\n        exceed = lengths[i] - expected\n        pen = min(-exceed / overlong_tokens * overlong_penalty_factor, 0)\n        data['rewards'][i] += pen\n    return data",
+      links:[["reward_overlong_penalty","areal/utils/functional/functional.py",782]]}
+  ];
+  function LossExplorer(){const [s,setS]=useState(3);const p=PRIMS[s];const ref=useTypeset(p.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},PRIMS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{className:"split"},
+        h("div",{key:p.key,ref:ref},p.math()),
+        h("div",{key:"c-"+p.key},h(Code,null,p.code),h("div",{style:{marginTop:10}},p.links.map(function(l,i){return h(Src,{key:i,label:l[0],path:l[1],line:l[2]});})))
+      )
+    );
+  }
+
+  function PackingSection(){const ref=useTypeset("pack");
+    return h("div",{ref:ref},
+      h("p",null,"RL rollout 的长度差异极大。若 micro-batch 按样本数均分，慢的 DP rank 会拖死整步；正确做法是按 token 数装箱，让各 micro-batch 的 token 总数尽量均衡。给定长度 ",h("code",null,"ℓ_i")," 与容量 ",h("code",null,"C"),"："),
+      h(Formula,{cap:"装箱目标：最小化最重箱"},"$$ \\min \\; \\max_{j} \\sum_{i \\in \\text{bin}_j} \\ell_i \\quad \\text{s.t.} \\quad \\sum_{i\\in\\text{bin}_j}\\ell_i \\le C $$"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"两种装箱算法"),
+          h("ul",null,
+            h("li",null,h("strong",null,"FFD"),"（First-Fit Decreasing）：按长度降序，每条放进“放得下且当前最满”的箱。快，近似比有界。"),
+            h("li",null,h("strong",null,"KK"),"（Karmarkar-Karp 最大差分）：反复合并当前最不均衡的两个部分，更均衡，代价是慢一点。"),
+            h("li",null,h("strong",null,"partition_balanced"),"：numba 加速的 DP，把序列切成 k 段使各段和的极差最小（用于 DP rank 间均衡）。")),
+          h("div",null,h(Src,{label:"partition_balanced (numba DP)","path":"areal/utils/seqpack.py",line:22}),h(Src,{label:"ffd_allocate",path:"areal/utils/seqpack.py",line:234}),h(Src,{label:"_kk_partition",path:"areal/utils/seqpack.py",line:337}),h(Src,{label:"kk_allocate",path:"areal/utils/seqpack.py",line:446}))
+        ),
+        h("div",null,
+          h("h4",null,"打包成扁平张量"),
+          h("p",null,"装好箱后，把 padded ",h("code",null,"[B,S]")," 压成扁平 ",h("code",null,"[T]"),"，用前缀和 ",h("code",null,"cu_seqlens")," 标记每条边界，喂 FlashAttention varlen（第 9、7 课会用到）。"),
+          h(Formula,{cap:"cu_seqlens 累积边界"},"$$ \\text{cu\\_seqlens} = [\\,0,\\ \\ell_1,\\ \\ell_1{+}\\ell_2,\\ \\dots,\\ \\textstyle\\sum_i \\ell_i\\,] $$"),
+          h(Code,null,"pack_tensor_dict(data)        # [B,S] padded -> [T] packed + cu_seqlens\nunpad_input(hidden, mask)     # 去 padding, 返回 indices + cu_seqlens\nsplit_padded_tensor_dict_into_mb_list(...)  # 按 token 容量切 micro-batch"),
+          h("div",null,h(Src,{label:"pack_tensor_dict",path:"areal/utils/data.py",line:492}),h(Src,{label:"unpad_input",path:"areal/utils/data.py",line:183}),h(Src,{label:"split_padded_tensor_dict_into_mb_list",path:"areal/utils/data.py",line:696}))
+        )
+      ),
+      h("div",{className:"note"},"装箱是 RL 训练吞吐的一等公民：长度方差越大，均衡装箱省的 padding 越多。FFD 默认够用，长尾分布严重时换 KK。")
+    );
+  }
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:4}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 4 课 / 共 12 · utils/functional + seqpack + data"),
+          h("h1",null,"RL 数学原语：纯函数构成的算法心脏"),
+          h("p",{className:"lead"},"前三课搭好了词、句法、骨架。这一课是真正的算法数学：从 logits 取 logprob、KL 估计、优势归一化、PPO/GSPO/SAPO 损失、critic 损失、reward 整形，以及变长序列装箱。它们都是无状态纯函数，被第 10 课的 PPOActor 和第 7 课的引擎调用。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"utils/functional/functional.py"),"（损失与估计）、",h("code",null,"utils/functional/vocab_parallel.py"),"（取 logprob）、",h("code",null,"utils/seqpack.py"),"（FFD/KK 装箱）、",h("code",null,"utils/data.py"),"（pack/unpad、KLEstimator、Normalization）。下面左公式右代码，点 Tab 切换。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"损失与估计原语"),
+          h("h2",null,"八个核心函数：数学 + 代码"),
+          h(LossExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"seqpack + data"),
+          h("h2",null,"变长序列装箱"),
+          h(PackingSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"算法是纯函数"),"：损失、估计、归一化都不持有状态，输入张量输出张量。这让它们易测、可复用、与系统层彻底解耦。"),
+            h("li",null,h("strong",null,"三套 logprob 贯穿始终"),"：π_θ / π_prox / π_behave 的区分是异步 RL 正确性的根，从取 logprob 到 PPO 损失到拒绝采样都围着它。"),
+            h("li",null,h("strong",null,"装箱是吞吐一等公民"),"：cu_seqlens + FFD/KK 把变长 rollout 压成均衡的 packed micro-batch。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"areal-lesson-03-interfaces.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 3 课：抽象基类")),
+            h("a",{href:"areal-course-index.html"},h("div",{className:"faint"},"下一课（待建） →"),h("strong",null,"第 5 课：数据与奖励"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

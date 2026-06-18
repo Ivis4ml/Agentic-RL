@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>slime 逐文件精读 · 第 8 课：Rollout 与三种异步范式</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+    table.cmp{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px;}
+    table.cmp th,table.cmp td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top;color:var(--muted);}
+    table.cmp th{background:var(--panel-2);color:var(--ink);font-weight:700;}
+    table.cmp td:first-child{color:var(--ink);font-weight:600;white-space:nowrap;}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 8 课</p><h1>Rollout 与三种异步范式</h1><p>能访问 CDN 时切换为交互版。本课精读 slime 的 rollout 引擎：标准 generate() 一步采样如何打包成 Sample/RolloutBatch、自定义 generate 函数的契约，以及三种异步范式（同步、完全异步 fully_async、流式部分 rollout）的取舍。还会逐一交代 sft_rollout、on_policy_distillation、sleep_rollout、forge_load 的角色。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const SLIME="vscode://file/Users/xinyu/Code/Agentic-RL/slime/";
+  function srcUrl(p,l){return SLIME+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","Sample","Args","RolloutController","RolloutManager","RayTrainGroup","RayActor","SglangEngine","Box","ray","asyncio","Timer","ParamInfo","RolloutBatch","Namespace","GenerateState","Status","AsyncRolloutWorker","RolloutFnTrainOutput","RolloutFnEvalOutput","DataSource","RolloutDataSource","RolloutDataSourceWithBuffer","Semaphore","Queue","Thread","Dataset","MetricGatherer","SpecInfo","str","set","np"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与双引擎","slime-lesson-01-foundations.html"],[2,"统一配置","slime-lesson-02-config.html"],[3,"RL 数学原语","slime-lesson-03-rl-math.html"],[4,"数据与 Buffer","slime-lesson-04-data-buffer.html"],[5,"Megatron 后端","slime-lesson-05-megatron.html"],[6,"SGLang 后端","slime-lesson-06-sglang.html"],[7,"权重同步","slime-lesson-07-weight-sync.html"],[8,"Rollout 与异步","slime-lesson-08-rollout-async.html"],[9,"Agent 层","slime-lesson-09-agent.html"],[10,"Ray 编排","slime-lesson-10-orchestration.html"],[11,"miles 增量","slime-lesson-11-miles-delta.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"slime-course-index.html"},"slime",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== rollout 函数契约 =====
+  function ContractSection(){
+    return h("div",null,
+      h("p",null,"rollout 层是 slime 中训练与推理之间的桥接模块。整个框架对 rollout 的唯一硬性要求，是一个可由字符串路径动态导入的函数：",h("code",null,"--rollout-function-path"),"。它的默认值就是本课主角 ",h("code",null,"slime.rollout.sglang_rollout.generate_rollout"),"。第 1 课讲过 ",h("code",null,"load_function")," 这一动态导入入口，rollout 控制器在初始化时正是通过它把字符串解析成可调用对象，因此用户替换 rollout 行为时无需改动训练内核，只需提供一个符合签名的函数。"),
+      h(Code,null,"# slime/ray/rollout.py: RolloutController.init 内\nself.data_source = load_function(self.args.data_source_path)(args)\nself.generate_rollout = load_function(self.args.rollout_function_path)\nself.eval_generate_rollout = load_function(self.args.eval_function_path)\n# ...\n# 训练路径每一步调用:\ndata = call_rollout_fn(self.generate_rollout, self.args, rollout_id,\n                       self.data_source, evaluation=False)"),
+      h("div",null,h(Src,{label:"rollout_function_path 默认值",path:"slime/utils/arguments.py",line:314}),h(Src,{label:"load_function 解析",path:"slime/ray/rollout.py",line:439}),h(Src,{label:"训练路径调用点",path:"slime/ray/rollout.py",line:649}),h(Src,{label:"load_function 本体（第1课）",path:"slime/utils/misc.py",line:7})),
+      h("h3",null,"函数签名与返回契约"),
+      h("p",null,"rollout 函数的签名由 ",h("code",null,"arguments.py")," 的帮助文本明文规定：",h("code",null,"def generate_rollout(args, rollout_id, data_source, evaluation=False)"),"。其中 ",h("code",null,"rollout_id")," 用于确定性的数据生成（同一 id 可复现同一批数据），",h("code",null,"data_source")," 是取 prompt 与回收样本的数据源对象（第 4 课的 Buffer 即一种实现），",h("code",null,"evaluation")," 区分训练采样与评测采样。返回值必须是 ",h("code",null,"RolloutFnTrainOutput")," 或 ",h("code",null,"RolloutFnEvalOutput")," 之一。"),
+      h(Code,null,"# slime/rollout/base_types.py\n@dataclass\nclass RolloutFnTrainOutput:\n    samples: list[list[Sample]]            # 按 group 组织的训练样本\n    metrics: dict[str, Any] = None\n\n@dataclass\nclass RolloutFnEvalOutput:\n    data: dict[str, dict[str, Any]]        # 按数据集名组织的评测结果\n    metrics: dict[str, Any] = None\n\ndef call_rollout_fn(fn, *args, evaluation, **kwargs):\n    output = fn(*args, **kwargs, evaluation=evaluation)\n    # 兼容旧版本: 裸 list / dict 自动包成对应的输出类型\n    if not isinstance(output, (RolloutFnTrainOutput, RolloutFnEvalOutput)):\n        output = RolloutFnEvalOutput(data=output) if evaluation else RolloutFnTrainOutput(samples=output)\n    return output"),
+      h("p",null,h("code",null,"call_rollout_fn")," 是一层薄包装：它统一注入 ",h("code",null,"evaluation")," 参数，并对返回裸 ",h("code",null,"list")," 或 ",h("code",null,"dict")," 的旧式 rollout 函数做向后兼容。返回的 ",h("code",null,"samples")," 是嵌套结构 ",h("code",null,"list[list[Sample]]"),"：外层每个元素是一个 group（同一个 prompt 的 ",h("code",null,"n_samples_per_prompt")," 条采样），这一组织方式是 GRPO 等组内归一化优势估计的前提（第 3 课）。"),
+      h("div",null,h(Src,{label:"RolloutFnTrainOutput",path:"slime/rollout/base_types.py",line:7}),h(Src,{label:"RolloutFnEvalOutput",path:"slime/rollout/base_types.py",line:13}),h(Src,{label:"call_rollout_fn",path:"slime/rollout/base_types.py",line:19})),
+      h("h3",null,"Sample：rollout 与训练之间的数据契约"),
+      h("p",null,"一条 rollout 样本由 ",h("code",null,"Sample")," 描述（第 1 课已登记，本课进一步展开它在生成过程中的填充时机）。rollout 函数的最低义务，是在每个返回的 ",h("code",null,"Sample")," 上至少填好 ",h("code",null,"tokens"),"、",h("code",null,"response_length"),"、",h("code",null,"reward")," 与 ",h("code",null,"status")," 四项；其余字段（如 ",h("code",null,"rollout_log_probs"),"、",h("code",null,"loss_mask"),"、MoE 的 ",h("code",null,"rollout_routed_experts"),"）按需填写。",h("code",null,"Status")," 是一个枚举，描述这条样本的终止状态，它决定了训练侧如何处理这条数据。"),
+      h(Code,null,"# slime/utils/types.py: Sample.Status\nclass Status(Enum):\n    PENDING   = \"pending\"      # 尚未生成\n    COMPLETED = \"completed\"    # 正常遇到 stop, 完整轨迹\n    TRUNCATED = \"truncated\"    # 触达 max_new_tokens 被截断\n    ABORTED   = \"aborted\"      # 生成中途被中止 (权重切换 / 部分 rollout 回收)\n    FAILED    = \"failed\"       # 可恢复的非致命错误 (工具调用失败 / 解析错误)"),
+      h("p",null,"状态由 ",h("code",null,"update_from_meta_info")," 依据 SGLang 返回的 ",h("code",null,"finish_reason")," 设置：",h("code",null,'"stop"')," → COMPLETED，",h("code",null,'"length"')," → TRUNCATED，",h("code",null,'"abort"')," → ABORTED。这同一处还把 ",h("code",null,"weight_version")," 追加进 ",h("code",null,"sample.weight_versions"),"，这是后文陈旧度（staleness）控制的元信息基础。"),
+      h("div",null,h(Src,{label:"Sample",path:"slime/utils/types.py",line:9}),h(Src,{label:"Sample.Status",path:"slime/utils/types.py",line:40}),h(Src,{label:"update_from_meta_info",path:"slime/utils/types.py",line:163}),h(Src,{label:"RolloutBatch 类型别名",path:"slime/utils/types.py",line:200}))
+    );
+  }
+
+  // ===== 标准 generate() 探索器 =====
+  const GEN=[
+    {key:"layers",name:"三层调用结构",render:function(){return [
+      h("p",null,"标准 rollout 由三层异步函数嵌套构成，逐层从“一批”收窄到“一条”。理解这个分层是读懂全部异步范式的前提，因为后两种范式只替换其中某一层。"),
+      h("ul",null,
+        h("li",null,h("code",null,"generate_rollout_async")," / ",h("code",null,"generate_rollout"),"（最外层）：一步 rollout 的总调度。持续从 data_source 取 prompt、提交生成任务、等待完成、过滤、攒够 ",h("code",null,"rollout_batch_size")," 个 group 后中止剩余请求并返回。"),
+        h("li",null,h("code",null,"generate_and_rm_group")," / ",h("code",null,"generate_and_rm"),"（中间层）：处理一个 group 或一条样本，先生成、后算 reward。group 层用 ",h("code",null,"asyncio.gather")," 并发跑组内各样本。"),
+        h("li",null,h("code",null,"generate")," （最内层）：真正发出一次 SGLang HTTP 请求，把返回的 token、log-prob、文本写回 ",h("code",null,"Sample"),"。自定义 generate 函数替换的就是这一层。")),
+      h(Formula,{cap:"一步 rollout 产出的训练样本总量"},"$$ N_{\\text{samples}} = \\text{rollout\\_batch\\_size} \\times \\text{n\\_samples\\_per\\_prompt} $$"),
+      h("p",null,"外层 ",h("code",null,"generate_rollout")," 是同步入口，内部用 ",h("code",null,"slime.utils.async_utils.run")," 把异步协程 ",h("code",null,"generate_rollout_async")," 调度到后台事件循环并阻塞取结果（第 1 课的 ",h("code",null,"AsyncLoopThread"),"）。这样同步的训练主循环就能调用异步的 HTTP 采样。"),
+      h("div",null,h(Src,{label:"generate_rollout（同步入口）",path:"slime/rollout/sglang_rollout.py",line:603}),h(Src,{label:"generate_rollout_async",path:"slime/rollout/sglang_rollout.py",line:390}),h(Src,{label:"generate_and_rm_group",path:"slime/rollout/sglang_rollout.py",line:309}),h(Src,{label:"generate_and_rm",path:"slime/rollout/sglang_rollout.py",line:238}),h(Src,{label:"generate（最内层）",path:"slime/rollout/sglang_rollout.py",line:151}))
+    ];}},
+    {key:"inner",name:"最内层 generate()",render:function(){return [
+      h("p",null,"最内层 ",h("code",null,"generate")," 把一条 ",h("code",null,"Sample")," 编码成 SGLang 的 ",h("code",null,"/generate")," 请求，再把返回写回样本。它揭示了 reward 之外 rollout 的全部副作用：token 拼接、log-prob 收集、状态判定。"),
+      h(Code,null,"async def generate(args, sample, sampling_params):\n    state = GenerateState(args)\n    url = f\"http://{args.sglang_router_ip}:{args.sglang_router_port}/generate\"\n    assert sample.status in (Sample.Status.PENDING, Sample.Status.ABORTED)\n    prompt_ids = _prepare_prompt_ids(sample, state.tokenizer, state.processor)\n\n    payload = {\"sampling_params\": sampling_params, \"return_logprob\": True}\n    if args.use_rollout_routing_replay:\n        payload[\"return_routed_experts\"] = True\n    payload[\"input_ids\"] = prompt_ids        # 直接传 token id, 避免重复分词\n    if not sample.tokens:\n        sample.tokens = prompt_ids\n\n    output = await post(url, payload, headers=headers)\n    # 从 meta_info 取出新生成 token 及其 log-prob\n    new_tokens   = [item[1] for item in output[\"meta_info\"][\"output_token_logprobs\"]]\n    new_logprobs = [item[0] for item in output[\"meta_info\"][\"output_token_logprobs\"]]\n    sample.tokens          = sample.tokens + new_tokens\n    sample.response_length += len(new_tokens)\n    sample.response        += output[\"text\"]\n    sample.rollout_log_probs = (sample.rollout_log_probs or []) + new_logprobs\n    sample.update_from_meta_info(args, output[\"meta_info\"])   # 设状态 + 记 weight_version\n    return sample"),
+      h("p",null,"几个值得注意的设计：其一，请求用 ",h("code",null,"input_ids")," 而非纯文本，避免推理侧重新分词造成的边界不一致（多模态请求例外，需要 SGLang 用自己的处理器展开图像占位符）。其二，",h("code",null,"return_logprob=True")," 要求 SGLang 返回逐 token 的 rollout log-prob，它是后续重要性采样修正的旧策略概率 \\(\\pi_{\\theta_{\\text{old}}}\\)（第 3 课）。其三，",h("code",null,"max_new_tokens==0")," 时直接标 TRUNCATED 返回，不发请求，这一分支被 on-policy 蒸馏用来仅取 teacher 的 log-prob。"),
+      h("div",null,h(Src,{label:"generate",path:"slime/rollout/sglang_rollout.py",line:151}),h(Src,{label:"_prepare_prompt_ids",path:"slime/rollout/sglang_rollout.py",line:43}),h(Src,{label:"return_logprob payload",path:"slime/rollout/sglang_rollout.py",line:173}))
+    ];}},
+    {key:"group",name:"group 与 reward",render:function(){return [
+      h("p",null,h("code",null,"generate_and_rm_group")," 处理一个 group（同 prompt 的 ",h("code",null,"n_samples_per_prompt")," 条），先并发生成，再算 reward。它显式承担两件事：为每条样本分配唯一 ",h("code",null,"session_id"),"（用于一致性哈希路由命中同一推理实例的前缀缓存），以及在 ",h("code",null,"group_rm")," 模式下对整组一次性算 reward。"),
+      h(Code,null,"async def generate_and_rm_group(args, group, sampling_params, evaluation=False):\n    state = GenerateState(args)\n    if state.aborted:\n        return group\n    for sample in group:\n        if sample.session_id is None:\n            sample.session_id = str(uuid.uuid4())\n    tasks = [asyncio.create_task(generate_and_rm(args, s, sampling_params.copy(), evaluation=evaluation))\n             for s in group]\n    group = await asyncio.gather(*tasks)      # 组内并发\n    if not state.aborted and args.group_rm:\n        rewards = await batched_async_rm(args, group)   # 整组一次性打分\n        for sample, reward in zip(group, rewards):\n            sample.reward = reward\n    return group"),
+      h("p",null,"中间层 ",h("code",null,"generate_and_rm")," 决定调用哪一个 generate：若样本上有 per-sample 的 ",h("code",null,"generate_function_path"),"（来自评测数据集配置）或全局 ",h("code",null,"--custom-generate-function-path"),"，就动态导入并调用它，否则走默认 ",h("code",null,"generate"),"。这正是 Agentic RL（第 9 课）、工具调用、多轮对话接入的位置：自定义函数可以在内部跑任意多轮循环、环境交互、verifier 调用，只要最终把结果写回 ",h("code",null,"Sample")," 即可。它甚至可以返回 ",h("code",null,"list[Sample]"),"（一次执行拆成多条前缀链式样本），group 层的 ",h("code",null,"gather")," 会保留这一形状。"),
+      h(Code,null,"# generate_and_rm 内的分派 (精简)\ncustom_func_path = getattr(sample, \"generate_function_path\", None) or args.custom_generate_function_path\nif custom_func_path is not None:\n    custom_generate_func = load_function(custom_func_path)\n    if \"evaluation\" in inspect.signature(custom_generate_func).parameters:\n        sample = await custom_generate_func(args, sample, sampling_params, evaluation=evaluation)\n    else:\n        sample = await custom_generate_func(args, sample, sampling_params)\nelse:\n    sample = await generate(args, sample, sampling_params)"),
+      h("div",null,h(Src,{label:"generate_and_rm_group",path:"slime/rollout/sglang_rollout.py",line:309}),h(Src,{label:"自定义 generate 分派",path:"slime/rollout/sglang_rollout.py",line:266}),h(Src,{label:"per-sample reward",path:"slime/rollout/sglang_rollout.py",line:297}),h(Src,{label:"group_rm 整组打分",path:"slime/rollout/sglang_rollout.py",line:342}))
+    ];}},
+    {key:"outer",name:"外层调度与并发上限",render:function(){return [
+      h("p",null,"外层 ",h("code",null,"generate_rollout_async")," 是“持续超采、动态过滤、攒够即止”的循环。它服务于 DAPO 式动态采样：先发出比目标更多（",h("code",null,"over_sampling_batch_size"),"）的请求，用 ",h("code",null,"dynamic_filter")," 丢弃无信息的 group（例如全对或全错、组内 reward 标准差为零），直到收集到 ",h("code",null,"rollout_batch_size")," 个有效 group。"),
+      h(Code,null,"async def generate_rollout_async(args, rollout_id, data_source):\n    state = GenerateState(args)\n    dynamic_filter = load_function(args.dynamic_sampling_filter_path) if ... else None\n    target_data_size = args.rollout_batch_size\n    data, all_data = [], []\n    while len(data) < target_data_size:\n        while state.remaining_batch_size < target_data_size:\n            samples = data_source(args.over_sampling_batch_size)   # 超采一批 prompt\n            state.submit_generate_tasks(samples)                   # 提交为 asyncio 任务\n        done, state.pendings = await asyncio.wait(state.pendings, return_when=asyncio.FIRST_COMPLETED)\n        for task in done:\n            group = task.result()\n            all_data.append(group)\n            if not call_dynamic_filter(dynamic_filter, args, group).keep:\n                state.remaining_batch_size -= 1\n                continue            # 丢弃该 group, 不计入目标\n            if len(data) < target_data_size:\n                data.append(group)\n    aborted_samples = await abort(args, rollout_id)   # 中止仍在途的请求\n    state.reset()\n    return RolloutFnTrainOutput(samples=data, ...), aborted_samples"),
+      h("p",null,"并发上限由 ",h("code",null,"GenerateState")," 持有的一个 ",h("code",null,"asyncio.Semaphore")," 控制，容量为 ",h("code",null,"sglang_server_concurrency × 引擎数"),"。这是一个单例（",h("code",null,"SingletonMeta"),"），在整个进程内维护全局生成状态：信号量、采样参数、各 dp rank 的负载计数、在途任务集合 ",h("code",null,"pendings"),"、以及中止标志 ",h("code",null,"aborted"),"。把并发上限与 SGLang 的并发能力绑定，避免客户端发出超过推理侧吞吐的请求而排队膨胀。"),
+      h(Code,null,"class GenerateState(metaclass=SingletonMeta):\n    def __init__(self, args):\n        self.semaphore = asyncio.Semaphore(\n            args.sglang_server_concurrency * get_rollout_num_engines(args))\n        self.sampling_params = dict(temperature=args.rollout_temperature, ...)\n        self.dp_counts = [0] * (args.sglang_dp_size or 1)   # dp rank 负载均衡\n        self.reset()\n    def reset(self):\n        self.remaining_batch_size = 0\n        self.pendings = set()\n        self.aborted = False"),
+      h("div",null,h(Src,{label:"generate_rollout_async",path:"slime/rollout/sglang_rollout.py",line:390}),h(Src,{label:"GenerateState",path:"slime/rollout/sglang_rollout.py",line:84}),h(Src,{label:"信号量上限",path:"slime/rollout/sglang_rollout.py",line:95}),h(Src,{label:"submit_generate_tasks",path:"slime/rollout/sglang_rollout.py",line:135}),h(Src,{label:"over_sampling_batch_size 说明",path:"slime/utils/arguments.py",line:415}))
+    ];}}
+  ];
+  function GenExplorer(){const [s,setS]=useState(0);const d=GEN[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},GEN.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 三种异步范式探索器 =====
+  const PARA=[
+    {key:"sync",name:"① 同步（train.py）",render:function(){return [
+      h("p",null,"同步范式是 ",h("code",null,"generate_rollout")," 在 ",h("code",null,"train.py")," 主循环里的默认用法（第 1 课）：生成一步 → 训练一步 → 同步权重，严格串行。其特征是每次生成都开始于一次完整的 ",h("code",null,"generate_rollout_async"),"，结束于 ",h("code",null,"abort")," 把在途请求清空，",h("code",null,"state.reset()")," 复位全局状态，保证不同 rollout 之间互不干扰。"),
+      h("p",null,"由于训练用的永远是刚刚生成这批数据的同一版权重，同步范式是严格 on-policy 的，无需重要性采样修正。代价是生成与训练无法重叠：训练时推理引擎闲置，生成时训练引擎闲置（colocate 共置模式下靠 offload/onload 切换显存）。这是吞吐与正确性之间最保守的取舍。"),
+      h(Formula,{cap:"同步范式：训练所用数据与当前策略的权重版本差恒为零"},"$$ \\Delta v = v_{\\text{train}} - v_{\\text{gen}} = 0 \\quad\\Longrightarrow\\quad \\pi_{\\theta_{\\text{old}}} = \\pi_{\\theta} $$"),
+      h("div",null,h(Src,{label:"train.py 同步主循环（第1课）",path:"train.py",line:63}),h(Src,{label:"abort 清空在途请求",path:"slime/rollout/sglang_rollout.py",line:351}),h(Src,{label:"state.reset",path:"slime/rollout/sglang_rollout.py",line:130}))
+    ];}},
+    {key:"async",name:"② 普通异步（train_async.py）",render:function(){return [
+      h("p",null,"普通异步范式仍用同一个 ",h("code",null,"generate_rollout"),"，改变的是“调用时机”：",h("code",null,"train_async.py")," 在训练第 ",h("code",null,"rollout_id")," 步之前，就提前对第 ",h("code",null,"rollout_id+1")," 步发起 ",h("code",null,"generate.remote(...)")," 拿到 future，让生成与训练重叠（第 1 课）。每次生成本身依然是一个完整的批次，边界清晰，只是相邻批次在时间上交叠。"),
+      h("p",null,"权重不再每步同步，而是按 ",h("code",null,"--update-weights-interval")," 周期同步，且同步前必须把在途的生成 future 取回，避免在一次生成的中途替换权重。因此训练用的数据可能由上一版（或更旧）权重生成，是受控的 off-policy。"),
+      h(Formula,{cap:"普通异步：权重版本差有上界，受 update_weights_interval 约束"},"$$ \\Delta v \\le \\text{update\\_weights\\_interval} $$"),
+      h("p",null,"这一陈旧度需要重要性采样修正。第 3 课的 PPO/GRPO 损失中，比值 \\( r_t(\\theta)=\\pi_\\theta(a_t\\mid s_t)/\\pi_{\\theta_{\\text{old}}}(a_t\\mid s_t) \\) 的分母 \\(\\pi_{\\theta_{\\text{old}}}\\) 正是 rollout 时记录的 ",h("code",null,"rollout_log_probs"),"，分子是训练侧用当前权重重新前向得到的概率。版本差越大，二者偏离越大，截断（clip）越频繁。"),
+      h("div",null,h(Src,{label:"train_async.py 提前发起生成（第1课）",path:"train_async.py",line:39}),h(Src,{label:"周期同步权重（第1课）",path:"train_async.py",line:69}),h(Src,{label:"colocate 断言（第1课）",path:"train_async.py",line:11}))
+    ];}},
+    {key:"fully",name:"③ 完全异步（fully_async）",render:function(){return [
+      h("p",null,"完全异步范式替换的是“外层调度”那一整层：把 ",h("code",null,"--rollout-function-path")," 指向 ",h("code",null,"generate_rollout_fully_async"),"。它的根本动机，是把 ",h("code",null,"max_concurrent_tasks")," 从 ",h("code",null,"rollout_batch_size")," 中解耦：普通异步里，一批生成必须整体完成才能交付，最慢的一条样本决定整批的延迟（长尾问题，在长程 agentic 任务中尤为严重）。完全异步用一个常驻后台 worker，跨 rollout 边界维持一个固定大小的在途轨迹池。"),
+      h(Code,null,"# slime/rollout/fully_async_rollout.py: AsyncRolloutWorker._loop\nasync def _loop(self):\n    active_tasks = set()\n    while self.running:\n        # 收割已完成任务\n        active_tasks -= {t for t in active_tasks if t.done()}\n        # 补满到并发上限\n        while len(active_tasks) < self.concurrency and self.running:\n            groups = self.data_buffer.get_samples(1)\n            if not groups: break\n            for group in groups:\n                task = asyncio.create_task(generate_and_rm_group(\n                    self.args, group, self.state.sampling_params.copy(), evaluation=False))\n                task.add_done_callback(self._make_done_cb(gid))\n                active_tasks.add(task)\n        await asyncio.sleep(1)"),
+      h("p",null,"worker 跑在独立后台线程的 asyncio 事件循环上，是进程级单例（",h("code",null,"_get_global_worker"),"），跨 rollout 调用保持“热”状态，队列不清空。每个 ",h("code",null,"generate_rollout_fully_async")," 调用只是从输出队列里取走 ",h("code",null,"rollout_batch_size")," 个已完成 group、按 ",h("code",null,"sample.index")," 排序后返回。它仍复用 slime 标准的 ",h("code",null,"generate_and_rm_group"),"，因此 ",h("code",null,"--custom-generate-function-path")," 与 ",h("code",null,"--custom-rm-path")," 在完全异步下原样可用。"),
+      h(Code,null,"# 完成回调: 中止的 group 退回 buffer, 不送训练\ndef _cb(done_task):\n    result = done_task.result()\n    if any(s.status == Sample.Status.ABORTED for s in result):\n        self.data_buffer.add_samples([result])   # 退回, 下一轮用新权重重跑\n        return\n    self.output_queue.put((gid, result))"),
+      h("p",null,"worker 刻意不感知 slime 的暂停/权重更新信号；它唯一负责的是把 ABORTED 的 group 退回 ",h("code",null,"data_buffer"),"，等下一次（携带刷新后权重的）生成接手。完全异步必须与 ",h("code",null,"train_async.py")," 配合，且不支持评测模式（持续运行的模型与评测会冲突）。它把陈旧度上界进一步放宽：在途池里的轨迹可能横跨多个权重版本，因此对重要性采样修正和陈旧度容忍提出更高要求。"),
+      h(Formula,{cap:"完全异步：在途池中的样本横跨多个权重版本，陈旧度上界由池深与生成耗时共同决定"},"$$ \\Delta v \\le \\left\\lceil \\frac{T_{\\text{gen}}^{\\max}}{T_{\\text{step}}} \\right\\rceil, \\qquad T_{\\text{gen}}^{\\max} = \\text{最慢在途轨迹的生成耗时} $$"),
+      h("div",null,h(Src,{label:"generate_rollout_fully_async",path:"slime/rollout/fully_async_rollout.py",line:251}),h(Src,{label:"AsyncRolloutWorker",path:"slime/rollout/fully_async_rollout.py",line:76}),h(Src,{label:"_loop 维持在途池",path:"slime/rollout/fully_async_rollout.py",line:118}),h(Src,{label:"ABORTED 退回 buffer",path:"slime/rollout/fully_async_rollout.py",line:169}),h(Src,{label:"进程级单例 worker",path:"slime/rollout/fully_async_rollout.py",line:53}))
+    ];}},
+    {key:"stream",name:"④ 流式部分 rollout",render:function(){return [
+      h("p",null,"流式部分 rollout 替换的是“最内层 generate”那一层：把 ",h("code",null,"--custom-generate-function-path")," 指向 ",h("code",null,"generate_streaming"),"，外层调度、信号量、中止编排仍归 ",h("code",null,"sglang_rollout")," 所有。它消费 SGLang 的 SSE 流式输出，逐块（chunk）把累计状态写回 ",h("code",null,"sample"),"，而不是等一个最终 JSON。"),
+      h("p",null,"设计动机集中在“中止边界”。标准 ",h("code",null,"generate")," 等待一次完整响应，若生成中途被中止（权重切换或部分 rollout 回收），就得依赖 ",h("code",null,"/abort_request")," 返回已生成的文本。流式版本则在每个 chunk 到达时就把 token、文本、log-prob 落在样本上，于是一旦 SSE 被切断，最近一个 chunk 边界处的部分轨迹已经完整保存在 ",h("code",null,"sample")," 上，无需任何额外往返。"),
+      h(Code,null,"# slime/rollout/sglang_streaming_rollout.py: generate_streaming (核心循环)\nbase_tokens = list(sample.tokens)            # 快照本次调用前的状态\nbase_response = sample.response or \"\"\nasync with client.stream(\"POST\", url, json=payload, ...) as response:\n    async for raw_line in response.aiter_lines():\n        chunk = json.loads(raw_line[len(\"data:\"):])\n        meta = chunk.get(\"meta_info\") or {}\n        call_text = chunk.get(\"text\", call_text)\n        if \"output_token_logprobs\" in meta:           # SGLang 默认累计式输出\n            call_tokens   = [it[1] for it in meta[\"output_token_logprobs\"]]\n            call_log_probs = [it[0] for it in meta[\"output_token_logprobs\"]]\n        # 立刻把部分状态写回样本: 中止时这就是幸存下来的内容\n        sample.tokens          = base_tokens + call_tokens\n        sample.response        = base_response + call_text\n        sample.response_length = base_response_length + len(call_tokens)\n        sample.rollout_log_probs = base_log_probs + call_log_probs\n        if state.aborted:\n            break"),
+      h("p",null,"对长程任务的意义在于：超长生成可能耗时数分钟，期间训练侧已完成多步并希望切换权重；部分 rollout 允许在权重切换边界把这条尚未完成的轨迹中止、保存已生成前缀（标记 ABORTED 并回收进 buffer），下一次 rollout 携带新权重从该前缀续跑。配合 ",h("code",null,"--mask-offpolicy-in-partial-rollout"),"，续跑时先把先前由旧权重生成的部分的 ",h("code",null,"loss_mask")," 置零，只让本轮 on-policy 新生成的 token 参与训练，从而在长轨迹内部混合多版本权重时仍保证训练信号的策略一致性。"),
+      h(Code,null,"# generate_and_rm 入口: 部分 rollout 续跑时屏蔽旧 on-policy 段\nif args.partial_rollout and args.mask_offpolicy_in_partial_rollout and sample.response_length > 0:\n    sample.loss_mask = [0] * sample.response_length      # 旧前缀全部置 0\n# 之后新生成的 token 追加 loss_mask = [1]*len(new_tokens)"),
+      h("p",null,"注意一个边界假设：SGLang 默认的流式输出是累计式的（每个 chunk 携带从头到当前的完整 ",h("code",null,"output_token_logprobs"),"），因此代码用“快照基线 + 本次调用累计量”重建样本视图。若有人在 SGLang 端开启 ",h("code",null,"--incremental-streaming-output"),"，这里的 delta 处理需要改写。",h("code",null,"abort")," 在 ",h("code",null,"--partial-rollout")," 下还会把已带响应的部分样本写上 ",h("code",null,"start_rollout_id")," 元信息并收集进 buffer。"),
+      h("div",null,h(Src,{label:"generate_streaming",path:"slime/rollout/sglang_streaming_rollout.py",line:46}),h(Src,{label:"逐块写回样本",path:"slime/rollout/sglang_streaming_rollout.py",line:140}),h(Src,{label:"中止判定",path:"slime/rollout/sglang_streaming_rollout.py",line:167}),h(Src,{label:"屏蔽旧 off-policy 段",path:"slime/rollout/sglang_rollout.py",line:246}),h(Src,{label:"abort 收集部分样本",path:"slime/rollout/sglang_rollout.py",line:372}),h(Src,{label:"流式部分 rollout 测试",path:"tests/test_qwen3_4B_streaming_partial_rollout.py",line:31}))
+    ];}}
+  ];
+  function ParaExplorer(){const [s,setS]=useState(0);const d=PARA[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},PARA.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 中止与陈旧度 =====
+  function AbortSection(){const ref=useTypeset("abort");
+    return h("div",{ref:ref},
+      h("p",null,"中止（abort）是所有异步范式共用的安全阀，由 ",h("code",null,"abort")," 实现。它先置全局 ",h("code",null,"state.aborted=True"),"，然后向 SGLang router 查询所有 worker URL，调用 ",h("code",null,"abort_servers_until_idle")," 让推理侧停止接收新请求并清空运行队列，最后等待所有在途 asyncio 任务结算。"),
+      h(Code,null,"async def abort(args, rollout_id):\n    state = GenerateState(args)\n    assert not state.aborted\n    state.aborted = True\n    response = await get(f\"http://{args.sglang_router_ip}:{args.sglang_router_port}/workers\")\n    urls = [w[\"url\"] for w in response[\"workers\"]]\n    await abort_servers_until_idle(urls)\n    count = 0\n    while state.pendings:\n        done, state.pendings = await asyncio.wait(state.pendings, return_when=asyncio.FIRST_COMPLETED)\n        if not args.partial_rollout:\n            continue\n        for task in done:                       # 部分 rollout: 收集未完成样本进 buffer\n            for sample in task.result():\n                if sample.response and \"start_rollout_id\" not in sample.metadata:\n                    sample.metadata[\"start_rollout_id\"] = rollout_id\n            aborted_samples.append(task.result())\n    return aborted_samples"),
+      h("p",null,"非部分 rollout 模式下，被中止的在途请求直接丢弃（它们是超采出来的多余样本）。部分 rollout 模式下，已经生成了部分响应的样本被保留，写入 ",h("code",null,"start_rollout_id")," 后由外层 ",h("code",null,"generate_rollout")," 经 ",h("code",null,"data_source.add_samples(aborted_samples)")," 回收进 buffer，等下一步续跑。这套机制把“超长生成”从一个会拖垮整批的长尾，转化为可跨权重版本续跑的可恢复单元。"),
+      h("h3",null,"陈旧度（staleness）与重要性采样的连接"),
+      h("p",null,"三种异步范式在数学上的差异，可统一归纳为训练数据相对当前策略的权重版本差 \\(\\Delta v\\)。版本差越大，rollout 时记录的旧策略 \\(\\pi_{\\theta_{\\text{old}}}\\) 与训练时的当前策略 \\(\\pi_\\theta\\) 偏离越大，需要的修正越强。"),
+      h(Formula,{cap:"带截断的重要性采样目标（第3课），分母 π_old 即 rollout 记录的 rollout_log_probs"},"$$ J(\\theta) = \\mathbb{E}_t\\!\\left[ \\min\\!\\Big( r_t(\\theta)\\,\\hat{A}_t,\\; \\mathrm{clip}\\big(r_t(\\theta),\\,1-\\epsilon,\\,1+\\epsilon\\big)\\,\\hat{A}_t \\Big) \\right], \\quad r_t(\\theta) = \\frac{\\pi_\\theta(a_t\\mid s_t)}{\\pi_{\\theta_{\\text{old}}}(a_t\\mid s_t)} $$"),
+      h("p",null,"权重版本通过 ",h("code",null,"update_from_meta_info")," 记录在 ",h("code",null,"sample.weight_versions")," 上：训练侧每次同步权重会自增 ",h("code",null,"weight_version")," 并经 ",h("code",null,"set_weight_version")," 推给各 SGLang 引擎，引擎在生成响应的 ",h("code",null,"meta_info")," 里回带该版本号。据此可在训练侧统计每条样本的实际陈旧度，必要时做更细的修正或丢弃。",h("code",null,"weight_versions")," 是一个列表，因为部分 rollout 的长轨迹可能在续跑中跨越多个版本。"),
+      h(Formula,{cap:"AReaL 全异步 RL 论文给出的陈旧度上界（解耦 PPO + 行为重要性采样），slime 三范式可置于同一框架"},"$$ \\eta = \\frac{T_{\\text{generate}}}{T_{\\text{train}}}, \\qquad \\Delta v \\le \\lceil \\eta \\rceil \\cdot \\text{update\\_weights\\_interval} $$"),
+      h("div",null,h(Src,{label:"abort",path:"slime/rollout/sglang_rollout.py",line:351}),h(Src,{label:"abort_servers_until_idle",path:"slime/backends/sglang_utils/server_control.py",line:66}),h(Src,{label:"回收进 data_source",path:"slime/rollout/sglang_rollout.py",line:622}),h(Src,{label:"set_weight_version",path:"slime/backends/sglang_utils/sglang_engine.py",line:357}),h(Src,{label:"weight_version 自增",path:"slime/backends/megatron_utils/update_weight/update_weight_from_tensor.py",line:151}),h(Ext,{href:"https://arxiv.org/pdf/2505.24298"},"AReaL 全异步 RL 论文"))
+    );
+  }
+
+  // ===== 取舍表 =====
+  function TradeoffSection(){
+    return h("div",null,
+      h("p",null,"把四种调用方式按三个维度并排比较。注意普通异步与完全异步是“调度时机/外层循环”的区别，流式部分 rollout 是“最内层生成”的替换，二者可正交组合（例如完全异步 + 流式 generate）。"),
+      h("table",{className:"cmp"},
+        h("thead",null,h("tr",null,h("th",null,"维度"),h("th",null,"同步 train.py"),h("th",null,"普通异步 train_async.py"),h("th",null,"完全异步 fully_async"),h("th",null,"流式部分 rollout"))),
+        h("tbody",null,
+          h("tr",null,h("td",null,"替换的层"),h("td",null,"无（默认调用）"),h("td",null,"调用时机（提前发起）"),h("td",null,"外层调度（常驻 worker）"),h("td",null,"最内层 generate（SSE 流）")),
+          h("tr",null,h("td",null,"吞吐"),h("td",null,h("span",{className:"hl-red"},"低"),"：生成与训练串行，互相空等"),h("td",null,h("span",{className:"hl-amber"},"中"),"：相邻批重叠一步"),h("td",null,h("span",{className:"hl-green"},"高"),"：在途池持续满载，无批边界等待"),h("td",null,h("span",{className:"hl-green"},"高"),"：长尾轨迹可中止续跑，不拖整批")),
+          h("tr",null,h("td",null,"陈旧度 Δv"),h("td",null,h("span",{className:"hl-green"},"0"),"，严格 on-policy"),h("td",null,"≤ update_weights_interval"),h("td",null,h("span",{className:"hl-red"},"最大"),"：横跨多版本"),h("td",null,"按轨迹分段，旧段可屏蔽")),
+          h("tr",null,h("td",null,"colocate"),h("td",null,h("span",{className:"hl-green"},"支持"),"（默认）"),h("td",null,h("span",{className:"hl-red"},"禁止"),"（断言 disaggregated）"),h("td",null,h("span",{className:"hl-red"},"禁止"),"（需独占推理卡）"),h("td",null,"随外层范式")),
+          h("tr",null,h("td",null,"重要性采样修正"),h("td",null,"不需要"),h("td",null,"需要（clip 足够）"),h("td",null,"需要（更强，可能需丢弃过陈旧样本）"),h("td",null,"需要 + loss_mask 分段")),
+          h("tr",null,h("td",null,"实现复杂度"),h("td",null,h("span",{className:"hl-green"},"最低")),h("td",null,h("span",{className:"hl-green"},"低")),h("td",null,h("span",{className:"hl-amber"},"中"),"：跨边界 worker、队列、退回逻辑"),h("td",null,h("span",{className:"hl-amber"},"中"),"：SSE 解析、累计/增量假设、续跑屏蔽")),
+          h("tr",null,h("td",null,"最适场景"),h("td",null,"小模型、调试、强 on-policy 需求"),h("td",null,"通用 RL 训练的默认提速"),h("td",null,"生成耗时方差大的长程 agentic 任务"),h("td",null,"超长单条生成、需在权重切换边界续跑"))
+        )
+      ),
+      h("div",{className:"note"},"评测（eval）只在同步与普通异步下可用：完全异步明确不支持 ",h("code",null,"evaluation")," 模式（会抛 ValueError），因为持续运行的在途池与一次性评测语义冲突；流式部分 rollout 因依赖 ",h("code",null,"--partial-rollout")," 的中止回收，通常也用于训练采样。")
+    );
+  }
+
+  // ===== 其余 rollout 模块 =====
+  const MODS=[
+    {n:"sft_rollout.py",d:"监督微调的 rollout 函数。不调推理引擎，而是用 MultiTurnLossMaskGenerator 把数据集里的多轮消息直接转成 token_ids 与 loss_mask，reward 固定置 0。它让同一套训练内核既能跑 RL 也能跑 SFT，只换 --rollout-function-path。",links:[["generate_rollout","slime/rollout/sft_rollout.py",17],["loss_mask 生成","slime/rollout/sft_rollout.py",49]]},
+    {n:"on_policy_distillation.py",d:"在线策略蒸馏（OPD）。reward_func 用 max_new_tokens=0 向 teacher 服务请求学生轨迹的逐 token log-prob；post_process_rewards 提取 teacher_log_probs 存回样本，scalar reward 置 0。学习信号完全来自 compute_advantages_and_returns 中的 OPD KL 惩罚（第3课），而非任务奖励。",links:[["reward_func","slime/rollout/on_policy_distillation.py",8],["post_process_rewards","slime/rollout/on_policy_distillation.py",32]]},
+    {n:"sleep_rollout.py",d:"占位 rollout：进入无限 sleep 循环，每小时打一条日志。用于只想保活进程/调试 train-only 或 rollout-only 路径而不真正生成的场景，是 slime 强调的独立调试路径的极简体现。",links:[["sleep","slime/rollout/sleep_rollout.py",7]]},
+    {n:"forge_load.py",d:"从磁盘载入一份预先转储（forged dump）的 rollout 数据，绕过真实生成但保持 SGLang 服务、router、权重更新、colocate offload/onload 全程运行。专为测量真实 GPU 显存而设计：与 --load-debug-rollout-data 不同，它不会设 skip_sglang/debug_train_only。",links:[["generate_rollout","slime/rollout/forge_load.py",69],["_resolve_path","slime/rollout/forge_load.py",40]]},
+    {n:"base_types.py",d:"rollout 函数的输出契约：RolloutFnTrainOutput（samples + metrics）、RolloutFnEvalOutput（按数据集名组织的 data）、以及统一注入 evaluation 与向后兼容的 call_rollout_fn。",links:[["RolloutFnTrainOutput","slime/rollout/base_types.py",7],["call_rollout_fn","slime/rollout/base_types.py",19]]},
+    {n:"data_source.py",d:"rollout 的数据源抽象。DataSource 定义 get_samples/add_samples/save/load 接口；RolloutDataSource 从全局数据集按 epoch/offset 取 prompt 并复制成 n_samples_per_prompt 的 group；RolloutDataSourceWithBuffer 叠加一个 buffer，先从回收的部分样本取、不足再从数据集补，是部分 rollout 回收的承接者（第4课展开）。",links:[["DataSource","slime/rollout/data_source.py",17],["RolloutDataSource.get_samples","slime/rollout/data_source.py",90],["RolloutDataSourceWithBuffer","slime/rollout/data_source.py",168],["add_samples 回收","slime/rollout/data_source.py",198]]}
+  ];
+  function ModsSection(){
+    return h("div",null,
+      h("p",null,"除了三种异步范式，",h("code",null,"slime/rollout/")," 还提供若干特化的 rollout 函数与支撑类型，它们都通过同一个 ",h("code",null,"--rollout-function-path")," 契约接入，互不派生训练内核。逐个说明其角色（点开看 ",h("code",null,"Src")," 源码行）。"),
+      h("div",{className:"linkgrid"},MODS.map(function(u,i){return h("div",{className:"linkcard",key:i},
+        h("div",{className:"lt"},h("code",null,u.n)),
+        h("div",{className:"ld"},u.d),
+        h("div",null,u.links.map(function(l,j){return h(Src,{key:j,label:l[0],path:l[1],line:l[2]});})));}))
+      ,
+      h("div",{className:"note"},"评测路径 ",h("code",null,"eval_rollout")," / ",h("code",null,"eval_rollout_single_dataset")," 与训练路径同源：对每个评测数据集的每个 prompt 复制 ",h("code",null,"n_samples_per_eval_prompt")," 份，复用 ",h("code",null,"generate_and_rm")," 生成并打分，结果按数据集名归入 ",h("code",null,"RolloutFnEvalOutput.data"),"。",h("code",null,"rm_hub/")," 与 ",h("code",null,"filter_hub/")," 子目录（reward 模型与动态/缓冲过滤器）属于第 3、4 课主题，本课仅作前置引用。")
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"AReaL 全异步 RL 论文",d:"解耦 PPO + 行为重要性采样，给出陈旧度上界的理论框架",href:"https://arxiv.org/pdf/2505.24298"},
+    {t:"GLM-5.2 博客",d:"slime 异步 rollout 在前沿模型完整后训练中的检验",href:"https://z.ai/blog/glm-5.2"},
+    {t:"SGLang 文档",d:"/generate 接口、SSE 流式输出、router 与 worker 管理",href:"https://docs.sglang.ai/"},
+    {t:"slime 官方文档",d:"rollout、partial rollout 与 agentic 用法",href:"https://thudm.github.io/slime/"},
+    {t:"fully_async 示例",d:"examples/fully_async：启动脚本与 CI 测试",href:srcUrl("examples/fully_async/README.md",null)},
+    {t:"流式部分 rollout 测试",d:"tests/test_qwen3_4B_streaming_partial_rollout.py",href:srcUrl("tests/test_qwen3_4B_streaming_partial_rollout.py",null)},
+    {t:"on_policy_distillation 示例",d:"examples/on_policy_distillation 目录",href:srcUrl("examples/on_policy_distillation",null)},
+    {t:"sglang_rollout 本体（本机）",d:"slime/rollout/sglang_rollout.py",href:srcUrl("slime/rollout/sglang_rollout.py",151)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:8}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 8 课 / 共 11 · Rollout 与异步"),
+          h("h1",null,"Rollout 与三种异步范式"),
+          h("p",{className:"lead"},"rollout 层是 slime 中训练与推理之间的桥接模块，也是与长程 Agentic RL 需求最相关的一层。本课先讲清标准 generate() 的三层调用结构与自定义 generate 函数的契约（呼应第 1 课的 load_function 入口），再深入三种异步范式：同步、普通异步、完全异步（fully_async），以及流式部分 rollout。最后给出按吞吐、陈旧度、实现复杂度三个维度的取舍表，并逐一交代 sft_rollout、on_policy_distillation、sleep_rollout、forge_load 的角色。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"rollout/sglang_rollout.py")," 标准 generate（625 行）、",h("code",null,"rollout/fully_async_rollout.py")," 完全异步、",h("code",null,"rollout/sglang_streaming_rollout.py")," 流式部分 rollout、",h("code",null,"rollout/sft_rollout.py")," / ",h("code",null,"on_policy_distillation.py")," / ",h("code",null,"sleep_rollout.py")," / ",h("code",null,"forge_load.py"),"、以及 ",h("code",null,"rollout/base_types.py")," 与 ",h("code",null,"data_source.py"),"。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"rollout 函数契约"),
+          h("h2",null,"rollout 是一个可替换的函数：契约与数据类型"),
+          h(ContractSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"sglang_rollout.py · 标准 generate"),
+          h("h2",null,"标准 generate()：从一批到一条的三层调用"),
+          h("p",null,"标准 rollout 的全部逻辑都在 ",h("code",null,"sglang_rollout.py")," 这 625 行里。点 Tab 自顶向下穿过它的三层结构：外层调度如何超采与过滤、group 层如何并发与打分、最内层如何把一条 ",h("code",null,"Sample")," 编码成 SGLang 请求并写回结果。"),
+          h(GenExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"三种异步范式"),
+          h("h2",null,"同步 / 普通异步 / 完全异步 / 流式部分 rollout"),
+          h("p",null,"四种调用方式落在标准 generate 的不同层上：同步与普通异步只改“调用时机”，完全异步替换“外层调度”，流式部分 rollout 替换“最内层 generate”。点 Tab 逐一查看其机制、与权重版本/陈旧度的关系，以及对长程任务的意义。"),
+          h(ParaExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"中止与陈旧度"),
+          h("h2",null,"abort 安全阀与陈旧度的统一数学框架"),
+          h(AbortSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"取舍表"),
+          h("h2",null,"吞吐 vs 陈旧度 vs 实现复杂度"),
+          h(TradeoffSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"其余 rollout 模块"),
+          h("h2",null,"特化 rollout 与支撑类型：每个文件一句话"),
+          h(ModsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些材料，能把异步 rollout 的吞吐/陈旧度取舍、SGLang 流式接口、以及在前沿模型上的检验补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"rollout 是一个可替换的函数，而非派生的子系统"),"：唯一契约是 ",h("code",null,"--rollout-function-path")," 指向的 ",h("code",null,"generate_rollout(args, rollout_id, data_source, evaluation)"),"，返回 ",h("code",null,"RolloutFnTrainOutput"),"。数学、代码、工具、agent 都作为这一函数的实现接入，不动训练内核。"),
+            h("li",null,h("strong",null,"标准 generate 分三层，异步范式各替换一层"),"：外层调度（超采+动态过滤+攒够即止）、group 层（并发+reward）、最内层（一次 SGLang 请求）。普通/完全异步改外层与调用时机，流式部分 rollout 改最内层，二者正交可组合。"),
+            h("li",null,h("strong",null,"异步的本质是用陈旧度换吞吐"),"：同步 Δv=0 但串行空等；普通异步 Δv≤update_weights_interval；完全异步用常驻在途池放宽 Δv 上界、消除批边界等待；流式部分 rollout 把长尾轨迹切成可跨权重版本续跑的可恢复单元。"),
+            h("li",null,h("strong",null,"陈旧度与第 3 课的重要性采样直接相连"),"：rollout 记录的 ",h("code",null,"rollout_log_probs")," 即 \\(\\pi_{\\theta_{\\text{old}}}\\)，",h("code",null,"weight_versions")," 记录实际版本差，Δv 越大 clip 越频繁；部分 rollout 用 ",h("code",null,"--mask-offpolicy-in-partial-rollout")," 在轨迹内部按权重版本分段屏蔽，保证训练信号的策略一致性。"),
+            h("li",null,h("strong",null,"中止是共用安全阀，部分 rollout 把超长生成变成可恢复单元"),"：",h("code",null,"abort")," 置标志、清空推理队列、结算在途任务；",h("code",null,"--partial-rollout")," 下把已生成前缀写上 ",h("code",null,"start_rollout_id")," 回收进 buffer（",h("code",null,"data_source.py")," 的 WithBuffer），下一步续跑。"),
+            h("li",null,h("strong",null,"特化 rollout 共用同一契约"),"：SFT、在线策略蒸馏、保活 sleep、显存测量 forge_load 各司其职，都只换 ",h("code",null,"--rollout-function-path"),"，印证了第 1 课“数据生成自由度最大化、以正确性为先”的设计主线。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"slime-lesson-07-weight-sync.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 7 课：权重同步")),
+            h("a",{href:"slime-lesson-09-agent.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 9 课：Agent 层（Agentic RL）"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

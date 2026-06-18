@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 第 9 课：Async 推理服务与 server 模式</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 9 课</p><h1>Async 推理服务与 server 模式</h1><p>能访问 CDN 时切换为交互版。本课讲清 verl 如何把推理引擎包装成常驻的 OpenAI 兼容 HTTP 服务：RolloutReplica 副本抽象与 LLMServerManager 生命周期管理、GlobalRequestLoadBalancer 的粘性会话与负载均衡路由、vLLM / SGLang / TensorRT-LLM 三种 async server 后端、SGLang 的 prefill/decode（PD）分离、partial rollout 的中断与续写、权重热更新时的 wake_up / sleep / KV 缓存释放，以及 main_generation_server 入口。这套 server 模式是 verl 支持 agentic 与异步 RL 的基础设施。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const VERL="vscode://file/Users/xinyu/Code/Agentic-RL/verl/";
+  function srcUrl(p,l){return VERL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","str","DataProto","WorkerGroup","ResourcePool","RayWorkerGroup","RayResourcePool","AgentLoop","RolloutReplica","RolloutMode","TokenOutput","LLMServerManager","LLMServerClient","FullyAsyncLLMServerClient","GlobalRequestLoadBalancer","SGLangReplica","SGLangPDReplica","vLLMReplica","TRTLLMReplica","SGLangHttpServer","vLLMHttpServer","HttpServerAdapter","AsyncHttpServerAdapter","DisaggregationConfig","RolloutConfig","HFModelConfig","ServerArgs","ActorHandle","ray","asyncio","LRUCache","BaseModel"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与HybridFlow","verl-lesson-01-foundations.html"],[2,"DataProto","verl-lesson-02-dataproto.html"],[3,"混合控制器","verl-lesson-03-single-controller.html"],[4,"配置","verl-lesson-04-config.html"],[5,"RL数学","verl-lesson-05-core-algos.html"],[6,"训练引擎","verl-lesson-06-engines.html"],[7,"Workers","verl-lesson-07-workers.html"],[8,"Rollout","verl-lesson-08-rollout.html"],[9,"异步服务","verl-lesson-09-async-server.html"],[10,"Agent Loop","verl-lesson-10-agent-loop.html"],[11,"异步训练","verl-lesson-11-async-train.html"],[12,"Trainer与端到端","verl-lesson-12-trainer-e2e.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"verl-course-index.html"},"verl",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 动机：为什么要 server 模式 =====
+  function MotivationSection(){
+    return h("div",null,
+      h("p",null,"第 8 课的 rollout 引擎是以“批”为单位工作的：训练循环把一整批 prompt 交给推理引擎，",h("code",null,"generate_sequences")," 阻塞式地一次性返回所有响应，然后训练继续。这种同步批量模式在固定数据集、单轮生成、严格 on-policy 的场景下足够好用，但它有一个结构性的限制：",h("strong",null,"控制流的发起方是训练循环，而不是单条样本"),"。每一次生成都要等整批最慢的那条样本完成；任何样本想在生成中途调用工具、查询环境、与沙箱交互再继续生成，都无处插入。"),
+      h("p",null,"Agentic RL 与异步 RL 把需求颠倒了过来。一条 agent 轨迹由若干轮组成：模型生成一段、调用一个工具或环境、把返回结果拼回上下文、再生成下一段。轮数因样本而异，每一轮的请求都需要独立、异步地发往推理引擎。此时再用“整批阻塞”模型，就会让短轨迹空等长轨迹，GPU 利用率塌陷。",h("strong",{className:"hl-teal"},"server 模式")," 的设计动机正是要消除这个限制：把推理引擎包装成一个常驻的 HTTP 服务（OpenAI 兼容接口加上 token-in-token-out 接口），让上层的 agent loop 与异步训练器以“每条样本、每一轮”为单位异步地发请求，而不是以“整批、每一步”为单位阻塞式批量生成。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"批量 / 同步"),"第 8 课 rollout"),
+          h("p",null,"训练循环驱动：一批 prompt 进，一批响应出，整批同步返回。适合单轮、固定数据集、on-policy。控制流在训练侧，单条样本无法在生成中途插入工具调用。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"server / 异步"),"本课主题"),
+          h("p",null,"推理引擎作为常驻 HTTP 服务：每条样本、每一轮各发一个异步请求，路由到某个副本。控制流在样本侧，允许多轮、工具/环境交互、动态轨迹长度，并支持生成与训练重叠。")
+        )
+      ),
+      h("p",null,"这套 server 模式分四层，本课自底向上逐层展开：第一层是 ",h("code",null,"RolloutReplica")," 副本抽象（一个副本等价于一条 ",h("code",null,"sglang.launch_server")," / ",h("code",null,"vllm serve")," 命令拉起的服务实例）；第二层是各后端的 async HTTP server（vLLM、SGLang、TensorRT-LLM）；第三层是 ",h("code",null,"LLMServerManager")," 与 ",h("code",null,"GlobalRequestLoadBalancer")," 的生命周期管理与路由；第四层是 partial rollout 与权重热更新这两项异步训练必备的能力。最后看 ",h("code",null,"main_generation_server")," 这个独立入口。"),
+      h("div",{className:"note"},"本课的 server 模式是第 10 课 Agent Loop 与第 11 课异步训练的直接基础设施：agent loop 通过 ",h("code",null,"LLMServerClient")," 发请求（第 10 课），异步训练器通过 ",h("code",null,"LLMServerManager")," 在生成与训练重叠中调度权重更新（第 11 课）。本课只讲服务侧。"),
+      h("div",null,
+        h(Src,{label:"replica.py · RolloutReplica",path:"verl/workers/rollout/replica.py",line:70}),
+        h(Src,{label:"llm_server.py · LLMServerManager",path:"verl/workers/rollout/llm_server.py",line:330}),
+        h(Ext,{href:"https://docs.sglang.ai/"},"SGLang 文档"),
+        h(Ext,{href:"https://docs.vllm.ai/"},"vLLM 文档")
+      )
+    );
+  }
+
+  // ===== RolloutReplica 副本抽象 =====
+  function ReplicaSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"RolloutReplica")," 是抽象基类，描述“一个服务实例”。它有意把一条服务的拉起方式与一条命令行对应起来：单节点副本等价于一条 ",h("code",null,"python -m sglang.launch_server --node-rank 0 --nnode 1 ...")," 或 ",h("code",null,"vllm serve --tensor-parallel-size=8 ..."),"；多节点副本则等价于在每个节点上各跑一条带相应 ",h("code",null,"--node-rank")," 的命令。这样设计的好处是：verl 不重写推理引擎的服务入口，而是在外层用 Ray actor 复刻“多节点协同拉起一条服务”的过程，从而尽量直接复用上游引擎的服务能力。"),
+      h("h3",null,"三种部署模式：RolloutMode"),
+      h("p",null,"副本的部署位置由 ",h("code",null,"RolloutMode")," 枚举刻画，对应三种训练范式。理解这三种模式是理解整个 server 模式资源管理的前提。"),
+      h(Code,null,"class RolloutMode(Enum):\n    # 推理引擎与训练引擎(fsdp/megatron)融合在同一进程, 共享 GPU,\n    # 通过权重同步切换上下文。场景: on-policy 训练。\n    HYBRID = \"hybrid\"\n\n    # 推理引擎与 hybrid 引擎共置于同一 ray placement group, 但在独立进程,\n    # 共享 GPU, 切换上下文无需权重同步。场景: GRM(LLM as a judge)。\n    COLOCATED = \"colocated\"\n\n    # 独立 rollout server, 拥有独立 GPU 资源, disaggregated 架构。\n    # 场景: off-policy 训练。\n    STANDALONE = \"standalone\""),
+      h("p",null,"三种模式分别由三个初始化方法实现：",h("code",null,"init_hybrid")," 直接把已有的训练 worker_group 切出本副本对应的那一段 worker，复用它们的进程（HybridFlow 的混合控制器思想，见第 1、3 课）；",h("code",null,"init_colocated")," 在共享 placement group 上新建一组独立进程的 rollout worker；",h("code",null,"init_standalone")," 则为本副本单独申请一个 ",h("code",null,"ResourcePool")," 与 worker group，与训练侧物理隔离。注意 ",h("code",null,"init_hybrid")," 用切片 ",h("code",null,"workers[world_size*rank : world_size*(rank+1)]")," 把全局 worker 列表按副本均分，因此每个副本恰好拿到 ",h("code",null,"world_size = tp × dp × pp")," 个 worker。"),
+      h(Code,null,"async def init_hybrid(self, worker_group: RayWorkerGroup):\n    self.rollout_mode = RolloutMode.HYBRID\n    self.workers = worker_group.workers[\n        self.world_size * self.replica_rank : self.world_size * (self.replica_rank + 1)\n    ]\n    await self.launch_servers()   # 抽象方法, 各后端实现"),
+      h("p",null,"基类还统一定义了一组服务级控制方法，它们都是把调用 ",h("code",null,"asyncio.gather")," 广播到本副本的每个节点 server：",h("code",null,"wake_up")," / ",h("code",null,"sleep")," 控制显存唤醒与释放，",h("code",null,"abort_all_requests")," / ",h("code",null,"resume_generation")," 是 partial rollout 的中断与续写，",h("code",null,"clear_kv_cache")," / ",h("code",null,"release_kv_cache")," / ",h("code",null,"resume_kv_cache")," 管理 KV 缓存显存。这些方法构成了第四层“权重热更新”所依赖的原语。"),
+      h("h3",null,"工厂与注册表：按后端名解析副本类"),
+      h("p",null,"具体副本类通过 ",h("code",null,"RolloutReplicaRegistry")," 注册，",h("code",null,"get_rollout_replica_class(name, disaggregation_enabled)")," 负责解析。它有一处值得注意的设计：PD 分离的 SGLang 复用 ",h("code",null,'"sglang"')," 这个后端名，只有当调用方显式断言 ",h("code",null,"disaggregation_enabled=True")," 时才返回 ",h("code",null,"SGLangPDReplica"),"。配置侧的 ",h("code",null,"RolloutConfig.__post_init__")," 会拦截非 SGLang 后端开启该标志的情况，因此这个工厂只需处理 SGLang 这一个分叉。"),
+      h(Code,null,"def get_rollout_replica_class(rollout: str, disaggregation_enabled=False):\n    if disaggregation_enabled:\n        if rollout != \"sglang\":\n            raise NotImplementedError(\"PD disaggregation only supported with rollout='sglang'\")\n        RolloutReplicaRegistry.get(\"sglang\")          # 副作用: 装好 vllm mock\n        from ...sglang_pd_replica import SGLangPDReplica\n        return SGLangPDReplica\n    return RolloutReplicaRegistry.get(rollout)         # vllm / sglang / trtllm"),
+      h("div",null,
+        h(Src,{label:"RolloutMode",path:"verl/workers/rollout/replica.py",line:54}),
+        h(Src,{label:"RolloutReplica",path:"verl/workers/rollout/replica.py",line:70}),
+        h(Src,{label:"init_hybrid",path:"verl/workers/rollout/replica.py",line:131}),
+        h(Src,{label:"init_standalone",path:"verl/workers/rollout/replica.py",line:189}),
+        h(Src,{label:"abort_all_requests",path:"verl/workers/rollout/replica.py",line:273}),
+        h(Src,{label:"RolloutReplicaRegistry",path:"verl/workers/rollout/replica.py",line:302}),
+        h(Src,{label:"get_rollout_replica_class",path:"verl/workers/rollout/replica.py",line:383})
+      )
+    );
+  }
+
+  // ===== 各后端 async server 探索器 =====
+  const BACKENDS=[
+    {key:"vllm",name:"vLLM async server",render:function(){return [
+      h("p",null,h("code",null,"vLLMHttpServer")," 是单节点上的 vLLM HTTP 服务 Ray actor，等价于 ",h("code",null,"vllm serve --tensor-parallel-size=8 ...")," 命令。它在 ",h("code",null,"launch_server")," 内构造 vLLM 的 ",h("code",null,"AsyncLLM")," 引擎，用上游的 ",h("code",null,"build_app")," / ",h("code",null,"init_app_state")," 装配 OpenAI 兼容 FastAPI 应用，再交给 ",h("code",null,"run_uvicorn")," 在后台任务里跑起来。多节点 DP 时非零 rank 走 ",h("code",null,"run_headless")," 只起 engine 不起 HTTP。"),
+      h(Code,null,"# vLLMHttpServer.launch_server (精简): 装配 OpenAI 兼容 app\nbuild_app_sig = inspect.signature(build_app)\nbuild_app_kwargs = {}\nif \"model_config\" in build_app_sig.parameters:\n    build_app_kwargs[\"model_config\"] = engine_client.model_config\napp = build_app(args, **build_app_kwargs)\n# 在后台 asyncio 任务里跑 uvicorn, 不阻塞 actor\nself._server_port, self._server_task = await run_uvicorn(app, args, self._server_address)"),
+      h("p",null,"除 HTTP 接口外，server 还暴露一个直接的 ",h("code",null,"generate(prompt_ids, sampling_params, request_id, ...)")," 远程方法，即 token-in-token-out 接口：输入 token id 列表，返回 ",h("code",null,"TokenOutput"),"（token id、logprob、停止原因等），避免在 agent loop 的热路径上反复做文本编解码。该方法谨慎处理 ",h("code",null,"max_tokens")," 的上界：先算出上下文剩余空间 ",h("code",null,"max_model_len - len(prompt_ids)")," 作为安全上界，再与配置的 ",h("code",null,"response_length")," 取小，最后钳制到 ",h("code",null,"[1, max_possible_tokens]"),"（vLLM v0.20+ 拒绝 ",h("code",null,"max_tokens < 1"),"）。这同时兼容 vLLM 风格的 ",h("code",null,"max_tokens")," 与 SGLang 风格的 ",h("code",null,"max_new_tokens"),"。"),
+      h("p",null,"副本类 ",h("code",null,"vLLMReplica.launch_servers")," 负责把节点与 GPU 排布映射到 server actor：先用 ",h("code",null,"__ray_call__")," 探出每个 worker 的 ",h("code",null,"node_id")," 与可见 GPU，再按节点用 ",h("code",null,"NodeAffinitySchedulingStrategy(soft=False)")," 把 server actor 钉在对应节点上，最后把第一个 server 的地址记为 ",h("code",null,"_server_address"),"、句柄记为 ",h("code",null,"_server_handle"),"。"),
+      h("div",null,
+        h(Src,{label:"vLLMHttpServer",path:"verl/workers/rollout/vllm_rollout/vllm_async_server.py",line:86}),
+        h(Src,{label:"build_app 装配",path:"verl/workers/rollout/vllm_rollout/vllm_async_server.py",line:411}),
+        h(Src,{label:"run_uvicorn 启动",path:"verl/workers/rollout/vllm_rollout/vllm_async_server.py",line:436}),
+        h(Src,{label:"generate (token-in-token-out)",path:"verl/workers/rollout/vllm_rollout/vllm_async_server.py",line:461}),
+        h(Src,{label:"vLLMReplica.launch_servers",path:"verl/workers/rollout/vllm_rollout/vllm_async_server.py",line:995})
+      )
+    ];}},
+    {key:"sglang",name:"SGLang async server",render:function(){return [
+      h("p",null,h("code",null,"SGLangHttpServer")," 是单节点的 SGLang HTTP 服务，等价于 ",h("code",null,"python -m sglang.launch_server --node-rank 0 --nnode 1 ..."),"。它不能直接调用 SGLang 的同步 ",h("code",null,"launch_server"),"（那是阻塞函数），而是手动调用上游内部的 ",h("code",null,"Engine._launch_subprocesses")," 拉起 tokenizer manager、scheduler、detokenizer 三类子进程，再把 SGLang 的 FastAPI app 全局状态装好，交给 ",h("code",null,"run_uvicorn")," 后台运行。代码对 SGLang 版本做了兼容分支（>= 0.5.10 / >= 0.5.7 / 更早）。"),
+      h(Code,null,"# SGLangHttpServer.run_server (精简): 手动拉子进程, 不调阻塞式 launch_server\nserver_args = ServerArgs(**args)\nself.tokenizer_manager, self.template_manager, self.scheduler_info, *_ = \\\n    Engine._launch_subprocesses(server_args=server_args, ...)\nif self.node_rank > 0:\n    return                       # 非零 rank 不起 HTTP, 只参与计算\nset_global_state(_GlobalState(tokenizer_manager=..., ...))\nself._server_port, self._server_task = await run_uvicorn(app, server_args, self._server_address)"),
+      h("p",null,"SGLang server 同样提供 token-in-token-out 的 ",h("code",null,"generate")," 远程方法。它的开头有一段 PD 分发逻辑（详见后文 PD 分离一节），普通模式下走 ",h("code",null,"max_new_tokens")," 钳制与 SGLang 的内部生成接口。控制方法 ",h("code",null,"abort_all_requests")," / ",h("code",null,"resume_generation")," 直接调用 SGLang ",h("code",null,"tokenizer_manager")," 的 ",h("code",null,"pause_generation(mode='abort')")," / ",h("code",null,"continue_generation"),"，这是 partial rollout 在 SGLang 后端的底层实现。"),
+      h("p",null,"副本类 ",h("code",null,"SGLangReplica.launch_servers")," 与 vLLM 类似按节点钉 actor，但有一处差异：SGLang 的控制 RPC（abort、resume 等）只由 node-rank 0 的 server 服务，因此副本的 ",h("code",null,"abort_all_requests")," 只向 ",h("code",null,"self.servers[0]")," 发，而不广播到所有节点 server，避免无效调用。",h("code",null,"_load_sglang")," 在导入前会顺手装一组 vLLM mock 模块，使 SGLang 在未安装 vLLM 的环境也能导入其依赖。"),
+      h("div",null,
+        h(Src,{label:"SGLangHttpServer",path:"verl/workers/rollout/sglang_rollout/async_sglang_server.py",line:112}),
+        h(Src,{label:"_launch_subprocesses",path:"verl/workers/rollout/sglang_rollout/async_sglang_server.py",line:392}),
+        h(Src,{label:"run_uvicorn",path:"verl/workers/rollout/sglang_rollout/async_sglang_server.py",line:442}),
+        h(Src,{label:"generate",path:"verl/workers/rollout/sglang_rollout/async_sglang_server.py",line:511}),
+        h(Src,{label:"abort/resume",path:"verl/workers/rollout/sglang_rollout/async_sglang_server.py",line:688}),
+        h(Src,{label:"SGLangReplica",path:"verl/workers/rollout/sglang_rollout/async_sglang_server.py",line:724})
+      )
+    ];}},
+    {key:"http",name:"http_server_engine 适配器",render:function(){return [
+      h("p",null,h("code",null,"http_server_engine.py")," 提供另一条路径：不在进程内嵌 SGLang engine，而是把 SGLang 当成一个外部 HTTP 进程来用。",h("code",null,"launch_server_process")," 用 ",h("code",null,"multiprocessing.Process")," 拉起一个真正的 SGLang HTTP 服务子进程，然后轮询 ",h("code",null,"/health_generate")," 与 ",h("code",null,"/flush_cache")," 端点直到服务就绪才返回，从而保证调用方拿到的是一个可用的服务。"),
+      h(Code,null,"# launch_server_process (精简): 拉子进程并健康检查后返回\np = multiprocessing.Process(target=launch_server, args=(server_args,))\np.start()\nwith requests.Session() as session:\n    while time.time() - start_time < max_wait_time:\n        if not p.is_alive():\n            raise RuntimeError(\"Server process terminated unexpectedly during startup\")\n        resp = session.get(f\"{base_url}/health_generate\", ...)\n        if resp.status_code == 200:\n            break\n        time.sleep(2)\n    # ... 再等 /flush_cache 就绪"),
+      h("p",null,h("code",null,"HttpServerAdapter")," 继承 SGLang 的 ",h("code",null,"EngineBase"),"，把对 SGLang 引擎的操作（generate、update_weights_from_tensor、flush_cache、release/resume_memory_occupation、abort_request 等）全部转成对该 HTTP 服务的请求。它支持向一个 SGLang router 注册/注销 worker：node-rank 0 的 server 在初始化时 POST ",h("code",null,"/add_worker"),"，关闭时 POST ",h("code",null,"/remove_worker"),"，由 router 统一做请求分发与缓存感知路由。",h("code",null,"AsyncHttpServerAdapter")," 在此之上加 aiohttp 异步与连接池，供并发请求使用。"),
+      h("p",null,"这条适配器路径的价值在于：权重热更新可以通过 ",h("code",null,"update_weights_from_tensor")," 直接把序列化后的张量 POST 给运行中的 SGLang 服务，服务原地替换权重而无需重启进程。这正是异步训练里“服务常驻、权重周期更新”所需要的接口形态。"),
+      h("div",null,
+        h(Src,{label:"launch_server_process",path:"verl/workers/rollout/sglang_rollout/http_server_engine.py",line:104}),
+        h(Src,{label:"HttpServerAdapter",path:"verl/workers/rollout/sglang_rollout/http_server_engine.py",line:192}),
+        h(Src,{label:"_register_with_router",path:"verl/workers/rollout/sglang_rollout/http_server_engine.py",line:268}),
+        h(Src,{label:"update_weights_from_tensor",path:"verl/workers/rollout/sglang_rollout/http_server_engine.py",line:348}),
+        h(Src,{label:"AsyncHttpServerAdapter",path:"verl/workers/rollout/sglang_rollout/http_server_engine.py",line:570})
+      )
+    ];}},
+    {key:"trtllm",name:"TensorRT-LLM async server",render:function(){return [
+      h("p",null,h("code",null,"TRTLLMHttpServer")," 是 TensorRT-LLM 后端的服务 actor。与 vLLM / SGLang 的“按节点钉一个 server”不同，TensorRT-LLM 副本与 server 是 1:1 映射：一个 ",h("code",null,"TRTLLMReplica")," 拉起恰好一个 ",h("code",null,"TRTLLMHttpServer"),"，server 内部再用 TensorRT-LLM 自己的 ",h("code",null,"RayExecutor")," 在指定的 placement group bundle 上分配真正的推理 worker。因此 ",h("code",null,"TRTLLMReplica.rollout_worker_use_gpu")," 返回 ",h("code",null,"False"),"：副本本身不占 GPU，GPU 由 server 内部的 executor 持有。"),
+      h(Code,null,"# TRTLLMReplica.launch_servers (精简): 1 副本 = 1 server\npgs, bundle_indices = self.get_pgs_and_bundle_indices()\nnode_id = placement_group_table(pgs[0])[\"bundles_to_node_id\"][bundle_indices[0][0]]\nserver = TRTLLMHttpServer.options(\n    scheduling_strategy=NodeAffinitySchedulingStrategy(node_id=node_id, soft=False),\n    name=f\"trtllm_server_{self.replica_rank}\",\n    max_concurrency=self.max_concurrency,\n).remote(config=..., workers=self.workers, pgs=pgs, bundle_indices=bundle_indices)\nself.servers.append(server)\nawait asyncio.gather(*[s.launch_server.remote() for s in self.servers])"),
+      h("p",null,"正因为 TensorRT-LLM 的初始化方式不同，",h("code",null,"LLMServerManager")," 的初始化里对它做了特例：hybrid 模式下其他后端调 ",h("code",null,"init_hybrid"),"，而 trtllm 调 ",h("code",null,"init_hybrid_colocated"),"（要把 ",h("code",null,"rollout_resource_pool")," 一并传入，让 server 在共享 placement group 的 bundle 上分配 executor）。源码中标注了 ",h("code",null,"TODO: unify trtllm to init_hybrid"),"，说明这是过渡设计。token-in-token-out 的 ",h("code",null,"generate")," 与控制方法（wake_up / sleep / abort / KV 缓存）的接口形态与其他后端保持一致，以便上层统一调用。"),
+      h("div",null,
+        h(Src,{label:"TRTLLMHttpServer",path:"verl/workers/rollout/trtllm_rollout/trtllm_async_server.py",line:80}),
+        h(Src,{label:"generate",path:"verl/workers/rollout/trtllm_rollout/trtllm_async_server.py",line:321}),
+        h(Src,{label:"TRTLLMReplica",path:"verl/workers/rollout/trtllm_rollout/trtllm_async_server.py",line:485}),
+        h(Src,{label:"rollout_worker_use_gpu=False",path:"verl/workers/rollout/trtllm_rollout/trtllm_async_server.py",line:503}),
+        h(Src,{label:"launch_servers",path:"verl/workers/rollout/trtllm_rollout/trtllm_async_server.py",line:570}),
+        h(Src,{label:"init_hybrid_colocated 特例",path:"verl/workers/rollout/llm_server.py",line:427})
+      )
+    ];}}
+  ];
+  function BackendExplorer(){const [s,setS]=useState(0);const d=BACKENDS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},BACKENDS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== LLMServerManager 与负载均衡 =====
+  function ManagerSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"LLMServerManager")," 是 server 模式的协调层，负责三件事：拉起若干副本、拉起全局负载均衡器、按需弹性增删副本。它的 ",h("code",null,"create")," 类方法是异步工厂：先 ",h("code",null,"_initialize_llm_servers")," 拉起所有副本，再 ",h("code",null,"_init_global_load_balancer")," 建立路由。"),
+      h("h3",null,"副本数的推导"),
+      h("p",null,"副本数不是直接配置的，而是由总 GPU 数除以单副本的 ",h("code",null,"world_size")," 推导出来。单副本 world size 是三维并行之积 ",h("code",null,"tensor_model_parallel_size × data_parallel_size × pipeline_model_parallel_size"),"；PD 分离开启时，单副本占用被放大为 prefill 与 decode 两段之和（见下文）。",h("code",null,"world_size")," 来自训练 worker_group（hybrid/colocated）或 ",h("code",null,"n_gpus_per_node × nnodes"),"（standalone）。"),
+      h(Formula,{cap:"普通模式下的副本数推导"},"$$ \\text{num\\_replicas} = \\frac{\\text{world\\_size}}{\\text{tp} \\times \\text{dp} \\times \\text{pp}} $$"),
+      h(Formula,{cap:"PD 分离时单副本占用被放大为 prefill + decode 两段"},"$$ \\text{rollout\\_world\\_size} = \\big(\\underbrace{tp_{P}\\cdot R_{P}}_{\\text{prefill}} + \\underbrace{tp_{D}\\cdot R_{D}}_{\\text{decode}}\\big)\\times \\text{dp}\\times \\text{pp} $$"),
+      h(Code,null,"@classmethod\n@auto_await\nasync def create(cls, *args, **kwargs):\n    instance = cls(*args, **kwargs)\n    await instance._initialize_llm_servers()       # 拉起 num_replicas 个副本\n    await instance._init_global_load_balancer()    # 建全局负载均衡器\n    return instance\n\n# _initialize_llm_servers (精简)\nnum_replicas = world_size // rollout_world_size\nself.rollout_replicas = [self.rollout_replica_class(replica_rank=start_rank+i, ...)\n                         for i in range(num_replicas)]\nif self.worker_group and self.rollout_config.name != \"trtllm\":\n    await asyncio.gather(*[s.init_hybrid(self.worker_group) for s in self.rollout_replicas])\nelif self.worker_group and self.rollout_config.name == \"trtllm\":\n    await asyncio.gather(*[s.init_hybrid_colocated(self.worker_group, self.rollout_resource_pool) ...])\nelse:\n    await asyncio.gather(*[s.init_standalone() for s in self.rollout_replicas])"),
+      h("h3",null,"GlobalRequestLoadBalancer：粘性会话 + 最少在途"),
+      h("p",null,"所有 agent loop worker 共享同一个 ",h("code",null,"GlobalRequestLoadBalancer")," Ray actor。它解决两个相互矛盾的目标：一方面要把请求均匀分散到各副本以最大化吞吐，另一方面要让同一条多轮对话的后续请求回到同一个副本，以命中该副本上已有的前缀 KV 缓存（prefix caching）。它的策略是：先查粘性会话表（",h("code",null,"request_id → server_id")," 的 LRU 缓存），命中且该副本仍在线就复用；否则在所有在线副本里选在途请求数最少的那个，并记入粘性表。"),
+      h(Code,null,"def acquire_server(self, request_id: str) -> tuple[str, ActorHandle]:\n    # 1) 粘性会话: 多轮对话回到同一副本以命中前缀缓存\n    if request_id in self._request_id_to_server:\n        server_id = self._request_id_to_server[request_id]\n        if server_id in self._inflight_requests:\n            self._inflight_requests[server_id] += 1\n            return server_id, self._servers[server_id]\n        del self._request_id_to_server[request_id]   # 副本已被移除, 失效\n    # 2) 否则选在途最少的副本\n    server_id = min(self._inflight_requests, key=self._inflight_requests.get)\n    self._request_id_to_server[request_id] = server_id\n    self._inflight_requests[server_id] += 1\n    return server_id, self._servers[server_id]"),
+      h("p",null,"配套的 ",h("code",null,"add_servers")," / ",h("code",null,"remove_servers")," 支持运行时批量增删副本（弹性伸缩），且把增删做成单次原子更新而不是循环调用，以减少 Ray RPC 开销。当粘性表里的副本已被移除，",h("code",null,"acquire_server")," 会自动清掉失效项并重选，因此弹性伸缩对调用方透明。"),
+      h("p",null,"客户端 ",h("code",null,"LLMServerClient.generate")," 的工作流是：",h("code",null,"acquire_server")," 拿到 (server_id, handle)，向该副本的 ",h("code",null,"server.generate.remote(...)")," 发 token-in-token-out 请求，在 ",h("code",null,"finally")," 里 ",h("code",null,"release_server")," 把在途计数减一。注意 release 是 fire-and-forget 不 await：它只是一个计数器自减，await 反而可能在均衡器无响应时阻塞 ",h("code",null,"finally")," 子句。每一轮请求用新的 ",h("code",null,"uuid4().hex")," 作为引擎侧 request_id，而粘性会话靠外层传入的 ",h("code",null,"request_id"),"。"),
+      h("div",null,
+        h(Src,{label:"LLMServerManager.create",path:"verl/workers/rollout/llm_server.py",line:367}),
+        h(Src,{label:"_initialize_llm_servers",path:"verl/workers/rollout/llm_server.py",line:376}),
+        h(Src,{label:"GlobalRequestLoadBalancer",path:"verl/workers/rollout/llm_server.py",line:45}),
+        h(Src,{label:"acquire_server",path:"verl/workers/rollout/llm_server.py",line:70}),
+        h(Src,{label:"add/remove_servers",path:"verl/workers/rollout/llm_server.py",line:102}),
+        h(Src,{label:"LLMServerClient.generate",path:"verl/workers/rollout/llm_server.py",line:181})
+      )
+    );
+  }
+
+  // ===== PD 分离 =====
+  function PDSection(){
+    return h("div",null,
+      h("p",null,"LLM 推理由两个特性截然不同的阶段组成。",h("strong",{className:"hl-purple"},"prefill")," 阶段一次性处理整个 prompt，是计算密集（compute-bound）的：所有 prompt token 并行进入注意力与 FFN，GPU 算力是瓶颈。",h("strong",{className:"hl-teal"},"decode")," 阶段逐 token 自回归生成，是访存密集（memory-bound）的：每生成一个 token 都要读取全部 KV 缓存与模型权重，显存带宽是瓶颈。把两个阶段塞在同一组 GPU 上会互相干扰：长 prompt 的 prefill 会阻塞正在 decode 的请求，造成生成延迟抖动。"),
+      h("p",null,"PD 分离（prefill/decode disaggregation）把这两个阶段拆到不同的 GPU 组上：prefill 服务专门算首 token 与 KV 缓存，再通过高速互联（NIXL / Mooncake 等传输后端）把 KV 缓存推给 decode 服务，由 decode 服务专门做逐 token 生成。两段可以用不对称的张量并行度（",h("code",null,"prefill_tp")," 与 ",h("code",null,"decode_tp")," 可以不同），各自按其瓶颈独立调优，从而提升整体吞吐与稳定性。"),
+      h(Formula,{cap:"一个 PD 副本占用的 GPU 数 = prefill 段 + 所有 decode 段"},"$$ \\text{pd\\_world\\_size} = tp_{P} + R_{D}\\cdot tp_{D} $$"),
+      h("p",null,"verl 的 ",h("code",null,"SGLangPDReplica")," 继承 ",h("code",null,"SGLangReplica")," 实现这一架构。当前 MVP 约束为 ",h("code",null,"prefill_replicas=1"),"、",h("code",null,"data_parallel_size=1"),"、整个副本落在一个节点内。它的 ",h("code",null,"launch_servers")," 流程是：先拿到一个 bootstrap 端口（KV 传输的协商端口，注意它持有 socket 直到 prefill 绑定，以避免 TOCTOU 抢占窗口），再拉起 1 个 prefill server 与 ",h("code",null,"decode_replicas")," 个 decode server，最后调 ",h("code",null,"prefill_server.set_pd_peer(decode_servers, prefill_host)")," 把 decode 对端登记给 prefill。"),
+      h(Code,null,"# SGLangPDReplica.launch_servers (精简)\nbootstrap_port, self._bootstrap_sock = get_free_port(prefill_host_ip, with_alive_sock=True)\n[prefill_server] = await self._launch_one(role=\"prefill\", tp=self._prefill_tp, ...)\nfor i in range(self._n_decode):\n    [decode_server] = await self._launch_one(role=\"decode\", tp=self._decode_tp, ...)\n    self._decode_servers.append(decode_server)\nself._server_handle = prefill_server     # 对外入口是 prefill\nawait prefill_server.set_pd_peer.remote(list(self._decode_servers), prefill_address)"),
+      h("p",null,"生成时的分发逻辑在 ",h("code",null,"SGLangHttpServer.generate")," 顶部：prefill server 收到请求后，随机生成一个 ",h("code",null,"bootstrap_room")," 编号、随机选一个 decode 对端，然后并行发起“本地 prefill + 远端 decode”两个协程，二者通过同一个 ",h("code",null,"bootstrap_room")," 配对。prefill 只负责物化 KV 并经 NIXL 推送，decode 才返回最终 token。随机选 decode 对端是为了避免 RL 场景里 prompt 长度重尾分布造成的系统性偏斜。"),
+      h(Code,null,"# SGLangHttpServer.generate 顶部: prefill 分发 (精简)\nif self._disaggregation_role == \"prefill\" and self._pd_decode_peers and bootstrap_room is None:\n    room = secrets.randbits(63)\n    decode_peer = self._pd_decode_peers[secrets.randbelow(len(self._pd_decode_peers))]\n    prefill_coro = self.generate(prompt_ids, ..., bootstrap_room=room)          # 本地物化 KV\n    decode_coro = decode_peer.generate.remote(prompt_ids, ..., bootstrap_room=room)  # 远端生成\n    _, decode_output = await asyncio.gather(prefill_coro, decode_coro)\n    return decode_output     # 只返回 decode 的 token"),
+      h("p",null,"配置侧由 ",h("code",null,"DisaggregationConfig")," 控制：",h("code",null,"transfer_backend")," 可选 ",h("code",null,"nixl / mooncake / ascend / mori / fake"),"，",h("code",null,"decode_tensor_model_parallel_size")," 允许 decode 用不同 TP，",h("code",null,"bootstrap_port")," 与 ",h("code",null,"ib_device")," 配置传输细节。该配置只对 SGLang 生效，",h("code",null,"__post_init__")," 会校验后端名与副本数。"),
+      h("div",{className:"note"},"PD 分离的传输后端之一 Mooncake 是 KV 缓存中心化存储与传输的开源实现，按 prefill/decode 分离架构设计。verl 复用 SGLang 已集成的 PD 能力，而非自行实现 KV 传输。"),
+      h("div",null,
+        h(Src,{label:"SGLangPDReplica",path:"verl/workers/rollout/sglang_rollout/sglang_pd_replica.py",line:39}),
+        h(Src,{label:"launch_servers",path:"verl/workers/rollout/sglang_rollout/sglang_pd_replica.py",line:95}),
+        h(Src,{label:"_launch_one",path:"verl/workers/rollout/sglang_rollout/sglang_pd_replica.py",line:192}),
+        h(Src,{label:"set_pd_peer",path:"verl/workers/rollout/sglang_rollout/async_sglang_server.py",line:220}),
+        h(Src,{label:"generate PD 分发",path:"verl/workers/rollout/sglang_rollout/async_sglang_server.py",line:526}),
+        h(Src,{label:"DisaggregationConfig",path:"verl/workers/config/disaggregation.py",line:24}),
+        h(Ext,{href:"https://github.com/kvcache-ai/Mooncake"},"Mooncake")
+      )
+    );
+  }
+
+  // ===== partial rollout 与权重热更新 =====
+  function PartialWeightSection(){
+    return h("div",null,
+      h("p",null,"server 模式要服务异步训练，必须解决两个问题：当训练侧要更新权重时，正在生成的请求怎么办（partial rollout）；权重如何在不重启服务的前提下原地替换（权重热更新）。这两件事相互关联，是异步 RL 区别于同步 RL 的关键工程能力。"),
+      h("h3",null,"partial rollout：中断与续写"),
+      h("p",null,"异步训练里，生成与训练重叠进行；当到了权重更新的时刻，可能仍有一批请求在生成途中。partial rollout 的思路是：先 ",h("code",null,"abort_all_requests")," 中断并保存所有未完成请求的当前进度（已生成的 token），更新权重后再 ",h("code",null,"resume_generation")," 让被中断的请求从断点继续。在 SGLang 后端，这对应 ",h("code",null,"tokenizer_manager.pause_generation(mode='abort')")," 与 ",h("code",null,"continue_generation"),"。"),
+      h("p",null,"在客户端侧，",h("code",null,"FullyAsyncLLMServerClient")," 让中断对 agent loop 完全透明：它在 ",h("code",null,"generate")," 外面套一个循环，每次把已生成的 token 拼回 prompt 再请求，累积输出；如果某次返回的 ",h("code",null,"stop_reason")," 是 ",h("code",null,"'aborted'")," / ",h("code",null,"'abort'"),"，就 ",h("code",null,"sleep(1)")," 后重试续写，直到正常结束或达到 ",h("code",null,"max_tokens"),"。它还跨续写记录权重版本 ",h("code",null,"min/max_global_steps"),"，因为续写期间权重可能已经更新，一条响应可能横跨多个权重版本。"),
+      h(Code,null,"# FullyAsyncLLMServerClient.generate (精简): 续写对 AgentLoop 透明\nwhile True:\n    output = await super().generate(request_id=request_id,\n                                   prompt_ids=prompt_ids + final_output.token_ids, ...)\n    final_output.token_ids.extend(output.token_ids)\n    # 续写时模型版本可能不同, 只为新 token 追加路由信息\n    ...\n    if original_max_tokens is not None:\n        sampling_params[limit_key] = original_max_tokens - len(final_output.token_ids)\n        if len(final_output.token_ids) >= original_max_tokens:\n            final_output.stop_reason = \"length\"; break\n    if output.stop_reason not in (\"aborted\", \"abort\"):\n        break        # 正常结束\n    await asyncio.sleep(1)   # 被中断, 等权重更新完再续写"),
+      h("h3",null,"权重热更新：wake_up / sleep / KV 缓存"),
+      h("p",null,"权重热更新依赖 ",h("code",null,"RolloutReplica")," 那组服务级原语。以 vLLM 为例：",h("code",null,"sleep")," 释放推理引擎占用的显存（HYBRID 下先 ",h("code",null,"wait_for_requests_to_drain")," 排空 DP 引擎再 sleep），把 GPU 让给训练；训练更新完权重后，",h("code",null,"wake_up")," 重新占用显存。关键的一步是 ",h("code",null,"wake_up")," 之后必须 ",h("code",null,"reset_prefix_cache(reset_connector=True)"),"：旧权重算出的前缀 KV 缓存与外部 KV 存储（如 MooncakeStoreConnector）在新权重下已失效，必须清除，否则会用错误的缓存污染生成结果。"),
+      h(Code,null,"# vLLMHttpServer.wake_up (精简): 唤醒后必须清旧权重算出的缓存\nasync def wake_up(self, tags=None):\n    if self.rollout_mode == RolloutMode.HYBRID:\n        await self.engine.wake_up(tags=tags or self._get_wake_up_tags())\n        await self.engine.reset_prefix_cache(**_RESET_PREFIX_CACHE_KWARGS)  # reset_connector=True\n    elif self.rollout_mode == RolloutMode.COLOCATED:\n        await self.engine.wake_up(tags=self._get_wake_up_tags())\n        await self.engine.reset_prefix_cache(**_RESET_PREFIX_CACHE_KWARGS)\n    elif self.rollout_mode == RolloutMode.STANDALONE:\n        logger.info(\"skip wake_up in standalone mode\")  # 独立服务不参与显存切换"),
+      h("p",null,"三种部署模式在这里的行为差异体现了它们的设计目的：HYBRID 与 COLOCATED 与训练共享 GPU，必须 sleep/wake_up 做显存切换；STANDALONE 拥有独立 GPU，",h("code",null,"wake_up")," / ",h("code",null,"sleep")," 都是空操作（",h("code",null,"skip ... in standalone mode"),"），因为服务一直占着它自己的卡，权重通过 HTTP 接口（如 SGLang 的 ",h("code",null,"update_weights_from_tensor"),"）原地更新即可。这正是 STANDALONE 适合 off-policy 异步训练的原因：服务常驻、永不让卡，权重周期性热更新。"),
+      h("div",{className:"warn"},"权重热更新的核心正确性约束是：更新权重前必须保证没有请求正穿越权重版本边界，且更新后必须清除旧版本算出的所有缓存（prefix KV 与外部 KV 存储）。verl 通过 abort/resume 配合 reset_prefix_cache 实现这一点；遗漏任一步都会产生静默的、难以察觉的数据污染。"),
+      h("div",null,
+        h(Src,{label:"FullyAsyncLLMServerClient",path:"verl/workers/rollout/llm_server.py",line:228}),
+        h(Src,{label:"replica.abort_all_requests",path:"verl/workers/rollout/replica.py",line:273}),
+        h(Src,{label:"replica.resume_generation",path:"verl/workers/rollout/replica.py",line:277}),
+        h(Src,{label:"vLLM wake_up",path:"verl/workers/rollout/vllm_rollout/vllm_async_server.py",line:618}),
+        h(Src,{label:"vLLM sleep",path:"verl/workers/rollout/vllm_rollout/vllm_async_server.py",line:639}),
+        h(Src,{label:"vLLM clear_kv_cache",path:"verl/workers/rollout/vllm_rollout/vllm_async_server.py",line:650}),
+        h(Src,{label:"sglang abort/resume",path:"verl/workers/rollout/sglang_rollout/async_sglang_server.py",line:688})
+      )
+    );
+  }
+
+  // ===== main_generation_server 入口 =====
+  function EntrySection(){
+    return h("div",null,
+      h("p",null,h("code",null,"main_generation_server.py")," 是 server 模式的一个独立入口：给定一个 prompt 数据集，用 STANDALONE 副本批量生成响应并写回 parquet。它不训练，只验证“拉起若干独立服务、并发发 OpenAI 兼容请求、收集结果”这条路径，因此是理解 server 模式最小可运行示例。"),
+      h("p",null,"流程是：",h("code",null,"start_server")," 按 ",h("code",null,"(n_gpus_per_node × nnodes) // tp")," 算出副本数，为每个副本建 ",h("code",null,"rollout_replica_class"),"，并发 ",h("code",null,"init_standalone()")," 拉起；",h("code",null,"generate")," 把数据集按副本数切片，每片用 aiohttp 向对应副本的 ",h("code",null,"/v1/chat/completions")," 发请求（这里有意用 aiohttp 而非 AsyncOpenAI，以避免请求量大时 AsyncOpenAI 卡住）；最后把结果 reshape 成 ",h("code",null,"(num_prompts, n_samples)")," 写回 parquet。"),
+      h(Code,null,"# main_generation_server.start_server (精简)\nnum_replicas = (config.trainer.n_gpus_per_node * config.trainer.nnodes) // tp_size\nrollout_server_class = get_rollout_replica_class(config.actor_rollout_ref.rollout.name)\nrollout_servers = [rollout_server_class(replica_rank=i, config=rollout_config, ...)\n                   for i in range(num_replicas)]\nawait asyncio.gather(*[server.init_standalone() for server in rollout_servers])\nreturn ([s._server_handle for s in rollout_servers],\n        [s._server_address for s in rollout_servers])\n\n# submit_request: 向某副本发 OpenAI 兼容请求\nasync with session.post(url=f\"http://{server_address}/v1/chat/completions\",\n                        headers={\"Authorization\": \"Bearer token-abc123\", **extra_headers},\n                        json=chat_complete_request) as resp:\n    return ChatCompletion(**await resp.json())"),
+      h("p",null,"这个入口同时印证了 server 模式的两个对外接口形态：训练热路径走 server actor 的 ",h("code",null,"generate.remote")," token-in-token-out（避免编解码开销），而离线生成、外部集成走标准的 OpenAI ",h("code",null,"/v1/chat/completions")," HTTP 接口（最大化兼容性）。两条接口背后是同一个常驻服务。"),
+      h("div",null,
+        h(Src,{label:"main_generation_server.py",path:"verl/trainer/main_generation_server.py"}),
+        h(Src,{label:"start_server",path:"verl/trainer/main_generation_server.py",line:40}),
+        h(Src,{label:"submit_request",path:"verl/trainer/main_generation_server.py",line:66}),
+        h(Src,{label:"main",path:"verl/trainer/main_generation_server.py",line:122})
+      )
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"SGLang 文档",d:"server、router、PD 分离、缓存与权重同步",href:"https://docs.sglang.ai/"},
+    {t:"vLLM 文档",d:"AsyncLLM 引擎、OpenAI 兼容服务、sleep/wake_up",href:"https://docs.vllm.ai/"},
+    {t:"Mooncake (PD 分离)",d:"KV 缓存中心化存储与传输, prefill/decode 分离架构",href:"https://github.com/kvcache-ai/Mooncake"},
+    {t:"Ray actor 文档",d:"named actor、调度策略、并发与对象传递",href:"https://docs.ray.io/"},
+    {t:"OpenAI Chat Completions",d:"server 对外的标准 HTTP 接口规范",href:"https://platform.openai.com/docs/api-reference/chat"},
+    {t:"llm_server.py（本机）",d:"LLMServerManager / LoadBalancer / Client",href:srcUrl("verl/workers/rollout/llm_server.py",null)},
+    {t:"replica.py（本机）",d:"RolloutReplica / RolloutMode / 工厂注册表",href:srcUrl("verl/workers/rollout/replica.py",null)},
+    {t:"sglang_pd_replica.py（本机）",d:"SGLang PD 分离副本实现",href:srcUrl("verl/workers/rollout/sglang_rollout/sglang_pd_replica.py",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:9}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 9 课 / 共 12 · 异步推理服务"),
+          h("h1",null,"Async 推理服务与 server 模式"),
+          h("p",{className:"lead"},"本课讲清 verl 如何把推理引擎从“整批阻塞式生成”改造成“常驻的 OpenAI 兼容 HTTP 服务”：自底向上看 RolloutReplica 副本抽象与三种部署模式、vLLM / SGLang / TensorRT-LLM 三种 async server 后端、LLMServerManager 的生命周期管理与 GlobalRequestLoadBalancer 的粘性会话路由、SGLang 的 prefill/decode 分离如何提升吞吐，以及 partial rollout 中断续写与权重热更新这两项异步训练必备能力。这套 server 模式是第 10 课 Agent Loop 与第 11 课异步训练的直接基础设施。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"replica.py")," 副本抽象、",h("code",null,"llm_server.py")," 管理与路由、",h("code",null,"vllm_async_server.py"),"、",h("code",null,"async_sglang_server.py"),"、",h("code",null,"http_server_engine.py"),"、",h("code",null,"sglang_pd_replica.py"),"、",h("code",null,"trtllm_async_server.py")," 四后端、",h("code",null,"main_generation_server.py")," 入口。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/verl")," 源码行（Python 包在 ",h("code",null,"verl/verl"),"）。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"动机"),
+          h("h2",null,"为什么需要 server 模式"),
+          h(MotivationSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"replica.py"),
+          h("h2",null,"第一层：RolloutReplica 副本抽象"),
+          h(ReplicaSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"四种后端 async server"),
+          h("h2",null,"第二层：各推理后端的 HTTP 服务"),
+          h("p",null,"副本抽象之下，每个推理后端各自实现 ",h("code",null,"launch_servers")," 与 token-in-token-out 的 ",h("code",null,"generate"),"。点 Tab 切换查看 vLLM、SGLang、http_server_engine 适配器、TensorRT-LLM 四条实现路径的设计差异。"),
+          h(BackendExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"llm_server.py"),
+          h("h2",null,"第三层：LLMServerManager 与负载均衡路由"),
+          h(ManagerSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"sglang_pd_replica.py"),
+          h("h2",null,"PD 分离：prefill 与 decode 拆到不同 GPU"),
+          h(PDSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"partial rollout · 权重热更新"),
+          h("h2",null,"第四层：中断续写与权重原地更新"),
+          h(PartialWeightSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"main_generation_server.py"),
+          h("h2",null,"独立入口：批量生成的最小示例"),
+          h(EntrySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"读 server 模式时配合这些文档，能把 SGLang router / PD 分离、vLLM AsyncLLM、Ray actor 的角色与 verl 的设计动机补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"从“批”到“样本”"),"：server 模式把控制流的发起方从训练循环改为单条样本，让 agent loop 与异步训练以每条样本、每一轮为单位异步发请求，这是支持 agentic 与异步 RL 的前提。"),
+            h("li",null,h("strong",null,"副本即一条服务命令"),"：",h("code",null,"RolloutReplica")," 把“拉起一条服务”对应到 ",h("code",null,"sglang.launch_server")," / ",h("code",null,"vllm serve")," 命令，用 Ray actor 复刻多节点协同拉起，从而直接复用上游引擎的服务能力，而非重写。"),
+            h("li",null,h("strong",null,"三种部署模式对应三种范式"),"：HYBRID（与训练共享 GPU、需显存切换、on-policy）、COLOCATED（共置独立进程、GRM）、STANDALONE（独立 GPU、永不让卡、off-policy 异步）。"),
+            h("li",null,h("strong",null,"路由兼顾吞吐与缓存"),"：",h("code",null,"GlobalRequestLoadBalancer")," 用粘性会话让多轮对话命中前缀缓存，用最少在途选择分散负载，并支持运行时弹性增删副本。"),
+            h("li",null,h("strong",null,"PD 分离按瓶颈解耦"),"：prefill 计算密集、decode 访存密集，拆到不同 GPU 组、用不对称 TP 各自调优，经 NIXL/Mooncake 传输 KV，提升整体吞吐与延迟稳定性。"),
+            h("li",null,h("strong",null,"异步训练的两项服务侧能力"),"：partial rollout 让中断续写对 agent loop 透明，权重热更新通过 sleep/wake_up 与 reset_prefix_cache 保证更新后不被旧缓存污染。这两点是异步 RL 正确性的关键。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"verl-lesson-08-rollout.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 8 课：Rollout 引擎与多推理后端")),
+            h("a",{href:"verl-lesson-10-agent-loop.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 10 课：Agent Loop（Agentic RL）"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

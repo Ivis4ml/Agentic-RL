@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 逐文件精读 · 第 2 课：数据契约与配置</title>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      svg: { fontCache: 'global' },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}
+    .lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:830px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}
+    .filegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:16px 0;}
+    .filechip{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:9px 11px;cursor:pointer;transition:all .12s;}
+    .filechip:hover{border-color:var(--line-2);background:var(--panel-2);}
+    .filechip.active{border-color:var(--teal);background:#0e2120;}
+    .filechip .fn{font-family:var(--mono);font-size:12.5px;color:var(--ink);}
+    .filechip .tag{font-size:10px;color:var(--faint);margin-top:2px;}
+    .detail{border:1px solid var(--line-2);background:var(--panel-2);border-radius:12px;padding:18px 20px;margin-top:6px;min-height:200px;}
+    .detail h3{margin-top:0;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .fieldrow{display:grid;grid-template-columns:200px 1fr;gap:10px;font-size:12.5px;padding:4px 0;border-bottom:1px solid #1c2530;}
+    .fieldrow .fk{font-family:var(--mono);color:var(--green);}
+    .tree{font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--muted);background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;}
+    .tree .root{color:var(--amber);font-weight:700;}.tree .mid{color:var(--teal);}.tree .leaf{color:var(--blue);}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:820px){h1{font-size:32px;}.fieldrow{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 2 课</p><h1>数据契约与配置</h1><p>能访问 CDN 时切换为交互版。本课讲 io_struct.py 的数据契约、alloc_mode.py 的并行策略与 allocation 字符串、cli_args.py 的配置层级。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const AREAL="vscode://file/Users/xinyu/Code/Agentic-RL/AReaL/";
+  function srcUrl(p,l){return AREAL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Protocol","Literal","Optional","Callable","Enum","str","int","float","bool","dict","list","tuple","set","dataclass","torch","np","ParallelStrategy","WeightUpdateMeta","ModelAllocation"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","areal-lesson-01-foundations.html"],[2,"数据契约","areal-lesson-02-contracts.html"],[3,"抽象基类","areal-lesson-03-interfaces.html"],[4,"RL 数学原语","areal-lesson-04-rl-math.html"],[5,"数据与奖励","areal-lesson-05-data-reward.html"],[6,"模型层","areal-lesson-06-models.html"],[7,"训练引擎","areal-lesson-07-train-engine.html"],[8,"推理引擎","areal-lesson-08-inference-engine.html"],[9,"Workflow","areal-lesson-09-workflow.html"],[10,"Trainer","areal-lesson-10-trainer.html"],[11,"编排运行时","areal-lesson-11-orchestration.html"],[12,"进阶与收尾","areal-lesson-12-advanced.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"areal-course-index.html"},"AReaL",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":(L[2]==="#"?"lchip todo":"lchip done");return L[2]==="#"?h("span",{key:L[0],className:cls},L[0]+" "+L[1]):h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // io_struct.py 全部数据契约（完整覆盖）
+  const STRUCTS=[
+    {n:"ModelRequest",line:28,role:"一次推理请求的契约。采样引擎只认它。",fields:[["rid: str","请求 ID，用于粘性路由与追踪"],["input_ids: list[int]","已 tokenize 的输入"],["gconfig: GenerationHyperparameters","采样参数（见 cli_args:163）"],["image_data: list[str] | None","视觉模型的 base64 图像"],["tokenizer / processor","引擎内 encode/decode 用"]]},
+    {n:"ModelResponse",line:63,role:"一次推理响应。每个输出 token 都带 logprob 和产生它的 policy 版本，这是异步 RL 能让训练侧与采样侧概率保持一致的根基。",fields:[["output_tokens: list[int]","生成的 token"],["output_logprobs: list[float]","逐 token 的 behavior logprob"],["output_versions: list[int]","逐 token 的 policy 版本"],["stop_reason","length / stop / tool_calls / abort"],["latency / ttft / itl","延迟、首 token 时间、token 间延迟"],["属性 output_len@90 / end_with_stop@94","派生长度与是否正常停止"]]},
+    {n:"FinetuneSpec",line:134,role:"训练计划：总 epoch、数据集大小、batch size，派生出总步数。",fields:[["total_train_epochs / dataset_size / train_batch_size","三个输入"],["total_train_steps@140","= epochs × dataset_size // batch_size"],["steps_per_epoch@145","每 epoch 步数"]]},
+    {n:"ParamSpec",line:150,role:"参数元数据：名字、形状、dtype。权重同步时按它在两端重建张量。",fields:[["name / shape / dtype: str","参数标识"],["size@156","按 dtype 与形状算出的字节数"]]},
+    {n:"WeightUpdateMeta",line:183,role:"权重更新的规格：磁盘 / XCCL(NCCL) / AWEX 三种机制，外加 LoRA 版本、NCCL 地址、分块大小。用工厂方法构造。",fields:[["type: Literal['disk','xccl','awex']","更新机制"],["nccl_master_address / port / group_name","XCCL 广播参数"],["weight_chunked_mem_mb=1024","分块流式发送以控显存"],["use_lora / lora_name / lora_int_id","LoRA 版本化"],["工厂 from_disk@218 / from_fsdp_xccl@267 / from_megatron_xccl@247 / from_awex@287","按后端构造"]]},
+    {n:"SaveLoadMeta",line:330,role:"checkpoint 存取契约：路径、权重格式、是否含优化器状态、是否分布式存。",fields:[["path / weight_format","safetensors 或 pytorch"],["with_optim: bool","是否保存优化器状态"],["naive_distributed: bool","是否朴素 DP 存法"]]},
+    {n:"RolloutStat",line:341,role:"异步 rollout 的健康指标。staleness 容量公式直接用它的字段。",fields:[["accepted","已接受的轨迹"],["enqueued","已入队"],["rejected","被拒绝"],["running","在飞请求"]]},
+    {n:"StepInfo",line:349,role:"训练位置：epoch、epoch_step、global_step、steps_per_epoch；next() 推进一步并跨 epoch 进位。",fields:[["epoch / epoch_step / global_step","三级计数"],["next()@355","推进到下一步"]]},
+    {n:"DeviceRuntimeInfo",line:378,role:"显存快照：allocated / reserved / used / total。classmethod get_current 查当前平台。",fields:[["mem_allocated / reserved / used / total","显存四元组"],["get_current(unit='GB')@386","取当前显存快照"]]},
+    {n:"HttpRequest / Result",line:304,role:"与远程推理服务通信的 HTTP 契约：endpoint + payload；以及解析后的生成结果。",fields:[["HttpRequest@304","endpoint / payload / method"],["HttpGenerationResult@313","output_tokens / logprobs / stop_reason"],["WeightUpdateRequests@323","一组权重更新 HTTP 请求"]]}
+  ];
+  function StructBrowser(){const [s,setS]=useState(1);const d=STRUCTS[s];
+    return h("div",null,
+      h("div",{className:"filegrid"},STRUCTS.map(function(x,i){return h("div",{key:i,className:"filechip"+(i===s?" active":""),onClick:function(){setS(i);}},h("div",{className:"fn"},x.n),h("div",{className:"tag"},":"+x.line));})),
+      h("div",{className:"detail"},
+        h("div",{className:"card-title"},h("span",{className:"pill teal"},"@dataclass"),h("code",null,"io_struct.py:"+d.line+" · "+d.n)),
+        h("p",{style:{marginTop:8}},d.role),
+        h("div",null,d.fields.map(function(fld,i){return h("div",{key:i,className:"fieldrow"},h("span",{className:"fk"},fld[0]),h("span",null,fld[1]));})),
+        h("div",{style:{marginTop:10}},h(Src,{label:d.n,path:"areal/api/io_struct.py",line:d.line}))
+      )
+    );
+  }
+
+  function AllocMath(){const ref=useTypeset("alloc");
+    return h("div",{ref:ref},
+      h("p",null,"训练要同时切多个维度的并行。",h("code",null,"ParallelStrategy")," 用六个整数描述：张量并行 TP、流水并行 PP、数据并行 DP、上下文并行 CP、专家并行 EP、专家张量并行 ETP。基本约束是非专家维度乘起来等于 world_size："),
+      h(Formula,{cap:"world_size 约束"},"$$ \\text{world\\_size} = \\text{dp} \\times \\text{cp} \\times \\text{tp} \\times \\text{pp} $$"),
+      h(Formula,{cap:"专家并行约束（EP>1 时，__post_init__ 校验）"},"$$ \\text{world\\_size} \\bmod (\\text{pp} \\times \\text{etp} \\times \\text{ep}) = 0 $$"),
+      h("p",null,"allocation 字符串把“哪些 GPU 跑什么、什么并行度”压成一行，由 Lark 文法解析。两个运算符："),
+      h("ul",null,
+        h("li",null,h("code",null,"+")," 表示拆分（disaggregation），训练与推理用不同 GPU；"),
+        h("li",null,h("code",null,"|")," 表示同卡共置（colocation），优先级高于 +。")),
+      h(Code,null,"# 例：rollout 用 SGLang 占 4 卡(TP2)，actor 用 FSDP 占 4 卡(DP4)\n'sglang:d2t2 + fsdp:d4'\n# 例：MoE 混合并行\n'megatron:(attn:d1p12t4 | ffn:d1p12e4)'\n# 维度记号: d=DP  t=TP  p=PP  c=CP(训练)  e=EP(训练)"),
+      h("div",{className:"note"},"AllocationType 三种：COLOCATE（训练推理同卡）、DECOUPLED_TRAIN（分开）、LLM_SERVER_ONLY（仅推理）。ModelAllocation.from_str 解析单个组件如 'fsdp:d4'；FSDP 后端禁止 pp>1 或 ep>1（不支持流水/专家并行），在校验里直接拦。"),
+      h("div",null,h(Src,{label:"AllocationType",path:"areal/api/alloc_mode.py",line:16}),h(Src,{label:"ParallelStrategy",path:"areal/api/alloc_mode.py",line:33}),h(Src,{label:"ModelAllocation.from_str",path:"areal/api/alloc_mode.py",line:286}),h(Src,{label:"ALLOCATION_GRAMMAR",path:"areal/api/alloc_mode.py",line:594}))
+    );
+  }
+
+  function ConfigTree(){
+    return h("div",null,
+      h("p",null,"cli_args.py 共 3047 行、约 45 个 dataclass，是所有进程读取的唯一事实来源。用 Hydra 加载 YAML 再叠加命令行覆盖（",h("code",null,"parse_cli_args@2943"),"、",h("code",null,"load_expr_config@3013"),"）。层级如下，根是按算法分的实验配置，往下聚合引擎、推理、数据、观测各子配置："),
+      h("div",{className:"tree"},
+        h("div",{className:"root"},"BaseExperimentConfig  @2724   (实验根配置)"),
+        h("div",null,"├─ cluster: ClusterSpecConfig @2582   节点数/每节点 GPU/launcher"),
+        h("div",null,"├─ train_dataset / valid_dataset      数据集配置"),
+        h("div",null,"├─ saver @2284 · evaluator @2272 · stats_logger @2449   周期组件"),
+        h("div",null,"├─ sglang @1790 · vllm @1678          推理服务配置"),
+        h("div",null,"│"),
+        h("div",{className:"mid"},"├─ PPOConfig  @2893  (RL 实验)"),
+        h("div",null,"│   ├─ rollout: InferenceEngineConfig @2068"),
+        h("div",{className:"leaf"},"│   ├─ actor: PPOActorConfig @1442  ← TrainEngineConfig"),
+        h("div",{className:"leaf"},"│   ├─ critic: PPOCriticConfig @1642  ← TrainEngineConfig"),
+        h("div",null,"│   └─ ref / teacher @2880"),
+        h("div",null,"│       └─ GRPOConfig @2937  ← PPOConfig (兼容占位)"),
+        h("div",null,"├─ SFTConfig @2812 · RWConfig @2819 · DPOConfig @2863"),
+        h("div",null,"│"),
+        h("div",{className:"mid"},"TrainEngineConfig  @1059  (所有训练引擎的基类)"),
+        h("div",{className:"leaf"},"   ├─ optimizer: OptimizerConfig @335 · scheduler: SchedulingSpec @969"),
+        h("div",{className:"leaf"},"   ├─ norm: NormConfig @42 · micro_batch_spec: MicroBatchSpec @99"),
+        h("div",{className:"leaf"},"   ├─ fsdp: FSDPEngineConfig @414"),
+        h("div",{className:"leaf"},"   ├─ megatron: MegatronEngineConfig @835"),
+        h("div",{className:"leaf"},"   └─ archon: ArchonEngineConfig @538")
+      ),
+      h("div",{className:"note"},"设计出发点：用继承表达“是一种”关系（PPOActorConfig 是一种 TrainEngineConfig），用组合表达“有一个”关系（PPOConfig 有 actor / critic / rollout）。所有超参带类型、有默认值、可被 YAML 与命令行覆盖，进程间不传魔法字符串。"),
+      h("div",null,h(Src,{label:"BaseExperimentConfig",path:"areal/api/cli_args.py",line:2724}),h(Src,{label:"TrainEngineConfig",path:"areal/api/cli_args.py",line:1059}),h(Src,{label:"PPOActorConfig",path:"areal/api/cli_args.py",line:1442}),h(Src,{label:"GenerationHyperparameters",path:"areal/api/cli_args.py",line:163}),h(Src,{label:"load_expr_config",path:"areal/api/cli_args.py",line:3013}))
+    );
+  }
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:2}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 2 课 / 共 12 · api/ 契约层"),
+          h("h1",null,"数据契约与配置：所有层说的同一种语言"),
+          h("p",{className:"lead"},"采样、训练、权重同步之间靠固定的数据结构通信。这些契约定错一处，rollout 和 training 就会静默错位（比如 logprob 与采样侧对不上、版本号丢失）。本课读 io_struct.py 的全部数据契约、alloc_mode.py 的并行策略与 allocation 字符串、cli_args.py 的配置层级。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"areal/api/io_struct.py"),"（约 11 个 dataclass）、",h("code",null,"areal/api/alloc_mode.py"),"、",h("code",null,"areal/api/cli_args.py"),"（3047 行、约 45 个 config dataclass）。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"io_struct.py"),
+          h("h2",null,"数据契约浏览器"),
+          h("p",null,"点击任一 dataclass 看字段含义与源码行。重点理解 ",h("code",null,"ModelResponse")," 为什么要逐 token 存 logprob 和 version。"),
+          h(StructBrowser)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"alloc_mode.py"),
+          h("h2",null,"并行策略与 allocation 字符串"),
+          h(AllocMath)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"cli_args.py"),
+          h("h2",null,"配置层级"),
+          h(ConfigTree)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"契约即正确性边界"),"：ModelResponse 逐 token 带 version 和 logprob，异步训练才能算清 off-policy 修正。"),
+            h("li",null,h("strong",null,"一行字符串声明全局拓扑"),"：allocation 文法把 GPU 切分、并行度、训练推理共置/分离压成可解析的一行。"),
+            h("li",null,h("strong",null,"带类型的配置取代魔法字符串"),"：根实验配置聚合所有子系统，Hydra 加 CLI 覆盖。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"areal-lesson-01-foundations.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 1 课：地基层")),
+            h("a",{href:"areal-lesson-03-interfaces.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 3 课：抽象基类"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

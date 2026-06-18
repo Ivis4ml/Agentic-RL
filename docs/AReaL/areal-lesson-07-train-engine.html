@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 逐文件精读 · 第 7 课：训练引擎</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 7 课</p><h1>训练引擎</h1><p>能访问 CDN 时切换为交互版。本课详细讲 FSDP2 与 Megatron 两套训练后端的分片、并行、FP8、梯度裁剪与损失归一化算法。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const AREAL="vscode://file/Users/xinyu/Code/Agentic-RL/AReaL/";
+  function srcUrl(p,l){return AREAL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","MixedPrecisionPolicy","DeviceMesh","ParallelStrategy","WeightUpdateMeta"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","areal-lesson-01-foundations.html"],[2,"数据契约","areal-lesson-02-contracts.html"],[3,"抽象基类","areal-lesson-03-interfaces.html"],[4,"RL 数学原语","areal-lesson-04-rl-math.html"],[5,"数据与奖励","areal-lesson-05-data-reward.html"],[6,"模型层","areal-lesson-06-models.html"],[7,"训练引擎","areal-lesson-07-train-engine.html"],[8,"推理引擎","areal-lesson-08-inference-engine.html"],[9,"Workflow","areal-lesson-09-workflow.html"],[10,"Trainer","areal-lesson-10-trainer.html"],[11,"编排运行时","areal-lesson-11-orchestration.html"],[12,"进阶与收尾","areal-lesson-12-advanced.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"areal-course-index.html"},"AReaL",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":(L[2]==="#"?"lchip todo":"lchip done");return L[2]==="#"?h("span",{key:L[0],className:cls},L[0]+" "+L[1]):h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 共享骨架 core/train_engine =====
+  function CoreSection(){const ref=useTypeset("core");
+    return h("div",{ref:ref},
+      h("p",null,"两套引擎共享一段“喂 micro-batch、求归一化损失”的骨架（",h("code",null,"engine/core/train_engine.py"),"，只有 3 个函数）。它解决一个容易错的问题：分布式下每个 DP rank、每个 micro-batch 拿到的 token 数不一样，怎么让最终梯度等价于“对全局所有有效 token 求平均”？"),
+      h("p",null,"答案是先 all-reduce 出全局权重 ",h("code",null,"W"),"（通常是全局有效 token 数），再把每个 micro-batch 的损失按本地权重占比缩放。FSDP/Megatron 在 reduce 梯度时会自动除以 ",h("code",null,"dp_size"),"，所以缩放里要乘回 ",h("code",null,"dp_size")," 抵消它："),
+      h(Formula,{cap:"全局损失 = 对所有 DP rank、所有 micro-batch 的 token 求平均"},"$$ \\mathcal{L} = \\frac{1}{W}\\sum_{r=1}^{N_{dp}}\\sum_{\\text{mb}}\\sum_{t} \\ell_{r,\\text{mb},t}, \\qquad W = \\sum_{r}\\sum_{\\text{mb}}\\sum_t m_{r,\\text{mb},t} $$"),
+      h(Formula,{cap:"每个 micro-batch 的缩放（抵消 DP 平均）"},"$$ \\tilde{\\ell}_{\\text{mb}} = \\Big(\\sum_t \\ell_{\\text{mb},t}\\Big)\\cdot \\frac{N_{dp}}{W} $$"),
+      h("div",{className:"split"},
+        h("div",null,h(Code,null,"def compute_total_loss_weight(mb_list, loss_weight_fn, dp_group):\n    # 各 micro-batch 权重(如 token 数)堆叠求和\n    w = torch.stack([loss_weight_fn(mb) for mb in mb_list]).sum().float()\n    dist.all_reduce(w, group=dp_group)   # 跨 DP 求全局 W\n    assert w > 0\n    return w")),
+        h("div",null,
+          h("h4",null,"三个函数"),
+          h("ul",null,
+            h("li",null,h("code",null,"compute_total_loss_weight"),"：堆叠权重求和 + 跨 DP all-reduce，得全局 W。"),
+            h("li",null,h("code",null,"aggregate_eval_losses"),"：评测时跨 DP 求和，再从最后一个 PP stage 广播给其它 stage。"),
+            h("li",null,h("code",null,"reorder_and_pad_outputs"),"：把按长度装箱打乱的 micro-batch 输出，按 backward_indices 还原成原始 batch 顺序并 pad。")),
+          h("div",null,h(Src,{label:"compute_total_loss_weight",path:"areal/engine/core/train_engine.py",line:30}),h(Src,{label:"aggregate_eval_losses",path:"areal/engine/core/train_engine.py",line:68}),h(Src,{label:"reorder_and_pad_outputs",path:"areal/engine/core/train_engine.py",line:110}))
+        )
+      )
+    );
+  }
+
+  // ===== FSDP2 引擎 =====
+  const FSDP=[
+    {key:"shard",name:"ZeRO-3 分片原理",render:function(){return [
+      h("p",null,"FSDP2（",h("code",null,"torch.distributed.fsdp.fully_shard"),"）是 ZeRO-3 的 PyTorch 原生实现。它把参数、梯度、优化器状态全部沿 DP 维切片，每张卡只常驻 ",h("code",null,"1/N_dp"),"。前向到某层时临时 all-gather 出该层完整参数，算完立即丢弃（",h("code",null,"reshard_after_forward=True"),"）；反向同样临时 all-gather，算完梯度用 reduce-scatter 切回分片。"),
+      h(Formula,{cap:"混合精度 Adam 的常驻显存（每参数字节）"},"$$ \\text{bytes/param} = \\underbrace{2}_{\\text{bf16 权重}} + \\underbrace{2}_{\\text{bf16 梯度}} + \\underbrace{4}_{\\text{fp32 master}} + \\underbrace{4{+}4}_{\\text{Adam } m,v} = 16 $$"),
+      h(Formula,{cap:"FSDP2 单卡常驻 vs DDP"},"$$ M_{\\text{FSDP}} \\approx \\frac{16\\,P}{N_{dp}} + \\underbrace{2\\,P_{\\text{layer}}^{\\max}}_{\\text{临时 all-gather}}, \\qquad M_{\\text{DDP}} = 16\\,P $$"),
+      h("p",null,"AReaL 的关键选择：模型以 ",h("strong",null,"optimizer_dtype（通常 fp32）")," 加载作为 master 权重，",h("code",null,"MixedPrecisionPolicy(param_dtype=bf16, reduce_dtype=fp32)")," 让前向用 bf16 算、梯度用 fp32 规约。",h("code",null,"cast_forward_inputs=True")," 自动把输入转 bf16。"),
+      h(Code,null,"# parallel.py: parallelize_model\nmp_policy = MixedPrecisionPolicy(\n    param_dtype=config.dtype,            # bf16: 前向/反向计算精度\n    reduce_dtype=config.grad_reduce_dtype,  # fp32: 梯度规约精度\n    cast_forward_inputs=True,\n)\nfully_shard(layer, mesh=dp_sp_mesh, mp_policy=mp_policy,\n            reshard_after_forward=True, offload_policy=cpu_offload)"),
+      h("div",null,h(Src,{label:"FSDPEngine",path:"areal/engine/fsdp_engine.py",line:219}),h(Src,{label:"parallelize_model",path:"areal/engine/fsdp_utils/parallel.py",line:370}),h(Ext,{href:"https://docs.pytorch.org/docs/stable/distributed.fsdp.fully_shard.html"},"PyTorch fully_shard"),h(Ext,{href:"https://arxiv.org/abs/1910.02054"},"ZeRO 论文"))
+    ];}},
+    {key:"tp",name:"张量并行 TP",render:function(){return [
+      h("p",null,"DP 之外，FSDP2 也能叠加张量并行（用 DTensor 的 ",h("code",null,"parallelize_module"),"）。",h("code",null,"apply_non_moe_tp")," 把每个 transformer 层的线性层按列/行切："),
+      h("ul",null,
+        h("li",null,h("strong",null,"列并行"),"（Q/K/V、MLP gate/up）：权重按输出维切，每卡算一段输出，前向无需通信。"),
+        h("li",null,h("strong",null,"行并行"),"（attn output、MLP down）：权重按输入维切，前向各卡算部分和，再 all-reduce 求和。"),
+        h("li",null,h("strong",null,"序列并行"),"（LayerNorm）：在序列维分片上算，配合列并行前的 all-gather、行并行后的 reduce-scatter。")),
+      h(Formula,{cap:"列并行 → 行并行（经典 Megatron 模式，每层前向 1 次 all-reduce）"},"$$ Y = \\operatorname{Dropout}\\big(\\,[\\,X A_1,\\ X A_2\\,]\\,[\\,B_1; B_2\\,]\\big) = \\sum_{i} (X A_i) B_i \\;\\xrightarrow{\\text{all-reduce}}\\; Y $$"),
+      h("p",null,"序列并行把 all-reduce 拆成 all-gather + reduce-scatter（通信量相同，但激活也沿序列分片，省显存）。梯度裁剪时要排除 TP 复制的参数（见下一栏）。"),
+      h("div",null,h(Src,{label:"apply_non_moe_tp",path:"areal/engine/fsdp_utils/parallel.py",line:219}),h(Src,{label:"ParallelHelper.build_mesh",path:"areal/engine/fsdp_utils/parallel.py",line:80}),h(Ext,{href:"https://arxiv.org/abs/1909.08053"},"Megatron-LM TP 论文"),h(Ext,{href:"https://docs.pytorch.org/docs/stable/distributed.tensor.parallel.html"},"PyTorch Tensor Parallel"))
+    ];}},
+    {key:"clip",name:"跨分片梯度裁剪",render:function(){return [
+      h("p",null,"梯度被切在 DP/TP/PP 多个维度上，要算全局 L2 范数必须跨所有维度规约。难点：TP 复制的参数（如 LayerNorm）在每个 TP rank 上都有一份，不能重复计入。"),
+      h(Formula,{cap:"全局梯度范数（p 范数）"},"$$ \\|g\\|_p = \\Big(\\sum_{\\text{param } i} \\|g_i\\|_p^{\\,p}\\Big)^{1/p}, \\quad \\text{对 DP、TP(去重)、PP 维 all-reduce(SUM)} $$"),
+      h(Formula,{cap:"裁剪系数"},"$$ g_i \\leftarrow g_i \\cdot \\min\\!\\Big(1,\\ \\frac{\\text{max\\_norm}}{\\|g\\|_p + 10^{-6}}\\Big) $$"),
+      h("p",null,"实现上用 ",h("code",null,"multi_tensor_l2norm")," 在 GPU 上批量算每个张量的范数（Apex/TE 的融合 kernel，无则回退纯 PyTorch），",h("code",null,"is_param_not_tensor_parallel_duplicate")," 按 DTensor placement 过滤掉 TP 复制项，再 all-reduce 求和、开根、用 ",h("code",null,"multi_tensor_scale")," 原地缩放。范数非有限时跳过这步并返回 ",h("code",null,"update_successful=False"),"。"),
+      h(Code,null,"def fsdp2_clip_grad_norm(params, max_norm, norm_type, dp_group, tp_group, ...):\n    grads = get_main_grads_for_grad_norm(params, tp_rank)   # 去掉 TP 复制\n    total = multi_tensor_l2norm(grads).pow(norm_type).sum()\n    dist.all_reduce(total, op=SUM, group=dp_group)\n    dist.all_reduce(total, op=SUM, group=tp_group)\n    grad_norm = total.pow(1.0/norm_type)\n    coeff = max_norm / (grad_norm + 1e-6)\n    if coeff < 1: multi_tensor_scale(grads, coeff)\n    return grad_norm"),
+      h("div",null,h(Src,{label:"fsdp2_clip_grad_norm",path:"areal/engine/fsdp_utils/grad.py",line:238}),h(Src,{label:"get_grad_norm_fp32",path:"areal/engine/fsdp_utils/grad.py",line:89}),h(Src,{label:"is_param_not_tensor_parallel_duplicate",path:"areal/engine/fsdp_utils/grad.py",line:62}))
+    ];}},
+    {key:"optim",name:"优化器",render:function(){return [
+      h("p",null,"两个值得注意的实现："),
+      h("ul",null,
+        h("li",null,h("strong",null,"AnyPrecisionAdamW"),"：把动量 ",h("code",null,"m")," 和方差 ",h("code",null,"v")," 存成低精度（如 bf16），但用 Kahan 求和补偿误差，做到接近 fp32 的更新精度却省一半优化器状态显存。"),
+        h("li",null,h("strong",null,"PerLayerOptimWrapper"),"：逐层做 optimizer step，更新当前层时预取下一层到 GPU，把优化器状态的显存峰值从“整模型”降到“单层”。")),
+      h(Formula,{cap:"AdamW 更新（fp32 计算，状态可低精度 + Kahan 补偿）"},"$$ m_t = \\beta_1 m_{t-1} + (1{-}\\beta_1) g_t, \\quad v_t = \\beta_2 v_{t-1} + (1{-}\\beta_2) g_t^2 $$"),
+      h(Formula,{cap:""},"$$ \\theta_t = \\theta_{t-1} - \\eta\\Big(\\frac{\\hat{m}_t}{\\sqrt{\\hat{v}_t}+\\epsilon} + \\lambda\\,\\theta_{t-1}\\Big) $$"),
+      h("div",null,h(Src,{label:"AnyPrecisionAdamW",path:"areal/engine/fsdp_utils/optimizer.py",line:44}),h(Src,{label:"PerLayerOptimWrapper",path:"areal/engine/fsdp_utils/optimizer.py",line:324}),h(Src,{label:"multi_tensor_apply 回退",path:"areal/engine/fsdp_utils/multi_tensor_apply.py",line:10}))
+    ];}},
+    {key:"step",name:"训练步骤",render:function(){return [
+      h("p",null,"把骨架接起来。",h("code",null,"train_batch")," 是一步训练的完整流程："),
+      h(Code,null,"def train_batch(self, input_, loss_fn, loss_weight_fn):\n    self.optimizer_zero_grad()\n    mb_list = split_into_microbatches(input_, self.mb_spec)   # 第4课装箱\n    W = compute_total_loss_weight(mb_list, loss_weight_fn, self.dp_group)\n    def process(logits, mb):\n        logp, ent = self._compute_logprobs_entropy(logits, mb)  # SP 时跨组 all-gather\n        loss = loss_fn(logp, ent, mb)\n        return loss * loss_weight_fn(mb).sum() / W * self.dp_size  # 归一化\n    self.forward_backward_batch(mb_list, process)   # 逐 mb 前向+backward 累积梯度\n    return self.optimizer_step()                    # 裁剪 + step + 返回 grad_norm/lr"),
+      h("p",null,h("code",null,"forward_backward_batch")," 逐 micro-batch 前向、调回调算 loss、",h("code",null,"loss.backward()")," 累积梯度（FSDP2 在 backward 里自动 reduce-scatter 梯度）。",h("code",null,"optimizer_step")," 先 ",h("code",null,"fsdp2_clip_grad_norm"),"，范数有限才 step。"),
+      h("div",null,h(Src,{label:"train_batch",path:"areal/engine/fsdp_engine.py",line:760}),h(Src,{label:"forward_backward_batch",path:"areal/engine/fsdp_engine.py",line:719}),h(Src,{label:"optimizer_step",path:"areal/engine/fsdp_engine.py",line:682}))
+    ];}},
+    {key:"ckpt",name:"分布式 checkpoint",render:function(){return [
+      h("p",null,"FSDP 的权重是分片的，存盘有两条路："),
+      h("ul",null,
+        h("li",null,h("strong",null,"DCP（分布式 checkpoint）"),"：",h("code",null,"DCPState")," 把 model+optimizer 包成 Stateful，用 ",h("code",null,"torch.distributed.checkpoint.save/load")," 各 rank 存自己的分片，不汇聚到单 rank，存取都快，用于断点续训。"),
+        h("li",null,h("strong",null,"导出 HF"),"：用 ",h("code",null,"get_model_state_dict(full_state_dict=True, cpu_offload=True)")," 把完整权重汇聚到 rank 0、转回计算精度、",h("code",null,"save_pretrained"),"，供推理引擎加载。")),
+      h("div",null,h(Src,{label:"DCPState",path:"areal/engine/fsdp_utils/checkpoint.py",line:18}),h(Src,{label:"save / load",path:"areal/engine/fsdp_engine.py",line:628}),h(Ext,{href:"https://docs.pytorch.org/docs/stable/distributed.checkpoint.html"},"PyTorch DCP"))
+    ];}}
+  ];
+  function FSDPExplorer(){const [s,setS]=useState(0);const d=FSDP[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},FSDP.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== Megatron 引擎 =====
+  const MEGA=[
+    {key:"5d",name:"五维并行",render:function(){return [
+      h("p",null,"Megatron-Core 支持五个并行维度，",h("code",null,"create_process_group")," 调 ",h("code",null,"mpu.initialize_model_parallel")," 按 ",h("code",null,"\"tp-cp-ep-dp-pp\"")," 的顺序建组（顺序决定哪些 rank 物理相邻、走更快的 NVLink）："),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-teal"},"TP")," 张量并行：切单层的矩阵（同 FSDP 的 TP）。"),
+        h("li",null,h("strong",{className:"hl-purple"},"PP")," 流水并行：把层切成多段，分到不同卡（下一栏）。"),
+        h("li",null,h("strong",{className:"hl-amber"},"CP")," 上下文并行：切序列维（处理超长序列）。"),
+        h("li",null,h("strong",{className:"hl-green"},"EP")," 专家并行：MoE 的专家分到不同卡。"),
+        h("li",null,h("strong",{className:"hl-blue"},"ETP")," 专家张量并行：专家内部再做 TP。")),
+      h(Formula,{cap:"约束（非专家维度）"},"$$ N_{\\text{world}} = \\text{dp}\\times\\text{tp}\\times\\text{pp}\\times\\text{cp} $$"),
+      h("p",null,"相比 FSDP（只有 DP/SP/TP、无 PP），Megatron 的强项是大模型的 PP 与 MoE 的 EP。代价是配置复杂、要做 HF↔Megatron 权重转换（第 6 课的 mcore/hf_load、hf_save）。"),
+      h("div",null,h(Src,{label:"MegatronEngine",path:"areal/engine/megatron_engine.py",line:168}),h(Src,{label:"initialize_model_parallel",path:"areal/engine/megatron_engine.py",line:229}),h(Ext,{href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},"Megatron-Core 文档"),h(Src,{label:"AReaL Megatron 教程",path:"docs/en/tutorial/megatron.md",line:null}))
+    ];}},
+    {key:"pp",name:"流水并行 PP",render:function(){return [
+      h("p",null,"PP 把 L 层切成 P 段，每卡一段，micro-batch 像流水线一样在段间流动。朴素做法（所有 forward 再所有 backward）气泡很大；Megatron 用 ",h("strong",null,"1F1B"),"（稳态下 1 前向紧跟 1 反向）压缩气泡，",h("strong",null,"交错式 VPP")," 让每卡持有多个不连续的层块进一步压缩。"),
+      h(Formula,{cap:"流水线气泡占比（m 个 micro-batch，v 个虚拟段）"},"$$ \\text{bubble} = \\frac{P-1}{m \\cdot v} $$"),
+      h("p",null,h("code",null,"configure_pipeline_layer_splits")," 按参数量把层均衡分到各 PP stage（避免某段过重拖慢整条流水线），",h("code",null,"estimate_stage_parameter_buckets")," 估算各 stage 的梯度缓冲。",h("code",null,"forward_backward_batch")," 直接用 Megatron 的 ",h("code",null,"get_forward_backward_func()")," 拿到 1F1B/交错调度，把 ",h("code",null,"forward_step")," 回调交给它编排，梯度累积由调度内部完成。"),
+      h("div",null,h(Src,{label:"configure_pipeline_layer_splits",path:"areal/engine/megatron_utils/pipeline_parallel.py",line:17}),h(Src,{label:"forward_backward_batch",path:"areal/engine/megatron_engine.py",line:802}),h(Ext,{href:"https://arxiv.org/abs/2104.04473"},"1F1B / 交错流水线论文"))
+    ];}},
+    {key:"cp",name:"上下文并行 CP",render:function(){return [
+      h("p",null,"CP 把单条序列的 token 切到多卡处理超长上下文。难点是 packed 批次：每条序列长度不一，要按 ",h("code",null,"cu_seqlens")," 把每条序列均匀切到各 CP rank，attention 时各卡持有部分 K/V，靠环形/all-gather 通信补全，算完再把 logprob 按原序列顺序拼回。"),
+      h(Code,null,"# packed_context_parallel.py 流程\npreprocess_packed_seqs_context_parallel(...)   # 按 cu_seqlens 切到各 CP rank\npacked_context_parallel_forward(...)           # CP>1 时拆->forward->重组, 否则直接 forward\nreassemble_cp_packed_logprobs(...)             # all-gather 各 CP rank 的 logprob, 还原顺序"),
+      h("div",{className:"note"},"注意 CP 会复制梯度：train_batch 里全局权重 W 的分母要包含 CP 维（",h("code",null,"DP×CP")," 一起 all-reduce），否则梯度尺度偏大。这是第 6 课 Ulysses（FSDP 侧 CP）的 Megatron 对应物。"),
+      h("div",null,h(Src,{label:"packed_context_parallel_forward",path:"areal/engine/megatron_utils/packed_context_parallel.py",line:286}),h(Src,{label:"reassemble_cp_packed_logprobs",path:"areal/engine/megatron_utils/packed_context_parallel.py",line:148}))
+    ];}},
+    {key:"fp8",name:"FP8 量化",render:function(){return [
+      h("p",null,"Hopper/Blackwell 才有 FP8 张量核（A100 没有）。FP8 两种格式：",h("code",null,"E4M3"),"（4 位指数 3 位尾数，max 448，用于权重/激活）、",h("code",null,"E5M2"),"（5 位指数，动态范围大，用于梯度）。量化需要 scale 把数值拉进 FP8 可表示范围："),
+      h(Formula,{cap:"逐张量量化"},"$$ s = \\frac{\\max|W|}{448}, \\qquad W_{\\text{fp8}} = \\operatorname{clamp}\\!\\big(W/s\\big)\\text{.to(e4m3)} $$"),
+      h("p",null,"AReaL 走 DeepSeek 式 ",h("strong",null,"分块量化"),"（",h("code",null,"128×128")," 一块一个 scale），比逐张量量化误差小得多。",h("code",null,"UE8M0")," 是给 Blackwell DeepGEMM 的格式：把 scale 只存指数（uint8、限定为 2 的幂），于是反量化变成移位，硬件友好。",h("code",null,"ceil_to_ue8m0")," 把 scale 向上取整到最近的 2 的幂，",h("code",null,"per_block_cast_to_fp8_ue8m0")," 做分块量化。"),
+      h(Formula,{cap:"UE8M0 分块 scale（2 的幂）"},"$$ s_{\\text{block}} = 2^{\\lceil \\log_2 (\\max|W_{\\text{block}}| / 448) \\rceil} $$"),
+      h("div",{className:"warn"},"先量化 matmul 权重，不要一上来量化 logprob/loss。FP8 是规模化后的吞吐优化，A100 上用不了。"),
+      h("div",null,h(Src,{label:"quantize_params",path:"areal/engine/megatron_utils/fp8/quantize.py",line:70}),h(Src,{label:"per_block_cast_to_fp8_ue8m0",path:"areal/engine/megatron_utils/fp8/ue8m0.py",line:100}),h(Ext,{href:"https://arxiv.org/abs/2412.19437"},"DeepSeek-V3（分块 FP8）"),h(Ext,{href:"https://github.com/deepseek-ai/DeepGEMM"},"DeepGEMM"))
+    ];}}
+  ];
+  function MegaExplorer(){const [s,setS]=useState(0);const d=MEGA[s];const ref=useTypeset("m"+d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},MEGA.map(function(x,i){return h("div",{key:i,className:"tab mega"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  function WeightSyncSection(){
+    return h("div",null,
+      h("p",null,"训练一步后要把分片权重推给推理引擎（第 8 课会从推理侧看）。FSDP 的实现要点是：参数是 DTensor 分片，先 ",h("code",null,"DTensor.full_tensor()")," 跨 DP all-gather 重建完整张量、转成计算精度，再按 ",h("code",null,"weight_chunked_mem_mb")," 攒成桶，分桶异步 ",h("code",null,"dist.broadcast")," 到权重更新组。攒桶是为了控制重建完整权重时的显存峰值。"),
+      h(Code,null,"def _update_weights_from_distributed(self, meta):\n    self.rollout_engine.pause_generation()        # 切断旧 KV\n    bucket = []\n    for name, param in self.model.named_parameters():\n        full = param.full_tensor().to(compute_dtype)   # DTensor 分片 -> 完整\n        bucket.append((name, full))\n        if bucket_bytes(bucket) > meta.weight_chunked_mem_mb * 2**20:\n            self._broadcast_bucket_async(bucket, meta)  # RPC + dist.broadcast\n            bucket = []\n    self._broadcast_bucket_async(bucket, meta)\n    self.rollout_engine.continue_generation()"),
+      h("div",null,h(Src,{label:"update_weights",path:"areal/engine/fsdp_engine.py",line:611}),h(Src,{label:"WeightUpdateMeta（第2课）",path:"areal/api/io_struct.py",line:183}),h(Src,{label:"AReaL 异步 RL 文档",path:"docs/en/algorithms/async.md",line:null}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"PyTorch FSDP2 (fully_shard)",d:"ZeRO-3 风格分片的官方 API 与语义",href:"https://docs.pytorch.org/docs/stable/distributed.fsdp.fully_shard.html"},
+    {t:"PyTorch DTensor / Tensor Parallel",d:"分布式张量与张量并行 API",href:"https://docs.pytorch.org/docs/stable/distributed.tensor.parallel.html"},
+    {t:"PyTorch Distributed Checkpoint",d:"DCP 分片存取",href:"https://docs.pytorch.org/docs/stable/distributed.checkpoint.html"},
+    {t:"ZeRO 论文",d:"FSDP 的理论基础：优化器状态/梯度/参数分片",href:"https://arxiv.org/abs/1910.02054"},
+    {t:"Megatron-LM 论文",d:"张量并行的列/行切分方案",href:"https://arxiv.org/abs/1909.08053"},
+    {t:"Megatron 流水线论文",d:"1F1B 与交错式虚拟流水线调度",href:"https://arxiv.org/abs/2104.04473"},
+    {t:"Megatron-Core 文档",d:"NVIDIA 官方并行训练库",href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},
+    {t:"DeepSeek-V3 论文",d:"分块 FP8 训练（128×128）",href:"https://arxiv.org/abs/2412.19437"},
+    {t:"DeepGEMM",d:"Blackwell UE8M0 FP8 GEMM kernel",href:"https://github.com/deepseek-ai/DeepGEMM"},
+    {t:"Transformer Engine",d:"NVIDIA FP8 训练库与 delayed scaling",href:"https://docs.nvidia.com/deeplearning/transformer-engine/user-guide/"},
+    {t:"AReaL Megatron 教程（本机）",d:"docs/en/tutorial/megatron.md",href:srcUrl("docs/en/tutorial/megatron.md",null)},
+    {t:"AReaL sequence packing（本机）",d:"docs/en/algorithms/sequence_packing.md",href:srcUrl("docs/en/algorithms/sequence_packing.md",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:7}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 7 课 / 共 12 · engine/ 训练后端"),
+          h("h1",null,"训练引擎：FSDP2 与 Megatron 的分片与并行"),
+          h("p",{className:"lead"},"这是全系列信息量最大的一课。第 3 课的 TrainEngine 抽象在这里有两个真实实现：FSDP2（PyTorch 原生、上手快）与 Megatron-Core（五维并行、适合大模型与 MoE）。本课把它们的分片原理、张量/流水/上下文并行、FP8 量化、跨分片梯度裁剪、损失归一化逐一讲清，并链好 PyTorch 与 Megatron 的权威文档。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"engine/core/")," 共享骨架、",h("code",null,"engine/fsdp_engine.py")," + ",h("code",null,"fsdp_utils/"),"、",h("code",null,"engine/megatron_engine.py")," + ",h("code",null,"megatron_utils/"),"（含 ",h("code",null,"fp8/"),"）、配套 offload/checkpoint。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部权威文档。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"engine/core"),
+          h("h2",null,"共享骨架：损失怎么跨 DP 归一化"),
+          h(CoreSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"fsdp_engine + fsdp_utils"),
+          h("h2",null,"FSDP2 引擎"),
+          h("p",null,"PyTorch 原生 ZeRO-3，是 AReaL 的默认与首选后端。六个栏目从分片原理到 checkpoint，点 Tab 切换。"),
+          h(FSDPExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"megatron_engine + megatron_utils"),
+          h("h2",null,"Megatron 引擎"),
+          h("p",null,"NVIDIA Megatron-Core 封装，强在五维并行与 MoE。四个栏目讲并行维度、流水线、上下文并行、FP8。"),
+          h(MegaExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"权重同步实现"),
+          h("h2",null,"分片权重怎么推给推理引擎"),
+          h(WeightSyncSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"读引擎源码时配合这些文档，能把 PyTorch / Megatron 的原语语义和论文背景补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"两个实现，一张接口"),"：FSDP2 与 Megatron 都实现第 3 课的 TrainEngine，算法层不感知。选型：小模型/快速迭代用 FSDP2，大模型/PP/MoE 用 Megatron。"),
+            h("li",null,h("strong",null,"分片是省显存的核心"),"：FSDP2 沿 DP 切一切（ZeRO-3），Megatron 沿 TP/PP/CP/EP 切，临时 all-gather、即用即弃。"),
+            h("li",null,h("strong",null,"分布式正确性藏在细节里"),"：损失要跨 DP(+CP) 归一化、梯度范数要去重 TP 复制并跨 DP/TP/PP 规约。"),
+            h("li",null,h("strong",null,"FP8 是 Hopper/Blackwell 专属"),"：分块量化 + UE8M0，A100 无缘。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"areal-lesson-06-models.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 6 课：模型层")),
+            h("a",{href:"areal-course-index.html"},h("div",{className:"faint"},"下一课（待建） →"),h("strong",null,"第 8 课：推理引擎"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

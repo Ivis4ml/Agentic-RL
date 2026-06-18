@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>slime 逐文件精读 · 第 5 课：训练后端 Megatron</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 5 课</p><h1>训练后端 Megatron</h1><p>能访问 CDN 时切换为交互版。本课详细讲 slime 的 Megatron-Core 训练后端：TP/PP/CP/EP/ETP 五维并行，MegatronTrainRayActor 的训练步骤，loss.py 在 packed + 上下文并行下的策略/价值/熵/KL 损失与跨 DP（含 CP）归一化，cp_utils 的长序列切分与 logprob 重组，data.py 的 packed 批构造，FP8 与 INT4 QAT 量化 kernel，以及 megatron_to_hf 各模型族的权重转换。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const SLIME="vscode://file/Users/xinyu/Code/Agentic-RL/slime/";
+  function srcUrl(p,l){return SLIME+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","Sample","Args","RolloutController","RolloutManager","RayTrainGroup","RayActor","SglangEngine","Box","ray","asyncio","Timer","ParamInfo","RolloutBatch","Namespace","GPTModel","DDP","mpu","PackedSeqParams","DataIterator","MegatronOptimizer","OptimizerParamScheduler","TransformerConfig","MegatronTrainRayActor","Sequence","Iterator","tl","triton"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与双引擎","slime-lesson-01-foundations.html"],[2,"统一配置","slime-lesson-02-config.html"],[3,"RL 数学原语","slime-lesson-03-rl-math.html"],[4,"数据与 Buffer","slime-lesson-04-data-buffer.html"],[5,"Megatron 后端","slime-lesson-05-megatron.html"],[6,"SGLang 后端","slime-lesson-06-sglang.html"],[7,"权重同步","slime-lesson-07-weight-sync.html"],[8,"Rollout 与异步","slime-lesson-08-rollout-async.html"],[9,"Agent 层","slime-lesson-09-agent.html"],[10,"Ray 编排","slime-lesson-10-orchestration.html"],[11,"miles 增量","slime-lesson-11-miles-delta.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"slime-course-index.html"},"slime",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 全局观：后端在 slime 里的位置 =====
+  function OverviewSection(){const ref=useTypeset("ov");
+    return h("div",{ref:ref},
+      h("p",null,"第 1 课讲过 slime 的双引擎结构：",h("strong",{className:"hl-purple"},"Megatron-Core")," 负责训练（参数更新），",h("strong",{className:"hl-teal"},"SGLang")," 负责 rollout（推理采样）。本课深入训练后端。它的代码集中在 ",h("code",null,"slime/backends/megatron_utils/"),"，对外只暴露一个 Ray actor 类 ",h("code",null,"MegatronTrainRayActor"),"，承载第 1 课提到的 ",h("code",null,"async_train"),"/",h("code",null,"update_weights")," 等远程方法的实际计算。"),
+      h("p",null,"slime 的设计选择是",h("strong",null,"原生参数透传"),"：它不重写 Megatron 的并行、优化器与 checkpoint，而是直接复用 Megatron-Core 的进程组初始化（",h("code",null,"mpu.initialize_model_parallel"),"）、",h("code",null,"GPTModel")," 构建、",h("code",null,"get_forward_backward_func()")," 的 1F1B 流水调度与分布式优化器。slime 自己只补三件事：(1) 把 RL 特有的 packed 批与上下文并行切分接入 Megatron 的前向；(2) 在 packed + 五维并行下把策略/价值/熵/KL 损失正确地跨 DP（含 CP）归一化；(3) 把训练侧的 Megatron 权重转换成 HuggingFace 命名并量化，供 SGLang 加载（呼应第 7 课的权重同步）。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"承重文件"),"按重要性"),
+          h("ul",null,
+            h("li",null,h("code",null,"loss.py"),"（1246 行）：全部 RL 损失与归一化，最重。"),
+            h("li",null,h("code",null,"model.py"),"（916 行）：模型/优化器初始化、",h("code",null,"train_one_step"),"、",h("code",null,"forward_only"),"。"),
+            h("li",null,h("code",null,"actor.py"),"（691 行）：",h("code",null,"MegatronTrainRayActor")," 训练步骤编排。"),
+            h("li",null,h("code",null,"data.py"),"（555 行）：packed 批构造与日志归一化。"),
+            h("li",null,h("code",null,"cp_utils.py"),"（371 行）：上下文并行的序列切分与 logprob 重组。"))
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"配套文件"),"辅助"),
+          h("ul",null,
+            h("li",null,h("code",null,"model_provider.py"),"：构建 ",h("code",null,"GPTModel"),"（含 MoE/MTP/FP8 初始化）。"),
+            h("li",null,h("code",null,"initialize.py"),"：调 Megatron 建五维进程组。"),
+            h("li",null,h("code",null,"checkpoint.py"),"：包装 Megatron 分布式 checkpoint 读写。"),
+            h("li",null,h("code",null,"kernels/fp8_kernel.py")," 与 ",h("code",null,"kernels/int4_qat/"),"：低精度量化 kernel。"),
+            h("li",null,h("code",null,"megatron_to_hf/"),"：各模型族权重转换 + 量化处理器。"))
+        )
+      ),
+      h("div",{className:"note"},"本课只讲训练计算与权重转换。权重同步的传输机制（NCCL/disk/tensor/delta 四种 ",h("code",null,"update_weight")," 通路）是第 7 课的主题，本课只在 ",h("code",null,"update_weights")," 处指出入口。"),
+      h("div",null,h(Src,{label:"MegatronTrainRayActor",path:"slime/backends/megatron_utils/actor.py",line:46}),h(Src,{label:"loss.py",path:"slime/backends/megatron_utils/loss.py",line:1}),h(Src,{label:"model.py",path:"slime/backends/megatron_utils/model.py",line:1}),h(Ext,{href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},"Megatron-Core 文档"))
+    );
+  }
+
+  // ===== Tab 探索器：五维并行 / actor 训练步 / loss / CP / 低精度 =====
+  const MEGA=[
+    {key:"5d",name:"五维并行 TP/PP/CP/EP/ETP",render:function(){return [
+      h("p",null,"Megatron-Core 把模型沿五个独立维度切到 GPU 集群上。slime 不重新发明这套机制，而是在 ",h("code",null,"initialize.py")," 里把 slime 的命令行参数原样转交给 ",h("code",null,"mpu.initialize_model_parallel"),"，由 Megatron 建好五维进程组。建组顺序固定为 ",h("code",null,'"tp-cp-ep-dp-pp"'),"，这个顺序决定哪些 rank 物理相邻：靠前的维度（TP、CP）通信最频繁，因此被放到节点内、走更快的 NVLink；DP、PP 通信较少，可以跨节点。"),
+      h(Code,null,"# initialize.py: _initialize_distributed\nmpu.initialize_model_parallel(\n    args.tensor_model_parallel_size,\n    args.pipeline_model_parallel_size,\n    args.virtual_pipeline_model_parallel_size,\n    context_parallel_size=args.context_parallel_size,\n    expert_model_parallel_size=args.expert_model_parallel_size,\n    expert_tensor_parallel_size=args.expert_tensor_parallel_size,\n    order=\"tp-cp-ep-dp-pp\" if not args.use_tp_pp_dp_mapping else \"tp-cp-ep-pp-dp\",\n)"),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-teal"},"TP")," 张量并行：把单层的权重矩阵按行/列切到多卡。列并行（Q/K/V、MLP 上投影）每卡算一段输出且前向无需通信；行并行（注意力输出、MLP 下投影）每卡算部分和后 all-reduce 求和。配合序列并行（",h("code",null,"sequence_parallel"),"），LayerNorm 与 dropout 也沿序列维分片以省激活显存。"),
+        h("li",null,h("strong",{className:"hl-purple"},"PP")," 流水并行：把 L 层切成 P 段，每卡持有一段。Megatron 用 1F1B 调度（稳态下一次前向紧跟一次反向）压缩气泡；",h("code",null,"virtual_pipeline")," 让每卡持有多个不连续层块，进一步压缩。slime 直接用 ",h("code",null,"get_forward_backward_func()")," 拿到这套调度，不自己写流水循环。"),
+        h("li",null,h("strong",{className:"hl-amber"},"CP")," 上下文并行：把单条序列的 token 切到多卡，处理超长上下文。这是 RL 长序列训练的关键维度，slime 在 ",h("code",null,"cp_utils.py")," 里专门做了 packed 批下的切分与重组（见 CP 栏）。"),
+        h("li",null,h("strong",{className:"hl-green"},"EP")," 专家并行：MoE 的若干专家分到不同卡，每卡只持有一部分专家的参数。"),
+        h("li",null,h("strong",{className:"hl-blue"},"ETP")," 专家张量并行：在专家内部再做一次张量并行，用于专家本身也很大的场景。")),
+      h(Formula,{cap:"非专家维度的 world size 约束（注意力/稠密部分）"},"$$ N_{\\text{world}} = \\text{tp}\\times\\text{cp}\\times\\text{dp}\\times\\text{pp} $$"),
+      h(Formula,{cap:"专家维度的等价约束（MoE 部分，ETP 替代 TP、EP 替代 CP·部分 DP）"},"$$ N_{\\text{world}} = \\text{etp}\\times\\text{ep}\\times\\text{dp}_{\\text{moe}}\\times\\text{pp} $$"),
+      h("p",null,"这两条约束必须同时满足同一个 ",h("code",null,"N_world"),"，因此专家维度 ",h("code",null,"etp×ep")," 与注意力维度 ",h("code",null,"tp×cp")," 共享同一批物理卡，只是逻辑切法不同。actor 初始化后会把实际的 ",h("code",null,"dp_size"),"、",h("code",null,"cp_size"),"、VPP 大小读出来存进 ",h("code",null,"train_parallel_config"),"，供后续损失归一化使用。"),
+      h(Code,null,"# actor.py: init 之后读回真实并行配置\nself.train_parallel_config = {\n    \"dp_size\": mpu.get_data_parallel_world_size(with_context_parallel=False),\n    \"cp_size\": mpu.get_context_parallel_world_size(),\n    \"vpp_size\": vpp_size,\n    \"microbatch_group_size_per_vp_stage\": microbatch_group_size_per_vp_stage,\n}"),
+      h("div",{className:"note"},"流水线气泡占比的直觉公式（",h("code",null,"m")," 个 micro-batch，",h("code",null,"v")," 个虚拟段）："),
+      h(Formula,{cap:"1F1B + 交错式 VPP 的气泡占比"},"$$ \\text{bubble} = \\frac{P-1}{m \\cdot v} $$"),
+      h("div",null,h(Src,{label:"_initialize_distributed",path:"slime/backends/megatron_utils/initialize.py",line:33}),h(Src,{label:"init",path:"slime/backends/megatron_utils/initialize.py",line:56}),h(Src,{label:"train_parallel_config",path:"slime/backends/megatron_utils/actor.py",line:94}),h(Ext,{href:"https://arxiv.org/abs/1909.08053"},"Megatron-LM 张量并行"),h(Ext,{href:"https://arxiv.org/abs/2104.04473"},"1F1B 流水线"))
+    ];}},
+    {key:"step",name:"actor 训练步",render:function(){return [
+      h("p",null,h("code",null,"MegatronTrainRayActor.train")," 是一步训练的总入口。当开启 ",h("code",null,"offload_train")," 时它先 ",h("code",null,"wake_up()")," 把模型权重从主机搬回显存，再取数据，调 ",h("code",null,"train_actor")," 或 ",h("code",null,"train_critic"),"，结束后 ",h("code",null,"sleep()")," 释放显存。这套 offload/onload 是第 1 课提到的 colocate（训练与 rollout 共用 GPU）模式得以运行的基础。"),
+      h(Code,null,"# actor.py: train 顶层\ndef train(self, rollout_id, rollout_data_ref, external_data=None):\n    if self.args.offload_train:\n        self.wake_up()\n    with timer(\"data_preprocess\"):\n        rollout_data = self._get_rollout_data(rollout_data_ref)  # Ray 取数据 + 搬上 GPU\n    if self.role == \"critic\":\n        result = self.train_critic(rollout_id, rollout_data)\n    else:\n        self.train_actor(rollout_id, rollout_data, external_data=external_data)\n        result = None\n    if self.args.offload_train:\n        del rollout_data\n        self.sleep()\n    return result"),
+      h("h3",null,"train_actor 的五个阶段"),
+      h("p",null,"核心计算在 ",h("code",null,"train_actor")," 里。它按固定次序处理，每个 forward 阶段都通过临时切换模型权重（",h("code",null,"_switch_model"),"）来复用同一份显存："),
+      h("ol",null,
+        h("li",null,h("strong",null,"参考/教师 logprob"),"：若有 ref 模型（KL 惩罚）或 teacher 模型（on-policy 蒸馏），切到对应权重，用 ",h("code",null,"compute_log_prob")," 跑一遍 forward-only，存 ",h("code",null,"ref_log_probs"),"/",h("code",null,"teacher_log_probs"),"。"),
+        h("li",null,h("strong",null,"旧策略 logprob"),"：切回 actor（或 old_actor），再跑一遍 forward-only 得到训练侧的 ",h("code",null,"log_probs"),"。这是 PPO/GRPO 的重要性采样分母。一个优化是 ",h("code",null,"can_reuse_log_probs_in_loss"),"：当只有一个 micro-batch 步、不需要 KL、不用 rollout logprob 等条件全满足时，可以省掉这次独立 forward，在损失计算时顺带得到。"),
+        h("li",null,h("strong",null,"价值（可选）"),"：若启用 critic，把 critic 算好的 values 取过来。"),
+        h("li",null,h("strong",null,"优势与回报"),"：调 ",h("code",null,"compute_advantages_and_returns")," 一次性算完整 rollout 的优势（GRPO/GSPO/PPO 等），必须在训练前算完，因为优势归一化要看整个 rollout 的统计量。"),
+        h("li",null,h("strong",null,"训练"),"：调 ",h("code",null,"train(...)"),"（即 model.py 的 train），在同一份 ",h("code",null,"data_iterator")," 上跑前向+反向+优化器步。"))
+      ,
+      h(Code,null,"# actor.py: train_actor 主体 (精简)\nwith inverse_timer(\"train_wait\"), timer(\"train\"):\n    if self.args.compute_advantages_and_returns:\n        if \"ref\" in self.weights_backuper.backup_tags:\n            self._switch_model(\"ref\")\n            rollout_data.update(self.compute_log_prob(data_iterator, num_microbatches, store_prefix=\"ref_\"))\n        self._switch_model(\"old_actor\" if self.args.keep_old_actor else \"actor\")\n        if (not self.args.use_rollout_logprobs ...) and not can_reuse_log_probs_in_loss:\n            rollout_data.update(self.compute_log_prob(data_iterator, num_microbatches, store_prefix=\"\"))\n        if self._active_model_tag != \"actor\":\n            self._switch_model(\"actor\")\n        compute_advantages_and_returns(self.args, rollout_data)  # 训练前算完整 rollout 的优势\n    with timer(\"actor_train\"):\n        train(rollout_id, self.model, self.optimizer, self.opt_param_scheduler,\n              data_iterator, num_microbatches, global_batch_sizes)\nself.weights_backuper.backup(\"actor\")  # 把更新后的权重备份到 CPU"),
+      h("p",null,"这里的 ",h("code",null,"weights_backuper")," 是一个 ",h("code",null,"TensorBackuper"),"：它在 CPU 上为 actor、ref、old_actor、teacher、rollout_actor 等多个角色各留一份权重，",h("code",null,"_switch_model")," 通过把目标角色的 CPU 权重恢复回 GPU 来切换。这样多个逻辑模型（actor/ref/teacher）共享同一份 GPU 显存，避免同时驻留多份大模型。",h("code",null,"forward_only")," 和 ",h("code",null,"train")," 都接受 ",h("code",null,"num_microbatches")," 列表（每步一个值），把多个训练步打包进一个 rollout。"),
+      h("div",null,h(Src,{label:"train",path:"slime/backends/megatron_utils/actor.py",line:395}),h(Src,{label:"train_actor",path:"slime/backends/megatron_utils/actor.py",line:445}),h(Src,{label:"train_critic",path:"slime/backends/megatron_utils/actor.py",line:417}),h(Src,{label:"compute_log_prob",path:"slime/backends/megatron_utils/actor.py",line:378}),h(Src,{label:"_get_rollout_data",path:"slime/backends/megatron_utils/actor.py",line:220}),h(Src,{label:"sleep / wake_up",path:"slime/backends/megatron_utils/actor.py",line:188}),h(Src,{label:"train (model.py)",path:"slime/backends/megatron_utils/model.py",line:613}),h(Src,{label:"train_one_step",path:"slime/backends/megatron_utils/model.py",line:419}))
+    ];}},
+    {key:"loss",name:"loss 与归一化",render:function(){return [
+      h("p",null,"loss.py 是本课最重的文件。它先把 Megatron 输出的 packed logits 还原成每条样本的 response 段（",h("code",null,"get_responses"),"/",h("code",null,"get_log_probs_and_entropy"),"），再调第 3 课的 ppo_utils 算各类损失，最后通过 ",h("code",null,"loss_function")," 做 Megatron 集成所需的缩放。"),
+      h("h3",null,"策略损失（PPO 风格裁剪）"),
+      h("p",null,h("code",null,"policy_loss_function")," 取当前 logits 算 ",h("code",null,"log_probs")," 与熵，与旧策略 logprob 一起送进 ",h("code",null,"compute_policy_loss"),"。其中 ",h("code",null,"ppo_kl = old_log_probs - log_probs"),"，重要性比 ",h("code",null,"ratio = exp(-ppo_kl)"),"："),
+      h(Formula,{cap:"PPO 裁剪策略损失（每 token）"},"$$ \\ell^{\\text{pg}}_t = \\max\\!\\Big(-r_t A_t,\\ -\\operatorname{clip}(r_t,\\,1-\\varepsilon_{\\text{low}},\\,1+\\varepsilon_{\\text{high}})\\,A_t\\Big),\\quad r_t = e^{-\\text{ppo\\_kl}_t} $$"),
+      h("p",null,"GSPO 用序列级 KL（先经 CP all-gather 拼回整条序列再算），CISPO 把比值在 stop-gradient 下裁剪、让梯度走 ",h("code",null,"log_probs"),"（呼应第 3 课）。总损失再减熵正则、可选加 KL 损失："),
+      h(Formula,{cap:"actor 总损失"},"$$ \\mathcal{L} = \\overline{\\ell^{\\text{pg}}} \\;-\\; \\beta_{\\text{ent}}\\,\\overline{H} \\;+\\; \\beta_{\\text{kl}}\\,\\overline{\\mathrm{KL}(\\pi_\\theta \\Vert \\pi_{\\text{ref}})} $$"),
+      h("h3",null,"价值损失（PPO 裁剪）"),
+      h(Formula,{cap:"value_loss_function：裁剪与不裁剪取较大者"},"$$ \\ell^{\\text{v}}_t = \\max\\!\\Big((V_t - R_t)^2,\\ (\\,\\operatorname{clip}(V_t,\\,V^{\\text{old}}_t\\pm c)\\,- R_t)^2\\Big) $$"),
+      h("h3",null,"关键：跨 DP（含 CP）的归一化"),
+      h("p",null,"这是 packed + 五维并行下最容易出错的地方。每个 DP rank、每个 micro-batch 拿到的 token 数都不同，要让最终梯度等价于“对全局所有有效 token（或所有 rollout）求平均”。slime 的做法分两层：",h("strong",null,"micro-batch 内")," 用 ",h("code",null,"sum_of_sample_mean")," 按预先算好的 per-rollout 分母归约；",h("strong",null,"步级")," 用 ",h("code",null,"loss_function")," 末尾的缩放抵消 Megatron 自动做的 DP 平均。"),
+      h(Code,null,"# loss.py: loss_function 末尾的缩放\nif not args.calculate_per_token_loss:\n    loss = (loss\n        * num_microbatches\n        / step_global_batch_size\n        * mpu.get_data_parallel_world_size(with_context_parallel=True))\nelse:\n    loss = loss * mpu.get_context_parallel_world_size()"),
+      h(Formula,{cap:"per-rollout-mean 模式：抵消 Megatron 的 1/(num_microbatches) 与 1/dp 平均"},"$$ \\tilde{\\mathcal{L}}_{\\text{mb}} = \\mathcal{L}_{\\text{mb}} \\cdot \\frac{N_{\\text{mb}} \\cdot (N_{dp}\\!\\cdot\\!N_{cp})}{B_{\\text{global}}} $$"),
+      h("p",null,"因为 Megatron 的 ",h("code",null,"forward_backward_func")," 会把各 micro-batch 损失求和、并在梯度规约时除以 ",h("code",null,"dp×cp")," 的组大小，所以这里要乘回 ",h("code",null,"num_microbatches"),"（抵消平均成和）与 ",h("code",null,"dp×cp"),"（抵消组平均），再除以全局 rollout 数 ",h("code",null,"step_global_batch_size"),"，使最终梯度恰好是“对整个步的所有 rollout 求平均”。per-token-loss 模式只需乘 ",h("code",null,"cp_size")," 抵消 CP 维的重复。",h("code",null,"reduce_train_step_metrics")," 在步末把各 micro-batch 的 metric 跨 ",h("code",null,"dp×cp")," all-reduce 后还原成可读数值。"),
+      h(Formula,{cap:"per-token-loss 模式：跨 DP 全局 token 平均"},"$$ \\mathcal{L} = \\frac{1}{\\sum_{r}\\sum_{\\text{mb}}\\sum_t m_{r,\\text{mb},t}}\\sum_{r}\\sum_{\\text{mb}}\\sum_t \\ell_{r,\\text{mb},t} $$"),
+      h("div",{className:"warn"},"优势归一化（",h("code",null,"normalize_advantages"),"）调用 ",h("code",null,"distributed_masked_whiten")," 跨 DP 组做带掩码的全局白化（第 1 课提到的工具）。CP 开启时还要先把每条序列的掩码按 CP 切分模式重组，确保白化用的有效 token 集合正确。"),
+      h("div",null,h(Src,{label:"policy_loss_function",path:"slime/backends/megatron_utils/loss.py",line:801}),h(Src,{label:"value_loss_function",path:"slime/backends/megatron_utils/loss.py",line:1035}),h(Src,{label:"loss_function (缩放)",path:"slime/backends/megatron_utils/loss.py",line:1144}),h(Src,{label:"compute_advantages_and_returns",path:"slime/backends/megatron_utils/loss.py",line:575}),h(Src,{label:"get_sum_of_sample_mean",path:"slime/backends/megatron_utils/cp_utils.py",line:53}),h(Src,{label:"reduce_train_step_metrics",path:"slime/backends/megatron_utils/cp_utils.py",line:139}),h(Src,{label:"compute_policy_loss",path:"slime/utils/ppo_utils.py",line:125}))
+    ];}},
+    {key:"cp",name:"上下文并行 CP",render:function(){return [
+      h("p",null,"上下文并行（CP）把单条超长序列的 token 切到多卡。slime 默认用 ",h("strong",null,"zigzag（之字形）切分")," 配合 ring attention：把序列分成 ",h("code",null,"2×cp_size")," 个等长块，第 ",h("code",null,"r")," 个 rank 拿到第 ",h("code",null,"r")," 块和第 ",h("code",null,"(2·cp_size-1-r)")," 块。这种首尾配对的切法让每个 rank 的计算量（在因果注意力下与位置相关）大致均衡，而朴素的连续切分会让靠后的 rank 计算量更大。"),
+      h(Code,null,"# cp_utils.py: slice_with_cp 的 zigzag 取块\nchunk_size = (token_len + 2 * cp_size - 1) // (2 * cp_size)\nstart_1, end_1 = chunk_size * cp_rank,                       chunk_size * (cp_rank + 1)\nstart_2, end_2 = chunk_size * (2 * cp_size - cp_rank - 1),   chunk_size * (2 * cp_size - cp_rank)\nreturn torch.cat([tokens[start_1:end_1], tokens[start_2:end_2]])"),
+      h("p",null,"难点在 packed 批：一个 micro-batch 里拼了多条不等长的序列，CP 切分要对每条独立按 ",h("code",null,"cu_seqlens")," 算块边界。",h("code",null,"get_logits_and_tokens_offset_with_cp")," 计算某条序列在本 rank 上的两个块各覆盖哪段 logits 与 token（注意 logits 相对 token 有一位偏移，因为预测的是下一个 token）。算完损失后，response 段的 logprob 分散在各 CP rank 上，需要重组："),
+      h("ul",null,
+        h("li",null,h("code",null,"slice_log_prob_with_cp"),"：把整条 response 的 logprob 按本 rank 的 zigzag 块切出来（actor 侧准备 rollout/teacher logprob 时用）。"),
+        h("li",null,h("code",null,"all_gather_with_cp"),"：把本 rank 持有的两个块零填充到整条 response 长度，再用可微的 ",h("code",null,"dist.nn.all_reduce")," 跨 CP 组求和，得到完整 response 的 logprob（GSPO/OPSM 的序列级量需要整条序列）。")),
+      h("p",null,"还有一条可选的 ",h("code",null,"allgather_cp")," 路径（用于 DSA 类模型）：先把整个 packed 流连续切分，前向后再通过可微 all-reduce 重建每条 response，最后重新切回 zigzag 布局（",h("code",null,"_allgather_cp_redistribute"),"）。这条路径的代价是多一次全序列 all-gather，换取注意力实现上的简化。"),
+      h("div",{className:"note"},"CP 会复制梯度：归一化的分母必须包含 CP 维。这就是为什么 ",h("code",null,"loss_function")," 缩放里用 ",h("code",null,"get_data_parallel_world_size(with_context_parallel=True)"),"（即 ",h("code",null,"dp×cp"),"），而 per-token 模式额外乘 ",h("code",null,"cp_size"),"。loss 栏的归一化公式与此处一致。"),
+      h("div",null,h(Src,{label:"get_logits_and_tokens_offset_with_cp",path:"slime/backends/megatron_utils/cp_utils.py",line:9}),h(Src,{label:"slice_with_cp",path:"slime/backends/megatron_utils/cp_utils.py",line:299}),h(Src,{label:"slice_log_prob_with_cp",path:"slime/backends/megatron_utils/cp_utils.py",line:343}),h(Src,{label:"all_gather_with_cp",path:"slime/backends/megatron_utils/cp_utils.py",line:247}),h(Src,{label:"_allgather_cp_redistribute",path:"slime/backends/megatron_utils/loss.py",line:148}))
+    ];}},
+    {key:"lp",name:"低精度 FP8 / INT4",render:function(){return [
+      h("p",null,"低精度有两个独立用途：训练时的 FP8 计算（需要 Hopper/Blackwell 张量核，A100 不支持），与权重同步时把权重量化成推理引擎期望的格式（FP8 或 INT4），后者在 ",h("code",null,"megatron_to_hf/processors/")," 里。"),
+      h("h3",null,"FP8 分块量化（DeepSeek 式）"),
+      h("p",null,"FP8 有两种格式：",h("code",null,"E4M3"),"（4 位指数 3 位尾数，",h("code",null,"max=448"),"，用于权重/激活）与 ",h("code",null,"E5M2"),"（指数范围更大，用于梯度）。逐张量量化误差大，slime 走 DeepSeek-V3 的 ",h("strong",null,"分块量化"),"：每 ",h("code",null,"128×128")," 块共享一个 scale。kernel 在 ",h("code",null,"kernels/fp8_kernel.py")," 用 Triton 实现："),
+      h(Formula,{cap:"分块量化（每块一个 scale，s = blockmax / 448）"},"$$ s_{\\text{block}} = \\frac{\\max_{(i,j)\\in\\text{block}} |W_{ij}|}{\\text{fp8\\_max}},\\qquad W^{\\text{fp8}}_{ij} = \\operatorname{clamp}\\!\\Big(\\frac{W_{ij}}{s_{\\text{block}}},\\,-448,\\,448\\Big)\\text{.to(e4m3)} $$"),
+      h(Code,null,"# fp8_kernel.py: _blockwise_cast_to_fp8_triton 的核心\n_absmax = tl.maximum(tl.max(tl.abs(x)), eps)\nx_s = _absmax / fp8_max          # 本块 scale\ns_inv = 1.0 / x_s\ny_q = tl.clamp(x * s_inv, fp8_min, fp8_max).to(Y.dtype.element_ty)"),
+      h("p",null,"在权重同步时，",h("code",null,"quantizer_fp8.py")," 只对 matmul 权重（注意力的 ",h("code",null,"linear_qkv"),"/",h("code",null,"linear_proj"),"、MLP 的 ",h("code",null,"linear_fc1"),"/",h("code",null,"linear_fc2"),"、MoE 专家与共享专家、MLA 的各投影）做分块量化，每个权重输出一对 ",h("code",null,"(weight, weight_scale_inv)"),"；LayerNorm、embedding 等保持高精度。当目标是 Blackwell 的 DeepGEMM 时，scale 进一步转成 ",h("code",null,"UE8M0"),"（只存 2 的幂指数），使反量化退化为移位运算。"),
+      h(Formula,{cap:"UE8M0 分块 scale（向上取整到 2 的幂）"},"$$ s_{\\text{block}} = 2^{\\lceil \\log_2 (\\max|W_{\\text{block}}| / 448) \\rceil} $$"),
+      h("h3",null,"INT4 QAT（伪量化感知训练）"),
+      h("p",null,"INT4 走自定义 CUDA kernel ",h("code",null,"kernels/int4_qat/"),"，做“伪量化”（fake quant）：量化再反量化，保持张量为高精度但带上 INT4 的量化误差，让训练对量化误差鲁棒（QAT）。块大小通常为 ",h("code",null,"[1, 32]"),"（每 32 个元素一组），支持对称与非对称两种。"),
+      h(Formula,{cap:"对称 INT4：scale = blockmax / 7，量化到 [-7, 7]"},"$$ s = \\max\\!\\Big(\\tfrac{\\max|x|}{7},\\,10^{-5}\\Big),\\qquad \\hat{x} = \\operatorname{round}(x/s)\\cdot s $$"),
+      h(Formula,{cap:"非对称 INT4：scale = (max-min)/15，含零点 z，量化到 [0, 15]"},"$$ s = \\max\\!\\Big(\\tfrac{x_{\\max}-x_{\\min}}{15},\\,10^{-5}\\Big),\\quad z=\\operatorname{clip}\\!\\big(-\\!\\operatorname{round}(x_{\\min}/s),0,15\\big),\\quad \\hat{x}=(\\operatorname{round}(x/s)+z-z)\\cdot s $$"),
+      h(Code,null,"// int4_qat/fake_int4_quant_cuda.cu: 对称分块量化核心\nfloat abs_val = fabsf(val);\nfloat block_max = warpReduceMax(abs_val);   // warp 内归约出块最大值\nscale = fmaxf(block_max * (1.0f / 7.0f), 1e-5f);\nval = rintf(val / scale);                   // 量化到整数 (对称: [-7,7])"),
+      h("div",{className:"warn"},"先量化 matmul 权重，不要量化 logprob 或 loss。FP8/INT4 是规模化后的吞吐与显存优化，必须配合相应硬件（FP8 需 Hopper/Blackwell）。",h("code",null,"model_provider.py")," 里的 ",h("code",null,"fp8_param_gather")," 还会用 TransformerEngine 的 ",h("code",null,"fp8_model_init")," 直接以 FP8 构建权重。"),
+      h("div",null,h(Src,{label:"blockwise_cast_to_fp8_triton",path:"slime/backends/megatron_utils/kernels/fp8_kernel.py",line:61}),h(Src,{label:"quantize_params_fp8",path:"slime/backends/megatron_utils/megatron_to_hf/processors/quantizer_fp8.py",line:10}),h(Src,{label:"_quantize_param",path:"slime/backends/megatron_utils/megatron_to_hf/processors/quantizer_fp8.py",line:94}),h(Src,{label:"INT4 CUDA kernel",path:"slime/backends/megatron_utils/kernels/int4_qat/fake_int4_quant_cuda.cu",line:31}),h(Src,{label:"pack_layer (INT4)",path:"slime/backends/megatron_utils/megatron_to_hf/processors/quantizer_compressed_tensors.py",line:233}),h(Ext,{href:"https://arxiv.org/abs/2412.19437"},"DeepSeek-V3 分块 FP8"))
+    ];}}
+  ];
+  function MegaExplorer(){const [s,setS]=useState(0);const d=MEGA[s];const ref=useTypeset("m"+d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},MEGA.map(function(x,i){return h("div",{key:i,className:"tab mega"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 模型构建 + 前向骨架 =====
+  function ModelSection(){const ref=useTypeset("model");
+    return h("div",{ref:ref},
+      h("p",null,"model.py 把 Megatron 的标准训练循环包成 slime 需要的三个函数：",h("code",null,"initialize_model_and_optimizer"),"（建模型、优化器、调度器并加载 checkpoint）、",h("code",null,"forward_only"),"（只前向，收集 logprob/value）、",h("code",null,"train")," → ",h("code",null,"train_one_step"),"（前向+反向+优化器步）。三者都把具体的前向计算交给 Megatron 的 ",h("code",null,"get_forward_backward_func()"),"，自己只负责构造 ",h("code",null,"forward_step")," 回调与损失。"),
+      h("h3",null,"model_provider 构建 GPTModel"),
+      h("p",null,h("code",null,"model_provider.py")," 决定每个 PP/VPP 段持有哪些层。它从 slime 参数推出 ",h("code",null,"TransformerConfig"),"，再按是否 MoE（",h("code",null,"num_experts"),"）、是否用 TransformerEngine、是否多潜在注意力（MLA）选择不同的层 spec，最后构造 ",h("code",null,"GPTModel"),"。三个 slime 特有的扩展点："),
+      h("ul",null,
+        h("li",null,h("strong",null,"critic 输出头"),"：role 为 critic 时，把输出层换成 ",h("code",null,"LinearForLastLayer"),"（输出维度 1 的价值头，序列并行下会 gather 回完整序列）。"),
+        h("li",null,h("strong",null,"MTP"),"：",h("code",null,"mtp_num_layers")," 非空时挂上多 token 预测块（",h("code",null,"get_gpt_mtp_block_spec"),"）。"),
+        h("li",null,h("strong",null,"bridge 模式"),"：",h("code",null,"megatron_to_hf_mode==\"bridge\"")," 时用 ",h("code",null,"megatron.bridge.AutoBridge")," 从 HF 配置直接生成 provider，省去手写 spec。")),
+      h(Code,null,"# model_provider.py: 选择层 spec\nif args.num_experts:\n    transformer_layer_spec = get_gpt_decoder_block_spec(config, use_transformer_engine=use_te, ...)\nelse:\n    transformer_layer_spec = get_gpt_layer_with_transformer_engine_spec(\n        num_experts=args.num_experts, moe_grouped_gemm=args.moe_grouped_gemm,\n        qk_layernorm=args.qk_layernorm, multi_latent_attention=args.multi_latent_attention, ...)\nwith build_model_context(**build_model_context_args):   # fp8_model_init 或 nullcontext\n    model = GPTModel(config=config, transformer_layer_spec=transformer_layer_spec,\n                     vocab_size=args.padded_vocab_size, pre_process=pre_process, post_process=post_process, ...)"),
+      h("h3",null,"forward_step 与 packed 批"),
+      h("p",null,h("code",null,"forward_only")," 与 ",h("code",null,"train_one_step")," 各自定义一个 ",h("code",null,"forward_step(data_iterator, model)")," 回调交给 Megatron 的流水调度。回调里调 ",h("code",null,"get_batch")," 取出 packed 后的 ",h("code",null,"tokens")," 与 ",h("code",null,"PackedSeqParams"),"，跑 ",h("code",null,"model(...)"),"，并返回 ",h("code",null,"(output_tensor, 损失/收集函数)"),"。注意 attention_mask 传 ",h("code",null,"None"),"：因为 packed 的边界信息全在 ",h("code",null,"cu_seqlens")," 里，由 FlashAttention 的变长接口处理。"),
+      h(Code,null,"# model.py: train_one_step 内的 forward_step (精简)\noutput_tensor = model(\n    input_ids=batch[\"tokens\"], position_ids=None, attention_mask=None, labels=None,\n    packed_seq_params=batch[\"packed_seq_params\"], loss_mask=batch[\"full_loss_masks\"])\nreturn output_tensor, partial(loss_function, args, batch, num_microbatches, step_global_batch_size)"),
+      h("p",null,"梯度裁剪、范数检查与优化器步由 Megatron 的分布式优化器在 ",h("code",null,"optimizer.step()")," 内完成（跨 TP/DP/PP 去重并规约全局梯度范数），slime 只在 ",h("code",null,"train_one_step")," 里判断范数有限才 step，并按 ",h("code",null,"step_global_batch_size")," 推进 LR 调度器。这与第 7 课 AReaL 的 FSDP 手写梯度裁剪不同：slime 完全复用 Megatron 的实现。"),
+      h("div",null,h(Src,{label:"model_provider",path:"slime/backends/megatron_utils/model_provider.py",line:122}),h(Src,{label:"LinearForLastLayer (critic 头)",path:"slime/backends/megatron_utils/model_provider.py",line:25}),h(Src,{label:"setup_model_and_optimizer",path:"slime/backends/megatron_utils/model.py",line:194}),h(Src,{label:"forward_only",path:"slime/backends/megatron_utils/model.py",line:261}),h(Src,{label:"train_one_step (优化器步)",path:"slime/backends/megatron_utils/model.py",line:582}),h(Src,{label:"initialize_model_and_optimizer",path:"slime/backends/megatron_utils/model.py",line:877}),h(Src,{label:"save",path:"slime/backends/megatron_utils/model.py",line:846}))
+    );
+  }
+
+  // ===== data.py packed 批构造 =====
+  function DataSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"data.py")," 的 ",h("code",null,"get_batch")," 把一个 micro-batch 的若干条不等长序列拼成 Megatron 期望的 packed 输入。这是 RL 训练吞吐的关键：与其把每条序列 pad 到统一长度（浪费算力在 pad token 上），不如把它们首尾相接成一个长序列，用 ",h("code",null,"cu_seqlens")," 记录每条的边界，让变长注意力只在每条序列内部计算。"),
+      h("p",null,"两种布局："),
+      h("ul",null,
+        h("li",null,h("strong",null,"thd"),"（token-heads-dim，默认）：把所有序列 ",h("code",null,"torch.cat")," 成一维流，构造 ",h("code",null,"cu_seqlens")," 与 ",h("code",null,"PackedSeqParams(qkv_format=\"thd\")"),"。这是真正的 packing，无 pad 浪费。"),
+        h("li",null,h("strong",null,"bshd"),"（batch-seq-heads-dim）：把每条序列 pad 到 ",h("code",null,"max_seq_len")," 再 stack，用于不支持变长的实现。slime 会把 ",h("code",null,"max_seq_len")," 向上取整到 ",h("code",null,"tp_size × data_pad_size_multiplier")," 的倍数以减少显存碎片。")),
+      h(Code,null,"# data.py: get_batch 的 thd packing (精简)\ntokens = [slice_with_cp(t, pad_token_id, qkv_format) for t in tokens]   # 先按 CP 切每条\ncu_seqlens = [0]\nfor t in tokens:\n    cu_seqlens.append(cu_seqlens[-1] + t.size(0))\ntokens = torch.cat(tokens)\npad = (pad_size - tokens.size(0) % pad_size) % pad_size                 # 补齐到 TP × multiplier 的整数倍\nif pad != 0:\n    tokens = F.pad(tokens, (0, pad), value=pad_token_id)\n    cu_seqlens.append(cu_seqlens[-1] + pad)\ncu_seqlens = torch.tensor(cu_seqlens, dtype=torch.int).cuda() * cp_size  # CP 下 cu_seqlens 要乘回\npacked_seq_params = PackedSeqParams(cu_seqlens_q=cu_seqlens, cu_seqlens_kv=cu_seqlens, ..., qkv_format=\"thd\")"),
+      h("p",null,"几个易错点：(1) CP 开启时每条序列先被 ",h("code",null,"slice_with_cp")," 切成本 rank 的块，但 ",h("code",null,"cu_seqlens")," 要乘回 ",h("code",null,"cp_size")," 以表示全局长度；(2) ",h("code",null,"full_loss_masks")," 必须与 ",h("code",null,"tokens")," 同形状，且左移一位对应（loss 算在“预测下一个 token”上，故 ",h("code",null,"prompt_length-1")," 左 pad、右 pad 1 位）；(3) 多模态输入按 key 拼接。",h("code",null,"DataIterator")," 按预先算好的 ",h("code",null,"micro_batch_indices")," 调度（第 4 课的序列长度均衡装箱产物），每个 VPP 段一个迭代器。"),
+      h("div",{className:"note"},"日志侧（",h("code",null,"log_rollout_data"),"）也用同一套 per-rollout 分母（",h("code",null,"rollout_mask_sums"),"）归约，使 wandb 上报的 logprob/advantage/return 与梯度信号处于同一个 per-rollout 均值空间，而不是 per-sample。",h("code",null,"gather_and_reduce_log_dict")," 用 ",h("code",null,"(sum, count)")," 元组跨 DP 做 Σsum / Σcount 归约，避免各 rank 数据量不等导致的偏差。"),
+      h("div",null,h(Src,{label:"get_batch",path:"slime/backends/megatron_utils/data.py",line:28}),h(Src,{label:"DataIterator",path:"slime/backends/megatron_utils/data.py",line:214}),h(Src,{label:"get_data_iterator",path:"slime/backends/megatron_utils/data.py",line:254}),h(Src,{label:"log_rollout_data",path:"slime/backends/megatron_utils/data.py",line:261}),h(Src,{label:"gather_and_reduce_log_dict",path:"slime/backends/megatron_utils/cp_utils.py",line:209}),h(Ext,{href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},"Megatron-Core 文档"))
+    );
+  }
+
+  // ===== megatron_to_hf 权重转换 =====
+  function ConvertSection(){
+    return h("div",null,
+      h("p",null,"训练侧的权重用 Megatron 的命名与切分布局（如 ",h("code",null,"module.module.decoder.layers.N.self_attention.linear_qkv.weight"),"），推理侧 SGLang 用 HuggingFace 命名（如 ",h("code",null,"model.layers.N.self_attn.q_proj.weight"),"）。每次权重同步前都要做一次转换，",h("code",null,"megatron_to_hf/")," 为每个模型族写一个转换函数，由 ",h("code",null,"_convert_to_hf_core")," 按 ",h("code",null,"model_name")," 分派。"),
+      h("p",null,"转换的核心是处理 Megatron 的“融合权重”：为了减少 kernel 数，Megatron 把 Q/K/V 融成一个 ",h("code",null,"linear_qkv"),"、把 MLP 的 gate/up 融成一个 ",h("code",null,"linear_fc1"),"。转换时要按头数与分组数把它们拆回 HF 的独立张量。"),
+      h(Code,null,"# glm4moe.py: 拆分融合的 QKV (GQA 布局)\nparam = param.view(args.num_query_groups, -1, head_dim, args.hidden_size)\nq_param, k_param, v_param = torch.split(param, [value_num_per_group, 1, 1], dim=1)\n# ... 各自 reshape 回 [-1, hidden_size]，映射到 q_proj / k_proj / v_proj\n# 拆分融合的 MLP gate/up\ngate_weight, up_weight = param.chunk(2, dim=0)   # linear_fc1 -> gate_proj + up_proj"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"MoE 与共享专家"),
+          h("p",null,"GLM-4 MoE / DeepSeek-V3 把每个专家的 ",h("code",null,"linear_fc1")," 拆成 ",h("code",null,"gate_proj"),"+",h("code",null,"up_proj"),"，",h("code",null,"linear_fc2")," 映射到 ",h("code",null,"down_proj"),"，逐专家逐层重命名。共享专家（shared expert）走单独的命名前缀。"))
+        ,
+        h("div",null,
+          h("h4",null,"MLA（多潜在注意力）"),
+          h("p",null,"DeepSeek-V3 的 MLA 把注意力压缩成低秩潜在向量：",h("code",null,"linear_q_down_proj")," → ",h("code",null,"q_a_proj"),"、",h("code",null,"linear_kv_down_proj")," → ",h("code",null,"kv_a_proj_with_mqa"),"、对应的 layernorm 与上投影 ",h("code",null,"q_b_proj"),"/",h("code",null,"kv_b_proj"),"，还含可选的 indexer 投影。"))
+      ),
+      h("p",null,"转换完成后，",h("code",null,"quantize_params")," 按 ",h("code",null,"quantization_config")," 决定是否量化：",h("code",null,"fp8")," 走分块 FP8（低精度栏），",h("code",null,"compressed-tensors")," 走 INT4 伪量化，其它（如 mxfp4）原样透传 bf16。",h("code",null,"remove_padding")," 还会去掉 embedding 与输出层因 ",h("code",null,"padded_vocab_size")," 引入的词表 pad。完整的权重传输（NCCL/disk/tensor/delta）见第 7 课。"),
+      h("div",null,h(Src,{label:"convert_to_hf 分派",path:"slime/backends/megatron_utils/megatron_to_hf/__init__.py",line:37}),h(Src,{label:"convert_glm4moe_to_hf",path:"slime/backends/megatron_utils/megatron_to_hf/glm4moe.py",line:6}),h(Src,{label:"convert_deepseekv3_to_hf (MLA)",path:"slime/backends/megatron_utils/megatron_to_hf/deepseekv3.py",line:6}),h(Src,{label:"quantize_params",path:"slime/backends/megatron_utils/megatron_to_hf/processors/__init__.py",line:8}),h(Src,{label:"update_weights 入口",path:"slime/backends/megatron_utils/actor.py",line:598}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"Megatron-Core 文档",d:"NVIDIA 官方并行训练库，slime 直接复用其五维并行",href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},
+    {t:"Megatron-LM 张量并行论文",d:"列/行切分方案，TP 的理论基础",href:"https://arxiv.org/abs/1909.08053"},
+    {t:"1F1B / 交错流水线论文",d:"PP 的稳态调度与虚拟流水线",href:"https://arxiv.org/abs/2104.04473"},
+    {t:"DeepSeek-V3 论文",d:"分块 FP8（128×128）训练，slime FP8 量化的来源",href:"https://arxiv.org/abs/2412.19437"},
+    {t:"DeepGEMM",d:"Blackwell UE8M0 FP8 GEMM kernel",href:"https://github.com/deepseek-ai/DeepGEMM"},
+    {t:"Transformer Engine",d:"NVIDIA FP8 训练库，fp8_model_init 的来源",href:"https://docs.nvidia.com/deeplearning/transformer-engine/user-guide/"},
+    {t:"FlashAttention 变长接口",d:"packed 批 + cu_seqlens 的变长注意力",href:"https://github.com/Dao-AILab/flash-attention"},
+    {t:"slime 官方文档",d:"用法、Megatron 参数透传与进阶",href:"https://thudm.github.io/slime/"}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:5}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 5 课 / 共 11 · backends/megatron_utils 训练后端"),
+          h("h1",null,"训练后端 Megatron"),
+          h("p",{className:"lead"},"这是全系列信息量最大的一课。slime 的训练后端建立在 NVIDIA Megatron-Core 之上，靠原生参数透传复用其五维并行、流水调度与分布式优化器，自己只补三件 RL 特有的事：把 packed 批与上下文并行接入前向、在多维并行下正确归一化策略/价值/熵/KL 损失、把 Megatron 权重转换并量化给 SGLang。本课从五维并行的约束公式讲到 FP8/INT4 量化公式，逐文件覆盖 actor / loss / model / cp_utils / data 与权重转换。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"backends/megatron_utils/")," 的 actor / loss / model / model_provider / initialize / cp_utils / data / checkpoint，",h("code",null,"kernels/")," 的 FP8 与 INT4 QAT，",h("code",null,"megatron_to_hf/")," 的各模型族转换与量化处理器。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/slime")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"全局观"),
+          h("h2",null,"训练后端在 slime 里的位置"),
+          h(OverviewSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"五个核心子系统"),
+          h("h2",null,"Tab 探索器：并行 / 训练步 / loss / CP / 低精度"),
+          h("p",null,"下面五个栏目是本课主体。点 Tab 切换：先看五维并行如何切模型，再看 actor 如何编排一步训练，然后是最重的 loss 与归一化，接着是上下文并行的序列切分，最后是 FP8/INT4 低精度。"),
+          h(MegaExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"model.py + model_provider.py"),
+          h("h2",null,"模型构建与前向骨架"),
+          h(ModelSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"data.py"),
+          h("h2",null,"packed 批构造"),
+          h(DataSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"megatron_to_hf"),
+          h("h2",null,"权重转换：Megatron → HuggingFace"),
+          h(ConvertSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"读 Megatron 后端时配合这些文档，能把五维并行、流水调度与低精度量化的论文背景补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"原生透传胜过再造"),"：slime 直接复用 Megatron-Core 的五维并行（TP/PP/CP/EP/ETP）、1F1B 流水调度与分布式优化器，自己只补 RL 特有的接入层。",h("code",null,"initialize.py")," 把参数原样转交 ",h("code",null,"mpu.initialize_model_parallel"),"，建组顺序 ",h("code",null,'"tp-cp-ep-dp-pp"')," 决定物理拓扑。"),
+            h("li",null,h("strong",null,"actor 编排多模型共享显存"),"：",h("code",null,"MegatronTrainRayActor")," 用 ",h("code",null,"weights_backuper")," 在 CPU 上为 actor/ref/teacher/old_actor 各留一份权重，",h("code",null,"_switch_model")," 切换时共享同一块 GPU；优势必须在训练前对整个 rollout 算完。"),
+            h("li",null,h("strong",null,"分布式正确性藏在归一化里"),"：loss 要跨 DP（含 CP）归一化。",h("code",null,"loss_function")," 末尾乘 ",h("code",null,"num_microbatches × dp×cp / step_global_batch_size")," 抵消 Megatron 的求和与组平均；per-token 模式额外乘 ",h("code",null,"cp_size"),"。优势白化跨 DP 组做带掩码全局白化。"),
+            h("li",null,h("strong",null,"CP 让长序列可训练"),"：zigzag 切分均衡因果注意力的计算量，packed 批下按 ",h("code",null,"cu_seqlens")," 逐条切，",h("code",null,"all_gather_with_cp")," 用可微 all-reduce 重组 logprob 供 GSPO/OPSM 使用。"),
+            h("li",null,h("strong",null,"packing 省算力，量化省显存"),"：thd 布局把不等长序列拼成无 pad 浪费的长流；FP8 分块量化（128×128，DeepSeek 式）与 INT4 QAT（伪量化）是 Hopper/Blackwell 上的吞吐与显存优化。"),
+            h("li",null,h("strong",null,"权重转换桥接两端"),"：",h("code",null,"megatron_to_hf/")," 把融合的 QKV/MLP 与 MoE/MLA 权重拆回 HF 命名并量化，是第 7 课权重同步的前置步骤。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"slime-lesson-04-data-buffer.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 4 课：数据与 Data Buffer")),
+            h("a",{href:"slime-lesson-06-sglang.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 6 课：推理后端 SGLang"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

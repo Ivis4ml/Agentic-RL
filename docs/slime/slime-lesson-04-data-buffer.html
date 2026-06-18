@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>slime 逐文件精读 · 第 4 课：数据与 Data Buffer</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 4 课</p><h1>数据与 Data Buffer</h1><p>能访问 CDN 时切换为交互版。本课讲清 prompt 数据如何经 Dataset 进入训练循环、按 epoch 洗牌与采样产出样本组，utils/data.py 的数据结构与转换，Data Buffer 概念与异步 rollout_buffer 插件，filter_hub 的动态采样过滤（过滤掉整组全对或全错、优势为零的样本），以及 rm_hub 中各 rule-based verifier（数学答案抽取与判定、gpqa、f1、ifbench、deepscaler）。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const SLIME="vscode://file/Users/xinyu/Code/Agentic-RL/slime/";
+  function srcUrl(p,l){return SLIME+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","str","Sample","Args","RolloutController","RolloutManager","RayTrainGroup","RayActor","SglangEngine","Box","ray","asyncio","Timer","ParamInfo","RolloutBatch","Dataset","DataSource","RolloutDataSource","RolloutDataSourceWithBuffer","DynamicFilterOutput","MetricGatherer","BufferQueue","RolloutBuffer","Counter","Enum","Status"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与双引擎","slime-lesson-01-foundations.html"],[2,"统一配置","slime-lesson-02-config.html"],[3,"RL 数学原语","slime-lesson-03-rl-math.html"],[4,"数据与 Buffer","slime-lesson-04-data-buffer.html"],[5,"Megatron 后端","slime-lesson-05-megatron.html"],[6,"SGLang 后端","slime-lesson-06-sglang.html"],[7,"权重同步","slime-lesson-07-weight-sync.html"],[8,"Rollout 与异步","slime-lesson-08-rollout-async.html"],[9,"Agent 层","slime-lesson-09-agent.html"],[10,"Ray 编排","slime-lesson-10-orchestration.html"],[11,"miles 增量","slime-lesson-11-miles-delta.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"slime-course-index.html"},"slime",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 总览：数据在 slime 里的旅程 =====
+  function OverviewSection(){
+    return h("div",null,
+      h("p",null,"第 1 课说过 slime 的总纲是“一条数据流，两个引擎”。本课只看这条数据流的前半程：从磁盘上的一行 prompt，到送入 SGLang 生成、被 verifier 打分、再被组织成一个个可训练的样本组。这一段路径上有四个角色，理解它们的分工是本课的目标。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"1 读取"),h("code",null,"Dataset")),
+          h("p",null,"把 jsonl / parquet 里的一行解析为一个 ",h("code",null,"Sample"),"，按需套用 chat template、组装多模态消息、按长度过滤，并按 epoch 洗牌。它是只读的 prompt 池。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"2 取样"),h("code",null,"RolloutDataSource")),
+          h("p",null,"维护跨 epoch 的游标，每次取出若干 prompt，并为每个 prompt 复制出 ",h("code",null,"n_samples_per_prompt")," 份，构成 GRPO 所需的样本组（group）。")
+        )
+      ),
+      h("div",{className:"split",style:{marginTop:"16px"}},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"3 缓冲"),h("code",null,"Data Buffer")),
+          h("p",null,"在取样源外再包一层可写缓冲。同步训练用它回收未用完或被中止的样本组；异步训练用独立的 HTTP 缓冲服务暂存已生成的轨迹，解耦生成与训练的节奏。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill green"},"4 打分与过滤"),h("code",null,"rm_hub / filter_hub")),
+          h("p",null,h("code",null,"rm_hub")," 用规则化 verifier 给每条响应一个奖励；",h("code",null,"filter_hub")," 据此判断一个样本组是否值得保留（如丢弃整组全对或全错、优势恒为零的组）。")
+        )
+      ),
+      h("div",{className:"note"},"本课聚焦数据进入与过滤打分。生成本身（SGLang 调用、并发调度、partial rollout）属于第 6、8 课；样本组进入训练后如何计算 GRPO 优势与损失，属于第 3 课的 RL 数学原语。本课在交界处只点到即止。")
+    );
+  }
+
+  // ===== Dataset：prompt 如何进入 =====
+  function DatasetSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"slime/utils/data.py")," 的 ",h("code",null,"Dataset")," 是整条数据流的入口。构造时它一次性把文件读完并转换成内存中的 ",h("code",null,"Sample")," 列表，此后只负责按索引取样与按 epoch 洗牌。设计上它刻意保持只读，把“取多少、给谁”的状态留给上层的取样源管理，二者职责分离。"),
+      h("h3",null,"一、文件读取与广义路径"),
+      h("p",null,h("code",null,"read_file")," 支持 ",h("code",null,".jsonl")," 与 ",h("code",null,".parquet")," 两种格式，均以生成器逐行/逐批产出 dict。一个值得注意的设计是“广义路径”：路径尾部可以带 ",h("code",null,"@[start:end]")," 形式的切片标记，由 ",h("code",null,"_parse_generalized_path")," 解析为 Python 的 ",h("code",null,"slice"),"，再用 ",h("code",null,"itertools.islice")," 只取数据集的一个子区间。这让用户无需改动数据文件即可指定训练用的行范围。"),
+      h(Code,null,"def _parse_generalized_path(s: str):\n    if (m := re.match(r\"^(?P<real_path>.*)@\\[(?P<start>-?\\d*):(?P<end>-?\\d*)\\]$\", s)) is not None:\n        path = m.group(\"real_path\")\n        start = int(x) if (x := m.group(\"start\")) != \"\" else None\n        end = int(x) if (x := m.group(\"end\")) != \"\" else None\n        return path, slice(start, end)\n    return s, None"),
+      h("div",null,h(Src,{label:"read_file",path:"slime/utils/data.py",line:25}),h(Src,{label:"_parse_generalized_path",path:"slime/utils/data.py",line:71})),
+      h("h3",null,"二、把一行数据变成一个 Sample"),
+      h("p",null,h("code",null,"Dataset.__init__")," 对每一行做四件事：用 ",h("code",null,"_build_messages")," 取出 prompt（纯文本，或在需要时组装成对话消息列表，并把多模态占位符如 ",h("code",null,"<image>")," 替换为真正的图像内容项）；读取可选的 ",h("code",null,"label"),"（监督答案）、",h("code",null,"metadata"),"（如 verifier 所需的元信息）与 ",h("code",null,"tools"),"（工具定义）；在 ",h("code",null,"apply_chat_template=True")," 时用 tokenizer 把对话渲染成最终的 prompt 字符串；最后封装为一个 ",h("code",null,"Sample"),"。"),
+      h(Code,null,"# Dataset.__init__ 的核心循环 (精简)\nfor data in read_file(path):\n    as_conversation = apply_chat_template or (multimodal_keys is not None)\n    prompt = _build_messages(data, prompt_key, as_conversation, multimodal_keys)\n    metadata = data.get(metadata_key) or {}\n    ...\n    if apply_chat_template:\n        output_prompt = tokenizer.apply_chat_template(\n            prompt, tools=tools, tokenize=False, add_generation_prompt=True, **kwargs)\n    else:\n        output_prompt = prompt\n    origin_samples.append(Sample(\n        prompt=output_prompt,\n        label=data[label_key] if label_key is not None else None,\n        metadata=metadata,\n        multimodal_inputs=multimodal_inputs))"),
+      h("p",null,"为什么把 ",h("code",null,"metadata")," 单独读出来？因为 rule-based verifier 常常需要 prompt 本身之外的信息，例如 GPQA 的候选项列表、IFBench 的指令约束。把这些放进 ",h("code",null,"metadata"),"，verifier 才能据此判分（第五节展开）。",h("code",null,"tools")," 字段若为 JSON 字符串会被解析为列表，并并入 ",h("code",null,"metadata['tools']"),"，供支持工具调用的 chat template 使用。"),
+      h("div",null,h(Src,{label:"Dataset",path:"slime/utils/data.py",line:202}),h(Src,{label:"_build_messages",path:"slime/utils/data.py",line:130}),h(Src,{label:"filter_long_prompt",path:"slime/utils/data.py",line:81})),
+      h("h3",null,"三、长度过滤与按 epoch 洗牌"),
+      h("p",null,"若设置了 ",h("code",null,"rollout_max_prompt_len"),"，",h("code",null,"filter_long_prompt")," 会用 tokenizer 批量编码后丢弃过长的 prompt，避免它们在生成时挤占上下文窗口。洗牌的实现尤其值得注意：",h("code",null,"shuffle(new_epoch_id)")," 用 ",h("code",null,"seed + new_epoch_id")," 作为随机种子对 ",h("strong",null,"原始顺序")," 做一次确定性置换，而不是在上一轮的乱序基础上再洗。这保证了同一个 epoch_id 无论何时洗牌都得到相同顺序，是断点续训能精确恢复数据进度的前提。"),
+      h(Code,null,"def shuffle(self, new_epoch_id):\n    if self.epoch_id == new_epoch_id:\n        return\n    random.seed(self.seed + new_epoch_id)\n    permutation = list(range(len(self.samples)))\n    random.shuffle(permutation)\n    self.samples = [self.origin_samples[i] for i in permutation]\n    self.epoch_id = new_epoch_id"),
+      h("div",null,h(Src,{label:"Dataset.shuffle",path:"slime/utils/data.py",line:275}),h(Src,{label:"--prompt-data / --input-key",path:"slime/utils/arguments.py",line:618}),h(Src,{label:"--rollout-shuffle",path:"slime/utils/arguments.py",line:398}))
+    );
+  }
+
+  // ===== 取样源：游标、epoch 推进、样本组 =====
+  function SourceSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"slime/rollout/data_source.py")," 定义了一个抽象基类 ",h("code",null,"DataSource")," 与两个实现。基类规定了四个方法：",h("code",null,"get_samples")," 取出样本组、",h("code",null,"add_samples")," 写回样本、",h("code",null,"save")," / ",h("code",null,"load")," 持久化游标状态。这套接口让“数据从哪来”成为可替换的策略：默认是从全局数据集顺序取，异步训练时则替换为从远程缓冲服务取。"),
+      h("h3",null,"一、RolloutDataSource：跨 epoch 的取样游标"),
+      h("p",null,h("code",null,"RolloutDataSource")," 维护一个 ",h("code",null,"sample_offset")," 游标。每次 ",h("code",null,"get_samples(num_samples)")," 从当前偏移取出 ",h("code",null,"num_samples")," 个 prompt；若到达数据集末尾，则 ",h("code",null,"epoch_id += 1"),"、重新洗牌、从头继续补齐。这样数据集被当作一个无限循环的流，跨越 epoch 边界对上层透明。"),
+      h("p",null,"取出的每个 prompt 会被 ",h("code",null,"deepcopy")," 复制 ",h("code",null,"n_samples_per_prompt")," 份，构成一个样本组。这正是 GRPO 等组内比较算法的数据形态：同一 prompt 的多条响应放在一起，才能在组内计算相对优势（见第 3 课）。每份副本被赋予独立的 ",h("code",null,"index")," 与共享的 ",h("code",null,"group_index"),"。"),
+      h(Code,null,"def get_samples(self, num_samples):\n    if self.dataset is not None:\n        if self.sample_offset + num_samples <= len(self.dataset):\n            prompt_samples = self.dataset.samples[self.sample_offset : self.sample_offset + num_samples]\n            self.sample_offset += num_samples\n        else:\n            # 跨 epoch 边界：取完剩余, 进入下一 epoch 重新洗牌再补齐\n            prompt_samples = self.dataset.samples[self.sample_offset :]\n            num_samples -= len(prompt_samples)\n            self.epoch_id += 1\n            if self.args.rollout_shuffle:\n                self.dataset.shuffle(self.epoch_id)\n            prompt_samples += self.dataset.samples[:num_samples]\n            self.sample_offset = num_samples\n    samples = []\n    for prompt_sample in prompt_samples:\n        group = []\n        for _ in range(self.args.n_samples_per_prompt):\n            sample = copy.deepcopy(prompt_sample)\n            sample.group_index = self.sample_group_index\n            sample.index = self.sample_index\n            self.sample_index += 1\n            group.append(sample)\n        self.sample_group_index += 1\n        samples.append(group)\n    return samples"),
+      h("p",null,h("code",null,"save")," / ",h("code",null,"load")," 把 ",h("code",null,"sample_offset"),"、",h("code",null,"epoch_id")," 等游标写入 / 读回 ",h("code",null,"rollout/global_dataset_state_dict_{rollout_id}.pt"),"，并在加载后据 ",h("code",null,"epoch_id")," 重新洗牌。结合上一节确定性洗牌的设计，断点续训能精确恢复到中断时的数据位置，这是 RL 训练可复现性的一环。",h("code",null,"add_samples")," 在这里直接抛错，因为顺序取样源是只读的。"),
+      h("div",null,h(Src,{label:"DataSource (抽象基类)",path:"slime/rollout/data_source.py",line:17}),h(Src,{label:"RolloutDataSource",path:"slime/rollout/data_source.py",line:50}),h(Src,{label:"get_samples",path:"slime/rollout/data_source.py",line:90}),h(Src,{label:"save",path:"slime/rollout/data_source.py",line:123})),
+      h("h3",null,"二、RolloutDataSourceWithBuffer：可写缓冲层"),
+      h("p",null,"默认的取样源是 ",h("code",null,"RolloutDataSourceWithBuffer"),"，它继承顺序取样源并叠加一个内存缓冲 ",h("code",null,"self.buffer"),"。其 ",h("code",null,"get_samples")," 的策略是“先用缓冲，再补数据集”：先尝试从缓冲取，不够的部分再向父类的数据集取。",h("code",null,"add_samples")," 把样本组写回缓冲。"),
+      h(Code,null,"class RolloutDataSourceWithBuffer(RolloutDataSource):\n    def __init__(self, args):\n        super().__init__(args)\n        self.buffer = []\n        if self.args.buffer_filter_path is None:\n            self.buffer_filter = pop_first\n        else:\n            self.buffer_filter = load_function(self.args.buffer_filter_path)\n\n    def get_samples(self, num_samples):\n        samples = self._get_samples_from_buffer(num_samples)  # 先取缓冲\n        num_samples -= len(samples)\n        if num_samples == 0:\n            return samples\n        samples += super().get_samples(num_samples=num_samples)  # 再补数据集\n        return samples\n\n    def _get_samples_from_buffer(self, num_samples):\n        if len(self.buffer) == 0 or num_samples == 0:\n            return []\n        return self.buffer_filter(self.args, None, self.buffer, num_samples)"),
+      h("p",null,"缓冲从何而来？在启用 partial rollout（第 8 课）时，一次生成中被中止（aborted）的样本组会被写回缓冲，下一步优先复用，避免已生成的 token 被浪费。取缓冲的具体策略由 ",h("code",null,"buffer_filter")," 决定，默认是 ",h("code",null,"pop_first"),"（按先进先出取），也可通过 ",h("code",null,"--buffer-filter-path")," 替换为自定义函数（例如按权重版本陈旧度筛选）。这层缓冲是同步训练复用样本的机制；异步训练的缓冲是另一套独立服务，见下一节。"),
+      h(Code,null,"def pop_first(args, rollout_id, buffer, num_samples):\n    num_to_pop = min(len(buffer), num_samples)\n    samples = buffer[:num_to_pop]\n    del buffer[:num_to_pop]\n    return samples"),
+      h("div",null,h(Src,{label:"RolloutDataSourceWithBuffer",path:"slime/rollout/data_source.py",line:168}),h(Src,{label:"pop_first",path:"slime/rollout/data_source.py",line:225}),h(Src,{label:"--buffer-filter-path",path:"slime/utils/arguments.py",line:490}),h(Src,{label:"--data-source-path 默认值",path:"slime/utils/arguments.py",line:612})),
+      h("div",{className:"note"},"取样源由 ",h("code",null,"slime/ray/rollout.py")," 中的控制器按 ",h("code",null,"--data-source-path")," 动态加载（默认即 ",h("code",null,"RolloutDataSourceWithBuffer"),"）并持有，第 10 课展开。本课只需理解它对外提供 ",h("code",null,"get_samples")," / ",h("code",null,"add_samples")," / ",h("code",null,"save")," / ",h("code",null,"load")," 四个接口。")
+    );
+  }
+
+  // ===== Sample / 转换：数据契约 =====
+  function SampleSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"Sample")," 是整个 rollout → 训练路径上传递的核心数据契约（第 1 课已点名，本课展开）。它是一个 dataclass，把一条样本从 prompt 到响应、奖励、损失掩码、状态的全部信息聚合在一起。理解它的字段，就理解了各模块之间交换的是什么。"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"prompt 侧字段"),
+          h("ul",null,
+            h("li",null,h("code",null,"prompt"),"：字符串或对话消息列表。"),
+            h("li",null,h("code",null,"tokens"),"：prompt 与响应拼接后的完整 token 序列。"),
+            h("li",null,h("code",null,"label"),"：监督答案，verifier 判分的依据。"),
+            h("li",null,h("code",null,"metadata"),"：verifier 所需的额外信息（候选项、指令约束等）。"),
+            h("li",null,h("code",null,"group_index / index / rollout_id"),"：标识样本在组与批次中的位置。"))
+        ),
+        h("div",null,
+          h("h4",null,"response 侧字段"),
+          h("ul",null,
+            h("li",null,h("code",null,"response / response_length"),"：生成的文本与其长度。"),
+            h("li",null,h("code",null,"reward"),"：标量或字典形式的奖励。"),
+            h("li",null,h("code",null,"loss_mask"),"：标记哪些 token 计入损失（多轮时只算模型生成部分）。"),
+            h("li",null,h("code",null,"rollout_log_probs"),"：生成引擎给出的对数概率，用于重要性采样修正。"),
+            h("li",null,h("code",null,"status"),"：四态枚举 PENDING / COMPLETED / TRUNCATED / ABORTED / FAILED。"))
+        )
+      ),
+      h("p",null,"两个设计细节值得指出。其一，",h("code",null,"to_dict")," / ",h("code",null,"from_dict")," 提供与普通 dict 的双向序列化，因为样本要跨 Ray 进程传递、要写入磁盘、还要被异步缓冲服务以 JSON 收发；其中嵌套的 ",h("code",null,"SpecInfo")," 与 ",h("code",null,"PrefixCacheInfo")," 也各自序列化。其二，",h("code",null,"get_reward_value")," 统一了“奖励是标量还是字典”的取值：当 verifier 返回结构化奖励时，用 ",h("code",null,"args.reward_key")," 指定取哪一项。"),
+      h(Code,null,"@property\ndef effective_response_length(self):\n    return sum(self.loss_mask) if self.loss_mask is not None else self.response_length\n\ndef get_reward_value(self, args) -> float:\n    return self.reward if not args.reward_key else self.reward[args.reward_key]"),
+      h("p",null,h("code",null,"update_from_meta_info")," 是 Sample 与生成引擎之间的接口：生成结束后，它从 SGLang 返回的 ",h("code",null,"meta_info")," 里读 ",h("code",null,"finish_reason")," 设置 ",h("code",null,"status"),"（length→TRUNCATED、abort→ABORTED、stop→COMPLETED），并累加投机解码与前缀缓存的统计。",h("code",null,"effective_response_length")," 则在有 loss_mask 时返回真正计入损失的 token 数，这是后续 RL 损失按有效长度归一化的依据。"),
+      h("h3",null,"训练侧的批次转换"),
+      h("p",null,"样本组进入训练后，会被收集成 ",h("code",null,"RolloutBatch"),"，即一个 ",h("code",null,"dict[str, list]")," 类型的批次。",h("code",null,"process_rollout_data")," 在每个数据并行 rank 上从 Ray object 取回本 rank 的分片，弹出 ",h("code",null,"partition")," 索引并据此重排 ",h("code",null,"total_lengths"),"（序列长度），同时把整批序列长度记录到 ",h("code",null,"Timer")," 供性能统计。序列长度均衡（seqlen balancing）等更深的转换属于第 3、5 课。"),
+      h("div",null,h(Src,{label:"Sample (dataclass)",path:"slime/utils/types.py",line:9}),h(Src,{label:"Status 枚举",path:"slime/utils/types.py",line:40}),h(Src,{label:"to_dict / from_dict",path:"slime/utils/types.py",line:132}),h(Src,{label:"update_from_meta_info",path:"slime/utils/types.py",line:163}),h(Src,{label:"RolloutBatch 类型别名",path:"slime/utils/types.py",line:200}),h(Src,{label:"process_rollout_data",path:"slime/utils/data.py",line:292}))
+    );
+  }
+
+  // ===== Data Buffer 概念 + 异步缓冲服务 =====
+  function BufferSection(){
+    return h("div",null,
+      h("p",null,"“Data Buffer”在 slime 里有两层含义，初学时容易混淆，这里明确区分。"),
+      h("ul",null,
+        h("li",null,h("strong",null,"狭义（同步内置缓冲）"),"：即上一节的 ",h("code",null,"RolloutDataSourceWithBuffer.buffer"),"，一个进程内的样本组列表，用于复用被中止或过采样后未用完的样本组。"),
+        h("li",null,h("strong",null,"广义（异步缓冲服务）"),"：",h("code",null,"slime_plugins/rollout_buffer")," 提供的一个独立 HTTP 服务，在异步或完全异步训练时，作为生成端与训练端之间的暂存区，让二者按各自节奏运行。"))
+      ,
+      h("p",null,"为什么异步训练需要一个独立服务？同步训练里生成与训练严格交替，一个进程内的列表就够用。但在异步与 agentic 场景下，轨迹由分布在多处的 generator 异步产出，长度与耗时差异很大；用一个独立服务集中暂存这些轨迹，训练端只在需要时来取最新的一批，二者无需在时间上耦合。这正是把 Data Buffer 作为独立模块的设计动机。"),
+      h("h3",null,"一、缓冲服务的结构：BufferQueue 与 RolloutBuffer"),
+      h("p",null,h("code",null,"buffer.py")," 用 FastAPI 起一个服务。核心是按 ",h("code",null,"instance_id")," 把轨迹聚成组的 ",h("code",null,"BufferQueue"),"：每条写入的样本按其 ",h("code",null,"instance_id")," 追加到对应组；读取时只返回“有效组”（默认判据 ",h("code",null,"default_is_valid_group")," 是组内样本数达到 ",h("code",null,"group_size"),"，即一个 prompt 的若干次重复采样齐了）。外层 ",h("code",null,"RolloutBuffer")," 用一把可重入锁与条件变量保证并发读写安全，并记录已写入/已读出计数。"),
+      h(Code,null,"class BufferQueue:\n    def append(self, item):\n        instance_id = item[\"instance_id\"]\n        self.group_timestamps[instance_id] = time.time()\n        # 同时写入持久 data 与临时 temp_data (后者用于统计)\n        self.temp_data.setdefault(instance_id, []).append(copy.deepcopy(item))\n        self.data.setdefault(instance_id, []).append(item)\n\n    def _get_valid_groups_with_timeout(self, del_data=False):\n        valid_groups = {}\n        for instance_id, group_data in self.data.items():\n            if self.is_valid_group_func((instance_id, group_data), self.group_size, self.task_type):\n                valid_groups[instance_id] = group_data\n        return valid_groups, []  # 第二项为 finished_groups (此处略)"),
+      h("h3",null,"二、HTTP 接口与 generator 自动发现"),
+      h("p",null,"服务暴露四个端点。",h("code",null,"/buffer/write")," 由 generator 调用，把生成好的一条轨迹写入缓冲；",h("code",null,"/get_rollout_data")," 由训练端调用，取出当前所有有效组（取出后从 ",h("code",null,"data")," 中移除）；",h("code",null,"/start_rollout")," 接收训练端的配置（采样参数、远程引擎地址、要跳过的已完成实例等），在后台任务里按 ",h("code",null,"task_type")," 启动对应 generator。",h("code",null,"discover_generators")," 会扫描 ",h("code",null,"generator/")," 目录，把每个声明了 ",h("code",null,"TASK_TYPE")," 与 ",h("code",null,"run_rollout")," 的模块注册进来，从而无需改动服务代码即可接入新任务类型。"),
+      h("div",null,h(Src,{label:"BufferQueue",path:"slime_plugins/rollout_buffer/buffer.py",line:125}),h(Src,{label:"RolloutBuffer",path:"slime_plugins/rollout_buffer/buffer.py",line:216}),h(Src,{label:"discover_generators",path:"slime_plugins/rollout_buffer/buffer.py",line:54}),h(Src,{label:"/get_rollout_data",path:"slime_plugins/rollout_buffer/buffer.py",line:277}),h(Src,{label:"/start_rollout",path:"slime_plugins/rollout_buffer/buffer.py",line:325})),
+      h("h3",null,"三、训练端如何对接：generate_rollout 示例"),
+      h("p",null,h("code",null,"rollout_buffer_example.py")," 给出了训练端的 ",h("code",null,"generate_rollout")," 实现，可作为编写自定义异步数据源的模板。它的逻辑是：首次调用时向缓冲服务发 ",h("code",null,"/start_rollout")," 启动生成；随后反复轮询 ",h("code",null,"/get_rollout_data")," 直到积累足够样本；用 ",h("code",null,"select_rollout_data")," 按时间戳选最新的若干组（丢弃过旧轨迹以控制陈旧度）；再把每条记录的 OpenAI 格式消息用 ",h("code",null,"MultiTurnLossMaskGenerator")," 转成 token 与 loss_mask，封装为 ",h("code",null,"Sample"),"，最后经内置缓冲 ",h("code",null,"add_samples")," / ",h("code",null,"get_samples")," 交付。"),
+      h(Code,null,"# rollout_buffer_example.generate_rollout_async (精简)\nif START_ROLLOUT:\n    metadata = data_buffer.get_metadata()\n    start_rollout(args.rollout_buffer_url, args, metadata)   # 触发远程 generator\n    START_ROLLOUT = False\n\ndata_number_to_fetch = (args.rollout_batch_size * args.n_samples_per_prompt\n                        - data_buffer.get_buffer_length())\nwhile len(results) < data_number_to_fetch:\n    data, meta_info = await get_rollout_data(api_base_url=base_url)  # 轮询缓冲服务\n    results.extend(data)\n\nresults = select_rollout_data(args, results, data_number_to_fetch // args.n_samples_per_prompt)\nfor group_record in results:\n    for record in group_record:\n        token_ids, loss_mask = mask_generator.get_loss_mask(record[\"messages\"])\n        group_results.append(Sample(tokens=token_ids, reward=record[\"reward\"],\n                                    loss_mask=loss_mask, ...))\ndata_buffer.add_samples(sample_results)\nreturn data_buffer.get_samples(args.rollout_batch_size)"),
+      h("p",null,"这里有两个工程上的考量。第一，",h("code",null,"select_rollout_data")," 按组的时间戳排序取最新组，是异步训练控制数据陈旧度（staleness）的手段，与第 1 课讲的 ",h("code",null,"update_weights_interval")," 共同限制 off-policy 程度。第二，已完成的实例 id 通过 metadata 在轮次间传递并经 ",h("code",null,"skip_instance_ids")," 告知 generator，避免重复生成同一 prompt。"),
+      h("div",null,h(Src,{label:"generate_rollout (入口)",path:"slime_plugins/rollout_buffer/rollout_buffer_example.py",line:305}),h(Src,{label:"generate_rollout_async",path:"slime_plugins/rollout_buffer/rollout_buffer_example.py",line:207}),h(Src,{label:"select_rollout_data",path:"slime_plugins/rollout_buffer/rollout_buffer_example.py",line:22}),h(Src,{label:"get_rollout_data (轮询)",path:"slime_plugins/rollout_buffer/rollout_buffer_example.py",line:138}),h(Ext,{href:"https://thudm.github.io/slime/"},"slime 文档")),
+      h("div",{className:"warn"},"注意区分：异步缓冲服务里的 ",h("code",null,"instance_id")," 用于把同一 prompt 的多次采样聚成组；它与 ",h("code",null,"Sample.index")," / ",h("code",null,"group_index")," 是不同坐标系。示例代码把 ",h("code",null,"record[\"instance_id\"]")," 填入 ",h("code",null,"Sample.index")," 只是该模板的约定，自定义实现时需自行确保组结构正确（每组长度等于 ",h("code",null,"n_samples_per_prompt"),"，否则 ",h("code",null,"add_samples")," 会断言失败）。")
+    );
+  }
+
+  // ===== 动态采样过滤 filter_hub =====
+  function FilterSection(){
+    return h("div",null,
+      h("p",null,"生成出来的样本组并非都值得用于训练。",h("code",null,"slime/rollout/filter_hub")," 提供动态采样过滤（dynamic sampling），其典型用途来自 DAPO：在 GRPO 中，如果一个 prompt 的若干条响应",h("strong",null,"全部正确或全部错误"),"，那么组内奖励无差异，相对优势处处为零，这一组对策略梯度没有任何贡献，反而占用训练算力。动态采样就是把这类“零方差组”过滤掉，并继续过采样直到凑齐足额的有效组。"),
+      h(Formula,{cap:"GRPO 组内相对优势：奖励标准差为零时, 整组优势恒为零"},"$$ A_i \\;=\\; \\frac{r_i - \\operatorname{mean}(r_1,\\dots,r_G)}{\\operatorname{std}(r_1,\\dots,r_G)},\\qquad \\operatorname{std}(r)=0 \\Rightarrow A_i \\equiv 0\\ \\text{(无梯度)} $$"),
+      h("p",null,"据此，过滤判据非常直接：只要一组奖励的标准差大于一个极小阈值，就保留这一组；否则丢弃。",h("code",null,"check_reward_nonzero_std")," 即此逻辑的全部实现。"),
+      h(Code,null,"def check_reward_nonzero_std(args, samples: list[Sample], **kwargs):\n    rewards = [sample.get_reward_value(args) for sample in samples]\n    keep = torch.tensor(rewards, dtype=torch.float64).std() > 1e-6\n    return DynamicFilterOutput(\n        keep=keep,\n        reason=None if keep else f\"zero_std_{round(rewards[0], 1)}\",\n    )"),
+      h("p",null,"返回值是一个 ",h("code",null,"DynamicFilterOutput"),"：",h("code",null,"keep")," 决定是否保留，",h("code",null,"reason")," 在丢弃时给出原因字符串（如 ",h("code",null,"zero_std_1.0")," 表示整组全对、",h("code",null,"zero_std_0.0")," 表示整组全错）。这个 reason 不只是日志，它会被 ",h("code",null,"MetricGatherer")," 按原因计数，最终作为 ",h("code",null,"rollout/dynamic_filter/drop_*")," 指标上报，用于观察过滤行为是否健康（例如全错组过多可能意味着任务过难或奖励函数有误）。"),
+      h("p",null,h("code",null,"base_types.py")," 提供三件支撑设施：",h("code",null,"DynamicFilterOutput")," 数据结构；",h("code",null,"call_dynamic_filter")," 统一调用入口（过滤器为空时默认保留，并兼容旧版直接返回布尔值的过滤器）；",h("code",null,"MetricGatherer")," 按丢弃原因聚合计数。"),
+      h(Code,null,"def call_dynamic_filter(fn, *args, **kwargs):\n    if fn is None:\n        return DynamicFilterOutput(keep=True)\n    output = fn(*args, **kwargs)\n    if not isinstance(output, DynamicFilterOutput):   # 兼容旧版布尔返回\n        output = DynamicFilterOutput(keep=output)\n    return output"),
+      h("h3",null,"过滤如何嵌入生成循环"),
+      h("p",null,"过滤器并非独立运行，而是嵌在 ",h("code",null,"sglang_rollout.py")," 的过采样循环中。该循环持续向数据源要 ",h("code",null,"over_sampling_batch_size")," 个 prompt 生成，每完成一组就调用 ",h("code",null,"call_dynamic_filter")," 判定：保留的组计入 ",h("code",null,"data"),"，丢弃的组只更新指标并让 ",h("code",null,"remaining_batch_size")," 回退，从而触发继续过采样。循环直到 ",h("code",null,"data")," 攒够 ",h("code",null,"rollout_batch_size")," 个有效组为止。"),
+      h(Code,null,"# sglang_rollout.generate_rollout_async 的过采样主循环 (精简)\ndynamic_filter = load_function(args.dynamic_sampling_filter_path) if args.dynamic_sampling_filter_path else None\nwhile len(data) < target_data_size:\n    while state.remaining_batch_size < target_data_size:\n        samples = data_source(args.over_sampling_batch_size)   # 继续过采样\n        state.submit_generate_tasks(samples)\n    done, state.pendings = await asyncio.wait(state.pendings, return_when=asyncio.FIRST_COMPLETED)\n    for task in done:\n        group = task.result()\n        dynamic_filter_output = call_dynamic_filter(dynamic_filter, args, group)\n        if not dynamic_filter_output.keep:\n            metric_gatherer.on_dynamic_filter_drop(reason=dynamic_filter_output.reason)\n            state.remaining_batch_size -= 1\n            continue\n        if len(data) < target_data_size:\n            data.append(group)"),
+      h("p",null,"为什么用过采样而非简单丢弃？因为训练每一步需要固定数量的有效组（",h("code",null,"rollout_batch_size"),"）才能保证批次大小稳定。过采样以略多的生成开销换取批次内每一组都有非零梯度，这是 DAPO 论文中提升训练效率的关键技巧之一。",h("code",null,"--over-sampling-batch-size")," 控制每次补采的粒度。"),
+      h("div",null,h(Src,{label:"check_reward_nonzero_std",path:"slime/rollout/filter_hub/dynamic_sampling_filters.py",line:9}),h(Src,{label:"DynamicFilterOutput",path:"slime/rollout/filter_hub/base_types.py",line:6}),h(Src,{label:"call_dynamic_filter",path:"slime/rollout/filter_hub/base_types.py",line:11}),h(Src,{label:"MetricGatherer",path:"slime/rollout/filter_hub/base_types.py",line:24}),h(Src,{label:"过采样循环",path:"slime/rollout/sglang_rollout.py",line:423}),h(Src,{label:"--dynamic-sampling-filter-path",path:"slime/utils/arguments.py",line:428}),h(Ext,{href:"https://arxiv.org/abs/2503.14476"},"DAPO 动态采样论文"))
+    );
+  }
+
+  // ===== rm_hub verifier 探索器 =====
+  const RM=[
+    {key:"dispatch",name:"分发 __init__.py",render:function(){return [
+      h("p",null,h("code",null,"rm_hub/__init__.py")," 是奖励计算的统一入口。",h("code",null,"async_rm")," 按优先级决定如何打分：先看样本自带的 ",h("code",null,"custom_rm_path"),"、再看全局 ",h("code",null,"--custom-rm-path"),"，二者皆无时按 ",h("code",null,"rm_type")," 分派到内置的规则化 verifier。",h("code",null,"batched_async_rm")," 则把一批样本并发提交（",h("code",null,"asyncio.gather"),"），适配 SGLang 的异步生成。"),
+      h(Code,null,"# async_rm 的分派 (精简)\nrm_type = (metadata.get(\"rm_type\") or args.rm_type or \"\").strip()\nif rm_type.startswith(\"boxed_\"):        # 先抽取 \\boxed{} 再按子类型判定\n    response = extract_boxed_answer(response) or \"\"\n    rm_type = rm_type[len(\"boxed_\"):]\nif rm_type == \"deepscaler\":   return get_deepscaler_rule_based_reward(response, label)\nelif rm_type == \"dapo\":       return compute_score_dapo(response, label)\nelif rm_type == \"math\":       return 1 if grade_answer_verl(response, label) else 0\nelif rm_type == \"f1\":         return f1_score(response, label)[0]\nelif rm_type == \"gpqa\":       return compute_gpqa_reward(response, label, metadata=metadata)\nelif rm_type == \"ifbench\":    return compute_ifbench_reward(response, label, metadata=metadata)\nelif rm_type == \"remote_rm\":  return await remote_rm(args, sample)"),
+      h("p",null,"设计动机：奖励来源高度异质（规则、远程奖励模型服务、用户自定义），统一在一个异步分派函数后，生成侧无需关心具体 verifier 是什么。",h("code",null,"remote_rm")," 还内置了指数退避重试与共享连接池，因为远程奖励服务可能短暂不可用。"),
+      h("div",null,h(Src,{label:"async_rm",path:"slime/rollout/rm_hub/__init__.py",line:55}),h(Src,{label:"batched_async_rm",path:"slime/rollout/rm_hub/__init__.py",line:99}),h(Src,{label:"remote_rm (退避重试)",path:"slime/rollout/rm_hub/__init__.py",line:34}),h(Src,{label:"--rm-type",path:"slime/utils/arguments.py",line:1295}))
+    ];}},
+    {key:"math",name:"math 数学判定",render:function(){return [
+      h("p",null,h("code",null,"math_utils.py")," 实现数学答案的抽取与等价判定，源自 DeepScaleR / PRM800K 体系。流程分两步：先用 ",h("code",null,"extract_answer")," 从响应中抽取 ",h("code",null,"\\boxed{...}")," 里的答案（",h("code",null,"last_boxed_only_string")," 通过括号配对找到最后一个 boxed 表达式），再判定其与标准答案是否等价。"),
+      h("p",null,"等价判定 ",h("code",null,"grade_answer_verl")," 采取“两道防线”：先用 ",h("code",null,"grade_answer_mathd")," 做字符串归一化后的精确匹配（处理 ",h("code",null,"\\frac"),"、",h("code",null,"\\sqrt"),"、单位、空格等表面差异）；不通过再用 ",h("code",null,"grade_answer_sympy")," 把两式相减交给 SymPy 化简，若结果为零则判等价。两者取或，兼顾速度与数学正确性。"),
+      h(Code,null,"def grade_answer_verl(solution_str, ground_truth):\n    if not ground_truth:\n        return False\n    ground_truth = str(ground_truth)\n    if \"\\\\boxed\" in ground_truth:\n        ground_truth = extract_answer(ground_truth)\n    given_answer = extract_answer(solution_str)\n    if given_answer is None:\n        return False\n    return grade_answer_mathd(given_answer, ground_truth) or grade_answer_sympy(given_answer, ground_truth)"),
+      h("p",null,"SymPy 解析时用白名单限制可用符号、并通过 ",h("code",null,"should_allow_eval")," 拒绝含两个以上未知字母或危险幂运算的表达式，既防止任意代码执行，也避免 SymPy 在病态输入上挂起。这是把第三方数学库用于奖励判分时必要的防御。"),
+      h("div",null,h(Src,{label:"extract_answer",path:"slime/rollout/rm_hub/math_utils.py",line:478}),h(Src,{label:"grade_answer_verl",path:"slime/rollout/rm_hub/math_utils.py",line:484}),h(Src,{label:"grade_answer_sympy",path:"slime/rollout/rm_hub/math_utils.py",line:429}),h(Src,{label:"last_boxed_only_string",path:"slime/rollout/rm_hub/math_utils.py",line:384}),h(Ext,{href:"https://github.com/huggingface/Math-Verify"},"math-verify"))
+    ];}},
+    {key:"dapo",name:"dapo / deepscaler",render:function(){return [
+      h("p",null,h("code",null,"math_dapo_utils.py")," 是 DAPO 风格的数学判分，针对 MATH 类数据集做了适配。",h("code",null,"compute_score")," 只截取响应末尾 300 字符（最长答案约 159 字符，截断换取效率），用 ",h("code",null,"verify")," 判定后返回结构化字典 ",h("code",null,"{score, acc, pred}"),"：正确得 +1.0、错误得 −1.0。它的归一化表更激进，剔除大量单位词与 TeX 修饰，并把答案统一处理为整数（注释指明 DAPO 中答案均为整数）。"),
+      h(Code,null,"def compute_score(solution_str, ground_truth, strict_box_verify=False, pause_tokens_index=None):\n    solution_str = solution_str[-300:]   # 仅看末尾, 提速\n    correct, pred = verify(solution_str, ground_truth, strict_box_verify, pause_tokens_index)\n    return {\"score\": 1.0 if correct else -1.0, \"acc\": correct, \"pred\": pred}"),
+      h("p",null,h("code",null,"deepscaler.py")," 是另一支数学判分。它先按 ",h("code",null,"</think>")," 或 ",h("code",null,"###Response")," 切出最终解答部分（剥离思维过程），再复用 ",h("code",null,"math_utils")," 的 ",h("code",null,"extract_answer")," 与 mathd / sympy 双重判定。它对“答案出现在思考链之后”这一推理模型的输出格式做了显式处理，正确返回 1、否则 0。"),
+      h(Code,null,"def get_deepscaler_rule_based_reward(response, label):\n    if \"</think>\" in response:\n        model_solution = response.split(\"</think>\")[-1]    # 只取 think 之后\n    elif \"###Response\" in response:\n        model_solution = response.split(\"###Response\")[1]\n    else:\n        return 0\n    model_answer = extract_answer(model_solution)\n    ..."),
+      h("div",null,h(Src,{label:"compute_score (dapo)",path:"slime/rollout/rm_hub/math_dapo_utils.py",line:262}),h(Src,{label:"verify",path:"slime/rollout/rm_hub/math_dapo_utils.py",line:240}),h(Src,{label:"normalize_final_answer",path:"slime/rollout/rm_hub/math_dapo_utils.py",line:143}),h(Src,{label:"get_deepscaler_rule_based_reward",path:"slime/rollout/rm_hub/deepscaler.py",line:4}))
+    ];}},
+    {key:"choice",name:"gpqa / f1 / ifbench",render:function(){return [
+      h("p",null,h("code",null,"gpqa.py")," 处理多选题判分。它先剥离 ",h("code",null,"</think>")," 思维链，再用若干正则（如 ",h("code",null,"answer is X"),"、",h("code",null,"final answer: X"),"）抽取模型选择的选项字母，回退策略是取响应中最后一个合法大写字母。标准答案可以是字母、序号或选项原文（后者经文本归一化与候选项逐一比对得到字母），最终比对字母是否一致返回 1.0 / 0.0。这种多重抽取策略是为了适应模型输出格式的不确定性。"),
+      h(Code,null,"def compute_gpqa_reward(response, label, metadata=None):\n    ...\n    extracted_letter = _extract_letter_from_response(response, valid_letters)\n    if extracted_letter and correct_letter:\n        return 1.0 if extracted_letter == correct_letter else 0.0"),
+      h("p",null,h("code",null,"f1.py")," 实现抽取式问答的 token 级 F1，源自 SQuAD / HotpotQA 评测惯例。",h("code",null,"normalize_answer")," 先做小写化、去冠词、去标点、规整空白，再按 token 取预测与标准答案的交集计 precision / recall，返回 F1。对 yes/no/noanswer 这类答案要求完全匹配。它返回的是连续奖励而非 0/1，能为部分正确的答案提供梯度。"),
+      h(Formula,{cap:"token 级 F1（precision 与 recall 的调和平均）"},"$$ \\text{precision}=\\frac{|\\text{pred}\\cap\\text{gt}|}{|\\text{pred}|},\\quad \\text{recall}=\\frac{|\\text{pred}\\cap\\text{gt}|}{|\\text{gt}|},\\quad F_1=\\frac{2\\,\\text{p}\\cdot\\text{r}}{\\text{p}+\\text{r}} $$"),
+      h("p",null,h("code",null,"ifbench.py")," 是指令遵循（instruction following）判分，对接 AllenAI 的官方 IFBench 仓库。它从 ",h("code",null,"metadata")," 取出指令约束列表 ",h("code",null,"instruction_id_list")," 与对应 kwargs，构造 ",h("code",null,"InputExample"),"，调用官方的 ",h("code",null,"test_instruction_following_strict"),"，当响应满足全部指令约束时返回 1.0、否则 0.0。首次使用时会自动克隆 IFBench 仓库并安装依赖。"),
+      h("div",null,h(Src,{label:"compute_gpqa_reward",path:"slime/rollout/rm_hub/gpqa.py",line:54}),h(Src,{label:"_extract_letter_from_response",path:"slime/rollout/rm_hub/gpqa.py",line:22}),h(Src,{label:"f1_score",path:"slime/rollout/rm_hub/f1.py",line:24}),h(Src,{label:"normalize_answer",path:"slime/rollout/rm_hub/f1.py",line:6}),h(Src,{label:"compute_ifbench_reward",path:"slime/rollout/rm_hub/ifbench.py",line:154}))
+    ];}}
+  ];
+  function RmExplorer(){const [s,setS]=useState(0);const d=RM[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},RM.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== rm_hub 文件逐个覆盖 =====
+  const RMFILES=[
+    {n:"__init__.py",d:"奖励分派入口：async_rm 按 custom_rm_path / rm_type 分派到各 verifier，batched_async_rm 并发批量打分，remote_rm 带退避重试调用远程奖励服务。",links:[["async_rm","slime/rollout/rm_hub/__init__.py",55],["batched_async_rm","slime/rollout/rm_hub/__init__.py",99]]},
+    {n:"math_utils.py",d:"通用数学判定：extract_answer 抽取 \\boxed{} 答案，grade_answer_verl 用 mathd 字符串归一化与 sympy 化简两道防线判等价，含防注入与防挂起保护。",links:[["extract_answer","slime/rollout/rm_hub/math_utils.py",478],["grade_answer_verl","slime/rollout/rm_hub/math_utils.py",484]]},
+    {n:"math_dapo_utils.py",d:"DAPO 风格数学判分：compute_score 截取响应末尾后用 verify 判定, 正确 +1 错误 −1, 返回 {score,acc,pred} 字典；答案统一按整数处理。",links:[["compute_score","slime/rollout/rm_hub/math_dapo_utils.py",262],["verify","slime/rollout/rm_hub/math_dapo_utils.py",240]]},
+    {n:"deepscaler.py",d:"DeepScaleR 数学判分：先按 </think> 或 ###Response 切出最终解答, 再复用 math_utils 的双重判定, 正确返回 1 否则 0。",links:[["get_deepscaler_rule_based_reward","slime/rollout/rm_hub/deepscaler.py",4]]},
+    {n:"gpqa.py",d:"多选题判分：多正则 + 回退策略从响应抽取选项字母, 标准答案支持字母/序号/选项原文, 字母一致返回 1.0。",links:[["compute_gpqa_reward","slime/rollout/rm_hub/gpqa.py",54],["_extract_letter_from_response","slime/rollout/rm_hub/gpqa.py",22]]},
+    {n:"f1.py",d:"抽取式问答 token 级 F1：normalize_answer 归一化后计交集 precision/recall, 返回连续 F1 奖励, yes/no/noanswer 要求完全匹配。",links:[["f1_score","slime/rollout/rm_hub/f1.py",24],["normalize_answer","slime/rollout/rm_hub/f1.py",6]]},
+    {n:"ifbench.py",d:"指令遵循判分：从 metadata 取指令约束构造 InputExample, 调用 AllenAI 官方 IFBench 严格判定, 满足全部约束返回 1.0；首用自动克隆仓库。",links:[["compute_ifbench_reward","slime/rollout/rm_hub/ifbench.py",154],["_build_input_example","slime/rollout/rm_hub/ifbench.py",131]]}
+  ];
+  function RmFilesSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"slime/rollout/rm_hub/")," 下每个文件对应一类规则化 verifier。下表逐个覆盖（点开 ",h("code",null,"Src")," 看源码）。所有这些 verifier 都经 ",h("code",null,"__init__.py")," 的 ",h("code",null,"async_rm")," 统一分派，由样本的 ",h("code",null,"rm_type")," 或全局 ",h("code",null,"--rm-type")," 选择。规则化奖励的优点是确定、无需训练奖励模型、可大规模并行；其代价是只适用于答案可程序化判定的任务。"),
+      h("div",{className:"linkgrid"},RMFILES.map(function(u,i){return h("div",{className:"linkcard",key:i},
+        h("div",{className:"lt"},h("code",null,u.n)),
+        h("div",{className:"ld"},u.d),
+        h("div",null,u.links.map(function(l,j){return h(Src,{key:j,label:l[0],path:l[1],line:l[2]});})));}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"DAPO 论文",d:"动态采样 (过滤零方差组) 的来源",href:"https://arxiv.org/abs/2503.14476"},
+    {t:"math-verify",d:"HuggingFace 的数学答案等价判定库, 与 math_utils 思路同源",href:"https://github.com/huggingface/Math-Verify"},
+    {t:"IFBench",d:"AllenAI 指令遵循评测, ifbench.py 对接其官方实现",href:"https://github.com/allenai/IFBench"},
+    {t:"slime 官方文档",d:"数据准备、自定义数据源与 rollout buffer 用法",href:"https://thudm.github.io/slime/"},
+    {t:"Sample 数据契约 (本机)",d:"slime/utils/types.py",href:srcUrl("slime/utils/types.py",9)},
+    {t:"动态采样过滤 (本机)",d:"slime/rollout/filter_hub/dynamic_sampling_filters.py",href:srcUrl("slime/rollout/filter_hub/dynamic_sampling_filters.py",9)},
+    {t:"取样源 (本机)",d:"slime/rollout/data_source.py",href:srcUrl("slime/rollout/data_source.py",50)},
+    {t:"异步缓冲服务 (本机)",d:"slime_plugins/rollout_buffer/buffer.py",href:srcUrl("slime_plugins/rollout_buffer/buffer.py",216)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:4}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 4 课 / 共 11 · 数据与 Data Buffer"),
+          h("h1",null,"数据与 Data Buffer"),
+          h("p",{className:"lead"},"这一课走完 slime 数据流的前半程：一行 prompt 如何经 Dataset 进入、按 epoch 洗牌与采样产出样本组，Sample 这一核心数据契约的结构与转换，Data Buffer 的两层含义（同步内置缓冲与异步缓冲服务），filter_hub 如何用动态采样过滤掉优势为零的样本组，以及 rm_hub 中各 rule-based verifier 如何把一条响应判成奖励。读完这一课，第 6、8 课的生成流程与第 3 课的 RL 数学就有了完整的数据语境。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"slime/utils/data.py")," + ",h("code",null,"slime/utils/types.py")," 数据结构与转换、",h("code",null,"slime/rollout/data_source.py")," 取样与缓冲、",h("code",null,"slime_plugins/rollout_buffer")," 异步缓冲服务、",h("code",null,"slime/rollout/filter_hub")," 动态采样、",h("code",null,"slime/rollout/rm_hub")," 各 verifier。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"总览"),
+          h("h2",null,"数据在 slime 里的旅程"),
+          h(OverviewSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime/utils/data.py"),
+          h("h2",null,"Dataset：prompt 如何进入"),
+          h(DatasetSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime/rollout/data_source.py"),
+          h("h2",null,"取样源：游标、epoch 推进与样本组"),
+          h(SourceSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime/utils/types.py"),
+          h("h2",null,"Sample：贯穿全流程的数据契约"),
+          h(SampleSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime_plugins/rollout_buffer"),
+          h("h2",null,"Data Buffer：两层含义与异步缓冲服务"),
+          h(BufferSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime/rollout/filter_hub"),
+          h("h2",null,"动态采样过滤：丢弃零方差样本组"),
+          h(FilterSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"slime/rollout/rm_hub"),
+          h("h2",null,"rm_hub：规则化 verifier"),
+          h("p",null,"奖励是 RL 的信号源。slime 把规则化奖励集中在 ",h("code",null,"rm_hub")," 下，按任务类型分派。点 Tab 逐类查看其判定逻辑，下方表格再逐个文件覆盖。"),
+          h(RmExplorer),
+          h(RmFilesSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些资料，能把动态采样、数学判定、指令遵循评测的来源与 slime 的取舍补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"职责分离的取样链"),"：",h("code",null,"Dataset")," 只读、按 epoch 确定性洗牌；",h("code",null,"RolloutDataSource")," 持游标并把每个 prompt 复制成 ",h("code",null,"n_samples_per_prompt")," 份的样本组；",h("code",null,"RolloutDataSourceWithBuffer")," 再叠加可复用缓冲。三者各管一件事，断点续训可精确恢复。"),
+            h("li",null,h("strong",null,"Sample 是统一数据契约"),"：从 prompt 到奖励、loss_mask、状态全聚于一身，并提供 dict 序列化以跨进程、磁盘与 HTTP 传递；",h("code",null,"RolloutBatch")," 是其在训练侧的批次形态。"),
+            h("li",null,h("strong",null,"Data Buffer 分两层"),"：同步训练用进程内列表复用样本组；异步训练用独立 HTTP 服务（",h("code",null,"BufferQueue")," 按 instance_id 聚组）解耦生成与训练的节奏，并用时间戳选最新组控制陈旧度。"),
+            h("li",null,h("strong",null,"动态采样用过采样换有效梯度"),"：丢弃奖励标准差为零（全对或全错）的样本组，继续过采样直至凑齐 ",h("code",null,"rollout_batch_size")," 个有效组，并按丢弃原因上报指标。这是 DAPO 的关键技巧。"),
+            h("li",null,h("strong",null,"规则化 verifier 确定且可并行"),"：",h("code",null,"rm_hub")," 把数学（boxed 抽取 + mathd/sympy 双判）、多选（gpqa）、抽取式问答（f1 连续奖励）、指令遵循（ifbench）等统一在异步分派之后，确定、无需训练奖励模型、可大规模并发，代价是只适用于可程序化判定的任务。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"slime-lesson-03-rl-math.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 3 课：RL 数学原语")),
+            h("a",{href:"slime-lesson-05-megatron.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 5 课：训练后端 Megatron"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

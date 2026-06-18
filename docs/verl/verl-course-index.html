@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 课程总览</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent 420px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.88em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    main{max-width:1000px;margin:0 auto;padding:64px 28px 90px;}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 12px;}
+    h1{font-size:46px;line-height:1.08;margin:0 0 18px;letter-spacing:-.01em;}
+    .lead{font-size:17px;color:#c4ced9;max-width:790px;}p{color:var(--muted);}
+    .stat-row{display:flex;gap:30px;flex-wrap:wrap;margin:26px 0 8px;}
+    .stat .v{font-size:26px;font-weight:850;color:var(--amber);}.stat .l{color:var(--faint);font-size:12px;font-family:var(--mono);}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:30px;}
+    .lcard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:16px 18px;display:block;position:relative;}
+    .lcard.done:hover{border-color:var(--teal);background:var(--panel-2);}
+    .lcard.todo{opacity:.62;}
+    .lcard .num{font-family:var(--mono);font-size:12px;color:var(--faint);}
+    .lcard .t{font-weight:750;color:var(--ink);font-size:17px;margin:3px 0 5px;}
+    .lcard .d{color:var(--muted);font-size:13px;}
+    .lcard .files{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:8px;}
+    .badge{position:absolute;top:14px;right:16px;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--faint);}
+    .badge.done{color:var(--teal);border-color:#265450;background:#0e2120;}
+    .note{border-left:3px solid var(--amber);padding:6px 16px;margin:24px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    h2{font-size:24px;margin:40px 0 10px;}
+    @media(max-width:760px){.grid{grid-template-columns:1fr;}h1{font-size:34px;}}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+  const h=React.createElement;
+  const LESSONS=[
+    [1,"地基与 HybridFlow 全局观","设计哲学（混合单控制器编程模型、解耦计算与数据依赖、灵活 device mapping、多训练/推理后端）、版本说明（本地 0.9.0.dev，你们用 0.8；recipe 已迁为 submodule）、目录地图、main_ppo 入口、utils 纯工具择要。","main_ppo · single_controller 概览 · utils","verl-lesson-01-foundations.html"],
+    [2,"DataProto 数据协议","protocol.py（1345 行）的 DataProto / DataProtoFuture、TensorDict 后端、批次拼接/切分/padding/union 与 Ray object 传递；tensordict_utils、torch_functional 的数据原语。verl 一切数据流动的载体。","protocol.py · tensordict_utils · torch_functional","verl-lesson-02-dataproto.html"],
+    [3,"single controller：混合控制器","single_controller/base 的 decorator（dispatch modes）、worker、worker_group，以及 ray/base.py（1127 行）的 RayWorkerGroup、ResourcePool。@register/dispatch 如何让 driver 用单控制器编排多 worker。HybridFlow 的核心机制。","single_controller/* · decorator · ray/base","verl-lesson-03-single-controller.html"],
+    [4,"配置体系","trainer/config 的 config/algorithm、base_config.py、各 dataclass（actor/critic/ref/rollout/reward）、Hydra/OmegaConf 组合与覆盖。","trainer/config/* · base_config","verl-lesson-04-config.html"],
+    [5,"RL 数学：core_algos","trainer/ppo/core_algos.py（2487 行）：多种 advantage estimator（GAE/GRPO/RLOO/ReMax 等）、policy loss 变体（PPO/GSPO/dual-clip/clip-cov）、KL、entropy；rollout_corr_helper 的 off-policy/重要性修正；padding_utils、prefix_grouper。含完整数学。","trainer/ppo/core_algos · rollout_corr_helper","verl-lesson-05-core-algos.html"],
+    [6,"训练引擎抽象与多后端","workers/engine 的统一引擎抽象 base + 六个后端（fsdp 1363 / megatron 1050 / veomni / torchtitan / mindspeed / automodel 的 transformer_impl）；utils/fsdp_utils（1141）、megatron_utils（1846）、kernel/kernels（1726）。信息量最大的一课。","workers/engine/* · fsdp_utils · megatron_utils","verl-lesson-06-engines.html"],
+    [7,"Workers 与角色","workers/engine_workers.py（761）与各角色 worker（actor/critic/ref/reward）：如何把训练引擎包成 Ray worker，并被 single_controller 的 dispatch 编排。","workers/engine_workers · roles","verl-lesson-07-workers.html"],
+    [8,"Rollout 引擎与多推理后端","workers/rollout 的 base/schemas/tokenizer 与四个推理后端（vllm/sglang/trtllm/hf/naive）；权重同步（bucketed_weight_transfer、weight_update_utils）。","workers/rollout/* · 权重同步","verl-lesson-08-rollout.html"],
+    [9,"Async 推理服务与 server 模式","llm_server.py、replica.py、各 async_*_server.py、sglang_pd_replica.py（PD 分离）、http_server_engine、main_generation_server。server-mode rollout 与 partial rollout，异步效率的关键。","async_*_server · replica · pd_replica","verl-lesson-09-async-server.html"],
+    [10,"Agent Loop（Agentic RL）","experimental/agent_loop（agent_loop 1170、single_turn、tool_agent_loop、tool_parser）+ tools/ + reward_loop。多轮、工具调用的 agentic rollout。verl 核心无 tau-bench，你们 tau2 类任务由 agent_loop + 自定义 tools/env 承载。","experimental/agent_loop/* · tools","verl-lesson-10-agent-loop.html"],
+    [11,"异步训练范式","experimental/fully_async_policy（rollouter 1073、trainer 767、message_queue）、one_step_off_policy、separation；trainer/ppo/v1 的 trainer_sync vs trainer_colocate_async vs trainer_separate_async、agent_loop_tq、replay_buffer。回答“verl 异步是否已实现”：已实现且分多种范式。","experimental/fully_async_policy · one_step_off · v1/*","verl-lesson-11-async-train.html"],
+    [12,"PPO Trainer 主循环与端到端","trainer/ppo/ray_trainer.py（1768）、v1/trainer_base（1506）、main_ppo、reward.py、metric_utils、checkpoint（checkpoint_engine、model_merger）、distillation、sft_trainer；把第 1–11 课串成端到端，并交代 experimental 其余与 recipe submodule。","trainer/ppo/ray_trainer · main_ppo · checkpoint","verl-lesson-12-trainer-e2e.html"]
+  ];
+  function App(){
+    return h("main",null,
+      h("p",{className:"kicker"},"verl · 逐文件精读 · 自底向上 · 字节跳动 HybridFlow"),
+      h("h1",null,"从地基到全貌，逐文件读懂 verl"),
+      h("p",{className:"lead"},"verl 是字节跳动 Seed 团队发起的 RL 训练库，HybridFlow 论文的开源实现，特点是混合单控制器编程模型、计算与数据解耦、灵活的 device mapping，以及对 FSDP/Megatron 训练与 vLLM/SGLang/TRT-LLM 推理的多后端支持。本系列按依赖顺序自底向上分 12 课。承重文件深讲（数学 + 代码 + 设计出发点 + vscode 源码行），其余文件至少一句话角色。重点核实异步与 agentic RL 能力（你们 tau2 工作的承载层）。"),
+      h("div",{className:"stat-row"},
+        h("div",{className:"stat"},h("div",{className:"v"},"554"),h("div",{className:"l"},"仓库内 .py 文件")),
+        h("div",{className:"stat"},h("div",{className:"v"},"~96k"),h("div",{className:"l"},"代码行（verl/ 核心包）")),
+        h("div",{className:"stat"},h("div",{className:"v"},"12"),h("div",{className:"l"},"依赖阶梯课程")),
+        h("div",{className:"stat"},h("div",{className:"v"},"0.9.0.dev"),h("div",{className:"l"},"本地版本（你们用 0.8）"))),
+      h("div",{className:"note"},"阅读建议：按 1 → 12 顺序读。蓝色 ",h("code",null,"›_ 文件:行号")," 标签会用 vscode://file 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/verl")," 对应源码行。本地 ",h("code",null,"recipe/")," 已迁为独立 submodule（未初始化），故不在课程覆盖范围；异步相关的 ",h("code",null,"experimental/")," 模块（fully_async_policy / one_step_off_policy / transfer_queue）仍在主仓，是第 9、11 课重点。"),
+      h("h2",null,"课程列表"),
+      h("div",{className:"grid"},LESSONS.map(function(L){
+        const done=L[4]!=="#";
+        const inner=[
+          h("span",{key:"b",className:"badge"+(done?" done":"")},done?"已就绪":"规划中"),
+          h("div",{key:"n",className:"num"},"第 "+L[0]+" 课"),
+          h("div",{key:"t",className:"t"},L[1]),
+          h("div",{key:"d",className:"d"},L[2]),
+          h("div",{key:"f",className:"files"},L[3])
+        ];
+        return done?h("a",{key:L[0],className:"lcard done",href:L[4]},inner):h("div",{key:L[0],className:"lcard todo"},inner);
+      })),
+      h("h2",null,"相关页面"),
+      h("p",null,h("a",{href:"../slime/slime-course-index.html"},"slime 逐文件精读")," · ",h("a",{href:"../AReaL/areal-course-index.html"},"AReaL 逐文件精读"),"：同系列的另两套框架精读。后续还将产出 Polar（ProRL-Agent-Server）课程，以及面向长程 Agentic RL / 动态环境 / 异步效率的五框架大横评。")
+    );
+  }
+  window.addEventListener("load",function(){if(window.React&&window.ReactDOM){ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));}});
+  </script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 逐文件精读 · 课程总览</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent 420px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.88em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    main{max-width:1000px;margin:0 auto;padding:64px 28px 90px;}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 12px;}
+    h1{font-size:46px;line-height:1.08;margin:0 0 18px;letter-spacing:-.01em;}
+    .lead{font-size:17px;color:#c4ced9;max-width:760px;}p{color:var(--muted);}
+    .stat-row{display:flex;gap:30px;flex-wrap:wrap;margin:26px 0 8px;}
+    .stat .v{font-size:26px;font-weight:850;color:var(--amber);}.stat .l{color:var(--faint);font-size:12px;font-family:var(--mono);}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:30px;}
+    .lcard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:16px 18px;display:block;position:relative;}
+    .lcard.done:hover{border-color:var(--teal);background:var(--panel-2);}
+    .lcard.todo{opacity:.62;}
+    .lcard .num{font-family:var(--mono);font-size:12px;color:var(--faint);}
+    .lcard .t{font-weight:750;color:var(--ink);font-size:17px;margin:3px 0 5px;}
+    .lcard .d{color:var(--muted);font-size:13px;}
+    .lcard .files{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:8px;}
+    .badge{position:absolute;top:14px;right:16px;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--faint);}
+    .badge.done{color:var(--teal);border-color:#265450;background:#0e2120;}
+    .note{border-left:3px solid var(--amber);padding:6px 16px;margin:24px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    h2{font-size:24px;margin:40px 0 10px;}
+    @media(max-width:760px){.grid{grid-template-columns:1fr;}h1{font-size:34px;}}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+  const h=React.createElement;
+  const LESSONS=[
+    [1,"地基层","跨领域工具：日志、分布式名字解析、确定性种子、按字符串导入、设备平台抽象。","utils/ 非 RL 部分 + infra/platforms/ · 约 23 文件","areal-lesson-01-foundations.html"],
+    [2,"数据契约与配置","io_struct.py 的数据契约、alloc_mode.py 的并行策略与 allocation 字符串、cli_args.py 的配置层级。","api/io_struct · alloc_mode · cli_args","areal-lesson-02-contracts.html"],
+    [3,"抽象基类","TrainEngine / InferenceEngine / RolloutWorkflow / Scheduler / Reward 五张接口的全部方法。","api/engine_api · workflow_api · scheduler_api · reward_api","areal-lesson-03-interfaces.html"],
+    [4,"RL 数学原语","PPO/GSPO/SAPO 损失、拒绝采样、KL 估计、GAE、FFD/KK 装箱、pack/unpad。","utils/functional/* · seqpack · data","areal-lesson-04-rl-math.html"],
+    [5,"数据与奖励","dataloader、各数据集 loader（gsm8k/geometry3k/clevr 等）、各 reward 函数。","utils/dataloader · dataset/* · reward/*","areal-lesson-05-data-reward.html"],
+    [6,"模型层","并行风格、Ulysses 序列并行、transformers/mcore 桥接、tree attention 三后端与 triton kernel。","models/*","areal-lesson-06-models.html"],
+    [7,"训练引擎","engine/core、FSDPEngine + fsdp_utils、MegatronEngine + megatron_utils（含 fp8）、offload/save/recover。","engine/* · utils/offload·saver·recover","areal-lesson-07-train-engine.html"],
+    [8,"推理引擎","remote_inf_engine 基类、SGLang/vLLM 适配器、vllm_ext、推理服务 launcher。","engine/sglang_remote·vllm_remote · infra/launcher","areal-lesson-08-inference-engine.html"],
+    [9,"Workflow 任务层","RLVR、vision_rlvr、multi_turn，以及 openai/anthropic/langchain agent 接入。","workflow/*","areal-lesson-09-workflow.html"],
+    [10,"算法控制器与 Trainer","PPO actor/critic/stats、rl_trainer 主循环、SFT/DPO/RW trainer。","trainer/*","areal-lesson-10-trainer.html"],
+    [11,"编排与分布式运行时","scheduler、launcher、rpc（rtensor/serialization）、controller、data_service、sandbox。","infra/* 余下约 60 文件","areal-lesson-11-orchestration.html"],
+    [12,"进阶与收尾","Archon PyTorch-native 引擎、三套微服务（成组讲）、tools、examples 串全链、docs。","experimental/* · tools/* · examples/*","areal-lesson-12-advanced.html"]
+  ];
+  function App(){
+    return h("main",null,
+      h("p",{className:"kicker"},"AReaL · 逐文件精读 · 自底向上"),
+      h("h1",null,"从地基到全貌，逐文件读懂 AReaL"),
+      h("p",{className:"lead"},"按依赖顺序自底向上，把 areal/ 的 402 个 Python 文件分成 12 课。每读一个文件，它依赖的东西你都已经懂了。承重文件深讲（数学 + 代码 + 设计出发点 + vscode 源码行），其余每个文件至少一句话角色，做到完整覆盖。"),
+      h("div",{className:"stat-row"},
+        h("div",{className:"stat"},h("div",{className:"v"},"402"),h("div",{className:"l"},"areal/ 内 .py 文件")),
+        h("div",{className:"stat"},h("div",{className:"v"},"~107k"),h("div",{className:"l"},"代码行")),
+        h("div",{className:"stat"},h("div",{className:"v"},"12"),h("div",{className:"l"},"依赖阶梯课程")),
+        h("div",{className:"stat"},h("div",{className:"v"},"12"),h("div",{className:"l"},"已就绪"))),
+      h("div",{className:"note"},"阅读建议：按 1 → 12 顺序读。蓝色 ",h("code",null,"›_ 文件:行号")," 标签会用 vscode://file 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/AReaL")," 对应源码行。全部 12 课已就绪，可按 1 到 12 顺序通读。"),
+      h("h2",null,"课程列表"),
+      h("div",{className:"grid"},LESSONS.map(function(L){
+        const done=L[4]!=="#";
+        const inner=[
+          h("span",{key:"b",className:"badge"+(done?" done":"")},done?"已就绪":"规划中"),
+          h("div",{key:"n",className:"num"},"第 "+L[0]+" 课"),
+          h("div",{key:"t",className:"t"},L[1]),
+          h("div",{key:"d",className:"d"},L[2]),
+          h("div",{key:"f",className:"files"},L[3])
+        ];
+        return done?h("a",{key:L[0],className:"lcard done",href:L[4]},inner):h("div",{key:L[0],className:"lcard todo"},inner);
+      })),
+      h("h2",null,"相关页面"),
+      h("p",null,h("a",{href:"helixrl-from-scratch.html"},"HelixRL · 从 AReaL 到你自己的 RL 训练框架"),"：与本系列互补，讲“如何自己搭一个 from-scratch 框架”，含完整数学、可运行代码与集群显存计算器。")
+    );
+  }
+  window.addEventListener("load",function(){if(window.React&&window.ReactDOM){ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));}});
+  </script>
+</body>
+</html>

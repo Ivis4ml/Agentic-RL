@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Polar 逐文件精读 · 第 5 课：Runtime 池化</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 5 课</p><h1>Runtime 池化</h1><p>能访问 CDN 时切换为交互版。本课讲清 Polar 的 Runtime 抽象：每个 agent 会话所需的隔离沙箱（容器），BaseRuntime 契约与 docker / apptainer 两种后端，factory 如何按配置选择，以及最关键的运行时复用机制：一个长生命周期的容器如何跨 INIT / RUN / POSTRUN 三个阶段复用，从而避免每个环境都是 static 一次性实例造成的 pod 与 GPU 小时浪费。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const POLAR="vscode://file/Users/xinyu/Code/Agentic-RL/ProRL-Agent-Server/";
+  function srcUrl(p,l){return POLAR+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Literal","Final","Path","BaseModel","Field","torch","int","float","bool","str","dict","list","tuple","GatewayNode","RolloutManager","RolloutPipeline","Runtime","BaseRuntime","DockerRuntime","ApptainerRuntime","RuntimeSpec","ExecResult","ExecInput","PrepareAction","ManagedSession","Harness","BaseHarness","Trajectory","asyncio"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","polar-lesson-01-foundations.html"],[2,"Agent与Harness","polar-lesson-02-agent-harness.html"],[3,"Gateway","polar-lesson-03-gateway.html"],[4,"协议变换","polar-lesson-04-transform.html"],[5,"Runtime池化","polar-lesson-05-runtime.html"],[6,"Rollout服务","polar-lesson-06-rollout-server.html"],[7,"轨迹与评估","polar-lesson-07-trajectory.html"],[8,"slime集成","polar-lesson-08-slime-bridge.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"polar-course-index.html"},"Polar",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 设计动机：从 static 一次性环境到可复用 runtime =====
+  function MotivationSection(){
+    return h("div",null,
+      h("p",null,"Polar 是面向真实 agent harness 的 RL rollout 框架。RL 训练每跑一步，都要让一个或多个智能体在某个环境里执行真实任务（写代码、跑测试、操作命令行），再据其结果计算奖励。这个供智能体执行的环境必须满足两个条件：第一，",h("strong",null,"隔离"),"，一个会话的副作用不能污染另一个会话，更不能污染宿主机；第二，",h("strong",null,"可重复构造"),"，同一个任务规格每次都应得到相同的初始环境。Polar 用容器（container）来满足这两点，把这一层抽象命名为 ",h("strong",{className:"hl-teal"},"Runtime"),"：一个 agent 会话执行所需的隔离沙箱。"),
+      h("div",{className:"warn"},h("strong",{className:"hl-red"},"本课要解决的痛点。"),"若按最朴素的写法实现，每一个环境都是一个 static 的一次性容器实例：会话内的每个阶段（环境准备、智能体运行、运行后评估）各自起一个新容器，用完即弃。这会带来三类浪费：(1) 重复的容器创建与镜像拉起开销，叠加到每一步 rollout 上；(2) 每个容器都要单独占用 pod 配额与（在用 GPU 时）GPU 小时；(3) 阶段之间无法传递工作目录里的状态，准备阶段写下的文件在运行阶段看不见，迫使每个阶段都重做一遍准备工作。这正是 “每个环境都是 static、浪费 pod、缺噪声” 的来源。"),
+      h("p",null,"Polar 的解法是 ",h("strong",{className:"hl-amber"},"Runtime 复用（runtime pooling）"),"：一个会话只创建一个长生命周期的容器，让它跨整个会话的三个阶段持续存在并被复用，直到会话结束才统一回收。准备阶段写入的文件，运行阶段和评估阶段都能直接读取，因为它们共享同一个容器的同一个会话目录。这把 “每阶段一个一次性容器” 收敛为 “每会话一个可复用容器”，把 pod 与 GPU 小时的占用从按阶段计降到按会话计。这就是把 static 一次性环境转向 dynamic 可复用环境的方向。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill red"},"static"),"每阶段一个一次性容器"),
+          h("p",null,"INIT 起一个容器准备文件，用完销毁；RUN 起另一个容器跑智能体，准备工作要重做；评估再起第三个容器。三次创建、三份 pod 占用，阶段间状态不连续。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"dynamic"),"每会话一个可复用容器"),
+          h("p",null,"INIT 创建唯一容器并准备文件，RUN 与 POSTRUN 复用同一容器，工作目录里的状态自然延续，会话结束统一 ",h("code",null,"stop"),"。一次创建、一份占用。")
+        )
+      ),
+      h("p",null,"承载这套抽象的核心目录是 ",h("code",null,"src/polar/runtime/"),"：",h("code",null,"models.py")," 定义配置与执行结果的数据结构，",h("code",null,"base.py")," 定义后端契约与共享逻辑，",h("code",null,"docker.py")," 与 ",h("code",null,"apptainer.py")," 是两种具体后端，",h("code",null,"factory.py")," 按配置选择后端。真正驱动复用的调用方是 ",h("code",null,"gateway/node.py")," 的会话处理流程（第 3 课已介绍 Gateway 的整体结构，本课聚焦它对 runtime 生命周期的管理）。"),
+      h("div",null,h(Src,{label:"runtime/ 目录说明",path:"src/polar/runtime/README.md"}),h(Src,{label:"runtime 复用的调用方 node.py",path:"src/polar/gateway/node.py",line:225}),h(Ext,{href:"https://docs.sglang.ai/"},"Polar 的 rollout 上游"))
+    );
+  }
+
+  // ===== models.py 数据结构 =====
+  function ModelsSection(){
+    return h("div",null,
+      h("p",null,"读任何一层之前先看它的数据契约。",h("code",null,"runtime/models.py")," 用 pydantic 定义了四个模型，全部是声明式配置，不含执行逻辑。最重要的是 ",h("code",null,"RuntimeSpec"),"：它是一次 rollout 会话的容器配置，描述 “要用什么镜像、什么后端、如何准备、给多少资源、能否联网”。"),
+      h(Code,null,"class RuntimeSpec(BaseModel):\n    \"\"\"Container runtime configuration for one rollout session.\"\"\"\n\n    backend: Literal[\"docker\", \"apptainer\"] = \"docker\"\n    image: str\n    prepare: list[PrepareAction] = Field(default_factory=list)\n    eval_prepare: list[PrepareAction] | None = None\n    env: dict[str, str] = Field(default_factory=dict)\n    network: str | None = \"host\"\n    workdir: str | None = None\n    cpus: int | None = None\n    memory_mb: int | None = None\n    storage_mb: int | None = None\n    gpus: int = 0\n    allow_internet: bool = True\n    import_path: str | None = None\n    kwargs: dict[str, Any] = Field(default_factory=dict)"),
+      h("p",null,"几个字段值得单独说明：",h("code",null,"backend")," 是一个 ",h("code",null,"Literal"),"，把内置后端限定在 ",h("code",null,"docker")," 与 ",h("code",null,"apptainer")," 两个值；",h("code",null,"prepare")," 是一串有序的准备动作，决定容器起来之后如何把任务文件放进去；",h("code",null,"eval_prepare")," 在评估需要额外准备时单独给一份配方，为空时回退到 ",h("code",null,"prepare"),"；",h("code",null,"import_path")," 提供插件后端的扩展点，允许通过字符串路径注入自定义 Runtime 类；",h("code",null,"kwargs")," 是后端各自识别的额外参数（例如附加挂载卷）。资源上限 ",h("code",null,"cpus / memory_mb / storage_mb / gpus")," 和联网开关 ",h("code",null,"allow_internet")," 不是所有后端都支持，因此 factory 会在实例化时做能力校验（下一节展开）。"),
+      h("h3",null,"准备动作 PrepareAction：把文件与命令编织成有序配方"),
+      h("p",null,h("code",null,"PrepareAction")," 是一个判别联合（discriminated union）：",h("code",null,"type")," 取 ",h("code",null,"upload_file"),"、",h("code",null,"upload_dir")," 或 ",h("code",null,"exec")," 之一，分别表示 “上传单个文件”、“上传整个目录” 与 “在容器内执行一条命令”。它的 ",h("code",null,"model_validator")," 强制字段一致性：上传类动作必须有 ",h("code",null,"source")," 与 ",h("code",null,"target")," 且不得带 ",h("code",null,"command"),"，",h("code",null,"exec")," 类动作必须有 ",h("code",null,"command")," 且不得带 ",h("code",null,"source / target"),"。"),
+      h("p",null,"之所以做成 “有序列表” 而非 “先批量上传再批量执行” 两个集合，是因为真实任务的准备往往需要交错：先上传源码，执行依赖安装，再上传测试数据，再执行编译。顺序一旦被打乱，准备就会失败。列表保留了任务作者指定的精确顺序。"),
+      h(Code,null,"class PrepareAction(BaseModel):\n    \"\"\"One ordered step in the runtime preparation recipe.\n\n    Interleaves uploads and shell commands in exact order needed by the task.\n    \"\"\"\n\n    type: Literal[\"upload_file\", \"upload_dir\", \"exec\"]\n    source: str | None = None\n    target: str | None = None\n    command: str | None = None\n    cwd: str | None = None\n    env: dict[str, str] | None = None"),
+      h("p",null,"另外两个模型很轻：",h("code",null,"ExecInput")," 描述一条待执行命令（命令、工作目录、环境变量），是 harness 把智能体的每一步翻译成的执行请求；",h("code",null,"ExecResult")," 是命令执行后的结果三元组（",h("code",null,"stdout / stderr / return_code"),"），所有后端的 ",h("code",null,"exec")," 都返回这个统一类型，使上层无需关心容器细节。"),
+      h("div",null,h(Src,{label:"RuntimeSpec",path:"src/polar/runtime/models.py",line:56}),h(Src,{label:"PrepareAction",path:"src/polar/runtime/models.py",line:18}),h(Src,{label:"PrepareAction 校验",path:"src/polar/runtime/models.py",line:31}),h(Src,{label:"ExecInput",path:"src/polar/runtime/models.py",line:10}),h(Src,{label:"ExecResult",path:"src/polar/runtime/models.py",line:48}))
+    );
+  }
+
+  // ===== base.py 契约 =====
+  function BaseSection(){
+    return h("div",null,
+      h("p",null,h("code",null,"runtime/base.py")," 定义抽象基类 ",h("code",null,"BaseRuntime"),"，它的类文档一句话点明了全课主线：",h("em",null,"“Base class for long-lived per-session execution runtimes”"),"，即长生命周期、每会话一个的执行运行时。这个 “long-lived per-session” 就是复用的契约层面表达：一个 Runtime 实例的寿命等于一个会话的寿命，而非一个阶段的寿命。"),
+      h("h4",null,"会话目录与容器内固定路径"),
+      h("p",null,"文件顶部定义了一组容器内的固定路径常量，所有后端共用。",h("code",null,"RUNTIME_SESSION_DIR = \"/polar/session\"")," 是容器内的会话根目录，其下再分出 artifacts（产物）、logs（日志，含 agent 与 eval 子目录）与 eval_artifacts。宿主机一侧则有一个对应的 ",h("code",null,"session_dir"),"。后端启动容器时把宿主机的 ",h("code",null,"session_dir")," 绑定挂载（bind mount）到容器内的 ",h("code",null,"/polar/session"),"，于是容器内外看到的是同一份文件。这个绑定挂载是复用得以发挥作用的物理基础：阶段之间共享的不只是容器进程，还有这份持续存在的会话目录。"),
+      h(Code,null,"RUNTIME_SESSION_DIR: Final[str] = \"/polar/session\"\nRUNTIME_ARTIFACTS_DIR: Final[str] = f\"{RUNTIME_SESSION_DIR}/artifacts\"\nRUNTIME_LOGS_DIR: Final[str] = f\"{RUNTIME_SESSION_DIR}/logs\"\nRUNTIME_AGENT_LOG_DIR: Final[str] = f\"{RUNTIME_LOGS_DIR}/agent\"\n\n\nclass BaseRuntime(ABC):\n    \"\"\"Base class for long-lived per-session execution runtimes.\"\"\"\n\n    def __init__(self, spec: RuntimeSpec, session_id: str, session_dir: Path) -> None:\n        self.spec = spec\n        self.session_id = session_id\n        self.session_dir = session_dir\n        self.artifacts_dir = session_dir / \"artifacts\"\n        self.runtime_session_dir = RUNTIME_SESSION_DIR\n        self._active_process: asyncio.subprocess.Process | None = None\n        self._destroyed = False"),
+      h("h4",null,"抽象方法：后端必须实现的契约"),
+      h("p",null,"基类用 ",h("code",null,"@abstractmethod")," 声明了一组生命周期与文件传输方法，每个具体后端必须实现："),
+      h("ul",null,
+        h("li",null,h("code",null,"runtime_id")," 属性：活动实例的标识符（docker 的容器名、apptainer 的实例名）。"),
+        h("li",null,h("code",null,"start()")," / ",h("code",null,"stop()"),"：创建并启动实例 / 停止并删除实例。这两者界定了 Runtime 的寿命，是复用的起点与终点。"),
+        h("li",null,h("code",null,"exec(command, ...)"),"：在容器内执行一条命令，返回 ",h("code",null,"ExecResult"),"。"),
+        h("li",null,h("code",null,"upload_file / upload_dir / download_file / download_dir"),"：宿主机与容器之间双向传输文件与目录。")
+      ),
+      h("p",null,"此外基类还声明了一组能力查询属性，默认全部为 ",h("code",null,"False"),"：",h("code",null,"supports_gpus"),"、",h("code",null,"can_disable_internet"),"、",h("code",null,"supports_cpu_limits"),"、",h("code",null,"supports_memory_limits"),"、",h("code",null,"supports_storage_limits"),"。后端各自覆盖它们以声明自己能做什么。factory 在实例化时据此校验 ",h("code",null,"RuntimeSpec")," 是否落在后端能力范围内（下一节展开）。这是 “能力声明 + 配置校验” 的解耦模式：基类不假设任何后端的能力，而是让后端自报。"),
+      h("h4",null,"共享逻辑：取消、绑定挂载快速路径、本地子进程"),
+      h("p",null,"基类不止是纯接口，它还实现了三段对所有后端通用的逻辑，避免每个后端重复造轮子："),
+      h(Code,null,"async def cancel(self) -> None:\n    \"\"\"Stop any in-flight command and tear the runtime down.\"\"\"\n    process = self._active_process\n    if process is not None and process.returncode is None:\n        process.kill()\n        try:\n            await process.wait()\n        except ProcessLookupError:\n            pass\n    await self.stop()"),
+      h("ul",null,
+        h("li",null,h("strong",null,"cancel()"),"：会话被取消时，先杀掉正在执行的子进程（",h("code",null,"_active_process"),"），再走 ",h("code",null,"stop()")," 拆掉运行时。智能体的一步可能跑很久，取消必须能立即打断在途命令而非干等它结束。"),
+        h("li",null,h("strong",null,"resolve_host_path() / _copy_from_bind_mount() / _copy_to_bind_mount()"),"：绑定挂载快速路径。给定一个容器内路径，若它落在 ",h("code",null,"/polar/session")," 之下，就能反推出对应的宿主机路径，从而用 ",h("code",null,"shutil")," 直接在宿主机文件系统上复制，绕开容器 CLI 的传输开销。这是文件传输的优化路径，后端在它失败时再回退到 ",h("code",null,"docker cp")," 或 ",h("code",null,"tar")," 管道。"),
+        h("li",null,h("strong",null,"_run_local_command()"),"：在宿主机上拉起一个子进程并可选捕获输出，统一处理超时（超时则 ",h("code",null,"kill")," 并返回 ",h("code",null,"-1"),"）、记录 ",h("code",null,"_active_process")," 供 ",h("code",null,"cancel()")," 使用。两个后端调用容器 CLI 全部经由它，因此超时与取消语义在两个后端之间保持一致。")
+      ),
+      h("div",null,h(Src,{label:"BaseRuntime",path:"src/polar/runtime/base.py",line:22}),h(Src,{label:"RUNTIME_SESSION_DIR",path:"src/polar/runtime/base.py",line:14}),h(Src,{label:"start / stop（抽象）",path:"src/polar/runtime/base.py",line:62}),h(Src,{label:"cancel",path:"src/polar/runtime/base.py",line:70}),h(Src,{label:"resolve_host_path",path:"src/polar/runtime/base.py",line:108}),h(Src,{label:"_run_local_command",path:"src/polar/runtime/base.py",line:147}))
+    );
+  }
+
+  // ===== 两种后端 docker / apptainer =====
+  const BACKENDS=[
+    {key:"docker",name:"docker 后端（默认）",render:function(){return [
+      h("p",null,h("code",null,"DockerRuntime")," 是默认后端，用于本地示例与有 Docker 守护进程的环境。它的核心思路：用 ",h("code",null,"docker create")," 建一个长期运行的容器，入口命令是 ",h("code",null,"sleep infinity"),"：容器起来后什么都不做，只是保持存活，等待后续的 ",h("code",null,"docker exec")," 把命令注入进去。这正是 “一个容器跨多个阶段复用” 在 Docker 层面的实现方式：容器本身不绑定任何单个阶段的任务，它只是一个常驻的执行环境。"),
+      h(Code,null,"async def start(self) -> None:\n    if self._destroyed:\n        raise RuntimeError(\"docker runtime was already destroyed\")\n    create_args = [\"docker\", \"create\", \"--name\", self._container_name]\n    if not self.spec.allow_internet:\n        create_args.extend([\"--network\", \"none\"])\n    elif self.spec.network:\n        create_args.extend([\"--network\", self.spec.network])\n    if self.spec.gpus > 0:\n        create_args.extend([\"--gpus\", str(self.spec.gpus)])\n    if self.spec.cpus is not None:\n        create_args.extend([\"--cpus\", str(self.spec.cpus)])\n    if self.spec.memory_mb is not None:\n        create_args.extend([\"--memory\", f\"{self.spec.memory_mb}m\"])\n    create_args.extend([\"-v\", f\"{self.session_dir}:{self.runtime_session_dir}\"])\n    for vol in self.spec.kwargs.get(\"volumes\", []):\n        create_args.extend([\"-v\", vol])\n    create_args.extend([self.spec.image, \"sleep\", \"infinity\"])"),
+      h("p",null,"逐项看 ",h("code",null,"docker create")," 怎样把 ",h("code",null,"RuntimeSpec")," 翻译成 Docker 参数：联网开关映射到 ",h("code",null,"--network none")," 或指定网络；GPU 数映射到 ",h("code",null,"--gpus"),"；CPU 与内存上限映射到 ",h("code",null,"--cpus")," 与 ",h("code",null,"--memory"),"；会话目录映射到 ",h("code",null,"-v session_dir:/polar/session")," 的绑定挂载；",h("code",null,"kwargs.volumes")," 里的附加卷逐一加 ",h("code",null,"-v")," 挂上（例如某些智能体需要 Docker-in-Docker 时挂入 Docker socket）。创建后再 ",h("code",null,"docker start")," 启动。"),
+      h("p",null,"容器名由会话 ID 派生：",h("code",null,"safe_name = session_id.replace(\"/\", \"-\")[:55]"),"，前缀 ",h("code",null,"polar-"),"。截断到 55 字符是为了既符合容器命名约束、又保留会话 ID 尾部的 ",h("code",null,"-eval")," 后缀，使评估用的新容器不会与智能体容器撞名（评估侧的新 runtime 见末节）。能力上 docker 后端声明支持 GPU、可关闭联网、支持 CPU 与内存上限，因此 ",h("code",null,"supports_gpus")," 等属性返回 ",h("code",null,"True"),"。"),
+      h("h4",null,"权限处理：chmod 的按需执行"),
+      h("p",null,"启动后有一段值得注意的优化。绑定挂载的文件归属宿主机用户，若容器内用户的 UID 与宿主机不同，容器进程可能写不动这些文件。",h("code",null,"_detect_chmod_needed()")," 通过 ",h("code",null,"docker exec ... id -u")," 比对容器内 UID 与 ",h("code",null,"os.getuid()"),"，只有不一致时才递归 ",h("code",null,"chmod -R a+rwX")," 整个会话目录；UID 相同则跳过，因为对一个大会话目录做递归 chmod 代价不小。这是为高 rollout 吞吐做的细节优化。"),
+      h("h4",null,"exec 与 stop"),
+      h("p",null,h("code",null,"exec()")," 用 ",h("code",null,"docker exec -w workdir -e KEY=VAL ... bash -lc command")," 把命令注入常驻容器，工作目录默认取 ",h("code",null,"cwd")," 或 ",h("code",null,"spec.workdir")," 或会话根目录，返回统一的 ",h("code",null,"ExecResult"),"。",h("code",null,"stop()")," 是会话结束时的回收：先尽力 chmod 让宿主机能回收绑定挂载的文件，再 ",h("code",null,"docker kill")," 瞬时停止、",h("code",null,"docker rm -f")," 删除元数据，并用 ",h("code",null,"_destroyed")," 标志防止重复回收。"),
+      h("div",null,h(Src,{label:"DockerRuntime",path:"src/polar/runtime/docker.py",line:15}),h(Src,{label:"start",path:"src/polar/runtime/docker.py",line:46}),h(Src,{label:"sleep infinity",path:"src/polar/runtime/docker.py",line:64}),h(Src,{label:"stop",path:"src/polar/runtime/docker.py",line:91}),h(Src,{label:"_detect_chmod_needed",path:"src/polar/runtime/docker.py",line:122}),h(Src,{label:"exec",path:"src/polar/runtime/docker.py",line:135}))
+    ];}},
+    {key:"apptainer",name:"apptainer 后端（HPC 常用）",render:function(){return [
+      h("p",null,h("code",null,"ApptainerRuntime")," 面向高性能计算集群（HPC）。这类集群通常不允许访问 Docker 守护进程（出于多租户安全），但广泛安装 Apptainer（原 Singularity），它以无守护进程、可无 root 运行的方式执行容器。Polar 把两种后端放在同一个 ",h("code",null,"BaseRuntime")," 契约下，使上层代码无需区分自己跑在本地 Docker 还是集群 Apptainer 上。"),
+      h(Code,null,"async def start(self) -> None:\n    if self._destroyed:\n        raise RuntimeError(\"apptainer runtime was already destroyed\")\n    # Use a host-backed overlay directory instead of --writable-tmpfs\n    # (default tmpfs overlay is only 64 MB, too small for most workloads).\n    self._overlay_dir = self.session_dir / \"overlay\"\n    self._overlay_dir.mkdir(parents=True, exist_ok=True)\n    args = [self._binary, \"instance\", \"start\",\n            \"--overlay\", str(self._overlay_dir)]\n    if self.spec.gpus > 0:\n        args.append(\"--nv\")\n    if not self.spec.allow_internet:\n        network_name = \"none\"\n    else:\n        network_name = self.spec.network\n    if network_name and network_name != \"host\":\n        args.extend([\"--net\", \"--network\", network_name])\n    args.extend([\"--bind\", f\"{self.session_dir}:{self.runtime_session_dir}\"])\n    for volume in self.spec.kwargs.get(\"volumes\", []):\n        args.extend([\"--bind\", str(volume)])\n    args.extend([self.spec.image, self._instance_name])"),
+      h("p",null,"对应于 Docker 的 “创建常驻容器”，Apptainer 用 ",h("code",null,"apptainer instance start")," 启动一个命名实例，后续命令通过 ",h("code",null,"apptainer exec instance://name")," 注入。同样是 “常驻实例 + 命令注入” 的复用模式，只是 CLI 不同。几个 Apptainer 特有的细节："),
+      h("ul",null,
+        h("li",null,h("strong",null,"overlay 目录"),"：Apptainer 默认的可写层是 tmpfs，只有 64 MB，多数工作负载不够用。这里改用宿主机上的目录 ",h("code",null,"session_dir/overlay")," 作为 overlay，把可写层放到宿主机文件系统上。"),
+        h("li",null,h("strong",null,"GPU 用 --nv"),"：Apptainer 通过 ",h("code",null,"--nv")," 注入 NVIDIA 驱动与库，对应 Docker 的 ",h("code",null,"--gpus"),"。能力上 apptainer 后端声明支持 GPU 与关闭联网，但不声明 CPU / 内存 / 存储上限（因为这类限制在无守护进程模型下不便强制），因此对应的 ",h("code",null,"supports_cpu_limits")," 等属性沿用基类默认的 ",h("code",null,"False"),"。"),
+        h("li",null,h("strong",null,"绑定挂载用 --bind"),"：会话目录与附加卷都通过 ",h("code",null,"--bind src:dst")," 挂载，语法与 Docker 的 ",h("code",null,"-v")," 对应，使 ",h("code",null,"kwargs.volumes")," 的契约在两个后端之间一致。")
+      ),
+      h("h4",null,"实例命名与二进制定位"),
+      h("p",null,"实例名比 Docker 多一道哈希保护：",h("code",null,"safe_name")," 截断到 30 字符后再拼上会话 ID 的 SHA-256 前 8 位，因为两个会话 ID 可能共享很长的前缀（如 ",h("code",null,"...-eval")," 与不带后缀的版本），截断后容易撞名，哈希后缀保证唯一。",h("code",null,"_resolve_binary()")," 依次尝试环境变量 ",h("code",null,"POLAR_APPTAINER_BIN"),"、固定路径 ",h("code",null,"/usr/bin/apptainer")," 与 ",h("code",null,"/bin/apptainer"),"、",h("code",null,"shutil.which"),"，最后回退到裸名 ",h("code",null,"apptainer"),"，以适配集群上各不相同的安装位置。"),
+      h("h4",null,"文件传输用 tar 管道"),
+      h("p",null,"Apptainer 没有 ",h("code",null,"docker cp")," 这种现成的容器内外拷贝命令，因此在绑定挂载快速路径不可用时，",h("code",null,"upload_dir")," 等方法改用 tar 管道：宿主机 ",h("code",null,"tar -cf -")," 打包，经管道送进 ",h("code",null,"apptainer exec ... tar -xf -")," 解包。",h("code",null,"exec()")," 还会把工作目录处理成 ",h("code",null,"cd workdir && command"),"，并显式 ",h("code",null,"export HOME / PATH"),"，因为 Apptainer 默认会继承宿主机的较多环境，需要手工收敛。"),
+      h("div",null,h(Src,{label:"ApptainerRuntime",path:"src/polar/runtime/apptainer.py",line:18}),h(Src,{label:"start（overlay 与 --nv）",path:"src/polar/runtime/apptainer.py",line:42}),h(Src,{label:"实例名与哈希",path:"src/polar/runtime/apptainer.py",line:21}),h(Src,{label:"stop",path:"src/polar/runtime/apptainer.py",line:75}),h(Src,{label:"exec（tar / 工作目录）",path:"src/polar/runtime/apptainer.py",line:89}),h(Src,{label:"_resolve_binary",path:"src/polar/runtime/apptainer.py",line:194}))
+    ];}}
+  ];
+  function BackendExplorer(){const [s,setS]=useState(0);const d=BACKENDS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},BACKENDS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== factory.py =====
+  function FactorySection(){
+    return h("div",null,
+      h("p",null,h("code",null,"runtime/factory.py")," 是从 ",h("code",null,"RuntimeSpec")," 到具体 Runtime 实例的唯一入口。它做两件事：按 ",h("code",null,"backend")," 字段从内置后端表里查类，或在配置了 ",h("code",null,"import_path")," 时加载插件类；然后对实例化出的 runtime 做能力校验，确保配置不会要求后端做不到的事。"),
+      h(Code,null,"_BUILTIN_BACKENDS: dict[str, type[BaseRuntime]] = {\n    \"docker\": DockerRuntime,\n    \"apptainer\": ApptainerRuntime,\n}\n\n\ndef create_runtime(\n    spec: RuntimeSpec, session_id: str, session_dir: Path\n) -> BaseRuntime:\n    if spec.import_path:\n        cls = _import_runtime_class(spec.import_path)\n        runtime = cls(spec, session_id, session_dir)\n        _validate_runtime_capabilities(runtime)\n        return runtime\n    cls = _BUILTIN_BACKENDS.get(spec.backend)\n    if cls is None:\n        raise ValueError(f\"Unsupported runtime backend: {spec.backend}\")\n    runtime = cls(spec, session_id, session_dir)\n    _validate_runtime_capabilities(runtime)\n    return runtime"),
+      h("p",null,"选择逻辑的优先级清晰：",h("code",null,"import_path")," 优先（插件后端），否则查内置表。内置表是一个简单的字符串到类的字典，新增官方后端只需在此注册。",h("code",null,"import_path")," 这条分支让使用者无需改框架代码即可接入自定义沙箱（例如某种专有的隔离技术），只要那个类继承 ",h("code",null,"BaseRuntime"),"。这与第 4 课见到的协议变换插件、第 2 课的 harness 注册是同一套扩展哲学：内置常用项 + 字符串路径注入扩展项。"),
+      h("h4",null,"能力校验：把不可能的配置在创建时挡住"),
+      h(Code,null,"def _validate_runtime_capabilities(runtime: BaseRuntime) -> None:\n    spec = runtime.spec\n    backend = spec.backend\n    if spec.gpus > 0 and not runtime.supports_gpus:\n        raise ValueError(f\"runtime backend {backend!r} does not support GPUs\")\n    if spec.cpus is not None and not runtime.supports_cpu_limits:\n        raise ValueError(f\"runtime backend {backend!r} does not support CPU limits\")\n    if spec.memory_mb is not None and not runtime.supports_memory_limits:\n        raise ValueError(f\"runtime backend {backend!r} does not support memory limits\")\n    if not spec.allow_internet:\n        if not runtime.can_disable_internet:\n            raise ValueError(...)\n        if spec.network not in (None, \"\", \"host\", \"none\"):\n            raise ValueError(...)"),
+      h("p",null,h("code",null,"_validate_runtime_capabilities")," 把上一节提到的能力声明属性与 ",h("code",null,"RuntimeSpec")," 的请求逐一比对：要 GPU 但后端不支持、要 CPU 上限但后端不支持、要关闭联网但后端关不掉，都在创建时立即抛 ",h("code",null,"ValueError"),"，而不是等到容器启动甚至运行到一半才失败。这是 “快速失败” 的设计：配置错误应在最早、最便宜的时刻暴露，而非消耗了 pod 与 GPU 小时之后才暴露。最后还有一条针对联网的额外约束：当 ",h("code",null,"allow_internet=false")," 时，",h("code",null,"network")," 只能是未设置、",h("code",null,"host")," 或 ",h("code",null,"none"),"，防止 “声称禁网却又指定了一个真实网络” 这种自相矛盾的配置。"),
+      h("div",null,h(Src,{label:"create_runtime",path:"src/polar/runtime/factory.py",line:19}),h(Src,{label:"_BUILTIN_BACKENDS",path:"src/polar/runtime/factory.py",line:13}),h(Src,{label:"_import_runtime_class",path:"src/polar/runtime/factory.py",line:40}),h(Src,{label:"_validate_runtime_capabilities",path:"src/polar/runtime/factory.py",line:44}))
+    );
+  }
+
+  // ===== 复用与生命周期：node.py 三阶段 =====
+  function PoolingSection(){
+    return h("div",null,
+      h("p",null,"前面几节都是 “材料”。复用真正发生在调用方：",h("code",null,"gateway/node.py")," 的会话处理流程。Gateway 把一个会话切成四个阶段：INIT、READY、RUNNING、POSTRUN（见第 3 课），由 dispatcher 驱动。关键事实是：",h("strong",{className:"hl-amber"},"runtime 只在 INIT 阶段创建一次，挂在 ",h("code",null,"ManagedSession.runtime")," 上，RUN 与 POSTRUN 阶段直接复用这同一个实例，直到 POSTRUN 末尾才统一回收。")),
+      h("h4",null,"INIT：创建唯一 runtime 并执行准备配方"),
+      h(Code,null,"async def _handle_init(self, managed: ManagedSession) -> None:\n    request = managed.request\n    ...\n    runtime_spec = self._resolve_runtime_spec(request)\n    runtime = create_runtime(runtime_spec, request.session_id, managed.session_dir)\n    managed.runtime = runtime\n    await self._await_with_budget(runtime.start(), managed)\n    # Run ordered prepare actions\n    await self._run_runtime_prepare(runtime, runtime_spec, request, managed)"),
+      h("p",null,"INIT 调 ",h("code",null,"create_runtime")," 拿到 runtime（factory 已做完后端选择与能力校验），把它存进 ",h("code",null,"managed.runtime"),"，",h("code",null,"start()")," 启动容器，再 ",h("code",null,"_run_runtime_prepare")," 按 ",h("code",null,"spec.prepare")," 的有序配方把任务文件上传、依赖装好。注意准备阶段写下的所有内容都落在那份绑定挂载的会话目录里，会随容器一直存在。"),
+      h("h4",null,"RUN：复用同一个 runtime 跑智能体"),
+      h(Code,null,"async def _handle_run(self, managed: ManagedSession) -> None:\n    request = managed.request\n    ...\n    runtime = managed.runtime\n    if runtime is None:\n        raise RuntimeError(\"runtime is required for execution\")\n\n    self._start_eval_prewarm(managed)\n    harness = self._resolve_agent_harness(request)\n    # Setup\n    await self._await_with_budget(harness.setup(runtime), managed)\n    # Run\n    steps = harness.run_steps(request.instruction)\n    env = self._runtime_env(request, managed, include_agent_env=True)\n    agent_result = await self._run_exec_inputs(runtime, steps, env, managed)"),
+      h("p",null,"RUN 阶段不调 ",h("code",null,"create_runtime"),"，而是直接取回 ",h("code",null,"managed.runtime"),"。harness 的 ",h("code",null,"setup()")," 与每一步执行都在这个已经准备好的容器里进行：因为容器是 INIT 阶段那一个，准备阶段装的依赖、放的源码此刻都在。这就是复用带来的状态连续性，也是 static 一次性容器无法做到的：若 RUN 阶段换一个新容器，INIT 装的所有东西都得重来。harness 如何把智能体的动作翻译成 ",h("code",null,"ExecInput")," 序列，见第 2 课。"),
+      h("h4",null,"POSTRUN：构建轨迹、评估，然后统一回收"),
+      h(Code,null,"finally:\n    ...\n    stop_tasks = []\n    eval_runtime = await self._drain_eval_prewarm_task(managed)\n    if eval_runtime is not None:\n        stop_tasks.append(\n            self._stop_runtime_best_effort(eval_runtime, request.session_id, \"eval runtime\")\n        )\n    if managed.runtime is not None:\n        stop_tasks.append(\n            self._stop_runtime_best_effort(managed.runtime, request.session_id, \"runtime\")\n        )\n    if stop_tasks:\n        await asyncio.gather(*stop_tasks, return_exceptions=True)"),
+      h("p",null,"POSTRUN 先用容器里的运行结果构建轨迹（",h("code",null,"_build_session_result"),"，第 7 课展开）并可选地评估，最后在 ",h("code",null,"finally")," 里把会话的所有 runtime 统一 ",h("code",null,"stop"),"：主 runtime 加上可能存在的评估 runtime，用 ",h("code",null,"asyncio.gather")," 并行回收。",h("code",null,"_stop_runtime_best_effort")," 表明回收是尽力而为：即便某个容器停止失败，也不应让整个会话挂死。这里是整个会话寿命里唯一回收容器的地方，对应 “每会话一次创建、一次回收” 的复用模型。"),
+      h("div",{className:"note"},h("strong",null,"复用的边界。"),"Polar 当前的复用是 “会话内跨阶段” 的复用，不是 “跨会话” 的容器共享：每个会话仍有自己独立的容器，会话结束即回收。这正确地保持了会话间的隔离（一个会话不会看到另一个会话的副作用），同时消除了会话内最浪费的部分，即同一会话里反复创建一次性容器。从 “每阶段一个容器” 收敛到 “每会话一个容器”，已经把容器创建次数与 pod 占用从按阶段计降到按会话计。")
+    );
+  }
+
+  // ===== 评估侧的预热与刷新 =====
+  function EvalSection(){
+    return h("div",null,
+      h("p",null,"复用模型还有一个例外，恰好揭示了 “可复用” 与 “需新鲜” 之间的权衡。评估（evaluation）有时不能复用智能体跑过的那个容器，因为智能体可能已经污染了环境（改了文件、装了包），评估若想客观打分就需要一个干净的环境。Polar 对此提供 ",h("code",null,"EvaluatorSpec.refresh_runtime")," 开关。"),
+      h("p",null,"当请求要求刷新评估环境时，",h("code",null,"node.py")," 不会在评估时才慢吞吞地新建容器，而是在 RUN 阶段一开始就用一个后台任务 ",h("strong",{className:"hl-teal"},"预热（prewarm）")," 一个全新的评估 runtime，与智能体的执行并行进行。这样等智能体跑完、轮到评估时，干净的评估容器已经就绪，无需再等创建。"),
+      h(Code,null,"def _start_eval_prewarm(self, managed: ManagedSession) -> None:\n    \"\"\"Spawn a background task to prewarm a fresh evaluator runtime.\"\"\"\n    request = managed.request\n    if request.evaluator is None or not request.evaluator.refresh_runtime:\n        return\n    if managed.eval_prewarm_task is not None:\n        return\n    managed.eval_prewarm_task = asyncio.create_task(\n        self._prepare_eval_runtime(managed)\n    )"),
+      h("p",null,h("code",null,"_prepare_eval_runtime")," 用同一份 ",h("code",null,"RuntimeSpec")," 创建一个会话 ID 带 ",h("code",null,"-eval")," 后缀、会话目录在 ",h("code",null,"session_dir/eval_runtime")," 之下的新 runtime，启动后按 ",h("code",null,"eval_prepare"),"（为空则回退 ",h("code",null,"prepare"),"）准备。这个带后缀的会话 ID 正是前面 docker / apptainer 后端要小心保留尾缀、做哈希去重的原因：智能体容器与评估容器必须有不同的名字才能共存。"),
+      h("p",null,"评估侧据此决定用哪个 runtime：默认复用智能体跑过的 ",h("code",null,"source_runtime"),"；当 ",h("code",null,"refresh_runtime=True")," 时改用预热好的 ",h("code",null,"fresh_eval_runtime"),"。两个 runtime 在 POSTRUN 的 ",h("code",null,"finally")," 里一并回收。这一节把复用的设计动机讲完整了：",h("strong",null,"能复用时复用以省资源，必须新鲜时用预热抵消创建延迟"),"，两者都服务于 “在不浪费 pod 与 GPU 小时的前提下拿到可信的 rollout 结果”。"),
+      h("div",{className:"note"},"评估的完整流程（轨迹构建、奖励计算、",h("code",null,"refresh_runtime")," 与 ",h("code",null,"fresh_eval_runtime")," 在评估器内部的取用逻辑）是第 7 课的主题。本课只展示它对 runtime 生命周期的影响：会话内可能同时存在两个 runtime，且评估 runtime 通过预热与执行重叠以隐藏创建延迟。"),
+      h("div",null,h(Src,{label:"_start_eval_prewarm",path:"src/polar/gateway/node.py",line:408}),h(Src,{label:"_prepare_eval_runtime",path:"src/polar/gateway/node.py",line:419}),h(Src,{label:"_acquire_prepared_eval_runtime",path:"src/polar/gateway/node.py",line:462}),h(Src,{label:"评估 runtime 取用逻辑",path:"src/polar/trajectory/evaluator/_patch_utils.py",line:144}),h(Src,{label:"refresh_runtime 判定",path:"src/polar/trajectory/evaluator/_patch_utils.py",line:119}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"Apptainer 文档",d:"无守护进程容器、instance、overlay、--nv GPU 支持",href:"https://apptainer.org/docs/"},
+    {t:"Docker SDK（docker-py）",d:"Docker Python 客户端文档，理解 create/exec/cp 语义",href:"https://docker-py.readthedocs.io/"},
+    {t:"Docker CLI 参考",d:"docker create / start / exec / cp 的官方参数说明",href:"https://docs.docker.com/reference/cli/docker/"},
+    {t:"runtime/ 目录 README（本机）",d:"runtime 后端契约与 prepare 步骤的官方说明",href:srcUrl("src/polar/runtime/README.md",null)},
+    {t:"base.py（本机）",d:"BaseRuntime 契约与共享逻辑",href:srcUrl("src/polar/runtime/base.py",null)},
+    {t:"node.py（本机）",d:"runtime 跨阶段复用的调用方",href:srcUrl("src/polar/gateway/node.py",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:5}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 5 课 / 共 8 · Runtime 池化"),
+          h("h1",null,"Runtime 池化"),
+          h("p",{className:"lead"},"agent 要在某处真实执行任务，这个 “某处” 就是 Runtime：一个隔离的容器沙箱。本课讲清 Polar 的 Runtime 抽象：RuntimeSpec 数据结构、BaseRuntime 契约、docker 与 apptainer 两种后端、factory 的选择与能力校验，并重点展开运行时复用：一个长生命周期的容器如何跨 INIT / RUN / POSTRUN 三个阶段复用，把 static 一次性环境转向 dynamic 可复用环境，从而消除每个环境都是一次性实例造成的 pod 与 GPU 小时浪费。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"src/polar/runtime/")," 的 models / base / docker / apptainer / factory，以及复用的真正调用方 ",h("code",null,"src/polar/gateway/node.py")," 的会话三阶段与评估预热。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/ProRL-Agent-Server")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"设计动机"),
+          h("h2",null,"为什么需要可复用的 Runtime"),
+          h(MotivationSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"runtime/models.py"),
+          h("h2",null,"数据契约：RuntimeSpec 与准备配方"),
+          h(ModelsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"runtime/base.py"),
+          h("h2",null,"BaseRuntime 契约：长生命周期、每会话一个"),
+          h(BaseSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"runtime/docker.py · apptainer.py"),
+          h("h2",null,"两种后端：常驻实例 + 命令注入"),
+          h("p",null,"两个内置后端实现同一份 ",h("code",null,"BaseRuntime")," 契约，但落到不同的容器技术上。点 Tab 切换，对照看它们如何把 ",h("code",null,"RuntimeSpec")," 翻译成各自的 CLI，以及它们如何用 “一个常驻实例 + 多次命令注入” 来支撑复用。"),
+          h(BackendExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"runtime/factory.py"),
+          h("h2",null,"factory：选择后端与能力校验"),
+          h(FactorySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"gateway/node.py · 三阶段"),
+          h("h2",null,"复用的真相：一个容器贯穿整个会话"),
+          h(PoolingSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"gateway/node.py · 评估预热"),
+          h("h2",null,"例外：评估需要新鲜环境时的预热"),
+          h(EvalSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档理解两种容器后端的底层语义，以及 Polar 在它们之上加的复用层。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"Runtime 是 agent 执行的隔离沙箱"),"：每个会话需要一个隔离、可重复构造的容器环境，Polar 把这层抽象为 Runtime，统一隔离副作用与构造可重复的初始状态。"),
+            h("li",null,h("strong",null,"一份契约，两种后端"),"：",h("code",null,"BaseRuntime")," 定义 start / stop / exec / 文件传输与能力声明，",h("code",null,"DockerRuntime")," 用 ",h("code",null,"docker create ... sleep infinity")," + ",h("code",null,"docker exec"),"，",h("code",null,"ApptainerRuntime")," 用 ",h("code",null,"instance start")," + ",h("code",null,"exec instance://"),"，后者面向不许访问 Docker 守护进程的 HPC 集群。"),
+            h("li",null,h("strong",null,"factory 负责选择与快速失败"),"：按 ",h("code",null,"backend")," 查内置表或按 ",h("code",null,"import_path")," 注入插件，再用能力校验把 “要 GPU 而后端不支持” 之类的配置在创建时挡住，避免浪费 pod 与 GPU 小时后才失败。"),
+            h("li",null,h("strong",null,"复用是核心：每会话一个容器跨三阶段"),"：runtime 在 INIT 创建一次，RUN 与 POSTRUN 复用同一实例，会话结束统一回收。这把容器创建从按阶段计降到按会话计，并让阶段间状态通过绑定挂载的会话目录自然延续，正面回应 “每个环境都是 static、浪费 pod” 的痛点。"),
+            h("li",null,h("strong",null,"复用与新鲜的权衡"),"：能复用时复用以省资源；评估需要干净环境时，用后台预热的 ",h("code",null,"refresh_runtime")," 新容器，与智能体执行重叠以隐藏创建延迟，两个 runtime 在 POSTRUN 一并回收。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"polar-lesson-04-transform.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 4 课：协议变换 transform")),
+            h("a",{href:"polar-lesson-06-rollout-server.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 6 课：Rollout Server 与流水线"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

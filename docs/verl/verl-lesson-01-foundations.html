@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 第 1 课：地基与 HybridFlow 全局观</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 1 课</p><h1>地基与 HybridFlow 全局观</h1><p>能访问 CDN 时切换为交互版。本课讲清 verl 的设计哲学（混合单控制器编程模型、灵活 device mapping、多训练后端与多推理后端解耦），目录地图（single_controller / workers / trainer / experimental / utils），以及 main_ppo.py 入口如何构建 ResourcePool、各 WorkerGroup、RayPPOTrainer 并调用 fit()。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const VERL="vscode://file/Users/xinyu/Code/Agentic-RL/verl/";
+  function srcUrl(p,l){return VERL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","DataProto","DataProtoItem","DataProtoFuture","TensorDict","WorkerGroup","Worker","ResourcePool","ResourcePoolManager","RayWorkerGroup","RayResourcePool","RayClassWithInitArgs","ClassWithInitArgs","AgentLoop","AgentLoopManager","AgentLoopWorker","RayPPOTrainer","TaskRunner","TaskRunnerV1","Role","Dispatch","Execute","ray","omegaconf","OmegaConf","DictConfig"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与HybridFlow","verl-lesson-01-foundations.html"],[2,"DataProto","verl-lesson-02-dataproto.html"],[3,"混合控制器","verl-lesson-03-single-controller.html"],[4,"配置","verl-lesson-04-config.html"],[5,"RL数学","verl-lesson-05-core-algos.html"],[6,"训练引擎","verl-lesson-06-engines.html"],[7,"Workers","verl-lesson-07-workers.html"],[8,"Rollout","verl-lesson-08-rollout.html"],[9,"异步服务","verl-lesson-09-async-server.html"],[10,"Agent Loop","verl-lesson-10-agent-loop.html"],[11,"异步训练","verl-lesson-11-async-train.html"],[12,"Trainer与端到端","verl-lesson-12-trainer-e2e.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"verl-course-index.html"},"verl",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 设计哲学：HybridFlow 全局观 =====
+  function PhilosophySection(){
+    return h("div",null,
+      h("p",null,"读 verl 之前，先建立一张全局图。verl 是字节跳动 Seed 团队开源的大模型 RL 训练库，是 ",h(Ext,{href:"https://arxiv.org/abs/2409.19256"},"HybridFlow")," 论文的开源实现（论文发表于 EuroSys 2025）。它要解决的核心矛盾是：RLHF 这类后训练流程同时需要 ",h("strong",{className:"hl-purple"},"训练")," 与 ",h("strong",{className:"hl-teal"},"推理生成")," 两种截然不同的分布式计算，二者的并行策略、显存布局、最优后端都不一样；如果按传统单控制器框架那样让一个进程逐 GPU 下发所有指令，控制逻辑会因 SPMD 通信而极其复杂；如果按多控制器（每个 worker 各自运行完整程序）写，数据流的编排又会散落在各 worker 里，难以表达。HybridFlow 的答案是 ",h("strong",{className:"hl-amber"},"混合单控制器（hybrid single-controller）"),"。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"single-controller"),"上层：单点编排"),
+          h("p",null,"一个 driver 进程（Ray 远程类 ",h("code",null,"TaskRunner"),"）用单点控制逻辑编排整条数据流。它对一组 worker 发一句 ",h("code",null,"actor_rollout_wg.generate_sequences(batch)")," 即可，无需关心这组 worker 内部是几路并行。PPO/GRPO 的数据流因此能用几行串行代码表达。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"multi-controller"),"下层：组内 SPMD"),
+          h("p",null,"每一组 worker（如 actor 训练组）内部仍是经典的多控制器 SPMD：所有 rank 跑同一份程序，靠 NCCL 集合通信协作（FSDP/Megatron 的并行就发生在这里）。上层只看到组的入口方法，组内的并行细节被封装。")
+        )
+      ),
+      h("p",null,"换言之，verl 把系统切成两层：上层用单控制器写清楚“先生成、再算优势、再更新 actor、再更新 critic”这条数据流；下层让每组 worker 各自用最合适的并行后端高效执行一个算子。",h("strong",null,"计算与数据依赖被解耦"),"：数据流的形状写在 driver 里，计算后端可以独立替换。这正是论文标题里 flexible 与 efficient 的来源。"),
+      h("h3",null,"三条设计主线（为什么这么设计）"),
+      h("ul",null,
+        h("li",null,h("strong",null,"混合单控制器编程模型"),"：用单点控制逻辑表达复杂后训练数据流，把每个分布式算子封装成 WorkerGroup 的一个方法。据 README，可以“用几行代码构建 GRPO、PPO 等 RL 数据流”。第 3 课展开 ",h("code",null,"@register")," 装饰器与 dispatch/collect 机制如何把单点调用自动散发到全组、再把结果聚合回来。"),
+        h("li",null,h("strong",null,"灵活 device mapping"),"：不同模型（actor、critic、reference、reward）可以放到不同的 GPU 集合上，也可以共置（colocate）到同一批卡上分时复用。verl 用 ",h("code",null,"ResourcePool")," 抽象一组 GPU，用 ",h("code",null,"role_worker_mapping")," 把角色映射到资源池，从而在不同集群规模上调整放置策略。"),
+        h("li",null,h("strong",null,"与现有 LLM 基础设施模块化集成"),"：训练后端支持 ",h("strong",{className:"hl-purple"},"FSDP / FSDP2 / Megatron-LM"),"，推理（rollout）后端支持 ",h("strong",{className:"hl-teal"},"vLLM / SGLang / HF Transformers"),"（社区另有 TRT-LLM 等方向）。因为计算与数据依赖解耦，新后端只要实现统一的 worker 接口即可接入，不必改动上层数据流。")
+      ),
+      h(Formula,{cap:"上层数据流可写成对各 WorkerGroup 方法的串行组合（示意，细节见第 12 课）"},"$$ \\text{batch} \\xrightarrow{\\;\\text{rollout.generate}\\;} \\text{seq} \\xrightarrow{\\;\\text{ref/old\\_logp}\\;} \\xrightarrow{\\;\\text{reward}\\;} \\xrightarrow{\\;\\text{adv}\\;} \\xrightarrow{\\;\\text{critic.update}\\;} \\xrightarrow{\\;\\text{actor.update}\\;} \\theta' $$"),
+      h("div",{className:"note"},"本课只建立全局观与读地基文件。",h("code",null,"DataProto")," 数据协议见第 2 课、单控制器与 dispatch 机制见第 3 课、配置系统见第 4 课、RL 数学（core_algos）见第 5 课、训练引擎见第 6 课、各 worker 见第 7 课、rollout 见第 8 课、异步服务与 Agent Loop 见第 9、10 课、异步训练见第 11 课、",h("code",null,"RayPPOTrainer.fit")," 端到端见第 12 课。"),
+      h("div",null,h(Src,{label:"README.md（设计哲学）",path:"README.md",line:28}),h(Src,{label:"CLAUDE.md（贡献规范）",path:"CLAUDE.md"}),h(Ext,{href:"https://arxiv.org/abs/2409.19256"},"HybridFlow 论文"),h(Ext,{href:"https://verl.readthedocs.io/en/latest/hybrid_flow.html"},"Programming Guide"))
+    );
+  }
+
+  // ===== 版本与仓库状态 =====
+  function VersionSection(){
+    return h("div",null,
+      h("p",null,"读源码前先确认你读的是哪一版，否则文件位置与类名会对不上。本课程基于本地 checkout，几处状态需要说明清楚。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"version"),"本地版本与生产版本"),
+          h("p",null,"本地 ",h("code",null,"verl/version/version")," 文件内容为 ",h("code",null,"0.9.0.dev"),"，是开发中的主干。多数团队在生产中使用的是 0.8 稳定版。两者在地基层（single_controller、protocol、utils）差异很小，但入口骨架已有变化：0.9 主干引入了 V1 训练器（",h("code",null,"TaskRunnerV1"),"、transfer_queue、agent loop manager），而经典骨架仍保留在 ",h("code",null,"main_ppo_v0.py"),"。本课的入口讲解以 ",h("strong",null,"经典骨架"),"（v0，更易读、概念更清晰）为主，并指出 V1 的新增。"),
+          h("div",null,h(Src,{label:"version/version",path:"verl/version/version",line:1}),h(Src,{label:"main_ppo.py（V1 入口）",path:"verl/trainer/main_ppo.py",line:144}))
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill blue"},"submodule"),"recipe 已外置"),
+          h("p",null,h("code",null,"recipe/")," 目录已迁移为独立的 git submodule（",h("code",null,".gitmodules")," 指向 ",h("code",null,"verl-recipe.git"),"）。本地未初始化，因此该目录为空。它收录了各类算法配方（DAPO、SPIN 等）的复现脚本，与主库地基解耦。本课程不覆盖 recipe，也不应去初始化它。"),
+          h("div",null,h(Src,{label:".gitmodules",path:".gitmodules",line:1}))
+        )
+      ),
+      h("div",{className:"warn"},h("strong",null,"experimental/ 的归属："),"目录 ",h("code",null,"verl/experimental/")," 下的 ",h("code",null,"fully_async_policy"),"、",h("code",null,"one_step_off_policy"),"、",h("code",null,"transfer_queue")," 仍在主仓内（其中 ",h("code",null,"transfer_queue")," 子目录在本地为空，其实现来自独立的 ",h("code",null,"transfer_queue")," 包），它们承载完全异步、一步离策略与数据传输队列等方向，计划逐步合并入主库。读到它们时要清楚这些是处于演进中的实验特性，接口可能变化（异步训练在第 11 课展开）。"),
+      h("div",null,h(Src,{label:"experimental/fully_async_policy",path:"verl/experimental/fully_async_policy/fully_async_main.py"}),h(Src,{label:"experimental/one_step_off_policy",path:"verl/experimental/one_step_off_policy/main_ppo.py"}),h(Src,{label:"experimental/agent_loop",path:"verl/experimental/agent_loop/agent_loop.py",line:1054}))
+    );
+  }
+
+  // ===== 目录地图（Tab 探索器） =====
+  const DIRS=[
+    {key:"single_controller",name:"single_controller",render:function(){return [
+      h("p",null,"混合单控制器的实现核心，是整个框架的地基。它定义了三组抽象，与具体的训练或推理无关，因此放在最底层。"),
+      h("ul",null,
+        h("li",null,h("code",null,"base/worker.py"),"：",h("code",null,"Worker")," 基类，每个 worker 进程的最小骨架（管理 rank、world_size、master 地址与设备）。各具体 worker（actor、critic、rollout）在它之上扩展。"),
+        h("li",null,h("code",null,"base/worker_group.py"),"：",h("code",null,"WorkerGroup")," 是一组同类 worker 的句柄；",h("code",null,"ResourcePool")," 描述一组 GPU 在各节点上的进程分布；",h("code",null,"ClassWithInitArgs")," 把“类 + 构造参数”打包以便延迟实例化（远程构造时需要）。"),
+        h("li",null,h("code",null,"base/decorator.py"),"：",h("code",null,"@register")," 装饰器与 ",h("code",null,"Dispatch")," 枚举。一个被 ",h("code",null,"@register(dispatch_mode=...)")," 标注的方法，在 driver 端调用时会按 dispatch 规则把输入切片散发到全组 worker，再按 collect 规则聚合输出。这是单点调用变成分布式执行的关键，第 3 课详解。"),
+        h("li",null,h("code",null,"ray/base.py"),"：",h("code",null,"RayWorkerGroup")," 等 Ray 后端实现，把上述抽象映射到 Ray actor。")
+      ),
+      h("div",null,h(Src,{label:"Worker",path:"verl/single_controller/base/worker.py",line:76}),h(Src,{label:"WorkerGroup/ResourcePool",path:"verl/single_controller/base/worker_group.py",line:27}),h(Src,{label:"@register",path:"verl/single_controller/base/decorator.py",line:398}),h(Src,{label:"RayWorkerGroup",path:"verl/single_controller/ray/base.py",line:418}))
+    ];}},
+    {key:"workers",name:"workers",render:function(){return [
+      h("p",null,"具体的分布式算子实现。每个 worker 类继承 ",h("code",null,"Worker"),"，把一个训练或推理任务封装成若干 ",h("code",null,"@register")," 方法，供上层 WorkerGroup 调用。"),
+      h("ul",null,
+        h("li",null,h("code",null,"engine_workers.py"),"：统一的模型引擎 worker，",h("code",null,"ActorRolloutRefWorker")," 把 actor、rollout、reference 三种角色融合到同一 worker 组（按配置决定是否融合 ref），",h("code",null,"TrainingWorker")," 处理 critic 等训练角色，内部按 ",h("code",null,"strategy")," 选择 FSDP / FSDP2 / Megatron 后端。第 6、7 课展开。"),
+        h("li",null,h("code",null,"engine/"),"：训练引擎抽象（FSDP、Megatron 的封装）。"),
+        h("li",null,h("code",null,"rollout/"),"：推理后端封装（vLLM、SGLang、HF）。第 8 课。"),
+        h("li",null,h("code",null,"reward_manager/"),"、",h("code",null,"config/"),"、",h("code",null,"utils/"),"：奖励计算、worker 侧配置数据类与工具。")
+      ),
+      h("div",null,h(Src,{label:"engine_workers.py",path:"verl/workers/engine_workers.py"}),h(Src,{label:"workers/engine",path:"verl/workers/engine/__init__.py"}),h(Src,{label:"workers/rollout",path:"verl/workers/rollout/__init__.py"}))
+    ];}},
+    {key:"trainer",name:"trainer",render:function(){return [
+      h("p",null,"上层编排逻辑，也是 driver 进程运行的代码。它把 worker 组按 PPO 数据流串起来。"),
+      h("ul",null,
+        h("li",null,h("code",null,"main_ppo.py"),"：V1 入口（Hydra + Ray），构造 ",h("code",null,"TaskRunnerV1")," 并运行；",h("code",null,"main_ppo_v0.py"),"：经典入口 ",h("code",null,"TaskRunner"),"，构造 ResourcePool、WorkerGroup、",h("code",null,"RayPPOTrainer")," 并调用 ",h("code",null,"fit()"),"（本课重点）。"),
+        h("li",null,h("code",null,"ppo/ray_trainer.py"),"：",h("code",null,"RayPPOTrainer")," 主控类，",h("code",null,"init_workers()")," 建立各 worker 组，",h("code",null,"fit()")," 跑训练主循环（第 12 课）。"),
+        h("li",null,h("code",null,"ppo/core_algos.py"),"：RL 数学原语（优势估计、各类 policy loss、KL 惩罚），第 5 课。"),
+        h("li",null,h("code",null,"ppo/utils.py"),"：",h("code",null,"Role")," 枚举（actor/critic/ref/rm/teacher 等角色定义）、数据集与采样器工厂。"),
+        h("li",null,h("code",null,"config/"),"：Hydra 配置树（",h("code",null,"ppo_trainer")," 等），第 4 课。")
+      ),
+      h("div",null,h(Src,{label:"main_ppo_v0.py",path:"verl/trainer/main_ppo_v0.py",line:30}),h(Src,{label:"RayPPOTrainer",path:"verl/trainer/ppo/ray_trainer.py",line:286}),h(Src,{label:"Role 枚举",path:"verl/trainer/ppo/utils.py",line:27}),h(Src,{label:"core_algos.py",path:"verl/trainer/ppo/core_algos.py"}))
+    ];}},
+    {key:"experimental",name:"experimental",render:function(){return [
+      h("p",null,"演进中的特性，仍在主仓但接口未稳定，计划逐步并入主库。"),
+      h("ul",null,
+        h("li",null,h("code",null,"agent_loop/"),"：服务端 rollout 的 agent loop 抽象，",h("code",null,"AgentLoopManager")," 编排多个 ",h("code",null,"AgentLoopWorker")," 以服务方式生成序列（多轮、工具调用），第 9、10 课。"),
+        h("li",null,h("code",null,"fully_async_policy/"),"：完全异步策略，生成与训练彻底解耦运行（独立的 rollouter 与 trainer 通过消息队列连接），第 11 课。"),
+        h("li",null,h("code",null,"one_step_off_policy/"),"：一步离策略，在吞吐与策略陈旧度之间折中。"),
+        h("li",null,h("code",null,"transfer_queue/"),"：数据传输队列（本地子目录为空，实现来自独立 ",h("code",null,"transfer_queue")," 包），V1 入口用它在生成与训练之间传递批数据。"),
+        h("li",null,h("code",null,"reward_loop/"),"、",h("code",null,"teacher_loop/"),"、",h("code",null,"separation/"),"：奖励服务、蒸馏教师、训练/推理分离等方向。")
+      ),
+      h("div",null,h(Src,{label:"agent_loop.py",path:"verl/experimental/agent_loop/agent_loop.py",line:1054}),h(Src,{label:"fully_async_main.py",path:"verl/experimental/fully_async_policy/fully_async_main.py"}),h(Src,{label:"one_step_off_policy",path:"verl/experimental/one_step_off_policy/ray_trainer.py"}))
+    ];}},
+    {key:"utils",name:"utils",render:function(){return [
+      h("p",null,"跨领域工具箱，与 RL 算法解耦，被各层反复使用。本课只择要列出地基性的几个，RL 相关工具（如 ",h("code",null,"seqlen_balancing.py"),"）后续课程展开。"),
+      h("ul",null,
+        h("li",null,h("code",null,"device.py"),"：设备无关层。",h("code",null,"get_torch_device()"),"/",h("code",null,"get_device_id()")," 屏蔽 CUDA / NPU 差异，",h("code",null,"auto_set_device(config)")," 在昇腾 NPU 上自动把设备置为 npu，",h("code",null,"is_cuda_available")," 等探测函数。"),
+        h("li",null,h("code",null,"py_functional.py"),"：纯 Python 工具。",h("code",null,"union_two_dict"),"、",h("code",null,"append_to_dict"),"、",h("code",null,"list_of_dict_to_dict_of_list"),"，以及 ",h("code",null,"DynamicEnum")," 元类（",h("code",null,"Dispatch")," 枚举即基于它，支持运行期注册新成员）。"),
+        h("li",null,h("code",null,"seqlen_balancing.py"),"：序列长度均衡。用 Karmarkar-Karp 多路分割把变长序列尽量均匀地分到各 micro-batch，减少 padding 浪费（",h("code",null,"rearrange_micro_batches"),"），属性能优化，第 5、6 课用到。"),
+        h("li",null,h("code",null,"config.py"),"、",h("code",null,"tokenizer.py"),"：配置数据类转换（",h("code",null,"omega_conf_to_dataclass"),"、",h("code",null,"validate_config"),"）与 tokenizer/processor 构造，第 4 课。"),
+        h("li",null,h("code",null,"fs.py"),"、",h("code",null,"checkpoint/"),"、",h("code",null,"tracking.py"),"：文件系统（含 ",h("code",null,"copy_to_local")," 从 HDFS 拉取权重）、检查点、wandb/TensorBoard 追踪。")
+      ),
+      h("div",null,h(Src,{label:"device.py",path:"verl/utils/device.py",line:104}),h(Src,{label:"auto_set_device",path:"verl/utils/device.py",line:150}),h(Src,{label:"py_functional.py",path:"verl/utils/py_functional.py",line:151}),h(Src,{label:"seqlen_balancing.py",path:"verl/utils/seqlen_balancing.py",line:348}),h(Src,{label:"utils/__init__.py",path:"verl/utils/__init__.py",line:15}))
+    ];}}
+  ];
+  function DirExplorer(){const [s,setS]=useState(0);const d=DIRS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},DIRS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== DataProto：数据契约预告 =====
+  function DataProtoSection(){
+    return h("div",null,
+      h("p",null,"混合单控制器要在 driver 与各 worker 组之间传递批数据，必须有一个统一的数据契约，否则每个算子的输入输出格式各异，单点编排就无从谈起。这个契约就是 ",h("code",null,"verl/protocol.py")," 里的 ",h("code",null,"DataProto"),"。本课只建立直觉，完整接口与序列化在第 2 课。"),
+      h("p",null,"一个 ",h("code",null,"DataProto")," 由三部分组成：",h("code",null,"batch")," 是一个 ",h("code",null,"TensorDict"),"（一组同 batch 维度的张量，可像单个张量那样整体索引、切片、搬移设备）；",h("code",null,"non_tensor_batch")," 是同 batch 维度的非张量数据（如原始字符串，存为 numpy object 数组）；",h("code",null,"meta_info")," 是与 batch 维度无关的元信息（如采样参数）。"),
+      h(Code,null,"@dataclass\nclass DataProto:\n    # batch 是 TensorDict, 一批同 batch 维度的张量\n    batch: TensorDict = None\n    # non_tensor_batch 是同 batch 维度的非张量数据 (numpy object 数组)\n    non_tensor_batch: dict = field(default_factory=dict)\n    # meta_info 是与 batch 维度无关的元信息\n    meta_info: dict = field(default_factory=dict)\n\n    def __post_init__(self):\n        self.check_consistency()   # 构造后校验三部分一致"),
+      h("p",null,"它为什么是地基：",h("code",null,"chunk(n)")," 把一个批沿 batch 维度切成 n 份，正好对应 dispatch 把数据散发给 n 个 data-parallel worker；",h("code",null,"concat([...])")," 把各 worker 的结果拼回，正好对应 collect。",h("code",null,"union(other)")," 把两个同 batch 维度的 DataProto 合并字段（例如把 rollout 产出的 response 并入原 prompt 批）。dispatch 机制 ",h("code",null,"DP_COMPUTE_PROTO")," 内部正是调用这些方法（见 ",h("code",null,"decorator.py")," 的 ",h("code",null,"dispatch_dp_compute_data_proto")," 与 ",h("code",null,"collect_dp_compute_data_proto"),"）。此外还有 ",h("code",null,"DataProtoFuture")," 支持在不取回数据的前提下先描述 chunk/concat，配合 Ray 的异步对象引用减少阻塞。"),
+      h("div",null,h(Src,{label:"DataProto",path:"verl/protocol.py",line:317}),h(Src,{label:"from_dict",path:"verl/protocol.py",line:496}),h(Src,{label:"chunk",path:"verl/protocol.py",line:864}),h(Src,{label:"concat",path:"verl/protocol.py",line:917}),h(Src,{label:"union",path:"verl/protocol.py",line:781}),h(Src,{label:"DataProtoFuture",path:"verl/protocol.py",line:1174}),h(Src,{label:"dispatch_dp_compute_data_proto",path:"verl/single_controller/base/decorator.py",line:167}))
+    );
+  }
+
+  // ===== main_ppo 入口骨架（同步对比 V0/V1） =====
+  const ENTRY=[
+    {key:"main",name:"main() 入口与配置",render:function(){return [
+      h("p",null,"两个入口共享同一个 ",h("code",null,"main()"),"。它由 Hydra 装饰，读取 ",h("code",null,"config/ppo_trainer")," 配置树；先 ",h("code",null,"auto_set_device")," 适配 NPU，再 ",h("code",null,"validate_config")," 校验配置，最后按 ",h("code",null,"trainer.use_v1")," 分叉到 V1（",h("code",null,"TaskRunnerV1"),"）或经典（v0 的 ",h("code",null,"TaskRunner"),"）入口。"),
+      h(Code,null,"@hydra.main(config_path=\"config\", config_name=\"ppo_trainer\", version_base=None)\ndef main(config):\n    auto_set_device(config)               # 昇腾 NPU 上自动置 device=npu\n    validate_config(                      # 校验配置 (是否需要 critic / ref)\n        config=config,\n        use_reference_policy=need_reference_policy(config),\n        use_critic=need_critic(config),\n    )\n    if config.trainer.use_v1:\n        run_ppo(config, task_runner_class=TaskRunnerV1)\n    else:\n        from verl.trainer.main_ppo_v0 import TaskRunner\n        run_ppo(config, task_runner_class=TaskRunner)"),
+      h("p",null,h("code",null,"run_ppo")," 负责初始化 Ray（注入运行时环境变量），再把 TaskRunner 作为 Ray 远程 actor 创建并调用其 ",h("code",null,"run(config)"),"。把整条训练逻辑放进一个 Ray actor，是因为 driver 本身也要作为 Ray 进程参与编排；后续所有 WorkerGroup 都由这个 actor 创建。"),
+      h("div",null,h(Src,{label:"main()",path:"verl/trainer/main_ppo.py",line:144}),h(Src,{label:"run_ppo",path:"verl/trainer/main_ppo.py",line:33}),h(Src,{label:"validate_config",path:"verl/utils/config.py"}),h(Src,{label:"auto_set_device",path:"verl/utils/device.py",line:150}))
+    ];}},
+    {key:"v0",name:"经典骨架 TaskRunner.run",render:function(){return [
+      h("p",null,"经典骨架（",h("code",null,"main_ppo_v0.py")," 的 ",h("code",null,"TaskRunner.run"),"）把混合单控制器的装配过程展示得最清楚，分四步：登记角色到 worker 类的映射、建立资源池、构造数据集与 tokenizer、构造 ",h("code",null,"RayPPOTrainer")," 并调用 ",h("code",null,"init_workers()")," 与 ",h("code",null,"fit()"),"。"),
+      h(Code,null,"# main_ppo_v0.py: TaskRunner.run (精简)\nactor_rollout_cls, ray_worker_group_cls = self.add_actor_rollout_worker(config)\nself.add_critic_worker(config)                 # role_worker_mapping[Critic] = ray.remote(TrainingWorker)\nself.add_reward_model_resource_pool(config)\nself.add_teacher_model_resource_pool(config)\n\nresource_pool_manager = self.init_resource_pool_mgr(config)   # 建资源池\ntokenizer = hf_tokenizer(local_path, ...)      # copy_to_local 先把权重拉到本地\n\ntrainer = RayPPOTrainer(\n    config=config, tokenizer=tokenizer, processor=processor,\n    role_worker_mapping=self.role_worker_mapping,        # 角色 -> worker 类\n    resource_pool_manager=resource_pool_manager,         # 角色 -> GPU 资源池\n    ray_worker_group_cls=ray_worker_group_cls,           # RayWorkerGroup\n    train_dataset=train_dataset, val_dataset=val_dataset,\n    collate_fn=collate_fn, train_sampler=train_sampler,\n)\ntrainer.init_workers()    # 在资源池上创建各角色的 WorkerGroup\ntrainer.fit()             # 跑 PPO 主循环 (第 12 课)"),
+      h("p",null,"三个关键映射要看清：",h("code",null,"role_worker_mapping")," 把 ",h("code",null,"Role")," 枚举（actor_rollout、critic、ref、rm、teacher）映射到 Ray 远程 worker 类；",h("code",null,"mapping")," 把角色映射到资源池 id（如 ",h("code",null,"\"global_pool\""),"）；",h("code",null,"ResourcePoolManager")," 据此把角色实际分配到 GPU。这三者共同实现了“灵活 device mapping”：改映射即可让 critic 独占一组卡，或让 actor 与 rollout 共置。"),
+      h("div",null,h(Src,{label:"TaskRunner.run",path:"verl/trainer/main_ppo_v0.py",line:143}),h(Src,{label:"add_actor_rollout_worker",path:"verl/trainer/main_ppo_v0.py",line:46}),h(Src,{label:"init_resource_pool_mgr",path:"verl/trainer/main_ppo_v0.py",line:78}),h(Src,{label:"RayPPOTrainer 构造",path:"verl/trainer/main_ppo_v0.py",line:217}))
+    ];}},
+    {key:"pool",name:"ResourcePool 与 WorkerGroup",render:function(){return [
+      h("p",null,"资源池的形状很朴素：",h("code",null,"resource_pool_spec")," 把一个池映射成“每节点进程数”的列表。例如 2 节点每节点 8 卡，就是 ",h("code",null,"[8, 8]"),"。",h("code",null,"ResourcePoolManager")," 持有这个 spec 与 ",h("code",null,"mapping"),"，在 ",h("code",null,"create_resource_pool()")," 时把它实例化为 Ray placement group。"),
+      h(Code,null,"# init_resource_pool_mgr (精简)\nglobal_pool_id = \"global_pool\"\nresource_pool_spec = {\n    # 每节点进程数列表: nnodes 个 n_gpus_per_node\n    global_pool_id: [config.trainer.n_gpus_per_node] * config.trainer.nnodes,\n}\n# reward / teacher 可选地占用独立池, 实现 device mapping\nresource_pool_manager = ResourcePoolManager(\n    resource_pool_spec=resource_pool_spec, mapping=self.mapping)"),
+      h("p",null,"在 ",h("code",null,"RayPPOTrainer.init_workers()")," 里，每个角色被包成 ",h("code",null,"RayClassWithInitArgs"),"（类 + 构造参数的延迟实例化包装），按资源池分组，最终由 ",h("code",null,"RayWorkerGroup")," 在对应 placement group 上创建出一组 Ray actor。",h("code",null,"ResourcePool")," 本身只是记账：它用 ",h("code",null,"process_on_nodes")," 列表算出 ",h("code",null,"world_size"),"、每个进程的 ",h("code",null,"local_rank")," 与 ",h("code",null,"local_world_size"),"，供组内 SPMD 初始化分布式用。"),
+      h(Code,null,"class ResourcePool:\n    def __init__(self, process_on_nodes=None, max_colocate_count=10, n_gpus_per_node=8):\n        self._store = process_on_nodes or []   # 每节点进程数\n        self.max_colocate_count = max_colocate_count\n        self.n_gpus_per_node = n_gpus_per_node\n\n    @property\n    def world_size(self):\n        return sum(self._store)                # 全组进程总数"),
+      h("div",null,h(Src,{label:"ResourcePool",path:"verl/single_controller/base/worker_group.py",line:27}),h(Src,{label:"init_resource_pool_mgr",path:"verl/trainer/main_ppo_v0.py",line:78}),h(Src,{label:"init_workers",path:"verl/trainer/ppo/ray_trainer.py",line:772}),h(Src,{label:"RayClassWithInitArgs",path:"verl/single_controller/ray/base.py",line:339}),h(Src,{label:"RayWorkerGroup.__init__",path:"verl/single_controller/ray/base.py",line:418}))
+    ];}},
+    {key:"v1",name:"V1 入口的新增",render:function(){return [
+      h("p",null,"0.9 主干的 V1 入口（",h("code",null,"main_ppo.py")," 的 ",h("code",null,"TaskRunnerV1"),"）在经典骨架之上增加了两个机制，本课只作预告。其一是 ",h("strong",null,"transfer queue"),"：通过 ",h("code",null,"tq.init(config.transfer_queue)")," 启动一个数据传输队列，agent loop 把生成结果写入队列、训练侧从队列取，使生成与训练在数据传输层面解耦。其二是 ",h("strong",null,"agent loop manager"),"：以服务化方式生成序列，支持多轮与工具调用。"),
+      h(Code,null,"# main_ppo.py: TaskRunnerV1.run (精简)\nimport transfer_queue as tq\ntrainer_cls = get_trainer_cls(config.trainer.v1.trainer_mode)\nconfig.transfer_queue.enable = True\ntq.init(config.transfer_queue)            # 启动传输队列\ntry:\n    self.trainer = trainer_cls(config=config)\n    self.trainer.init()\n    self.init_agent_loop_manager()         # 创建 agent loop manager\n    self.trainer.fit(self.agent_loop_manager)\nfinally:\n    tq.close()"),
+      h("p",null,h("code",null,"init_agent_loop_manager")," 默认用 ",h("code",null,"AgentLoopManagerTQ"),"，也允许用户通过配置指定自定义的 manager 类（只需实现 ",h("code",null,"generate_sequences")," 并把输出写入 transfer queue）。这与经典骨架里 rollout 由 WorkerGroup 直接生成不同，是面向异步与 agentic 场景的演进。完整对比留到第 9、10、11 课。"),
+      h("div",null,h(Src,{label:"TaskRunnerV1",path:"verl/trainer/main_ppo.py",line:89}),h(Src,{label:"TaskRunnerV1.run",path:"verl/trainer/main_ppo.py",line:120}),h(Src,{label:"init_agent_loop_manager",path:"verl/trainer/main_ppo.py",line:98}),h(Src,{label:"AgentLoopManager",path:"verl/experimental/agent_loop/agent_loop.py",line:1054}))
+    ];}}
+  ];
+  function EntryExplorer(){const [s,setS]=useState(0);const d=ENTRY[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},ENTRY.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  const DOCLINKS=[
+    {t:"HybridFlow 论文",d:"verl 的设计原理：混合单控制器编程模型",href:"https://arxiv.org/abs/2409.19256"},
+    {t:"verl 官方文档",d:"安装、用法、各 worker 与后端指南",href:"https://verl.readthedocs.io/en/latest/"},
+    {t:"Programming Guide",d:"hybrid_flow.html：单控制器编程模型详解",href:"https://verl.readthedocs.io/en/latest/hybrid_flow.html"},
+    {t:"Ray 文档",d:"actor、placement group、调度与对象传递",href:"https://docs.ray.io/"},
+    {t:"Engine Workers 指南",d:"FSDP / Megatron / Automodel 训练后端",href:"https://verl.readthedocs.io/en/latest/workers/engine_workers.html"},
+    {t:"README（本机）",d:"设计哲学与特性列表",href:srcUrl("README.md",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:1}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 1 课 / 共 12 · 地基与全局观"),
+          h("h1",null,"地基与 HybridFlow 全局观"),
+          h("p",{className:"lead"},"这是全系列的校准课，先把 verl 的全貌讲清：混合单控制器（hybrid single-controller）编程模型的设计哲学，灵活 device mapping 与多训练/推理后端解耦，目录地图（single_controller / workers / trainer / experimental / utils），以及 main_ppo.py 入口如何构建 ResourcePool、各 WorkerGroup、RayPPOTrainer 并调用 fit()。读完这一课，后续每一课都能在这张全局图上找到自己的位置。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"README.md")," 设计哲学、版本与仓库状态（0.9.0.dev / recipe submodule / experimental）、目录地图、",h("code",null,"protocol.py")," 的 ",h("code",null,"DataProto")," 预告、",h("code",null,"main_ppo.py")," 与 ",h("code",null,"main_ppo_v0.py")," 入口骨架、",h("code",null,"utils")," 择要。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/verl")," 源码行（Python 包在 ",h("code",null,"verl/verl"),"）。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"README · 设计哲学"),
+          h("h2",null,"HybridFlow 全局观：先看见整个系统"),
+          h(PhilosophySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"版本与仓库状态"),
+          h("h2",null,"你读的是哪一版：0.9.0.dev、submodule 与 experimental"),
+          h(VersionSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"目录地图"),
+          h("h2",null,"五个目录各自的职责"),
+          h("p",null,"verl 的代码按层次组织：越靠下越通用、与 RL 无关，越靠上越贴近 PPO 数据流。点 Tab 逐个查看每个目录的角色与代表文件。这张地图是后续每一课的索引。"),
+          h(DirExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"protocol.py"),
+          h("h2",null,"DataProto：单控制器的数据契约"),
+          h(DataProtoSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"main_ppo.py · main_ppo_v0.py"),
+          h("h2",null,"入口骨架：从 main() 到 fit()"),
+          h("p",null,"verl 的入口共享一个 Hydra 装饰的 ",h("code",null,"main()"),"，按 ",h("code",null,"trainer.use_v1")," 分叉。经典骨架（v0）把混合单控制器的装配过程展示得最清楚。点 Tab 依次看：入口与配置、经典装配、资源池与 worker 组、V1 入口的新增。",h("code",null,"fit()")," 的主循环细节留到第 12 课。"),
+          h(EntryExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"读地基时配合这些文档，能把 HybridFlow 的设计原理、Ray 的角色与各后端的位置补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"两层结构是总纲"),"：上层单控制器编排数据流，下层每组 worker 内部 SPMD 高效执行一个算子。计算与数据依赖解耦，使数据流的形状与计算后端可以独立替换。理解这一点就理解了 verl。"),
+            h("li",null,h("strong",null,"灵活 device mapping"),"：",h("code",null,"role_worker_mapping")," + ",h("code",null,"mapping")," + ",h("code",null,"ResourcePoolManager")," 三者把角色映射到 worker 类与 GPU 资源池；改映射即可调整放置（独占或共置），适配不同集群规模。"),
+            h("li",null,h("strong",null,"模块化后端"),"：训练后端 FSDP / FSDP2 / Megatron，推理后端 vLLM / SGLang / HF；新后端实现统一 worker 接口即可接入，不动上层数据流。"),
+            h("li",null,h("strong",null,"DataProto 是数据契约"),"：batch（TensorDict）+ non_tensor_batch + meta_info，其 chunk/concat/union 正好对应 dispatch/collect，是单点调用变分布式执行的数据侧基础（第 2、3 课）。"),
+            h("li",null,h("strong",null,"入口装配清晰"),"：",h("code",null,"main()")," → ",h("code",null,"run_ppo")," → ",h("code",null,"TaskRunner.run")," 登记角色与资源池、构造 ",h("code",null,"RayPPOTrainer")," → ",h("code",null,"init_workers()")," → ",h("code",null,"fit()"),"。0.9 主干另有 V1 入口引入 transfer queue 与 agent loop manager（第 9-11 课）。"),
+            h("li",null,h("strong",null,"版本要点"),"：本地为 0.9.0.dev，",h("code",null,"recipe/")," 已外置为 submodule（本地未初始化），",h("code",null,"experimental/")," 下的异步/传输队列特性仍在主仓、接口未稳定。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"verl-course-index.html"},h("div",{className:"faint"},"← 课程总览"),h("strong",null,"verl · 逐文件精读")),
+            h("a",{href:"verl-lesson-02-dataproto.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 2 课：DataProto 数据协议"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

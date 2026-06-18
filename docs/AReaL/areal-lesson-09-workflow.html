@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 逐文件精读 · 第 9 课：Workflow</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .traj{margin:14px 0;overflow-x:auto;}
+    .traj table{border-collapse:collapse;font-family:var(--mono);font-size:11.5px;}
+    .traj th{color:var(--faint);text-align:right;padding:3px 10px 3px 0;font-weight:500;}
+    .traj td{border:1px solid var(--line);padding:5px 9px;text-align:center;min-width:42px;}
+    .traj td.p{background:#161c25;color:var(--faint);}
+    .traj td.o{background:#0f2113;color:var(--green);}
+    .traj .lab{color:var(--faint);font-family:var(--mono);font-size:11px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 9 课</p><h1>Workflow</h1><p>能访问 CDN 时切换为交互版。本课讲 RLVRWorkflow、MultiTurnWorkflow、以及 OpenAI/Anthropic/LangChain agent 接入。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const AREAL="vscode://file/Users/xinyu/Code/Agentic-RL/AReaL/";
+  function srcUrl(p,l){return AREAL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","ModelRequest","ModelResponse","RolloutWorkflow","AsyncRewardWrapper","AsyncOpenAI","torch","dict","list","int","float","bool","str","uuid"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","areal-lesson-01-foundations.html"],[2,"数据契约","areal-lesson-02-contracts.html"],[3,"抽象基类","areal-lesson-03-interfaces.html"],[4,"RL 数学原语","areal-lesson-04-rl-math.html"],[5,"数据与奖励","areal-lesson-05-data-reward.html"],[6,"模型层","areal-lesson-06-models.html"],[7,"训练引擎","areal-lesson-07-train-engine.html"],[8,"推理引擎","areal-lesson-08-inference-engine.html"],[9,"Workflow","areal-lesson-09-workflow.html"],[10,"Trainer","areal-lesson-10-trainer.html"],[11,"编排运行时","areal-lesson-11-orchestration.html"],[12,"进阶与收尾","areal-lesson-12-advanced.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"areal-course-index.html"},"AReaL",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":(L[2]==="#"?"lchip todo":"lchip done");return L[2]==="#"?h("span",{key:L[0],className:cls},L[0]+" "+L[1]):h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // 轨迹张量布局可视化
+  function TrajLayout(){
+    const cols=[["The","p"],["question","p"],["is","p"],["?","p"],["The","o"],["answer","o"],["is","o"],["42","o"],["<eos>","o"]];
+    const rows=[
+      ["input_ids",cols.map(function(c){return c[0];})],
+      ["loss_mask",cols.map(function(c){return c[1]==="p"?"0":"1";})],
+      ["logprobs",cols.map(function(c){return c[1]==="p"?"0.0":"lp";})],
+      ["versions",cols.map(function(c){return c[1]==="p"?"-1":"v";})]
+    ];
+    return h("div",{className:"traj"},
+      h("table",null,h("tbody",null,
+        rows.map(function(r,ri){return h("tr",{key:ri},
+          h("th",null,r[0]),
+          r[1].map(function(cell,ci){return h("td",{key:ci,className:cols[ci][1]},cell);}));
+        })
+      )),
+      h("div",{className:"lab",style:{marginTop:6}},"灰 = prompt（不算 loss、logprob=0、version=-1）；绿 = completion（算 loss、记 behavior logprob 与生成版本）。")
+    );
+  }
+
+  const WF=[
+    {key:"rlvr",name:"RLVRWorkflow（单轮）",render:function(){return [
+      h("p",null,"最常用的范例：一条 prompt 采一条回答，用可验证奖励打分，组装成一条轨迹。",h("code",null,"arun_episode")," 是 ",h("strong",null,"无状态")," 的，只认 ",h("code",null,"engine.agenerate")," 这一个接口，不知道底层是 SGLang 还是 vLLM。"),
+      h("p",null,"轨迹张量的逐位对应是关键（下表）：prompt 段 loss_mask=0、logprob=0、version=-1；completion 段 loss_mask=1、记录 behavior logprob 和每 token 的生成版本（来自第 8 课 agenerate）。最后 ",h("code",null,"unsqueeze(0)")," 加上 batch 维。"),
+      h(TrajLayout),
+      h(Formula,{cap:"轨迹张量构造（p=prompt, o=output）"},"$$ m_t = \\mathbb{1}[t \\ge |p|], \\quad \\text{logp}_t = \\begin{cases}0 & t<|p|\\\\ \\log\\pi_{\\text{behave}}(y_t) & t\\ge|p|\\end{cases}, \\quad v_t = \\begin{cases}-1 & t<|p|\\\\ v_{\\text{gen}} & t\\ge|p|\\end{cases} $$"),
+      h(Code,null,"async def arun_episode(self, engine, data):\n    input_ids = self.get_input_ids_fn(prompt, tokenizer, self.enable_thinking)\n    req = ModelRequest(rid=uuid4().hex, input_ids=input_ids, gconfig=gconfig.new(n_samples=1))\n    resp, reward = await self._collect_samples(engine, req, prompt_str, data)  # agenerate + reward\n    seq      = resp.input_tokens + resp.output_tokens\n    logprobs = [0.0]*resp.input_len + resp.output_logprobs\n    loss_mask= [0]*resp.input_len + [1]*resp.output_len\n    versions = [-1]*resp.input_len + resp.output_versions\n    return {k: v.unsqueeze(0) for k, v in {...}.items()}   # batch 维 1"),
+      h("div",{className:"note"},"reward_fn 可以是函数也可以是字符串（运行时 import_from_string 动态加载，第 1 课），并用 AsyncRewardWrapper（第 3/5 课）包成带超时的异步调用。enable_thinking 支持 Qwen 的思考 token。"),
+      h("div",null,h(Src,{label:"RLVRWorkflow",path:"areal/workflow/rlvr.py",line:49}),h(Src,{label:"arun_episode",path:"areal/workflow/rlvr.py",line:139}),h(Src,{label:"vision_rlvr（多模态）",path:"areal/workflow/vision_rlvr.py",line:1}))
+    ];}},
+    {key:"mt",name:"MultiTurnWorkflow（多轮）",render:function(){return [
+      h("p",null,"多次尝试直到答对。循环里每轮生成一条回答、算 reward（对=1 错=0）；答错就把这轮输出加上一句纠错提示拼回 input_ids，再来一轮，直到答对或用完 ",h("code",null,"max_turns"),"。越晚答对，奖励折扣越多："),
+      h(Formula,{cap:"折扣奖励（第 t 轮答对，γ=turn_discount∈(0,1]）"},"$$ R_{\\text{final}} = R \\cdot \\gamma^{\\,t-1} $$"),
+      h("p",null,"轨迹是 ",h("strong",null,"不断增长")," 的：每轮把“相对上一轮新增的 prompt token（纠错提示等）”记 loss_mask=0，把这轮 output 记 loss_mask=1。代码里用 ",h("code",null,"input_len = len(resp.input_tokens) - len(seq)")," 算出本轮新增的前缀长度，并 assert 前缀与已累积序列一致。"),
+      h(Code,null,"while reward == 0.0 and t < self.max_turns:\n    resp = await engine.agenerate(ModelRequest(input_ids=input_ids, ...))\n    reward = await self.async_reward_fn(prompt_str, completion_str, ...)\n    input_len = len(resp.input_tokens) - len(seq)        # 本轮新增前缀\n    seq      += resp.input_tokens[-input_len:] + resp.output_tokens\n    loss_mask+= [0]*input_len + [1]*resp.output_len\n    versions += [-1]*input_len + resp.output_versions\n    t += 1\n    if reward == 0.0 and t < self.max_turns:             # 答错: 追加纠错提示重试\n        input_ids = input_ids + resp.output_tokens + [eos] + self.multi_turn_prompt_ids\n        discount *= self.turn_discount\nreward = float(reward * discount)"),
+      h("div",{className:"note"},"折扣的意义：鼓励模型一次答对，而不是靠多轮试错刷分。这是把“多轮交互”这个任务特性收进 workflow、而训练引擎与损失函数完全不感知的范例。"),
+      h("div",null,h(Src,{label:"MultiTurnWorkflow",path:"areal/workflow/multi_turn.py",line:19}),h(Src,{label:"arun_episode 循环",path:"areal/workflow/multi_turn.py",line:58}))
+    ];}},
+    {key:"agent",name:"Agent 接入",render:function(){return [
+      h("p",null,"真正的 agentic RL 不想自己手写多轮协议，而想直接用 OpenAI/Anthropic/LangChain 这些现成 agent 框架。AReaL 的做法：起一个 OpenAI 兼容的 proxy gateway，把 agent 的 ",h("code",null,"AsyncOpenAI")," 客户端 ",h("code",null,"base_url")," 指过去。agent 照常调 chat.completions，proxy 在背后抓下每个 token 的 logprob、版本、以及最终 reward，组装成轨迹。"),
+      h("p",null,"接口是鸭子类型（第 3 课 WorkflowLike）：任何带 ",h("code",null,"async def run(data, *, base_url, api_key, ...)")," 的对象都能当 workflow。所以四套接入（openai、openai_agent、anthropic、langchain）只是把各自框架的 agent 包一层。"),
+      h(Code,null,"# 以 openai/math_agent 为例：agent 客户端指向 AReaL proxy\nasync def run(self, data, *, base_url, api_key, **kw):\n    client = AsyncOpenAI(base_url=base_url, api_key=api_key)  # -> AReaL gateway\n    resp = await client.chat.completions.create(model=..., messages=...)\n    # proxy 已记录 token/logprob/version; 这里只需算 reward\n    return compute_reward(resp, data)"),
+      h("div",{className:"note"},"价值：把“任务/agent 逻辑”和“RL 训练系统”彻底解耦。换 agent 框架不动训练侧；proxy gateway（第 11/12 课）负责把 OpenAI 协议翻译成带 logprob 的可训练轨迹。"),
+      h("div",null,h(Src,{label:"openai/math_agent",path:"areal/workflow/openai/math_agent.py",line:1}),h(Src,{label:"openai_agent/math_agent",path:"areal/workflow/openai_agent/math_agent.py",line:1}),h(Src,{label:"anthropic/claude_math_agent",path:"areal/workflow/anthropic/claude_math_agent.py",line:1}),h(Src,{label:"langchain/math_agent",path:"areal/workflow/langchain/math_agent.py",line:1}))
+    ];}}
+  ];
+  function WorkflowExplorer(){const [s,setS]=useState(0);const d=WF[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},WF.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:9}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 9 课 / 共 12 · workflow/"),
+          h("h1",null,"Workflow：把一条样本变成一条可训练轨迹"),
+          h("p",{className:"lead"},"workflow 是“任务”的栖身之所。reward 逻辑、多轮重试、工具调用、agent 协议都收在一个接口 arun_episode 里：它拿到一条 dataset 样本和一个推理引擎，产出一条带 input_ids / loss_mask / logprobs / versions / reward 的轨迹。换任务只改 workflow，训练引擎和损失函数一行不动。这是整个框架可扩展性的关键边界。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"workflow/rlvr.py"),"（单轮）、",h("code",null,"vision_rlvr.py"),"（多模态）、",h("code",null,"multi_turn.py"),"（多轮）、",h("code",null,"openai/ · openai_agent/ · anthropic/ · langchain/")," 的 agent 接入。arun_episode 的契约在第 3 课，reward 在第 5 课。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"三种 workflow"),
+          h("h2",null,"从单轮到多轮到 agent"),
+          h("p",null,"点 Tab 看三类 workflow 怎么组装轨迹。RLVR 的张量布局是理解后两者的基础。"),
+          h(WorkflowExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"一个接口收编所有任务"),"：arun_episode 拿样本+引擎，还一条轨迹。reward/多轮/工具/agent 都在这层，互不影响训练侧。"),
+            h("li",null,h("strong",null,"轨迹张量逐位对应是契约"),"：prompt 段 loss_mask=0/logprob=0/version=-1，completion 段记真实 behavior logprob 与生成版本，支撑第 4 课的损失与 decoupled PPO。"),
+            h("li",null,h("strong",null,"agent 靠 OpenAI 兼容 proxy 接入"),"：鸭子类型 run(data, base_url, ...)，外部 agent 框架零改动插进来。")
+          ),
+          h("div",null,h(Ext,{href:"https://platform.openai.com/docs/api-reference/chat"},"OpenAI Chat API"),h(Src,{label:"AReaL agent 定制文档",path:"docs/en/customization/agent.md",line:null})),
+          h("div",{className:"foot"},
+            h("a",{href:"areal-lesson-08-inference-engine.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 8 课：推理引擎")),
+            h("a",{href:"areal-course-index.html"},h("div",{className:"faint"},"下一课（待建） →"),h("strong",null,"第 10 课：Trainer"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

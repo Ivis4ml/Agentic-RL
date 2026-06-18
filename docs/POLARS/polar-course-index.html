@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Polar 逐文件精读 · 课程总览</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent 420px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.88em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    main{max-width:1000px;margin:0 auto;padding:64px 28px 90px;}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 12px;}
+    h1{font-size:46px;line-height:1.08;margin:0 0 18px;letter-spacing:-.01em;}
+    .lead{font-size:17px;color:#c4ced9;max-width:800px;}p{color:var(--muted);}
+    .stat-row{display:flex;gap:30px;flex-wrap:wrap;margin:26px 0 8px;}
+    .stat .v{font-size:26px;font-weight:850;color:var(--amber);}.stat .l{color:var(--faint);font-size:12px;font-family:var(--mono);}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:30px;}
+    .lcard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:16px 18px;display:block;position:relative;}
+    .lcard.done:hover{border-color:var(--teal);background:var(--panel-2);}
+    .lcard.todo{opacity:.62;}
+    .lcard .num{font-family:var(--mono);font-size:12px;color:var(--faint);}
+    .lcard .t{font-weight:750;color:var(--ink);font-size:17px;margin:3px 0 5px;}
+    .lcard .d{color:var(--muted);font-size:13px;}
+    .lcard .files{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:8px;}
+    .badge{position:absolute;top:14px;right:16px;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--faint);}
+    .badge.done{color:var(--teal);border-color:#265450;background:#0e2120;}
+    .note{border-left:3px solid var(--amber);padding:6px 16px;margin:24px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    h2{font-size:24px;margin:40px 0 10px;}
+    @media(max-width:760px){.grid{grid-template-columns:1fr;}h1{font-size:34px;}}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+  const h=React.createElement;
+  const LESSONS=[
+    [1,"地基与全局观","设计哲学（Harness as Environment 零改造、Rollout as a Service 服务化、Smart Rollout Pipeline = Rollout Staging + Runtime Pooling、trainer-agnostic）、架构总览（Rollout Server → Gateway Nodes → proxy → 推理服务）、cli 入口与 topology 配置、NVIDIA-NeMo 定位。","cli.py · config/topology · README","polar-lesson-01-foundations.html"],
+    [2,"Agent 与 Harness 层","agent/ 的 base/factory/models 与八种成熟 harness（claude_code/codex/gemini_cli/opencode/openhands_sdk/pi/qwen_code/shell）：把商用 agent harness 零改造接入作为 RL 环境。与你“在成熟商业 Env 上搭 RL infra”需求最直接对应。","agent/* · harnesses/*","polar-lesson-02-agent-harness.html"],
+    [3,"Gateway 节点与 proxy","gateway/ 的 node（972）、server（838）、dispatcher、proxy、session、storage、completion_writer、detection。Gateway Node 异步准备 runtime、执行 agent、构建轨迹、评估；proxy 坐在 agent 执行进程与推理服务之间。","gateway/node · server · proxy · session","polar-lesson-03-gateway.html"],
+    [4,"协议变换 transform","gateway/transform/ 的 anthropic（533）、google（551）、openai_responses（650）、openai_chat、images、base。把不同 harness 的 API 方言（Anthropic/Google/OpenAI chat/responses）统一变换到推理后端，并处理多模态图像。","gateway/transform/*","polar-lesson-04-transform.html"],
+    [5,"Runtime 池化","runtime/ 的 base、docker（233）、apptainer（205）、factory、models。容器化运行时（docker/apptainer）的池化与复用，正是 static env 转 dynamic env、省 pod 资源的机制。","runtime/docker · apptainer · factory","polar-lesson-05-runtime.html"],
+    [6,"Rollout Server 与流水线","rollout/ 的 manager（313）、pipeline（463）、server、balancer（247）、models、timer。Rollout Staging（分阶段流水）+ Runtime Pooling 调度 + 负载均衡 + server 模式分发。异步效率的核心。","rollout/manager · pipeline · balancer","polar-lesson-06-rollout-server.html"],
+    [7,"Trajectory 构建与评估","trajectory/ 的 builder（prefix_merging 470、per_request、record_utils）与 evaluator（swebench_harness、test_on_output、session_completed、_patch_utils）、models、registry。从 agent 执行记录构建可训练轨迹（前缀合并处理重叠历史）并评估给奖励。","trajectory/builder · evaluator","polar-lesson-07-trajectory.html"],
+    [8,"slime 集成与 Platform","slime_bridge/ 的 rollout（1507）、adapter、config、reward、data_source（Polar 如何作为 rollout 服务接入 slime 训练）+ platform/（dashboard 控制平面：sessions/tasks/topology API、fs_index、sse_fanout）+ examples 串讲（calculator/count_stars/swebench_verified/swegym_slime_grpo）。","slime_bridge/rollout · platform/* · examples","polar-lesson-08-slime-bridge.html"]
+  ];
+  function App(){
+    return h("main",null,
+      h("p",{className:"kicker"},"Polar · ProRL-Agent-Server · 逐文件精读 · NVIDIA-NeMo"),
+      h("h1",null,"从地基到全貌，逐文件读懂 Polar"),
+      h("p",{className:"lead"},"Polar（ProRL-Agent-Server）是 NVIDIA-NeMo 的 RL rollout 框架，面向真实世界的 agent harness。三条主张：把 agent harness 零改造当作 RL 环境（Harness as Environment）；用并行的 Rollout Staging 与 Runtime Pooling 省 GPU 小时（Smart Rollout Pipeline）；server 模式设计、以服务方式接入任意训练框架（Rollout as a Service）。这三点恰好命中你“把 static env 转 dynamic env、追求异步效率、在成熟商业 Env 上搭 infra”的需求。本系列按依赖顺序自底向上分 8 课。"),
+      h("div",{className:"stat-row"},
+        h("div",{className:"stat"},h("div",{className:"v"},"82"),h("div",{className:"l"},"src/ 内 .py 文件")),
+        h("div",{className:"stat"},h("div",{className:"v"},"~15k"),h("div",{className:"l"},"代码行")),
+        h("div",{className:"stat"},h("div",{className:"v"},"8"),h("div",{className:"l"},"依赖阶梯课程")),
+        h("div",{className:"stat"},h("div",{className:"v"},"slime"),h("div",{className:"l"},"已带 bridge 集成"))),
+      h("div",{className:"note"},"阅读建议：按 1 → 8 顺序读。蓝色 ",h("code",null,"›_ 文件:行号")," 标签会用 vscode://file 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/ProRL-Agent-Server")," 对应源码行。本目录另有一篇 ",h("a",{href:"polar-sampling-algorithm.html"},"Polar 采样算法")," 专题，可配合阅读。"),
+      h("h2",null,"课程列表"),
+      h("div",{className:"grid"},LESSONS.map(function(L){
+        const done=L[4]!=="#";
+        const inner=[
+          h("span",{key:"b",className:"badge"+(done?" done":"")},done?"已就绪":"规划中"),
+          h("div",{key:"n",className:"num"},"第 "+L[0]+" 课"),
+          h("div",{key:"t",className:"t"},L[1]),
+          h("div",{key:"d",className:"d"},L[2]),
+          h("div",{key:"f",className:"files"},L[3])
+        ];
+        return done?h("a",{key:L[0],className:"lcard done",href:L[4]},inner):h("div",{key:L[0],className:"lcard todo"},inner);
+      })),
+      h("h2",null,"相关页面"),
+      h("p",null,h("a",{href:"polar-sampling-algorithm.html"},"Polar 采样算法专题")," · ",h("a",{href:"../slime/slime-course-index.html"},"slime 精读")," · ",h("a",{href:"../verl/verl-course-index.html"},"verl 精读")," · ",h("a",{href:"../AReaL/areal-course-index.html"},"AReaL 精读"),"。下一步将产出面向长程 Agentic RL / 动态环境 / 异步效率的五框架大横评。")
+    );
+  }
+  window.addEventListener("load",function(){if(window.React&&window.ReactDOM){ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));}});
+  </script>
+</body>
+</html>

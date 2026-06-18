@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Polar 逐文件精读 · 第 7 课：Trajectory 构建与评估</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 7 课</p><h1>Trajectory 构建与评估</h1><p>能访问 CDN 时切换为交互版。本课讲清 Polar 如何把 agent 一次 rollout 期间产生的多次独立 LLM 调用，重建为 RL 训练器可直接消费的 token 级轨迹（Trajectory）：per_request 与 prefix_merging 两种构建策略、prefix_merging 的分组与合并算法、loss_mask 与 logprob 的填充规则，以及 swebench_harness / test_on_output / session_completed 三类评估器如何把奖励写回轨迹。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const POLAR="vscode://file/Users/xinyu/Code/Agentic-RL/ProRL-Agent-Server/";
+  function srcUrl(p,l){return POLAR+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","str","frozenset","deque","defaultdict","GatewayNode","RolloutManager","RolloutPipeline","Runtime","BaseRuntime","Harness","Trajectory","Trace","CompletionRecord","CompletionSession","StrategySpec","EvaluatorSpec","EvalResult","StrategyRegistry","BaseTrajectoryBuilder","PerRequestBuilder","PrefixMergingBuilder","BaseTrajectoryEvaluator","BasePatchEvaluator","SwebenchHarnessEvaluator","TestOnOutputEvaluator","SessionCompletedEvaluator","Path","BaseModel"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","polar-lesson-01-foundations.html"],[2,"Agent与Harness","polar-lesson-02-agent-harness.html"],[3,"Gateway","polar-lesson-03-gateway.html"],[4,"协议变换","polar-lesson-04-transform.html"],[5,"Runtime池化","polar-lesson-05-runtime.html"],[6,"Rollout服务","polar-lesson-06-rollout-server.html"],[7,"轨迹与评估","polar-lesson-07-trajectory.html"],[8,"slime集成","polar-lesson-08-slime-bridge.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"polar-course-index.html"},"Polar",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 问题陈述：为什么需要 trajectory 层 =====
+  function ProblemSection(){
+    return h("div",null,
+      h("p",null,"前六课已经把一条 rollout 走通：harness 驱动 agent，agent 的每一次推理需求都以一个独立的补全请求（completion request）打到 gateway，gateway 把请求变换、转发到推理后端，并把每一对（请求, 响应）作为一条 ",h("code",null,"CompletionRecord")," 留存。一次完整的 agent 运行结束后，这些记录汇成一个 ",h("code",null,"CompletionSession"),"。问题在于：这种以“请求”为单位的记录，并不是 RL 训练器想要的形态。"),
+      h("p",null,"RL 训练器（PPO/GRPO 一类）需要的是 ",h("strong",{className:"hl-teal"},"token 级的序列与逐 token 的训练信号"),"：哪些 token 是模型自己采样出来的（需要计算策略梯度），哪些 token 是环境/工具/模板插进来的（不应回传梯度），以及每个被采样 token 当时的 logprob（用于重要性采样修正）。Polar 的 ",h("code",null,"polar.trajectory")," 包就是把“一堆补全记录”翻译成“一条带 ",h("code",null,"loss_mask")," 的可训练 token 序列”，再为这条序列附上奖励。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"builder"),"构建：记录 → 轨迹"),
+          h("p",null,"把 ",h("code",null,"CompletionSession")," 重建为 ",h("code",null,"Trajectory"),"（含一个或多个 ",h("code",null,"Trace"),"）。核心难点是多轮 agent 场景下，如何把多次带重叠历史的请求合并成一条不重不漏、token 不漂移的序列。这是 prefix_merging 的职责。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill green"},"evaluator"),"评估：轨迹 → 奖励"),
+          h("p",null,"对构建好的 ",h("code",null,"Trajectory")," 打分，返回 ",h("code",null,"EvalResult"),"（含 ",h("code",null,"outcome_reward")," 或逐 trace 的 ",h("code",null,"trace_rewards"),"）。可在运行时容器里跑测试、跑 SWE-bench harness，或仅看会话是否完成。")
+        )
+      ),
+      h("p",null,"两者都是 ",h("strong",null,"可插拔策略（strategy plugin）"),"：通过同一个 ",h("code",null,"StrategyRegistry")," 按字符串名注册，按请求实例化（每个请求带 ",h("code",null,"**config"),"）。gateway 节点在一次会话处理的尾段，先 ",h("code",null,"build")," 出轨迹，再可选地 ",h("code",null,"evaluate")," 出奖励，最后把奖励写回轨迹随 ",h("code",null,"SessionResult")," 返回 rollout server。"),
+      h(Code,null,"# gateway 节点中的构建->评估两段调用 (gateway/node.py)\ndef _build_trajectory(self, request):\n    completion_session = self.storage.load_completion_session(request.session_id)\n    builder = self.builders.create(request.builder)      # 按 StrategySpec 实例化\n    result = builder.build(completion_session)           # 记录 -> 轨迹\n    if asyncio.iscoroutine(result):\n        trajectory = asyncio.run(result)\n    else:\n        trajectory = result\n    return Trajectory.model_validate(trajectory)\n\nasync def _run_eval(self, request, trajectory, *, agent_result, managed):\n    evaluator = self.evaluators.create(strategy_spec)    # 按 EvaluatorSpec 实例化\n    eval_result = await evaluator.evaluate(trajectory, ...runtime ctx...)\n    return self._merge_eval_result(trajectory, eval_result, evaluator_spec)"),
+      h("div",null,h(Src,{label:"_build_trajectory",path:"src/polar/gateway/node.py",line:626}),h(Src,{label:"_run_eval",path:"src/polar/gateway/node.py",line:636}),h(Src,{label:"_merge_eval_result",path:"src/polar/gateway/node.py",line:700}),h(Src,{label:"trajectory/README.md",path:"src/polar/trajectory/README.md"})),
+      h("div",{className:"note"},"本课只覆盖 ",h("code",null,"polar.trajectory")," 包内部的数据结构与算法。它的上游（completion 记录如何留存）见第 3 课 Gateway，下游（轨迹与奖励如何转成 slime 的训练样本）见第 8 课 slime 集成。")
+    );
+  }
+
+  // ===== 数据结构：四层模型 =====
+  const MODELS=[
+    {key:"record",name:"CompletionRecord / Session",render:function(){return [
+      h("p",null,h("code",null,"CompletionRecord")," 是一次模型调用的归一化留存：原始 ",h("code",null,"request")," 与 ",h("code",null,"response")," 两个 dict，加上 ",h("code",null,"completion_id"),"、",h("code",null,"timestamp")," 与 ",h("code",null,"metadata"),"。",h("code",null,"CompletionSession")," 把一次 agent 运行期间的所有记录聚到一起，并携带会话级元信息（",h("code",null,"task_id"),"、",h("code",null,"api_type"),"、",h("code",null,"model_requested/used"),"）。"),
+      h(Code,null,"class CompletionSession(BaseModel):\n    session_id: str\n    completion_count: int = 0\n    task_id: str | None = None\n    api_type: str | None = None\n    metadata: dict[str, Any] = Field(default_factory=dict)\n    completions: list[CompletionRecord] = Field(default_factory=list)\n\n    @model_validator(mode=\"after\")\n    def _sort_completions(self):\n        # 按 (timestamp, completion_id) 稳定排序: 构建器假定记录按时间有序\n        self.completions = sorted(\n            self.completions,\n            key=lambda c: (str(c.timestamp or \"\"), c.completion_id),\n        )\n        return self"),
+      h("p",null,"关键设计是 ",h("code",null,"_sort_completions")," 这个 ",h("code",null,"model_validator"),"：会话一经构造就对补全记录按 (时间戳, id) 稳定排序。后续两个构建器都假定记录已按 agent 实际执行顺序排列；把排序放进数据模型而非构建器，避免每个构建器各写一遍、也避免顺序假设被遗忘。"),
+      h("div",null,h(Src,{label:"CompletionRecord",path:"src/polar/trajectory/models.py",line:49}),h(Src,{label:"CompletionSession",path:"src/polar/trajectory/models.py",line:62}),h(Src,{label:"_sort_completions",path:"src/polar/trajectory/models.py",line:78}))
+    ];}},
+    {key:"trace",name:"Trace（核心训练单元）",render:function(){return [
+      h("p",null,h("code",null,"Trace")," 是真正喂给训练器的单元，它把一段交互拆成“不可训练前缀 + 可训练响应”两部分：",h("code",null,"prompt_ids")," 是静态上下文（不回传梯度），",h("code",null,"response_ids")," 是这条轨迹的全部响应 token，",h("code",null,"loss_mask")," 与 ",h("code",null,"response_ids")," 等长、逐 token 标注是否参与损失（1 训练 / 0 不训练），",h("code",null,"response_logprobs")," 携带每个响应 token 当时的 logprob。"),
+      h(Code,null,"class Trace(BaseModel):\n    prompt_ids: list[int] = Field(default_factory=list)         # 静态前缀, 不训练\n    response_ids: list[int] = Field(default_factory=list)       # 全部响应 token\n    loss_mask: list[int] = Field(default_factory=list)          # 与 response_ids 等长\n    prompt_messages: list[dict[str, Any]] = ...\n    response_messages: list[dict[str, Any]] = ...\n    tools: list[dict[str, Any]] | None = None\n    finish_reason: str | None = None\n    response_logprobs: list[dict[str, Any]] | None = None\n    reward: float | None = None                                # 由评估器写回\n    metadata: dict[str, Any] = ...\n\n    @model_validator(mode=\"after\")\n    def _validate_loss_mask_length(self):\n        if self.loss_mask and len(self.loss_mask) != len(self.response_ids):\n            raise ValueError(\"loss_mask length must match response_ids length\")\n        return self"),
+      h("p",null,"两道校验是这一层的正确性底线：",h("code",null,"_validate_loss_mask_values")," 强制掩码只能是 0 或 1；",h("code",null,"_validate_loss_mask_length")," 强制掩码与响应 token 等长。任何构建器若把序列拼错，都会在这里直接报错而非把脏数据放进训练。",h("code",null,"reward")," 字段初始为 ",h("code",null,"None"),"，由评估器在后一步写回。"),
+      h("div",null,h(Src,{label:"Trace",path:"src/polar/trajectory/models.py",line:89}),h(Src,{label:"_validate_loss_mask_length",path:"src/polar/trajectory/models.py",line:114}))
+    ];}},
+    {key:"traj",name:"Trajectory",render:function(){return [
+      h("p",null,h("code",null,"Trajectory")," 是构建器的输出整体：一个终态 ",h("code",null,"status"),"（只能是 ",h("code",null,"COMPLETED"),"/",h("code",null,"TIMEOUT"),"/",h("code",null,"ERROR"),"，由 ",h("code",null,"_validate_status")," 校验），一组 ",h("code",null,"traces"),"，外加构建级元信息与可选的 ",h("code",null,"error"),"。per_request 会产出多条 trace（每个补全一条），prefix_merging 会产出按链合并后的若干条 trace。"),
+      h(Code,null,"class Trajectory(BaseModel):\n    status: str                                          # COMPLETED / TIMEOUT / ERROR\n    metadata: dict[str, Any] = Field(default_factory=dict)\n    traces: list[Trace] = Field(default_factory=list)\n    error: str | None = None\n\n    @field_validator(\"status\")\n    @classmethod\n    def _validate_status(cls, value):\n        allowed = {\"COMPLETED\", \"TIMEOUT\", \"ERROR\"}\n        if value not in allowed:\n            raise ValueError(f\"status must be one of {sorted(allowed)}\")\n        return value"),
+      h("p",null,"这四层（Record → Session → Trace → Trajectory）是构建器与评估器之间唯一的契约。所有策略都只读写这套 pydantic 模型，因此可以彼此独立替换。"),
+      h("div",null,h(Src,{label:"Trajectory",path:"src/polar/trajectory/models.py",line:121}),h(Src,{label:"StrategySpec",path:"src/polar/trajectory/models.py",line:15}),h(Src,{label:"EvalResult",path:"src/polar/trajectory/models.py",line:36}))
+    ];}}
+  ];
+  function ModelsExplorer(){const [s,setS]=useState(1);const d=MODELS[s];
+    return h("div",null,
+      h("div",{className:"tabstrip"},MODELS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,className:"card"},d.render()));
+  }
+
+  // ===== 注册表与策略契约 =====
+  function RegistrySection(){
+    return h("div",null,
+      h("p",null,"构建器与评估器共用同一个泛型 ",h("code",null,"StrategyRegistry"),"。它存的是 ",h("strong",null,"类"),"（或 ",h("code",null,"'module:ClassName'")," 形式的导入路径），而非实例；每次 ",h("code",null,"create")," 都用 ",h("code",null,"cls(**spec.config)")," 构造一个全新对象。这样做的动机有二：其一，每个请求可携带不同 ",h("code",null,"config"),"（如不同的 ",h("code",null,"end_of_turn_token_id")," 或不同的测试命令），策略必须按请求实例化；其二，策略对象本身可以持有请求级状态而互不干扰。"),
+      h(Code,null,"class StrategyRegistry(Generic[T]):\n    def register(self, name, factory):\n        if isinstance(factory, str):\n            factory = self._import_class(factory)     # 'pkg.mod:Cls' -> 类\n        if not (isinstance(factory, type) and issubclass(factory, self._base_type)):\n            raise TypeError(...)                       # 类型安全: 必须是基类子类\n        self._factories[name] = factory\n\n    def create(self, spec: StrategySpec) -> T:\n        cls = self._resolve(spec.strategy)            # 内建名, 或带 ':' 的导入路径\n        return cls(**spec.config)                     # 每次都新建"),
+      h("p",null,h("code",null,"_resolve")," 的回退逻辑值得注意：若名字不在内建表里，但含 ",h("code",null,":"),"，则按导入路径动态加载并缓存。因此用户的自定义构建器/评估器无需改 Polar 源码，只要在任务文件里把 ",h("code",null,"strategy")," 写成 ",h("code",null,"my_pkg.my_module:MyBuilder")," 即可被加载。这是 Polar 数据生成与奖励自由扩展原则在轨迹层的体现。"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"内建构建器"),
+          h(Code,null,"def default_builder_registry():\n    registry = StrategyRegistry(BaseTrajectoryBuilder)\n    registry.register(\"per_request\", PerRequestBuilder)\n    registry.register(\"prefix_merging\", PrefixMergingBuilder)\n    return registry"),
+          h("div",null,h(Src,{label:"default_builder_registry",path:"src/polar/trajectory/registry.py",line:58}))
+        ),
+        h("div",null,
+          h("h4",null,"内建评估器"),
+          h(Code,null,"def default_evaluator_registry():\n    registry = StrategyRegistry(BaseTrajectoryEvaluator)\n    registry.register(\"session_completed\", SessionCompletedEvaluator)\n    registry.register(\"swebench_harness\", SwebenchHarnessEvaluator)\n    registry.register(\"test_on_output\", TestOnOutputEvaluator)\n    return registry"),
+          h("div",null,h(Src,{label:"default_evaluator_registry",path:"src/polar/trajectory/registry.py",line:72}))
+        )
+      ),
+      h("div",null,h(Src,{label:"StrategyRegistry",path:"src/polar/trajectory/registry.py",line:13}),h(Src,{label:"register",path:"src/polar/trajectory/registry.py",line:24}),h(Src,{label:"create",path:"src/polar/trajectory/registry.py",line:35}),h(Src,{label:"BaseTrajectoryBuilder",path:"src/polar/trajectory/builder/base.py",line:11}),h(Src,{label:"BaseTrajectoryEvaluator",path:"src/polar/trajectory/evaluator/base.py",line:11}))
+    );
+  }
+
+  // ===== record_utils: 归一化单条记录 =====
+  function RecordUtilsSection(){
+    return h("div",null,
+      h("p",null,"两个构建器都不直接读 ",h("code",null,"CompletionRecord")," 的原始 dict，而是先经过 ",h("code",null,"build_trace_from_completion")," 把一条记录归一化成一个 ",h("code",null,"Trace"),"。这个函数承担协议解构：从 ",h("code",null,"response.choices[0]")," 里抽出 ",h("code",null,"prompt_ids"),"、",h("code",null,"response_ids"),"、",h("code",null,"finish_reason")," 与 logprobs，从 ",h("code",null,"request")," 里抽出 ",h("code",null,"messages")," 与 ",h("code",null,"tools"),"。"),
+      h(Code,null,"def build_trace_from_completion(completion: CompletionRecord) -> Trace:\n    request = completion.request if isinstance(completion.request, dict) else {}\n    response = completion.response if isinstance(completion.response, dict) else {}\n    first_choice = response[\"choices\"][0]  # (容错: 缺失时退化为 {})\n    prompt_ids = first_choice.get(\"input_token_ids\") or response.get(\"prompt_token_ids\")\n    response_ids = _extract_response_ids(response, first_choice)\n    return Trace(\n        prompt_ids=list(prompt_ids) if isinstance(prompt_ids, list) else [],\n        response_ids=response_ids,\n        loss_mask=[1] * len(response_ids),         # 单条记录默认全部可训练\n        prompt_messages=_extract_prompt_messages(request),\n        response_messages=[deepcopy(response_message)] if ... else [],\n        tools=_extract_tools(request),\n        finish_reason=str(finish_reason) if finish_reason is not None else None,\n        response_logprobs=_extract_response_logprobs(first_choice),\n        metadata=deepcopy(completion.metadata),\n    )"),
+      h("p",null,h("code",null,"_extract_response_ids")," 有两级回退：优先取后端直接给的 ",h("code",null,"token_ids"),"，否则从 ",h("code",null,"logprobs.content")," 列表里逐项取 ",h("code",null,"token_id")," 重建。这一容错很关键，因为不同推理后端（SGLang / vLLM 等）在返回 token id 的字段上不完全一致。单条记录默认 ",h("code",null,"loss_mask=[1]*len")," 即整段响应都可训练，这一默认会被 prefix_merging 覆盖。"),
+      h("div",null,h(Src,{label:"build_trace_from_completion",path:"src/polar/trajectory/builder/record_utils.py",line:54}),h(Src,{label:"_extract_response_ids",path:"src/polar/trajectory/builder/record_utils.py",line:11}),h(Src,{label:"_extract_response_logprobs",path:"src/polar/trajectory/builder/record_utils.py",line:30}))
+    );
+  }
+
+  // ===== per_request vs prefix_merging =====
+  const BUILDERS=[
+    {key:"per",name:"per_request（每请求一条）",render:function(){return [
+      h("p",null,"最简单的策略：每条补全记录原样变成一条 ",h("code",null,"Trace"),"。它直接 ",h("code",null,"map")," 一遍 ",h("code",null,"build_trace_from_completion"),"，不做任何跨记录的合并。"),
+      h(Code,null,"class PerRequestBuilder(BaseTrajectoryBuilder):\n    async def build(self, session: CompletionSession) -> Trajectory:\n        if not session.completions:\n            return Trajectory(status=\"ERROR\", error=\"no completions\", traces=[], metadata={...})\n        return Trajectory(\n            status=\"COMPLETED\",\n            metadata={\"builder\": \"per_request\",\n                      \"trace_count\": len(session.completions), ...},\n            traces=[build_trace_from_completion(c) for c in session.completions],\n        )"),
+      h("p",null,"适用场景：单轮任务，或刻意要把每次请求当成彼此独立的训练样本（例如 best-of-n 采样、对每个独立 prompt 单独打分）。它不解决多轮重叠历史问题，因此不会出现 token 漂移，也不会把多轮拼成长样本。元信息里把调度器透传的 ",h("code",null,"group_id"),"/",h("code",null,"policy_version"),"/",h("code",null,"rollout_step")," 提到顶层（",h("code",null,"_top_level_scheduler_metadata"),"），便于下游按组聚合（GRPO 的同组归一化要用到）。"),
+      h("div",null,h(Src,{label:"PerRequestBuilder",path:"src/polar/trajectory/builder/per_request.py",line:10}),h(Src,{label:"build",path:"src/polar/trajectory/builder/per_request.py",line:13}),h(Src,{label:"_top_level_scheduler_metadata",path:"src/polar/trajectory/builder/per_request.py",line:49}))
+    ];}},
+    {key:"why",name:"为什么需要 prefix_merging",render:function(){return [
+      h("p",null,"考虑一个真实的多轮 agent 调用序列。harness（claude_code / codex / pi 等）驱动 agent，每一轮 agent 要思考时，就把到目前为止的完整对话作为 prompt 打到 gateway，得到一段响应（可能含工具调用），harness 执行工具、把结果追加进对话，再发下一轮。于是 gateway 看到的是若干次请求，且第 k+1 次的 prompt 恰好是第 k 次的 prompt 加上第 k 次的响应再加上工具结果。"),
+      h(Formula,{cap:"append-only 不变量: 后一次请求的 prompt 严格以前一次请求的 prompt 为前缀"},"$$ C_{k+1}.\\text{prompt} \\;=\\; C_k.\\text{prompt} \\;+\\; C_k.\\text{response} \\;+\\; \\text{interstitial}_k $$"),
+      h("p",null,"如果用 per_request，这段 N 轮交互会变成 N 条 trace，且彼此的 prompt 高度重叠：第 N 条的 prompt 里包含了前 N-1 轮的全部内容。直接训练会有两个问题：其一，同一段 token 被反复计入多条样本，统计上重复；其二，更重要的是，模型真正自己生成、应当回传梯度的只有每一轮的响应部分，而工具结果、对话模板拼接这些 interstitial 是环境插入的，不该训练。per_request 无法区分这两类 token。"),
+      h("p",null,"prefix_merging 的目标，就是把这 N 次请求重建成 ",h("strong",{className:"hl-teal"},"一条")," token 序列：",h("code",null,"prompt + response_1 + interstitial_1 + response_2 + interstitial_2 + ..."),"，并给每个 token 打上正确的 ",h("code",null,"loss_mask"),"（响应为 1，interstitial 为 0）。这与 slime 的多轮轨迹管理思路一致：用一条带掩码的长序列承载整段 agent 轨迹，而非若干条重叠的短序列。"),
+      h("div",{className:"warn"},h("strong",null,"难点是 token 漂移（tokenization drift）"),"：BPE 分词不是逐消息可拼接的。若把消息重新拼成字符串再整体编码，得到的 token 序列可能和模型当初实际采样的 token 不同（BPE 非规范性，non-canonical merges）。一旦序列与采样不符，logprob 就对不上，重要性采样会系统性出错。prefix_merging 的整套设计就是为了在合并的同时彻底避免重新编码。")
+    ];}},
+    {key:"design",name:"设计思路：raw + canonical",render:function(){return [
+      h("p",null,"prefix_merging 把合并分成两类 token，分别用不同来源，从根本上回避漂移："),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-teal"},"助手响应体（assistant body）")," 用 ",h("strong",null,"raw")," 的 ",h("code",null,"response_ids"),"：即模型当初真正采样出来的 token。它们的 logprob 是真实的，且从不解码再编码，因此 BPE 非规范性影响不到它们。这些 token 的 ",h("code",null,"loss_mask=1"),"。"),
+        h("li",null,h("strong",{className:"hl-amber"},"interstitial（工具结果、模板拼接、中间用户轮）")," 用 ",h("strong",null,"canonical")," 的 token：取自下一次请求 ",h("code",null,"C_{i+1}.prompt_ids")," 的尾部，即服务端对这些消息的规范化编码。它们 ",h("code",null,"loss_mask=0"),"，logprob 合成为占位值。")
+      ),
+      h("p",null,"两者的边界在哪里？",h("code",null,"C_{i+1}.prompt_ids")," 去掉前缀 ",h("code",null,"C_i.prompt_ids")," 后剩下的 ",h("code",null,"canonical_tail"),"，结构是上一条助手消息的规范编码加 harness 插入的消息加下一轮生成提示词的模板胶水。其中上一条助手消息的结束标志，是第一个 ",h("strong",null,"end-of-turn(EOT) token"),"（Qwen/ChatML 上是 ",h("code",null,"<|im_end|>"),"）。EOT 之后才是真正的 interstitial。"),
+      h(Formula,{cap:"interstitial 的切分: 在 canonical_tail 中定位第一个 EOT, 其后为 interstitial"},"$$ \\text{canonical\\_tail} = \\underbrace{[\\dots,\\,\\text{EOT}]}_{\\text{上轮助手体规范编码}} \\;+\\; \\underbrace{[\\dots]}_{\\text{interstitial}} $$"),
+      h("p",null,"为什么助手体不直接用 canonical 那一段、而非要用 raw？因为 canonical 那一段是上一轮助手响应的服务端重编码，可能与模型实际采样的 raw token 不一致（正是漂移）。所以 prefix_merging 用 raw 响应体承载可训练 token、只把 EOT 之后的 canonical 段当 interstitial，二者拼接即得到无漂移的完整流。"),
+      h("div",null,h(Src,{label:"模块 docstring（设计两阶段）",path:"src/polar/trajectory/builder/prefix_merging.py",line:1}),h(Src,{label:"PrefixMergingBuilder",path:"src/polar/trajectory/builder/prefix_merging.py",line:131}),h(Src,{label:"_NATURAL_STOP_REASONS",path:"src/polar/trajectory/builder/prefix_merging.py",line:49}))
+    ];}}
+  ];
+  function BuildersExplorer(){const [s,setS]=useState(0);const d=BUILDERS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},BUILDERS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== prefix_merging 算法两阶段 =====
+  const PM=[
+    {key:"group",name:"阶段一 · 分组（grouping）",render:function(){return [
+      h("p",null,"第一步要判断哪些补全属于同一条 append-only agent 链。难点在于一次 rollout 可能并发多条 agent 链（多个独立子任务），它们的请求在时间上交错到达。分组用两道闸："),
+      h("ol",null,
+        h("li",null,h("strong",null,"必要条件：消息级 key（O(1) 索引）"),"。",h("code",null,"_grouping_key")," 把消息列表归一化成一个确定性字符串 ",h("code",null,"role:content<SEP>role:content..."),"。归一化时会丢弃 ",h("code",null,"tool")," 角色消息与空助手消息（",h("code",null,"_is_grouping_noise_message"),"），并把带 ",h("code",null,"tool_calls")," 的助手消息展开（",h("code",null,"_expand_messages_for_grouping"),"）。这只是一个廉价的候选索引。"),
+        h("li",null,h("strong",null,"充分条件：严格 token 前缀检查"),"。真正决定能否接入某条等待中的链的，是 ",h("code",null,"C_{k+1}.prompt_ids")," 必须以 ",h("code",null,"C_k.prompt_ids")," 为严格前缀。这一检查在 ",h("code",null,"_pop_compatible_chain")," 里完成。")
+      ),
+      h(Code,null,"# build(): 维护 chains 与 waiting_chains 两个结构\nchains = []                          # 已建立的链, 每条是 CompletionRecord 列表\nwaiting_chains = defaultdict(deque)  # key=链尾的下一步期望 key, value=链索引队列\n\nfor completion in session.completions:    # 已按时间排序\n    trace = build_trace_from_completion(completion)\n    prompt_key = _grouping_key(trace.prompt_messages)\n    chain_idx = self._pop_compatible_chain(   # 同时过消息 key 与 token 前缀两关\n        prompt_key=prompt_key, prompt_ids=trace.prompt_ids,\n        chains=chains, waiting_chains=waiting_chains)\n    if chain_idx is not None:\n        chains[chain_idx].append(completion)  # 接入现有链\n    else:\n        chain_idx = len(chains); chains.append([completion])  # 开新链\n    # 登记本链下一步期望的 key = prompt_messages + response_messages 的归一化\n    next_key = _grouping_key(trace.prompt_messages + trace.response_messages)\n    waiting_chains[next_key].append(chain_idx)"),
+      h("p",null,"为什么消息 key 还不够、非要再过 token 前缀？因为归一化丢掉了 tool 消息、空/think 助手消息，这些恰恰可能藏着真正的 token 级分歧（cache-control 位移、tools schema 改写、",h("code",null,"<system-reminder>")," 注入）。如果只信消息 key，就可能把一条 token 实际已分叉的补全静默地接到错误的链上。严格前缀不变量把这种情况挡在分组阶段：token 一旦对不上，这条补全就自己开一条新链，而不是污染已有链。"),
+      h(Code,null,"def _pop_compatible_chain(*, prompt_key, prompt_ids, chains, waiting_chains):\n    queue = waiting_chains.get(prompt_key)\n    if not queue:\n        return None\n    for pos, chain_idx in enumerate(queue):          # FIFO 扫描候选\n        last_trace = build_trace_from_completion(chains[chain_idx][-1])\n        last_pids = last_trace.prompt_ids\n        if (not prompt_ids or not last_pids\n                or len(prompt_ids) < len(last_pids)\n                or prompt_ids[: len(last_pids)] != last_pids):  # 严格前缀检查\n            continue\n        del queue[pos]                                # 命中即出队\n        return chain_idx\n    return None"),
+      h("div",null,h(Src,{label:"build（分组循环）",path:"src/polar/trajectory/builder/prefix_merging.py",line:152}),h(Src,{label:"_pop_compatible_chain",path:"src/polar/trajectory/builder/prefix_merging.py",line:423}),h(Src,{label:"_grouping_key",path:"src/polar/trajectory/builder/prefix_merging.py",line:115}),h(Src,{label:"_expand_messages_for_grouping",path:"src/polar/trajectory/builder/prefix_merging.py",line:72}),h(Src,{label:"_is_grouping_noise_message",path:"src/polar/trajectory/builder/prefix_merging.py",line:87}))
+    ];}},
+    {key:"final",name:"阶段二 · 合并（finalization）",render:function(){return [
+      h("p",null,"分组得到若干条链后，",h("code",null,"_finalize_chain")," 逐链构建合并 token 流。第一条补全的 ",h("code",null,"prompt_ids")," 整体作为不可训练前缀；从 ",h("code",null,"C_1.response_ids")," 开始，逐条追加 raw 响应与 canonical interstitial。"),
+      h(Code,null,"def _finalize_chain(self, chain, stats) -> Trace:\n    first_trace = build_trace_from_completion(chain[0])\n    eot_id = self._resolve_eot_id(chain)             # 显式配置, 否则自动探测\n\n    prompt_ids = list(first_trace.prompt_ids)        # 静态前缀\n    stream_ids = list(prompt_ids)                    # 累积的完整 token 流\n    response_slots, loss_mask = [], []\n    prev_prompt_ids = list(first_trace.prompt_ids)\n    prev_raw_response = list(first_trace.response_ids)\n\n    # C_1 的 raw 响应先入流 (loss_mask 默认全 1)\n    self._append_response_tokens(first_trace, stream_ids, response_slots, loss_mask)\n\n    for i in range(1, len(chain)):\n        Ci_trace = build_trace_from_completion(chain[i])\n        Ci_prompt_ids = list(Ci_trace.prompt_ids)\n        # canonical-vs-canonical 前缀检查: 不满足则截断该链\n        if (len(Ci_prompt_ids) < len(prev_prompt_ids)\n                or Ci_prompt_ids[: len(prev_prompt_ids)] != prev_prompt_ids):\n            break\n        canonical_tail = Ci_prompt_ids[len(prev_prompt_ids):]\n        interstitial = self._slice_interstitial(\n            canonical_tail=canonical_tail,\n            prev_raw_response=prev_raw_response, eot_id=eot_id)\n        if interstitial is None:\n            break                                    # EOT 找不到 -> 安全截断\n        if interstitial:\n            stream_ids.extend(interstitial)\n            response_slots.extend([None] * len(interstitial))\n            loss_mask.extend([0] * len(interstitial))   # interstitial 不训练\n        self._append_response_tokens(Ci_trace, stream_ids, response_slots, loss_mask)\n        prev_prompt_ids = Ci_prompt_ids\n        prev_raw_response = list(Ci_trace.response_ids)\n\n    response_ids = stream_ids[len(prompt_ids):]\n    response_logprobs = self._finalize_logprobs(response_slots, response_ids)\n    return Trace(prompt_ids=prompt_ids, response_ids=response_ids,\n                 loss_mask=loss_mask, response_logprobs=response_logprobs, ...)"),
+      h("p",null,"几处值得强调："),
+      h("ul",null,
+        h("li",null,h("strong",null,"二次前缀检查（canonical-vs-canonical）"),"：合并阶段再次确认 ",h("code",null,"C_{i+1}.prompt_ids")," 以 ",h("code",null,"prev_prompt_ids")," 为前缀。这里两侧都是服务端规范编码，匹配可靠，除非 harness 改写了历史消息。不满足就 ",h("code",null,"break")," 截断该链，已合并的部分仍是有效轨迹。"),
+        h("li",null,h("strong",null,"安全截断而非报错"),"：interstitial 切不出来（EOT 缺失）时也是 ",h("code",null,"break"),"，把链截到上一步为止。这保证哪怕中途出现异常补全，也能产出一条不损坏的轨迹，而不是整链作废。",h("code",null,"stats")," 记录该链是完整重建还是被截断。"),
+        h("li",null,h("strong",null,"response_ids 由切片得到"),"：",h("code",null,"stream_ids")," 是 prompt 加全部响应/interstitial 的累积流，最后用 ",h("code",null,"stream_ids[len(prompt_ids):]")," 取出响应段，确保 ",h("code",null,"prompt_ids")," 与 ",h("code",null,"response_ids")," 不重叠、首尾相接。")
+      ),
+      h("div",null,h(Src,{label:"_finalize_chain",path:"src/polar/trajectory/builder/prefix_merging.py",line:220}),h(Src,{label:"_append_response_tokens",path:"src/polar/trajectory/builder/prefix_merging.py",line:385}))
+    ];}},
+    {key:"eot",name:"EOT 探测与 interstitial 切分",render:function(){return [
+      h("p",null,h("code",null,"_resolve_eot_id")," 决定用哪个 token 作为助手体的结束标志：若构造时显式给了 ",h("code",null,"end_of_turn_token_id")," 就用它；否则自动探测，取链中第一条自然停止补全（",h("code",null,"finish_reason")," 属于 ",h("code",null,"stop / tool_calls / stop_sequence"),"）的最后一个 token。自然停止意味着模型自己吐出了 EOT，因此它的最后一个 token 就是 EOT。"),
+      h(Code,null,"def _resolve_eot_id(self, chain) -> int | None:\n    if self._configured_eot_id is not None:\n        return self._configured_eot_id\n    for completion in chain:\n        trace = build_trace_from_completion(completion)\n        if trace.finish_reason in _NATURAL_STOP_REASONS and trace.response_ids:\n            return trace.response_ids[-1]    # 自然停止 -> 末 token 即 EOT\n    return None"),
+      h("p",null,h("code",null,"_slice_interstitial")," 用 EOT 从 ",h("code",null,"canonical_tail")," 里切出 interstitial，并处理一个边界细节：若上一轮 raw 响应已经以 EOT 结尾（自然停止 / tool_calls），则在 canonical 尾部跳过这个重复的 EOT；若上一轮是被截断的（",h("code",null,"length")," 停止，raw 响应不含 EOT），则把 canonical 里的 EOT 也纳入 interstitial，以便流仍然正确闭合该助手轮。"),
+      h(Code,null,"@staticmethod\ndef _slice_interstitial(*, canonical_tail, prev_raw_response, eot_id):\n    if eot_id is None:\n        return None\n    try:\n        k = canonical_tail.index(eot_id)        # 定位第一个 EOT\n    except ValueError:\n        return None                              # 找不到 -> 触发截断\n    if prev_raw_response and prev_raw_response[-1] == eot_id:\n        return canonical_tail[k + 1 :]           # raw 已含 EOT, 跳过避免重复\n    return canonical_tail[k:]                     # raw 被截断, 保留 EOT 闭合该轮"),
+      h("p",null,"这一处对截断响应的处理是工程上的精细之处：模型因 ",h("code",null,"max_tokens")," 被截断时没有吐 EOT，但后续轮的服务端编码里仍会有 EOT（模板补的），此时必须保留它，否则合并流会缺一个 turn 结束标记，破坏后续轮的对应关系。"),
+      h("div",null,h(Src,{label:"_resolve_eot_id",path:"src/polar/trajectory/builder/prefix_merging.py",line:334}),h(Src,{label:"_slice_interstitial",path:"src/polar/trajectory/builder/prefix_merging.py",line:352}))
+    ];}},
+    {key:"lp",name:"logprob 槽位填充",render:function(){return [
+      h("p",null,"训练器要求每个可训练 token 都有 logprob 数据。prefix_merging 用槽位（slot）机制：构建流的同时维护一个与 ",h("code",null,"response_ids")," 平行的 ",h("code",null,"response_slots")," 列表。raw 响应 token 填入其真实 logprob 字典；interstitial token 填 ",h("code",null,"None"),"。"),
+      h(Code,null,"@staticmethod\ndef _append_response_tokens(trace, stream_ids, response_slots, loss_mask):\n    response_ids = list(trace.response_ids)\n    stream_ids.extend(response_ids)\n    trace_loss_mask = list(trace.loss_mask) or [1] * len(response_ids)\n    if len(trace_loss_mask) != len(response_ids):\n        raise ValueError(\"trace loss_mask length must match response_ids length\")\n    loss_mask.extend(trace_loss_mask)\n    logprobs = trace.response_logprobs or []\n    for pos in range(len(response_ids)):\n        entry = logprobs[pos] if pos < len(logprobs) else None\n        response_slots.append(deepcopy(entry) if isinstance(entry, dict) else None)\n\n@staticmethod\ndef _finalize_logprobs(slots, response_ids):\n    if not any(slot is not None for slot in slots):\n        return None                              # 全空 -> 不带 logprobs\n    return [slot if slot is not None\n            else {\"token_id\": response_ids[i], \"logprob\": 0.0}   # 占位\n            for i, slot in enumerate(slots)]"),
+      h("p",null,h("code",null,"_finalize_logprobs")," 在收尾时把 ",h("code",null,"None")," 槽位替换为占位 ",h("code",null,"{\"token_id\": ..., \"logprob\": 0.0}"),"。由于这些 interstitial 位置的 ",h("code",null,"loss_mask=0"),"，它们的占位 logprob 不会进入损失计算，因此填 0 是安全的，只是为了保持 logprob 列表与 token 列表等长。若整条链没有任何真实 logprob，则直接返回 ",h("code",null,"None"),"（不带 logprob 信息）。"),
+      h("div",{className:"note"},"完整的算法走查、不变量与边界用例，源码引用了仓库内的 ",h("code",null,"docs/prefix_merging_algorithm.md"),"。本课用的所有代码片段均来自 ",h("code",null,"prefix_merging.py")," 实际实现。"),
+      h("div",null,h(Src,{label:"_finalize_logprobs",path:"src/polar/trajectory/builder/prefix_merging.py",line:404}),h(Src,{label:"_chain_metadata",path:"src/polar/trajectory/builder/prefix_merging.py",line:415}))
+    ];}}
+  ];
+  function PmExplorer(){const [s,setS]=useState(0);const d=PM[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},PM.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 评估器 =====
+  const EVAL=[
+    {key:"contract",name:"契约与 reward 写回",render:function(){return [
+      h("p",null,h("code",null,"BaseTrajectoryEvaluator.evaluate")," 接收一个已构建的 ",h("code",null,"Trajectory")," 与一组运行时上下文关键字参数（",h("code",null,"session_id"),"、",h("code",null,"task_id"),"、",h("code",null,"session_dir"),"、",h("code",null,"artifacts_dir"),"、",h("code",null,"agent_result"),"、",h("code",null,"runtime"),"、",h("code",null,"runtime_spec")," 等），返回一个 ",h("code",null,"EvalResult"),"。"),
+      h(Code,null,"class BaseTrajectoryEvaluator(ABC):\n    @abstractmethod\n    async def evaluate(self, trajectory: Trajectory, **runtime: Any) -> EvalResult:\n        ...\n\nclass EvalResult(BaseModel):\n    outcome_reward: float | None = None              # 整条轨迹一个奖励\n    trace_rewards: list[float | None] | None = None  # 逐 trace 奖励\n    metadata: dict[str, Any] = Field(default_factory=dict)"),
+      h("p",null,"gateway 的 ",h("code",null,"_merge_eval_result")," 负责把奖励写回轨迹：若给了 ",h("code",null,"trace_rewards"),"，则逐 trace 赋值（长度必须与 trace 数相等，否则置 ERROR）；否则若给了 ",h("code",null,"outcome_reward"),"，则广播到所有 trace。评估元信息（策略名、奖励、自定义 metadata）写进 ",h("code",null,"trajectory.metadata['evaluation']"),"。"),
+      h(Code,null,"@staticmethod\ndef _merge_eval_result(trajectory, eval_result, evaluator_spec):\n    traces = list(trajectory.traces)\n    if eval_result.trace_rewards is not None:\n        if len(eval_result.trace_rewards) != len(traces):\n            return trajectory.model_copy(update={\"status\": \"ERROR\", \"error\": ...})\n        traces = [t.model_copy(update={\"reward\": r})\n                  for t, r in zip(traces, eval_result.trace_rewards)]\n    elif eval_result.outcome_reward is not None and traces:\n        traces = [t.model_copy(update={\"reward\": eval_result.outcome_reward})\n                  for t in traces]                  # 广播到所有 trace\n    metadata = {**trajectory.metadata, \"evaluation\": {...}}\n    return trajectory.model_copy(update={\"traces\": traces, \"metadata\": metadata})"),
+      h("div",null,h(Src,{label:"BaseTrajectoryEvaluator",path:"src/polar/trajectory/evaluator/base.py",line:11}),h(Src,{label:"EvalResult",path:"src/polar/trajectory/models.py",line:36}),h(Src,{label:"_merge_eval_result",path:"src/polar/gateway/node.py",line:700}))
+    ];}},
+    {key:"session",name:"session_completed（最简）",render:function(){return [
+      h("p",null,"最简单的评估器：只看轨迹是否构建成功。",h("code",null,"COMPLETED")," 给 1.0，其余给 0.0。适合不需要执行测试、只关心 agent 是否跑完会话的探针式任务，也常作为流水线连通性的冒烟测试。"),
+      h(Code,null,"class SessionCompletedEvaluator(BaseTrajectoryEvaluator):\n    async def evaluate(self, trajectory: Trajectory, **runtime: Any) -> EvalResult:\n        reward = 1.0 if trajectory.status == \"COMPLETED\" else 0.0\n        return EvalResult(outcome_reward=reward)"),
+      h("p",null,"它不碰运行时容器、不跑外部进程，因此既快又安全，是理解评估器契约的最小例子。"),
+      h("div",null,h(Src,{label:"SessionCompletedEvaluator",path:"src/polar/trajectory/evaluator/session_completed.py",line:11}))
+    ];}},
+    {key:"patch",name:"BasePatchEvaluator（共享骨架）",render:function(){return [
+      h("p",null,"swebench_harness 与 test_on_output 都属于基于 git diff 补丁的评估，共享 ",h("code",null,"BasePatchEvaluator")," 这一骨架。它把评估拆成四步，只有第四步（如何解释测试输出）因策略而异："),
+      h("ol",null,
+        h("li",null,h("strong",null,"提取补丁"),"：在源运行时里执行 ",h("code",null,"patch_command"),"（默认 ",h("code",null,"git diff --binary --submodule=diff"),"），把 agent 对代码的改动捞成一段 diff。"),
+        h("li",null,h("strong",null,"过滤噪声"),"：",h("code",null,"_filter_patch")," 按 ",h("code",null,"diff --git")," 分段，丢弃命中排除模式（",h("code",null,"__pycache__"),"、",h("code",null,"*.pyc"),"、",h("code",null,".pytest_cache")," 等）的段，避免缓存文件污染补丁。"),
+        h("li",null,h("strong",null,"可选地在全新评估运行时上应用补丁"),"：若提供 ",h("code",null,"fresh_eval_runtime"),"（",h("code",null,"refresh_runtime=true")," 时），则在一个干净容器里 ",h("code",null,"git apply"),"（失败再退回 ",h("code",null,"patch")," 命令）。这保证评估环境不被 agent 的运行残留影响。"),
+        h("li",null,h("strong",null,"跑测试并解释输出（子类实现 _grade）"),"：返回 report，",h("code",null,"resolved=True")," → ",h("code",null,"outcome_reward=1.0"),"，否则 0.0。")
+      ),
+      h(Code,null,"async def evaluate(self, trajectory, **runtime) -> EvalResult:\n    source_runtime = runtime[\"runtime\"]               # 必须有 live runtime\n    patch = await self._extract_patch(source_runtime, ...)   # 1) 提取\n    patch = self._filter_patch(patch)                         # 2) 过滤\n    if not patch.strip():\n        return EvalResult(outcome_reward=0.0, metadata={...empty_generation...})\n    fresh = runtime.get(\"fresh_eval_runtime\")\n    if isinstance(fresh, BaseRuntime):\n        out = await self._apply_patch(fresh, patch, ...)      # 3) 干净容器应用\n        if APPLY_PATCH_FAIL in out or APPLY_PATCH_PASS not in out:\n            return EvalResult(outcome_reward=0.0, metadata={...failed_apply...})\n    report, log = await self._grade(runtime=eval_runtime, patch=patch, ...)  # 4)\n    return EvalResult(outcome_reward=1.0 if report.get(\"resolved\") else 0.0, ...)"),
+      h("p",null,"几个 RL 友好的设计：空补丁直接 0 分并标记 ",h("code",null,"empty_generation"),"（区分没改与改错）；",h("code",null,"TimeoutError")," 与一般异常分别标记 ",h("code",null,"test_timeout")," / ",h("code",null,"error_eval")," 后再抛出，便于上游统计失败原因；所有超时都用 ",h("code",null,"bounded_timeout")," 夹到会话剩余预算内。"),
+      h("div",null,h(Src,{label:"BasePatchEvaluator",path:"src/polar/trajectory/evaluator/_patch_utils.py",line:57}),h(Src,{label:"evaluate（四步流程）",path:"src/polar/trajectory/evaluator/_patch_utils.py",line:98}),h(Src,{label:"_filter_patch",path:"src/polar/trajectory/evaluator/_patch_utils.py",line:291}),h(Src,{label:"_apply_patch",path:"src/polar/trajectory/evaluator/_patch_utils.py",line:247}))
+    ];}},
+    {key:"swe",name:"swebench_harness",render:function(){return [
+      h("p",null,"复现 SWE-bench / SWE-Gym 风格基准时用它，让逐实例评分与官方 harness 报告一致。它的 ",h("code",null,"_grade")," 用实例 dict 构建 test spec，写出 harness 生成的 ",h("code",null,"eval.sh"),"，在运行时里执行，再把测试输出交给 harness 的评分函数判定 resolved/unresolved。"),
+      h(Code,null,"async def _grade(self, *, runtime, patch, host_session_dir, log_dir, env, timeout_cap):\n    instance = dict(self.instance)\n    instance_id = str(instance[\"instance_id\"]).lower()\n    test_spec, get_eval_report = _load_harness(instance)   # swegym 优先, 退回 swebench\n    eval_script_host = host_session_dir / \"eval.sh\"\n    eval_script_host.write_text(test_spec.eval_script)     # harness 生成的评测脚本\n    result = await runtime.exec(\n        f\"/bin/bash {shell_quote(f'{runtime.runtime_session_dir}/eval.sh')}\",\n        cwd=self.repo_dir, env=env,\n        timeout_sec=bounded_timeout(self.test_timeout, timeout_cap))\n    if result.return_code == -1:\n        raise TimeoutError(\"swebench_harness evaluation timed out\")\n    combined_path.write_text((result.stdout or \"\") + (result.stderr or \"\"))\n    prediction = {\"model_patch\": patch, \"instance_id\": instance_id}\n    grading_report = _grade_harness_run(get_eval_report, test_spec=test_spec,\n                                        prediction=prediction, log_path=combined_path)\n    report = grading_report[instance_id]\n    return ({\"resolved\": report.get(\"resolved\", False), ...}, combined_path)"),
+      h("p",null,h("code",null,"_load_harness")," 优先从 ",h("code",null,"swegym")," 导入、缺失时退回 ",h("code",null,"swebench"),"，并兼容不同版本的 ",h("code",null,"make_test_spec")," 导入路径与 ",h("code",null,"get_eval_report")," 的关键字（",h("code",null,"log_path")," vs ",h("code",null,"test_log_path"),"）。评分完全委托给 harness，因此什么算解决由基准定义，而非 Polar 自己判定，保证可比性。"),
+      h("div",null,h(Src,{label:"SwebenchHarnessEvaluator",path:"src/polar/trajectory/evaluator/swebench_harness.py",line:46}),h(Src,{label:"_grade",path:"src/polar/trajectory/evaluator/swebench_harness.py",line:72}),h(Src,{label:"_load_harness",path:"src/polar/trajectory/evaluator/swebench_harness.py",line:129}),h(Ext,{href:"https://www.swebench.com/"},"SWE-bench"))
+    ];}},
+    {key:"test",name:"test_on_output",render:function(){return [
+      h("p",null,"自定义单元测试任务用它：你给 ",h("code",null,"test_command")," 与一份 ",h("code",null,"expected_output_json"),"（nodeid → 期望状态），评估器跑命令、解析输出、与期望逐项比对，",h("strong",null,"完全相等才算 resolved"),"。适合不需要 SWE-bench 机制的小规模 / 玩具 RL 任务（如计算器级别的题目）。"),
+      h(Code,null,"async def _grade(self, *, runtime, patch, host_session_dir, log_dir, env, timeout_cap):\n    result = await runtime.exec(self.test_command, cwd=self.repo_dir, env=env,\n                                timeout_sec=bounded_timeout(self.test_timeout, timeout_cap))\n    if result.return_code == -1:\n        raise TimeoutError(\"test_on_output evaluation timed out\")\n    output = (result.stdout or \"\") + (result.stderr or \"\")\n    expected = self._coerce_expected_output_json()\n    parsed = _parse_expected_output(output)           # 解析 PASSED/FAILED/... 行\n    report = {\"resolved\": bool(parsed) and parsed == expected, ...}\n    return report, combined_path"),
+      h("p",null,h("code",null,"_parse_expected_output")," 只认以 ",h("code",null,"PASSED/FAILED/ERROR/SKIPPED")," 开头的行（与 ",h("code",null,"pytest -rA")," 同词汇），先用 ",h("code",null,"ANSI_ESCAPE_RE")," 去掉颜色码。期望键与解析行都过同一个 ",h("code",null,"_normalize_expected_nodeid"),"：保留末尾的 ",h("code",null,"Class.method")," 或 ",h("code",null,"function"),"，丢弃 ",h("code",null,"tests/")," 前缀与模块路径。这让期望 JSON 简洁，也容忍不同 pytest 版本的格式差异。"),
+      h(Code,null,"def _normalize_expected_nodeid(nodeid: str) -> str:\n    nodeid = nodeid.split(\" - \")[0]\n    parts = nodeid.split(\"::\")\n    if len(parts) >= 3:\n        return \".\".join(parts[-2:])      # Class::method -> Class.method\n    if len(parts) == 2:\n        return parts[-1]\n    return nodeid"),
+      h("p",null,"注意类上的 ",h("code",null,"__test__ = False"),"：类名以 ",h("code",null,"Test")," 开头，这行告诉 pytest 它不是测试类，避免被误收集。",h("strong",null,"逐项精确比对")," 而非全过即满分，是为了让 RL 奖励能区分恰好改对目标测试与碰巧让无关测试通过两种情况。"),
+      h("div",null,h(Src,{label:"TestOnOutputEvaluator",path:"src/polar/trajectory/evaluator/test_on_output.py",line:55}),h(Src,{label:"_grade",path:"src/polar/trajectory/evaluator/test_on_output.py",line:89}),h(Src,{label:"_parse_expected_output",path:"src/polar/trajectory/evaluator/test_on_output.py",line:135}),h(Src,{label:"_normalize_expected_nodeid",path:"src/polar/trajectory/evaluator/test_on_output.py",line:151}),h(Ext,{href:"https://github.com/sierra-research/tau-bench"},"tau-bench"))
+    ];}}
+  ];
+  function EvalExplorer(){const [s,setS]=useState(0);const d=EVAL[s];
+    return h("div",null,
+      h("div",{className:"tabstrip"},EVAL.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,className:"card"},d.render()));
+  }
+
+  const DOCLINKS=[
+    {t:"SWE-bench",d:"swebench_harness 复现的基准与官方评分口径",href:"https://www.swebench.com/"},
+    {t:"tau-bench",d:"工具使用类 agent 基准, 评估器扩展的参考",href:"https://github.com/sierra-research/tau-bench"},
+    {t:"trajectory README（本机）",d:"四层数据模型与扩展点说明",href:srcUrl("src/polar/trajectory/README.md",null)},
+    {t:"builder README（本机）",d:"per_request 与 prefix_merging 的取舍",href:srcUrl("src/polar/trajectory/builder/README.md",null)},
+    {t:"evaluator README（本机）",d:"内建评估器与新增评估器指南",href:srcUrl("src/polar/trajectory/evaluator/README.md",null)},
+    {t:"prefix_merging.py（本机）",d:"承重文件: 分组+合并完整实现",href:srcUrl("src/polar/trajectory/builder/prefix_merging.py",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:7}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 7 课 / 共 8 · 轨迹与评估"),
+          h("h1",null,"Trajectory 构建与评估"),
+          h("p",{className:"lead"},"agent 一次 rollout 会产生多次独立的 LLM 调用；RL 训练器要的却是一条带 loss_mask 的 token 序列加奖励。这一课讲清 polar.trajectory 如何完成这次翻译：四层数据模型（Record/Session/Trace/Trajectory）、per_request 与 prefix_merging 两种构建策略、prefix_merging 避免 token 漂移的分组与合并算法，以及 session_completed / test_on_output / swebench_harness 三类评估器如何把奖励写回轨迹。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"trajectory/models.py")," 数据模型、",h("code",null,"registry.py")," 策略注册、",h("code",null,"builder/")," 的 per_request / prefix_merging / record_utils、",h("code",null,"evaluator/")," 的 base / _patch_utils / swebench_harness / test_on_output / session_completed。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机 ",h("code",null,"ProRL-Agent-Server")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"问题陈述"),
+          h("h2",null,"从补全记录到可训练轨迹"),
+          h(ProblemSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"trajectory/models.py"),
+          h("h2",null,"四层数据模型：唯一的契约"),
+          h("p",null,"构建器与评估器之间只通过这套 pydantic 模型交流。点 Tab 浏览四层，重点看 Trace 的校验如何守住正确性底线。"),
+          h(ModelsExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"trajectory/registry.py"),
+          h("h2",null,"可插拔策略：按字符串名注册、按请求实例化"),
+          h(RegistrySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"builder/record_utils.py"),
+          h("h2",null,"归一化一条记录：build_trace_from_completion"),
+          h(RecordUtilsSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"builder · 两种策略"),
+          h("h2",null,"per_request 与 prefix_merging"),
+          h("p",null,"先看简单的 per_request，再讲清为什么多轮 agent 必须用 prefix_merging，以及它 raw 响应加 canonical interstitial 的核心设计思路。"),
+          h(BuildersExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"prefix_merging.py · 承重"),
+          h("h2",null,"prefix_merging 算法详解"),
+          h("p",null,"这是本课的承重部分。分组阶段决定谁和谁是一条链，合并阶段把一条链拼成无漂移的 token 流。EOT 探测与 logprob 槽位是两处工程细节。"),
+          h(PmExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"evaluator · 奖励"),
+          h("h2",null,"评估器：轨迹 → 奖励"),
+          h("p",null,"评估器对构建好的轨迹打分。共享的补丁评估骨架把提取-过滤-应用-测试四步统一，只有如何解释输出因策略而异。"),
+          h(EvalExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"配合这些文档理解评估器对接的基准，以及轨迹层在仓库内的位置。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"四层模型是唯一契约"),"：Record → Session → Trace → Trajectory，全部是 pydantic 模型，构建器与评估器只读写它们，因此可独立替换。Trace 的两道校验（loss_mask 取值与长度）是正确性底线。"),
+            h("li",null,h("strong",null,"构建与评估都是可插拔策略"),"：共用 StrategyRegistry，存类不存实例、按请求 cls(**config) 实例化；带冒号的名字走动态导入，自定义策略无需改源码。"),
+            h("li",null,h("strong",null,"prefix_merging 解决 agentic RL 的核心难点"),"：把多次带重叠历史的请求合并成一条带 loss_mask 的长序列。两阶段：分组用消息 key（必要）加严格 token 前缀（充分）两道闸；合并用 raw 响应体（loss_mask=1）加 canonical interstitial（loss_mask=0），以 EOT 为边界，从根本上回避 BPE token 漂移。"),
+            h("li",null,h("strong",null,"以正确性优先、可安全截断"),"：前缀不满足或 EOT 缺失时 break 截断而非整链作废；空补丁、超时、异常各有独立标记，奖励信号能区分失败原因。"),
+            h("li",null,h("strong",null,"评估委托给基准、奖励写回轨迹"),"：补丁类评估走提取-过滤-应用-测试统一骨架，swebench_harness 把判定交给官方 harness 以保证可比性；gateway 的 _merge_eval_result 把 outcome/trace 奖励写回 Trace.reward，随 SessionResult 返回 rollout server，交给第 8 课的 slime 集成转成训练样本。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"polar-lesson-06-rollout-server.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 6 课：Rollout Server 与流水线")),
+            h("a",{href:"polar-lesson-08-slime-bridge.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 8 课：slime 集成与 Platform"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

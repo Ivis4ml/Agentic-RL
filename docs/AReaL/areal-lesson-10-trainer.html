@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 逐文件精读 · 第 10 课：Trainer</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .keystone{display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start;margin-top:18px;}
+    .ksflow{display:grid;gap:0;}
+    .ksrow{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:center;cursor:pointer;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--panel);position:relative;margin-bottom:14px;}
+    .ksrow:not(:last-child)::after{content:"";position:absolute;left:24px;bottom:-14px;height:14px;width:1.5px;background:#33425a;}
+    .ksrow:hover{border-color:var(--line-2);}
+    .ksrow.active{border-color:var(--teal);background:#0e2120;}
+    .ksrow .n{font-family:var(--mono);color:var(--amber);font-weight:800;font-size:12px;text-align:center;}
+    .ksrow .t{font-family:var(--mono);font-size:12px;color:var(--ink);}
+    .ksrow .lr{font-size:10px;color:var(--faint);margin-top:1px;}
+    .ksdetail{border:1px solid var(--line-2);background:var(--panel-2);border-radius:12px;padding:18px 20px;min-height:260px;position:sticky;top:64px;}
+    .ksdetail h3{margin-top:0;}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.keystone,.split{grid-template-columns:1fr;}.ksdetail{position:relative;top:0;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 10 课</p><h1>Trainer</h1><p>能访问 CDN 时切换为交互版。本课把前九课串成一次 PPO 训练步：PPOTrainer 主循环、PPOActor 三步、权重同步时序、以及 SFT/DPO/RW 范式。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const AREAL="vscode://file/Users/xinyu/Code/Agentic-RL/AReaL/";
+  function srcUrl(p,l){return AREAL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","torch","dict","list","int","float","bool","str","PPOActor","TrainEngine","MicroBatchSpec","functools"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","areal-lesson-01-foundations.html"],[2,"数据契约","areal-lesson-02-contracts.html"],[3,"抽象基类","areal-lesson-03-interfaces.html"],[4,"RL 数学原语","areal-lesson-04-rl-math.html"],[5,"数据与奖励","areal-lesson-05-data-reward.html"],[6,"模型层","areal-lesson-06-models.html"],[7,"训练引擎","areal-lesson-07-train-engine.html"],[8,"推理引擎","areal-lesson-08-inference-engine.html"],[9,"Workflow","areal-lesson-09-workflow.html"],[10,"Trainer","areal-lesson-10-trainer.html"],[11,"编排运行时","areal-lesson-11-orchestration.html"],[12,"进阶与收尾","areal-lesson-12-advanced.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"areal-course-index.html"},"AReaL",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":(L[2]==="#"?"lchip todo":"lchip done");return L[2]==="#"?h("span",{key:L[0],className:cls},L[0]+" "+L[1]):h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== keystone: PPO 训练步九阶段 =====
+  const STEPS=[
+    {t:"actor.prepare_batch",ref:"第 8 / 9 课 · rollout",what:"取一个训练批。在线模式下从异步 rollout 队列排空已接受的轨迹，受 staleness 容量约束。每条轨迹是 workflow 产出的 input_ids/loss_mask/logprobs/versions/reward。",links:[["rl_trainer 主循环",`areal/trainer/rl_trainer.py`,584],["prepare_batch (staleness)","areal/api/engine_api.py",869]]},
+    {t:"critic.compute_values",ref:"第 7 课 · 引擎前向",what:"critic 前向算每个 token 的 value（用于 GAE 的 V(s)）。GRPO 不用 critic（组内归一化代替），这步跳过、values=0。",links:[["rl_trainer",`areal/trainer/rl_trainer.py`,606],["PPOCritic","areal/trainer/ppo/critic.py",25]]},
+    {t:"ref.compute_logp",ref:"第 7 课 · 引擎前向",what:"参考策略对整段序列重算 logp，供 KL penalty 用（把 actor 拉回 π_ref）。",links:[["rl_trainer",`areal/trainer/rl_trainer.py`,623],["forward_batch","areal/api/engine_api.py",441]]},
+    {t:"teacher.compute_logp",ref:"第 7 / 12 课 · 蒸馏（可选）",what:"教师策略 logp，用于蒸馏目标。只有配了 teacher 才执行。",links:[["rl_trainer",`areal/trainer/rl_trainer.py`,641]]},
+    {t:"actor.compute_logp",ref:"第 4 课 · proximal",what:"decoupled / recompute 时，actor 对采样轨迹重算 proximal logp（PPO 裁剪的中心 π_prox），区别于采样时的 π_behave。",links:[["compute_logp","areal/trainer/ppo/actor.py",131],["rl_trainer",`areal/trainer/rl_trainer.py`,663]]},
+    {t:"actor.compute_advantages",ref:"第 4 课 · 优势",what:"reward 处理流水线：overlong 惩罚 → 缩放裁剪归一化 → 加 KL penalty 成 token reward → GAE 反向递推算优势 → 优势归一化（GRPO 组内）。",links:[["_compute_advantages","areal/trainer/ppo/actor.py",145],["GAE 反向递推","areal/trainer/ppo/actor.py",222]]},
+    {t:"actor.ppo_update",ref:"第 4 / 7 课 · 损失+反向",what:"engine.train() 开梯度检查点，切成 ppo_n_minibatches 个微批，每批 engine.train_batch(grpo_loss_fn)。grpo_loss_fn 分发到 ppo_actor_loss_fn 或 sapo_loss_fn。",links:[["ppo_update","areal/trainer/ppo/actor.py",253],["grpo_loss_fn","areal/trainer/ppo/actor.py",408],["ppo_actor_loss_fn","areal/utils/functional/functional.py",429]]},
+    {t:"权重同步",ref:"第 7 / 8 课 · 切断旧 KV",what:"rollout.pause() → pause_generation()（中止旧请求）→ 广播新权重给推理引擎 → set_version 升版本 → continue_generation() → resume()。已生成的旧 token 带旧版本，交给 decoupled PPO。",links:[["rl_trainer pause",`areal/trainer/rl_trainer.py`,445],["update_weights","areal/api/engine_api.py",175]]},
+    {t:"save / eval / log",ref:"第 1 / 5 课 · 周期组件",what:"按 FrequencyControl 周期性存 DCP checkpoint、跑评测、导出统计到 W&B/TensorBoard。断点恢复靠 recover 与确定性种子。",links:[["Saver","areal/utils/saver.py",null],["Evaluator","areal/utils/evaluator.py",null],["StatsLogger","areal/utils/stats_logger.py",null]]}
+  ];
+  function Keystone(){
+    const [sel,setSel]=useState(5);const d=STEPS[sel];
+    return h("div",{className:"keystone"},
+      h("div",{className:"ksflow"},STEPS.map(function(s,i){return h("div",{key:i,className:"ksrow"+(i===sel?" active":""),onClick:function(){setSel(i);}},
+        h("div",{className:"n"},i+1),
+        h("div",null,h("div",{className:"t"},s.t),h("div",{className:"lr"},s.ref)));
+      })),
+      h("div",{className:"ksdetail"},
+        h("h3",null,h("span",{className:"hl-teal"},(sel+1)+". "),d.t),
+        h("div",{className:"faint",style:{fontFamily:"var(--mono)",fontSize:11.5,marginBottom:8}},d.ref),
+        h("p",null,d.what),
+        h("div",null,d.links.map(function(l,i){return h(Src,{key:i,label:l[0],path:l[1],line:l[2]});}))
+      )
+    );
+  }
+
+  // ===== PPOActor 三步 =====
+  const ACTOR=[
+    {key:"logp",name:"compute_logp",render:function(){return [
+      h("p",null,"异步训练里存在三套策略：采样用的 ",h("code",null,"π_behave"),"（轨迹里自带的 logprob）、PPO 裁剪中心 ",h("code",null,"π_prox"),"、当前 ",h("code",null,"π_θ"),"。",h("code",null,"compute_logp")," 在 decoupled / recompute 模式下，让 actor 对采样轨迹重新 forward 一遍算出精确的 proximal logp。"),
+      h(Formula,{cap:"三套策略"},"$$ \\rho_t = \\frac{\\pi_\\theta}{\\pi_{\\text{prox}}} \\;(\\text{PPO 比}), \\qquad w_t = \\frac{\\pi_{\\text{prox}}}{\\pi_{\\text{behave}}} \\;(\\text{staleness 修正}) $$"),
+      h("div",{className:"note"},"不重算时（on-policy-ish），prox_logp 直接用采样 logp，三者合一。重算更准但多一次 forward。这接到第 4 课 decoupled PPO 与拒绝采样。"),
+      h("div",null,h(Src,{label:"compute_logp",path:"areal/trainer/ppo/actor.py",line:131}))
+    ];}},
+    {key:"adv",name:"compute_advantages",render:function(){return [
+      h("p",null,"reward 处理的完整流水线（顺序很重要）："),
+      h(Formula,{cap:"1) reward 缩放与裁剪"},"$$ r \\leftarrow \\operatorname{clip}\\big((r_{\\text{raw}} + b)\\cdot s,\\; -c,\\; c\\big), \\quad \\text{可选 } r \\leftarrow \\text{norm}(r) $$"),
+      h(Formula,{cap:"2) 加 KL penalty 成 token reward（末位放任务奖励）"},"$$ r_t = -\\beta\\,\\widehat{KL}_t + r\\cdot\\mathbb{1}[t = T{-}1] $$"),
+      h(Formula,{cap:"3) GAE 反向递推 + 优势归一化"},"$$ \\delta_t = r_t + \\gamma V_{t+1} - V_t,\\quad A_t = \\delta_t + \\gamma\\lambda A_{t+1},\\quad \\hat{A}=\\text{norm}(A) $$"),
+      h("p",null,"前面还有 overlong 惩罚（第 4 课），loss_mask 整体 roll(-1) 移到 next-token 位置。GRPO 取 γ=λ=1、无 critic（V=0），优势退化为组内归一化的 reward-to-go。"),
+      h(Code,null,"reward = clip((data['rewards'] + reward_bias) * reward_scaling, -reward_clip, reward_clip)\nif reward_norm: reward = self.reward_norm(reward)\nloss_mask = torch.roll(data['loss_mask'].float(), -1, dims=-1)\nrewards = -kl_ctl * kl_estimator(old_logp, ref_logp)   # 逐 token KL\nrewards[:, last] += reward                              # 末位任务奖励\n# GAE 反向扫描 (见第 4 课)"),
+      h("div",null,h(Src,{label:"_compute_advantages",path:"areal/trainer/ppo/actor.py",line:145}),h(Src,{label:"GAE 递推",path:"areal/trainer/ppo/actor.py",line:222}))
+    ];}},
+    {key:"update",name:"ppo_update",render:function(){return [
+      h("p",null,"切微批、逐批训练。",h("code",null,"engine.train()")," 启用梯度检查点；按 ",h("code",null,"ppo_n_minibatches")," 切微批；每批一次 ",h("code",null,"engine.train_batch")," 即一次完整的前向+反向+优化器步（第 7 课）。损失用 ",h("code",null,"grpo_loss_fn")," 包好超参后传入。"),
+      h(Code,null,"self.engine.train()                                         # 开梯度检查点\nmb_inputs = split_padded_tensor_dict_into_mb_list(\n    data, mb_spec=MicroBatchSpec(n_mbs=self.config.ppo_n_minibatches))\nfor mb in mb_inputs.mbs:\n    self.engine.train_batch(mb, loss_fn=functools.partial(\n        grpo_loss_fn, eps_clip=..., eps_clip_higher=..., c_clip=...,\n        rejection_sampling=..., importance_sampling_level=...))\n\n# grpo_loss_fn 分发:\n#   importance_sampling_level=='sapo' -> sapo_loss_fn\n#   否则 -> ppo_actor_loss_fn  (clip / dual-clip / GSPO, 第 4 课)"),
+      h("div",{className:"note"},"每个 rollout 批做 ppo_n_minibatches 次梯度更新。配合第 7 课：train_batch 内部跨 DP 归一化损失、跨分片裁剪梯度、optimizer step。"),
+      h("div",null,h(Src,{label:"ppo_update",path:"areal/trainer/ppo/actor.py",line:253}),h(Src,{label:"grpo_loss_fn 分发",path:"areal/trainer/ppo/actor.py",line:408}))
+    ];}}
+  ];
+  function ActorExplorer(){const [s,setS]=useState(1);const d=ACTOR[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},ACTOR.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 其它范式 SFT/DPO/RW =====
+  const PARADIGMS=[
+    {key:"sft",name:"SFT",render:function(){return [
+      h("p",null,"最简单的范式：监督微调。没有 rollout、没有 reward，数据集直接给 input_ids + loss_mask（第 5 课），损失是 completion 段的 next-token 交叉熵。"),
+      h(Formula,{cap:"SFT 损失"},"$$ \\mathcal{L}_{\\text{SFT}} = -\\frac{\\sum_t m_t \\log \\pi_\\theta(y_{t+1}\\mid y_{\\le t})}{\\sum_t m_t} $$"),
+      h("div",null,h(Src,{label:"SFTTrainer",path:"areal/trainer/sft_trainer.py",line:54}),h(Src,{label:"lm_engine",path:"areal/trainer/sft/lm_engine.py",line:1}))
+    ];}},
+    {key:"dpo",name:"DPO",render:function(){return [
+      h("p",null,"直接偏好优化：用成对 (chosen, rejected) 偏好数据（第 5 课 hhrlhf），不需要 reward 模型，也不需要 rollout。损失把“policy 相对 ref 在 chosen 上的对数比”推高、在 rejected 上推低。"),
+      h(Formula,{cap:"DPO 损失（sigmoid 形式）"},"$$ \\mathcal{L}_{\\text{DPO}} = -\\log\\sigma\\Big(\\beta\\big[(\\log\\tfrac{\\pi_\\theta}{\\pi_{\\text{ref}}})_{c} - (\\log\\tfrac{\\pi_\\theta}{\\pi_{\\text{ref}}})_{r}\\big]\\Big) $$"),
+      h("p",null,"chosen/rejected 成对打包，用第 4 课的 ",h("code",null,"dpo_pair_logratios")," 在 packed 批上聚合每条序列的 logp 再配对。"),
+      h("div",null,h(Src,{label:"DPOTrainer",path:"areal/trainer/dpo_trainer.py",line:84}),h(Src,{label:"compute_dpo_loss",path:"areal/trainer/dpo/dpo_engine.py",line:147}),h(Src,{label:"dpo_pair_logratios",path:"areal/utils/functional/functional.py",line:641}))
+    ];}},
+    {key:"rw",name:"RW（奖励模型）",render:function(){return [
+      h("p",null,"训练奖励模型：给序列打分。同样用成对偏好数据，Bradley-Terry 损失让 chosen 的分高于 rejected。训出的 RW 可作为 PPO 的 reward 来源（替代可验证奖励）。"),
+      h(Formula,{cap:"Bradley-Terry 损失"},"$$ \\mathcal{L}_{\\text{RW}} = -\\log\\sigma\\big(s_{\\text{chosen}} - s_{\\text{rejected}}\\big) $$"),
+      h(Code,null,"# rw_engine.py compute_rw_loss: 每对产出 2 条序列, scores[:,0]=chosen, [:,1]=rejected\nloss = -torch.nn.functional.logsigmoid(scores[:, 0] - scores[:, 1])"),
+      h("div",null,h(Src,{label:"RWTrainer",path:"areal/trainer/rw_trainer.py",line:76}),h(Src,{label:"compute_rw_loss",path:"areal/trainer/rw/rw_engine.py",line:115}))
+    ];}}
+  ];
+  function ParadigmExplorer(){const [s,setS]=useState(0);const d=PARADIGMS[s];const ref=useTypeset("pg"+d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},PARADIGMS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:10}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 10 课 / 共 12 · trainer/"),
+          h("h1",null,"Trainer：九课在一次训练步里汇合"),
+          h("p",{className:"lead"},"这是收束课。前九课造的所有零件（数据契约、损失原语、模型、训练引擎、推理引擎、workflow）都在 PPOTrainer 的一次训练步里被串起来。PPOTrainer 负责编排（取批、各种 forward、更新、权重同步、存档），PPOActor 负责算法（reward 处理、GAE、PPO 损失）。两者的边界，正是第 3 课接口设计的回报。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"trainer/rl_trainer.py"),"（PPOTrainer 主循环）、",h("code",null,"trainer/ppo/{actor,critic,stats}.py"),"、",h("code",null,"trainer/sft_trainer.py · dpo_trainer.py · rw_trainer.py")," 及各自 engine。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"rl_trainer · keystone"),
+          h("h2",null,"PPO 训练步：点开每一阶段看它来自哪一课"),
+          h("p",null,"PPOTrainer 的一次 ",h("code",null,"global_step")," 走九个阶段。点左侧任一阶段，右侧给出它做什么、来自哪一课、对应源码行。这张图就是整个系列的总装图。"),
+          h(Keystone)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"ppo/actor.py"),
+          h("h2",null,"PPOActor 三步：纯算法"),
+          h("p",null,"PPOActor 持有一个 TrainEngine，只做数学，不碰系统。点 Tab 看三步。"),
+          h(ActorExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"sft / dpo / rw"),
+          h("h2",null,"同一套引擎，四种训练范式"),
+          h("p",null,"除 PPO/GRPO 外，AReaL 用同一套 TrainEngine 支持 SFT、DPO、RW。它们更简单（无 rollout），区别只在损失。点 Tab 切换。"),
+          h(ParadigmExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"编排与算法分离"),"：PPOTrainer 管系统流程（取批/forward/更新/权重同步/存档），PPOActor 管数学（reward/GAE/loss）。换算法不动编排，换调度不动算法。"),
+            h("li",null,h("strong",null,"一次训练步串起全栈"),"：rollout(L8/9) → critic/ref/teacher(L7) → 优势(L4) → 损失更新(L4/L7) → 权重同步(L7/8)。"),
+            h("li",null,h("strong",null,"四范式共用引擎"),"：PPO/SFT/DPO/RW 区别只在 loss_fn，TrainEngine 与数据管线复用。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"areal-lesson-09-workflow.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 9 课：Workflow")),
+            h("a",{href:"areal-course-index.html"},h("div",{className:"faint"},"下一课（待建） →"),h("strong",null,"第 11 课：编排运行时"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>slime 逐文件精读 · 第 7 课：权重同步</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 7 课</p><h1>权重同步</h1><p>能访问 CDN 时切换为交互版。本课讲清训练侧 Megatron 分片权重如何推送给推理侧 SGLang，为何它是异步吞吐的瓶颈，四种同步策略（from_disk / from_distributed / from_tensor / from_distributed_delta）的对比与设计动机，HF 权重在线转换的 bridge 与 direct 两条路径，可重建的 NCCL 通信组、张量备份，以及按字节分桶控制显存峰值。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const SLIME="vscode://file/Users/xinyu/Code/Agentic-RL/slime/";
+  function srcUrl(p,l){return SLIME+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","Sample","Args","RolloutController","RolloutManager","RayTrainGroup","RayActor","SglangEngine","Box","ray","asyncio","Timer","ParamInfo","RolloutBatch","ParamDiff","EncodedChunk","DeltaState","DeltaBucket","DeltaSpec","DeltaParam","DeltaEncoding","TensorBackuper","ReloadableProcessGroup","UpdateWeightFromDistributed","UpdateWeightFromDistributedDelta","UpdateWeightFromDisk","UpdateWeightFromTensor","HfWeightIteratorBase","AsyncSafetensorsWriter","ActorHandle","ObjectRef","Namespace","Sequence","Iterator","Mapping","np","mpu","Queue","Event","Stream","Future"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与双引擎","slime-lesson-01-foundations.html"],[2,"统一配置","slime-lesson-02-config.html"],[3,"RL 数学原语","slime-lesson-03-rl-math.html"],[4,"数据与 Buffer","slime-lesson-04-data-buffer.html"],[5,"Megatron 后端","slime-lesson-05-megatron.html"],[6,"SGLang 后端","slime-lesson-06-sglang.html"],[7,"权重同步","slime-lesson-07-weight-sync.html"],[8,"Rollout 与异步","slime-lesson-08-rollout-async.html"],[9,"Agent 层","slime-lesson-09-agent.html"],[10,"Ray 编排","slime-lesson-10-orchestration.html"],[11,"miles 增量","slime-lesson-11-miles-delta.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"slime-course-index.html"},"slime",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 为什么需要权重同步 =====
+  function WhySection(){
+    return h("div",null,
+      h("p",null,"在 slime 的一个训练步里，",h("strong",{className:"hl-purple"},"Megatron")," 用反向传播更新 actor 参数，得到一版新权重 ",h("code",null,"θ_train"),"；而生成下一批 rollout 数据的是 ",h("strong",{className:"hl-teal"},"SGLang")," 引擎，它持有的是另一份独立的权重副本 ",h("code",null,"θ_gen"),"。两者运行在不同进程（往往是不同节点、不同 GPU）上，参数布局也完全不同：Megatron 把每个张量按五维并行（TP/PP/EP/CP/DP）切成分片，分散在多块 GPU 上；SGLang 需要的是完整的、按 HuggingFace 命名与布局组织的权重。",h("strong",null,"权重同步"),"就是把 ",h("code",null,"θ_train")," 从 Megatron 的分片形态转换并搬运到 SGLang 引擎，使下一轮生成使用最新策略。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"源"),"Megatron 分片"),
+          h("p",null,"每块 GPU 只持有一个张量的一部分（TP 沿某一维切、EP 沿专家维切、PP 沿层切）。参数命名是 Megatron 内部的（如 ",h("code",null,"decoder.layers.N.mlp..."),"），且 GLU 的 ",h("code",null,"linear_fc1")," 与 grouped MoE 的 ",h("code",null,"linear_fc2")," 还有特殊布局。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"目的地"),"SGLang 完整权重"),
+          h("p",null,"推理引擎需要按 HF 命名、未切分（或按它自己的 TP 切分）的完整张量。因此同步过程必然包含两步：先在训练侧把分片",h("strong",null,"聚合"),"成完整张量（all-gather），再把它",h("strong",null,"转换")," 成 HF 命名与布局，最后",h("strong",null,"搬运"),"过去。")
+        )
+      ),
+      h("h3",null,"为什么它是异步吞吐的瓶颈"),
+      h("p",null,"回顾第 1 课：同步训练每一步都要做一次权重同步（生成 → 训练 → 同步 → 再生成），同步期间生成必须暂停。模型越大，同步耗时越长：对一个数百亿到数千亿参数的模型，把全部参数从训练侧聚合、转换、广播到推理侧，是一个会持续数十秒甚至更久的集合通信过程。在这段时间里，昂贵的推理 GPU 处于空闲。异步训练（第 8 课）的目标正是让生成与训练重叠，但权重同步天然要求生成暂停（否则一次生成的前后会用上不同版本的权重），因此",h("strong",null,"同步本身的耗时直接决定了异步重叠所能达到的吞吐上限"),"。优化权重同步，等价于优化整个 RL 训练的有效算力利用率。"),
+      h(Formula,{cap:"一个训练步的墙钟时间下界：生成与训练可重叠，但权重同步的暂停区间无法被生成掩盖"},"$$ T_{\\text{step}} \\;\\ge\\; \\max\\big(T_{\\text{gen}},\\, T_{\\text{train}}\\big) \\;+\\; T_{\\text{sync}} $$"),
+      h("p",null,"据此，slime 的权重同步代码围绕两条主线展开：其一，",h("strong",null,"减少需要搬运的数据量"),"（增量同步只传变化的字节）；其二，",h("strong",null,"压缩搬运本身的耗时"),"（NCCL 直连、张量级 IPC 零拷贝、计算与通信重叠、按字节分桶以保持显存峰值可控）。本课逐一拆解这两条主线在四种策略中的体现。"),
+      h("div",{className:"note"},"四种策略由 ",h("code",null,"actor.py")," 的初始化逻辑按 ",h("code",null,"--update-weight-mode"),"、",h("code",null,"--update-weight-transport")," 与 ",h("code",null,"--colocate")," 选择。共置（colocate）必须用 ",h("code",null,"UpdateWeightFromTensor"),"；非共置下 ",h("code",null,"mode=delta")," 选增量类，否则按 transport 在 disk 与 distributed 之间二选一。"),
+      h("div",null,h(Src,{label:"actor.py · 策略选择",path:"slime/backends/megatron_utils/actor.py",line:139}),h(Src,{label:"actor.update_weights",path:"slime/backends/megatron_utils/actor.py",line:598}),h(Src,{label:"--update-weight-mode",path:"slime/utils/arguments.py",line:143}),h(Src,{label:"--update-weight-transport",path:"slime/utils/arguments.py",line:153}))
+    );
+  }
+
+  // ===== 四种策略 Tab 探索器 =====
+  const STRAT=[
+    {key:"disk",name:"from_disk（存盘再加载）",render:function(){return [
+      h("p",null,"最稳、最慢、依赖最少的策略。训练侧把完整模型按 HF 格式写入一个共享文件系统目录，再通过 HTTP 通知 SGLang 引擎从该目录重新加载。整个过程不需要训练进程与推理进程之间建立任何 NCCL 通信组，因此对网络拓扑、引擎是否共置、引擎数量都不敏感，是跨数据中心或调试时的兜底方案。"),
+      h(Code,null,"@torch.no_grad()\ndef update_weights(self) -> None:\n    self.weight_version += 1\n    version_dir = Path(self.args.update_weight_disk_dir) / f\"weight_v{self.weight_version:06d}\"\n\n    if dist.get_rank() == 0:\n        shutil.rmtree(version_dir, ignore_errors=True)\n    dist.barrier(group=get_gloo_group())\n\n    if dist.get_rank() == 0:\n        # 暂停生成并清空 KV 缓存, 避免在旧权重上继续解码\n        ray.get([engine.pause_generation.remote() for engine in self.rollout_engines])\n        ray.get([engine.flush_cache.remote() for engine in self.rollout_engines])\n    dist.barrier(group=get_gloo_group())\n\n    # 全体训练 rank 协同把分片权重重组为完整 HF checkpoint 写盘\n    save_hf_model_to_path(self.args, version_dir, self.model, model_name=self.model_name,\n                          quantization_config=self.quantization_config, ...)\n    dist.barrier(group=get_gloo_group())\n\n    if dist.get_rank() == 0:\n        ray.get([engine.update_weights_from_disk.remote(\n            model_path=str(version_dir), weight_version=str(self.weight_version)\n        ) for engine in self.rollout_engines])\n        if not self.args.update_weight_disk_keep_files:\n            shutil.rmtree(version_dir, ignore_errors=True)\n        ray.get([engine.continue_generation.remote() for engine in self.rollout_engines])\n    dist.barrier(group=get_gloo_group())"),
+      h("p",null,"注意此处的几个固定模式：每次同步前 ",h("code",null,"weight_version")," 自增并以六位零填充命名版本目录（",h("code",null,"weight_v000003"),"），保证版本可追踪、可校验；",h("code",null,"pause_generation")," / ",h("code",null,"flush_cache")," 与 ",h("code",null,"continue_generation")," 是所有策略共享的”停、换、续”三段式；每个阶段后都有一次 ",h("code",null,"dist.barrier(group=get_gloo_group())"),"，用 CPU 端的 Gloo 组做全员同步，确保写盘完成后才通知引擎加载。同步完成后默认删除版本目录以免磁盘膨胀，除非 ",h("code",null,"--update-weight-disk-keep-files"),"。"),
+      h("div",{className:"warn"},"代价：写盘与读盘各做一遍完整的磁盘 I/O，对数百亿参数模型意味着上百 GB 的读写，是四种策略中最慢的。优点是它把训练与推理彻底解耦，引擎可以在任意时刻按版本号自行加载，适合容错恢复与异构部署。"),
+      h("div",null,h(Src,{label:"UpdateWeightFromDisk",path:"slime/backends/megatron_utils/update_weight/update_weight_from_disk.py",line:21}),h(Src,{label:"update_weights",path:"slime/backends/megatron_utils/update_weight/update_weight_from_disk.py",line:60}),h(Src,{label:"save_hf_model_to_path",path:"slime/backends/megatron_utils/hf_checkpoint_saver.py"}))
+    ];}},
+    {key:"dist",name:"from_distributed（NCCL 广播）",render:function(){return [
+      h("p",null,"非共置（disaggregated）部署下的默认全量同步。训练 rank 0 与所有 SGLang 引擎 GPU 组成一个 NCCL 通信组，训练侧把每个完整张量逐桶 ",h("code",null,"broadcast")," 给所有引擎。相比 from_disk，它省去磁盘往返，直接走 GPU 间高速互联，是同数据中心内的常规选择。"),
+      h("p",null,"建组逻辑在 ",h("code",null,"connect_rollout_engines_from_distributed")," 中：world_size 等于所有引擎 GPU 数之和再加一（训练 rank 0 占 rank 0），引擎按累计偏移占据后续连续 rank。当不同引擎的 TP 大小不同（如 prefill TP=2、decode TP=4）时，",h("code",null,"engine_gpu_counts")," 给出每个引擎占的 rank 数，偏移由累加得出。"),
+      h(Code,null,"def connect_rollout_engines_from_distributed(args, group_name, rollout_engines, engine_gpu_counts=None):\n    if engine_gpu_counts is None:\n        engine_gpu_counts = [args.rollout_num_gpus_per_engine] * len(rollout_engines)\n    master_address = ray._private.services.get_node_ip_address()\n    ...\n    world_size = sum(engine_gpu_counts) + 1     # +1 给训练 rank 0\n    cumulative = [0]\n    for c in engine_gpu_counts:\n        cumulative.append(cumulative[-1] + c)\n    refs = [engine.init_weights_update_group.remote(\n                master_address=master_address, master_port=master_port,\n                rank_offset=cumulative[i] + 1, world_size=world_size,\n                group_name=group_name, backend=\"nccl\")\n            for i, engine in enumerate(rollout_engines)]\n    model_update_groups = init_process_group(\n        backend=\"nccl\", init_method=f\"tcp://{master_address}:{master_port}\",\n        world_size=world_size, rank=0, group_name=group_name)\n    ray.get(refs)\n    return model_update_groups"),
+      h("p",null,"同步主流程 ",h("code",null,"_send_weights")," 把参数分成两遍：先非专家参数（按常规 TP all-gather），再专家参数（按 EP all-gather），两遍之间用 barrier 隔开。每一桶在广播前要先抢一个 Ray 远程锁 ",h("code",null,"rollout_engine_lock"),"，这是因为 NCCL 的 broadcast 是阻塞集合操作，若两个并发操作（如权重广播与某个引擎内部的别的 NCCL 调用）交错，会死锁。"),
+      h(Code,null,"def _update_bucket_weights_from_distributed(self, converted_named_tensors, pbar=None, load_format=None, delta=None):\n    # 加锁防止 broadcast 死锁\n    while not ray.get(self.rollout_engine_lock.acquire.remote()):\n        time.sleep(0.1)\n    refs = update_weights_from_distributed(\n        self._group_name, self._model_update_groups, self.weight_version,\n        self.rollout_engines, converted_named_tensors,\n        load_format=load_format, delta=delta)\n    ray.get(refs)\n    converted_named_tensors.clear()\n    ray.get(self.rollout_engine_lock.release.remote())\n    pbar.update(1)"),
+      h("p",null,"广播分两路下发：参数的元信息（名字、dtype、shape）通过 Ray 的 ",h("code",null,"update_weights_from_distributed.remote(...)")," 走控制面发给引擎，张量本体通过 NCCL ",h("code",null,"dist.broadcast(param.data, 0, group=...)")," 走数据面。引擎据元信息预分配接收缓冲，再在同一通信组上参与广播。注意 ",h("code",null,"load_format")," 与 ",h("code",null,"delta")," 两个参数：全量同步时为 ",h("code",null,"None"),"，增量同步复用同一函数但传入 ",h("code",null,"load_format=\"delta\"")," 与一个 ",h("code",null,"DeltaSpec"),"，这是后文增量策略能复用本类的关键。"),
+      h("div",null,h(Src,{label:"UpdateWeightFromDistributed",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed.py",line:23}),h(Src,{label:"_send_weights",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed.py",line:135}),h(Src,{label:"connect…from_distributed",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed.py",line:277}),h(Src,{label:"update_weights_from_distributed",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed.py",line:335}))
+    ];}},
+    {key:"tensor",name:"from_tensor（直接张量传递）",render:function(){return [
+      h("p",null,"共置（colocate）部署下的策略。当训练与推理共用同一批 GPU 时，权重已经在同一块卡的显存里，没有必要绕一圈网络。",h("code",null,"UpdateWeightFromTensor")," 把完整的 HF 张量通过 CUDA IPC 句柄直接交给同卡上的 SGLang 引擎进程，零拷贝、零网络。"),
+      h("p",null,"实现上区分共置引擎与远程引擎两类。共置部分：每个引擎对应的若干训练 rank 组成一个 ",h("code",null,"gloo")," gather 组，各 rank 把本地张量序列化（CUDA IPC）后用 ",h("code",null,"gather_object")," 汇聚到 gather 源 rank，再由该 rank 调 ",h("code",null,"engine.update_weights_from_tensor.remote(...)")," 把 IPC 句柄递给引擎。远程引擎部分仍退回 NCCL 广播。"),
+      h(Code,null,"for hf_named_tensors in self._hf_weight_iterator.get_hf_weight_chunks(megatron_local_weights):\n    refs, long_lived_tensors = self._send_hf_params(hf_named_tensors)\n    ray.get(refs)\n    # 释放本桶 GPU 张量, 让缓存分配器可复用; 再回收消费方已关闭的 CUDA IPC 缓存项\n    del long_lived_tensors, hf_named_tensors\n    torch.cuda.ipc_collect()"),
+      h("p",null,"关键在显存与 IPC 句柄的生命周期管理。把张量打成 ",h("code",null,"FlattenedTensorBucket")," 后，通过 ",h("code",null,"MultiprocessingSerializer.serialize(..., output_str=True)")," 序列化出 IPC 句柄字符串；消费方（SGLang 引擎）拿到句柄后映射同一块显存，无需复制。每处理完一桶就 ",h("code",null,"del")," 掉张量并调 ",h("code",null,"torch.cuda.ipc_collect()")," 回收已被消费方关闭的句柄，防止共置下显存被同步过程长期占用。"),
+      h("div",{className:"note"},"为什么共置必须用本策略而不能用 delta：见 ",h("code",null,"actor.py")," 的断言 ",h("code",null,"--update-weight-mode=delta is not supported with --colocate"),"。共置下权重本就在同卡，传整张张量的 IPC 句柄几乎零成本，增量比对反而引入额外的快照显存与计算。"),
+      h("div",null,h(Src,{label:"UpdateWeightFromTensor",path:"slime/backends/megatron_utils/update_weight/update_weight_from_tensor.py",line:24}),h(Src,{label:"update_weights",path:"slime/backends/megatron_utils/update_weight/update_weight_from_tensor.py",line:146}),h(Src,{label:"_send_to_colocated_engine",path:"slime/backends/megatron_utils/update_weight/update_weight_from_tensor.py",line:218}),h(Src,{label:"colocate 断言",path:"slime/backends/megatron_utils/actor.py",line:140}))
+    ];}},
+    {key:"delta",name:"from_distributed_delta（增量）",render:function(){return [
+      h("p",null,"最省带宽的策略，也是本课最重的文件（864 行）。核心观察：RL 后训练中，一步更新只让权重的极小一部分字节发生变化（实测在 bf16 权重上约 2% 的伯努利密度）。既然如此，",h("strong",null,"只传变化的位置与值"),"，而非整张张量。",h("code",null,"UpdateWeightFromDistributedDelta")," 继承自 ",h("code",null,"UpdateWeightFromDistributed"),"，复用其全部聚合与转换流水线，只替换”如何把转换后的 HF 张量送出去”。"),
+      h("p",null,"做法是：训练侧维护一份上一次广播过的权重的固定页（pinned）CPU 快照；每次同步时把当前权重与快照逐字节比对，得到一个布尔掩码，编码出（变化位置，变化值），仅广播这部分，接收方按位置覆盖对应字节。由于覆盖是精确字节复制而非算术运算，应用是无损的，不存在需要周期性全量重发来纠正的漂移。"),
+      h(Code,null,"@torch.no_grad()\ndef update_weights(self) -> None:\n    if not self._snapshot_seeded:\n        self._seed_snapshot()        # 首次只播种快照, 不联系引擎\n        self._snapshot_seeded = True\n        return\n    self.weight_version += 1\n    ...\n    with timer(\"delta_encode\"):       # 比对 + 编码 + 广播/写盘\n        self._send_weights(pbar)\n        if self.writer is not None:\n            self.writer.drain()\n        self.delta_state.flush_snapshot()\n        dist.barrier(group=get_gloo_group())\n    with timer(\"delta_finalize\"):      # 等待最后一批接收方应用完成\n        self._finalize_sync()\n    self._record_metrics()"),
+      h("p",null,"首次 ",h("code",null,"update_weights")," 不联系引擎，只用一遍完整参数扫描把快照写进固定页 CPU 内存（在 355B 模型上约 50 秒的一次性开销）。引擎被假定在初始化时已加载相同的 HF checkpoint，故与训练侧快照初始一致。此后每次同步分两个计时区间：",h("code",null,"delta_encode"),"（比对、编码、逐桶送出）与 ",h("code",null,"delta_finalize"),"（等待接收方应用），二者之和即用户观测到的同步延迟。"),
+      h("p",null,"两种载体（transport）：",h("code",null,"nccl")," 每桶走 NCCL 广播（数据中心内低延迟）；",h("code",null,"disk")," 把每桶写成共享文件系统上的一个 safetensors 文件，每次同步结束一次 HTTP 推送唤醒引擎读取（跨数据中心、带宽受限）。两者共享同一套线格式与同一个接收方解码器，详见下一节深入。"),
+      h("div",null,h(Src,{label:"UpdateWeightFromDistributedDelta",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:479}),h(Src,{label:"update_weights",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:567}),h(Src,{label:"_seed_snapshot",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:612}),h(Src,{label:"模块 docstring（线格式说明）",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:1}))
+    ];}}
+  ];
+  function StratExplorer(){const [s,setS]=useState(0);const d=STRAT[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},STRAT.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 对比表 =====
+  function CompareSection(){
+    const rows=[
+      ["from_disk","共享文件系统 + 重新加载","全部参数","最稳, 依赖最少, 跨数据中心/容错","磁盘读写各一遍, 最慢","full + transport=disk"],
+      ["from_distributed","NCCL broadcast","全部参数","省磁盘, 走 GPU 高速互联","每步搬全量, 需建 NCCL 组","full + transport=nccl（非共置默认）"],
+      ["from_tensor","CUDA IPC 句柄(同卡零拷贝)","全部参数","共置下几乎零成本, 零网络","仅限共置","colocate 必选"],
+      ["from_distributed_delta","NCCL 或 disk, 只传变化字节","仅增量(约 2%)","带宽最省, 应用无损","快照占 CPU 内存, 比对有计算开销","delta + transport=nccl/disk"]
+    ];
+    return h("div",null,
+      h("p",null,"四种策略不是优劣关系，而是针对不同部署形态的权衡。下表把它们的载体、搬运量、优势、代价与触发条件并列。"),
+      h("div",{style:{overflowX:"auto"}},
+        h("table",{style:{borderCollapse:"collapse",width:"100%",fontSize:"12.5px",margin:"10px 0"}},
+          h("thead",null,h("tr",null,["策略","载体","搬运量","优势","代价","触发条件"].map(function(t,i){return h("th",{key:i,style:{textAlign:"left",padding:"7px 10px",borderBottom:"1px solid var(--line-2)",color:"var(--ink)",whiteSpace:"nowrap"}},t);}))),
+          h("tbody",null,rows.map(function(r,i){return h("tr",{key:i},r.map(function(c,j){return h("td",{key:j,style:{padding:"7px 10px",borderBottom:"1px solid var(--line)",color:j===0?"var(--teal)":"var(--muted)",fontFamily:j===0?"var(--mono)":"inherit",verticalAlign:"top"}},c);}));}))
+        )
+      ),
+      h("div",{className:"note"},"四者共享同一套”停、换、续”骨架（",h("code",null,"pause_generation")," / ",h("code",null,"flush_cache")," / ",h("code",null,"continue_generation"),"）与同一套 HF 转换流水线。它们的差异集中在”如何把转换后的张量送出去”这一步，因此 from_distributed 是基类，delta 通过继承复用其聚合与转换，只重写发送。")
+    );
+  }
+
+  // ===== 聚合与 HF 转换 =====
+  function AggregateSection(){
+    return h("div",null,
+      h("p",null,"无论哪种策略，把分片权重变成 SGLang 能用的形态都要经过两个阶段：先在并行组内",h("strong",null,"聚合"),"出完整张量，再",h("strong",null,"转换")," 成 HF 命名与布局。这两步是 from_distributed / from_tensor / delta 共享的前半段。"),
+      h("h3",null,"TP 聚合：all_gather_param"),
+      h("p",null,h("code",null,"all_gather_param")," 把一个张量并行（TP）切分的参数沿其分区维 all-gather 回完整张量。它要处理三类特殊情况：非 TP 或 ",h("code",null,"duplicated")," 参数直接返回 ",h("code",null,"param.data"),"（无需聚合）；专家参数走 expert-TP 组而非常规 TP 组；GLU 门控的 ",h("code",null,"linear_fc1")," 要按两半重新拼接，grouped MoE 的 ",h("code",null,"linear_fc2")," 要修正分区维（这是 Megatron grouped MoE 的一个已知布局问题）。"),
+      h(Code,null,"def all_gather_param(name, param):\n    if \"expert_bias\" in name:\n        return param\n    if not param.tensor_model_parallel or getattr(param, \"parallel_mode\", None) == \"duplicated\":\n        return param.data\n    if \".experts.\" in name:\n        tp_size = mpu.get_expert_tensor_parallel_world_size()\n        tp_group = mpu.get_expert_tensor_parallel_group()\n    else:\n        tp_size = mpu.get_tensor_model_parallel_world_size()\n        tp_group = mpu.get_tensor_model_parallel_group()\n    param_partitions = [torch.empty_like(param.data) for _ in range(tp_size)]\n    dist.all_gather(param_partitions, param.data, group=tp_group)\n    partition_dim = param.partition_dim\n    if \"linear_fc1.weight\" in name or \"linear_fc1.bias\" in name:   # GLU 重拼\n        param_partitions = [p.chunk(2, dim=0) for p in param_partitions]\n        param_partitions = [p[0] for p in param_partitions] + [p[1] for p in param_partitions]\n    if \"linear_fc2.weight\" in name:                                # grouped MoE 修正\n        if partition_dim == 0:\n            partition_dim = 1\n    return torch.cat(param_partitions, dim=partition_dim)"),
+      h("p",null,"另有 ",h("code",null,"all_gather_params_async")," 把多个 TP 参数的 all-gather 用 ",h("code",null,"async_op=True")," 同时发起、统一等待，使若干 NCCL 操作重叠以提高带宽利用。",h("code",null,"named_params_and_buffers")," 则负责把 Megatron 各 PP/EP 分片上的局部参数名翻译成跨进程一致的全局名（含虚拟 PP 偏移、EP 专家偏移、MTP 投机解码层的命名修正），是后续 PP/EP 广播能对上号的前提。"),
+      h("h3",null,"HF 转换：bridge 与 direct 两条路径"),
+      h("p",null,"聚合出完整张量后，要按 SGLang 期望的 HF 命名与布局重排。",h("code",null,"HfWeightIteratorBase")," 是抽象基类，工厂方法按 ",h("code",null,"--megatron-to-hf-mode")," 在两种实现间选择。",h("code",null,"raw")," 对应 ",h("code",null,"HfWeightIteratorDirect"),"，",h("code",null,"bridge")," 对应 ",h("code",null,"HfWeightIteratorBridge"),"。它的核心思路用一行注释概括："),
+      h(Code,null,"# hf_weight_iterator_base.py\nclass HfWeightIteratorBase(ABC):\n    @staticmethod\n    def create(args, model, **kwargs):\n        from .hf_weight_iterator_bridge import HfWeightIteratorBridge\n        from .hf_weight_iterator_direct import HfWeightIteratorDirect\n        c = {\"raw\": HfWeightIteratorDirect, \"bridge\": HfWeightIteratorBridge}[args.megatron_to_hf_mode]\n        return c(args, model, **kwargs)\n\n    @abstractmethod\n    def get_hf_weight_chunks(self, megatron_local_weights, progress_desc=\"Update weights\"):\n        # Mental model of the API:\n        # megatron_model.to_hf_magically().named_parameters()\n        ..."),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill green"},"raw / direct")),
+          h("p",null,h("code",null,"HfWeightIteratorDirect")," 使用 slime 自带的、按模型族手写的转换器（",h("code",null,"convert_to_hf"),"，针对 qwen2/qwen3/glm4/deepseekv3 等逐个适配）。它先按 ",h("code",null,"update_weight_buffer_size")," 把参数元信息分桶，每桶内重建完整参数（PP/EP 广播 + 异步 TP all-gather），再逐参数 ",h("code",null,"convert_to_hf"),"。",h("code",null,"_get_megatron_local_param_infos")," 还会跨 PP/EP 交换并校验所有 rank 的参数清单一致（名字、shape、dtype），这是正确性优先原则的体现。"),
+          h("div",null,h(Src,{label:"HfWeightIteratorDirect",path:"slime/backends/megatron_utils/update_weight/hf_weight_iterator_direct.py",line:19}),h(Src,{label:"_get_megatron_full_params",path:"slime/backends/megatron_utils/update_weight/hf_weight_iterator_direct.py",line:44}),h(Src,{label:"convert_to_hf",path:"slime/backends/megatron_utils/megatron_to_hf/__init__.py",line:24}))
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"bridge")),
+          h("p",null,h("code",null,"HfWeightIteratorBridge")," 借用 ",h("code",null,"megatron.bridge")," 的 ",h("code",null,"AutoBridge")," 做转换，无需为每个模型族手写代码，适合 bridge 已支持但 slime 尚未手写适配的模型。它把新权重塞进 bridge 的 conversion task，调 ",h("code",null,"export_hf_weights")," 流式产出 HF 张量，再经 ",h("code",null,"postprocess_hf_param")," 与可选量化，最后用 ",h("code",null,"chunk_named_params_by_size")," 分桶。对 GPT-OSS 这类专家很多的模型，还会把专家权重缓存到 CPU 再 ",h("code",null,"torch.cat"),"，避免共置时 GPU 显存溢出。"),
+          h("div",null,h(Src,{label:"HfWeightIteratorBridge",path:"slime/backends/megatron_utils/update_weight/hf_weight_iterator_bridge.py",line:39}),h(Src,{label:"get_hf_weight_chunks",path:"slime/backends/megatron_utils/update_weight/hf_weight_iterator_bridge.py",line:52}),h(Src,{label:"专家 CPU 缓存补丁",path:"slime/backends/megatron_utils/update_weight/hf_weight_iterator_bridge.py",line:13}))
+        )
+      ),
+      h("div",null,h(Src,{label:"all_gather_param",path:"slime/backends/megatron_utils/update_weight/common.py",line:15}),h(Src,{label:"all_gather_params_async",path:"slime/backends/megatron_utils/update_weight/common.py",line:53}),h(Src,{label:"named_params_and_buffers（全局名）",path:"slime/backends/megatron_utils/update_weight/common.py",line:160}),h(Src,{label:"HfWeightIteratorBase",path:"slime/backends/megatron_utils/update_weight/hf_weight_iterator_base.py",line:4}),h(Src,{label:"--megatron-to-hf-mode",path:"slime/utils/arguments.py",line:136}))
+    );
+  }
+
+  // ===== 增量同步深入 =====
+  const DELTA=[
+    {key:"compute",name:"比对：逐字节 diff",render:function(){return [
+      h("p",null,"增量的第一步是找出哪些字节变了。",h("code",null,"_bytewise_diff_mask")," 把张量按元素字节宽度重解释为整数（bf16 → int16、fp32 → int32），再逐元素比较当前值与快照值，得到同形状的布尔掩码。按字节比较而非按浮点值比较，是因为目标是精确复制字节，任何位的变化都要捕获，且整数比较快且无浮点相等的歧义。"),
+      h(Code,null,"def _bytewise_diff_mask(current, snapshot):\n    es = current.element_size()\n    int_dtype = {1: torch.uint8, 2: torch.int16, 4: torch.int32, 8: torch.int64}.get(es)\n    if int_dtype is None:\n        raise ValueError(f\"unsupported element size {es}\")\n    return current.view(int_dtype) != snapshot.view(int_dtype)"),
+      h("p",null,h("code",null,"ParamDiff")," 记录一个参数的（name, values, mask），其中 ",h("code",null,"values")," 是对当前完整张量的引用（不复制）。一个桶里多个参数的比对结果交给 ",h("code",null,"_sparse_boundaries"),"：它把所有参数的值与掩码各拼成一个大张量，做一次 ",h("code",null,"nonzero")," 取出全部变化位置，再用一次 ",h("code",null,"searchsorted")," 算出每个参数在拼接后大数组里的边界。这样把”每参数一次主机同步”收敛成”每桶一次”，显著降低 GPU→CPU 同步次数。"),
+      h("div",null,h(Src,{label:"ParamDiff",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:64}),h(Src,{label:"_bytewise_diff_mask",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:106}),h(Src,{label:"_sparse_boundaries",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:117}))
+    ];}},
+    {key:"encode",name:"编码：indices / deltas / zstd",render:function(){return [
+      h("p",null,"找出变化位置后，要把它们紧凑编码。三种编码只在”如何打包位置”上不同，值（",h("code",null,"__values__"),"）的打包完全一致："),
+      h("ul",null,
+        h("li",null,h("code",null,"indices"),"：int32 绝对位置，最大、计算最少。每个位置占 4 字节。"),
+        h("li",null,h("code",null,"deltas"),"：把排序后的位置存为相邻间隔（gap），即 ",h("code",null,"idx[k] - idx[k-1] - 1"),"，约定 ",h("code",null,"idx[-1] := -1")," 使首个 delta 等于首个下标。按参数选宽度：若最大间隔小于等于 65535 用 uint16，否则回退 uint32。在约 2% 密度的 bf16 权重上最大间隔约 300，uint16 足够，回退分支只为极端输入兜底。接收方用 ",h("code",null,"idx = cumsum(delta + 1) - 1")," 还原。"),
+        h("li",null,h("code",null,"deltas_zstd"),"：与 deltas 同一编码器，只在写盘时把 safetensors 块用 zstd L1 压一遍，最小、计算最重，适合共享文件系统带宽不超过约 300 MB/s 的场景。")
+      ),
+      h(Code,null,"def encode_deltas(diffs):\n    ...\n    for i, d in enumerate(diffs):\n        ...\n        local_idx = big_idx[prev_b:b] - prev_param_start            # int64, 已排序\n        prev = torch.cat([torch.tensor([-1], ...), local_idx[:-1]])\n        per_param_deltas.append(local_idx - prev - 1)              # gap = idx - prev - 1\n    max_per_param = torch.stack([d.max() for d in per_param_deltas]).cpu().tolist()\n    for (d, nnz), deltas, max_d in zip(kept, per_param_deltas, max_per_param):\n        width = 2 if int(max_d) <= 65535 else 4                     # uint16 / uint32\n        np_dtype = np.uint16 if width == 2 else np.uint32\n        b_chunk = deltas.cpu().numpy().astype(np_dtype, copy=False).tobytes()\n        ..."),
+      h(Formula,{cap:"增量同步的线上字节数：稀疏度 d（变化元素占比）越低越省。indices 每位置 4 字节, deltas 多数情形 2 字节"},"$$ B_{\\text{wire}} \\;\\approx\\; d \\cdot N \\cdot \\big(b_{\\text{pos}} + b_{\\text{val}}\\big), \\qquad b_{\\text{pos}}\\in\\{2,4\\}\\ \\text{字节}\\ ,\\ b_{\\text{val}} = \\text{dtype 字节宽} $$"),
+      h("p",null,"其中 ",h("code",null,"N")," 是参数总元素数，",h("code",null,"d")," 是稀疏度（实测约 0.02）。对比全量同步的 ",h("code",null,"N · b_val"),"，增量把位置开销摊在变化元素上，仅当 ",h("code",null,"d")," 足够小（变化稀疏）时才划算。这正是 RL 后训练每步小幅更新的典型情形。"),
+      h("div",null,h(Src,{label:"encode_indices",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:137}),h(Src,{label:"encode_deltas",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:185}),h(Src,{label:"DeltaEncoding 类型",path:"slime/backends/megatron_utils/sglang.py",line:17}),h(Src,{label:"--update-weight-encoding",path:"slime/utils/arguments.py",line:185}))
+    ];}},
+    {key:"snapshot",name:"快照：DeltaState 流水线",render:function(){return [
+      h("p",null,h("code",null,"DeltaState")," 维护上一次广播过的每个 HF 张量的固定页 CPU 快照，并用两条侧向 CUDA 流把快照搬运与当前桶的计算重叠起来，避免快照的 H2D/D2H 拷贝阻塞主流。"),
+      h("ul",null,
+        h("li",null,h("code",null,"prefetch_snapshot"),"：在 H2D 侧流上异步把下一桶要比对的快照搬上 GPU，返回一个 CUDA 事件供后续等待。"),
+        h("li",null,h("code",null,"compute_diffs"),"：等预取事件完成，再逐参数 ",h("code",null,"_bytewise_diff_mask")," 与当前张量比对。"),
+        h("li",null,h("code",null,"update_snapshot_async"),"：在 D2H 侧流上异步把当前张量复制回固定页 CPU 快照，留作下次比对的基准。"),
+        h("li",null,h("code",null,"flush_snapshot"),"：在一次同步结束前阻塞等待所有 D2H 拷贝落定。")
+      ),
+      h(Code,null,"def prefetch_snapshot(self, named_tensors):\n    if self.h2d_stream is None:\n        self.h2d_stream = torch.cuda.Stream()\n    prev_gpu = []\n    with torch.cuda.stream(self.h2d_stream):\n        for name, tensor in named_tensors:\n            if name not in self.snapshot:\n                raise KeyError(f\"missing snapshot for {name!r}; first update_weights call seeds the snapshot\")\n            prev_gpu.append(self.snapshot[name].to(device=tensor.device, non_blocking=True))\n        event = self.h2d_stream.record_event()\n    return prev_gpu, event"),
+      h("p",null,"上层 ",h("code",null,"_pipeline_pass")," 用一步前瞻：处理第 N 桶的计算与编码时，第 N+1 桶的快照预取已经在侧流上进行。这把”比对”的访存延迟藏在计算之后，是增量路径吞吐的关键工程手段。",h("code",null,"_seed_snapshot")," 则是首次同步时把全部权重一次性写入快照的播种过程。"),
+      h("div",null,h(Src,{label:"DeltaState",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:259}),h(Src,{label:"prefetch_snapshot",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:272}),h(Src,{label:"_pipeline_pass",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:661}),h(Src,{label:"_enqueue_chunk",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:683}))
+    ];}},
+    {key:"transport",name:"载体：nccl / disk 与校验",render:function(){return [
+      h("p",null,"编码完的桶（",h("code",null,"DeltaBucket")," 累积，按 ",h("code",null,"update_weight_buffer_size")," 触发 flush）经 ",h("code",null,"_flush_bucket")," 送出。两种载体共享同一份桶内容（",h("code",null,"__positions__")," uint8 字节块 + ",h("code",null,"__values__")," 参数 dtype 张量 + 逐参数解码清单），区别只在投递方式。"),
+      h(Code,null,"def _flush_bucket(self, bucket, pbar):\n    positions_cpu = bucket.merged_positions_cpu()\n    values_gpu = bucket.merged_values()\n    params = list(bucket.params)\n    bucket.clear()\n    positions_gpu = positions_cpu.to(values_gpu.device, non_blocking=True)\n    checksum = _checksum(positions_gpu, values_gpu)         # 发送前算校验和\n    if self.transport == \"nccl\":\n        spec = DeltaSpec(encoding=self.encoding, params=params, checksum=checksum)\n        self._update_bucket_weights_from_distributed(\n            [(\"__positions__\", positions_gpu), (\"__values__\", values_gpu)],\n            pbar=pbar, load_format=\"delta\", delta=spec)\n    else:  # disk\n        tensors = {\"__positions__\": positions_cpu, \"__values__\": values_gpu.cpu()}\n        metadata = {\"encoding\": self.encoding.value,\n                    \"params\": json.dumps([asdict(p) for p in params]),\n                    \"current_version\": str(self.weight_version),\n                    \"checksum\": str(checksum)}\n        self.writer.enqueue(path, tensors, metadata)\n        self._pending_files.append(filename)"),
+      h("p",null,"nccl 路径直接复用基类的 ",h("code",null,"_update_bucket_weights_from_distributed"),"，传入 ",h("code",null,"load_format=\"delta\"")," 与 ",h("code",null,"DeltaSpec"),"，因此增量广播与全量广播走的是同一段加锁、广播、解锁代码。disk 路径把桶交给 ",h("code",null,"AsyncSafetensorsWriter")," 后台线程：生产者在默认流做 GPU→CPU，写线程负责慢速磁盘 I/O 与可选 zstd 压缩，并用 ",h("code",null,"os.replace")," 原子替换保证读取方不会看到半截文件。"),
+      h("p",null,"两路都嵌入一个 ",h("code",null,"_checksum"),"（基于 ",h("code",null,"torch.hash_tensor")," 的 XOR 归约）：发送方在 flush 前算，接收方在收完后算，不一致即说明编码到应用之间发生了线上损坏。接收方按位置精确覆盖字节，无算术，故应用无损。disk 路径的专家遍还被切成 ",h("code",null,"_EXPERT_SUBPASSES = 4")," 个子遍，让较早一批的接收方应用与较晚的专家编码重叠，而非全部堆到同步末尾。"),
+      h("div",null,h(Src,{label:"_flush_bucket",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:705}),h(Src,{label:"_checksum",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:95}),h(Src,{label:"AsyncSafetensorsWriter",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:402}),h(Src,{label:"_publish_batch",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:747}),h(Src,{label:"_finalize_sync",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed_delta.py",line:792}))
+    ];}}
+  ];
+  function DeltaExplorer(){const [s,setS]=useState(0);const d=DELTA[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},DELTA.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 分桶控制显存峰值 =====
+  function ChunkSection(){
+    return h("div",null,
+      h("p",null,"无论哪种全量或增量策略，都不会一次性把整个模型聚合到显存，而是按 ",h("code",null,"--update-weight-buffer-size"),"（默认 512 MB）把参数分成若干桶，逐桶聚合、转换、发送、释放。这呼应第 1 课提到的 ",h("code",null,"chunk_named_params_by_size"),"：它把（name, tensor）流按累计字节大小切桶，超过阈值即开新桶。"),
+      h(Code,null,"def chunk_named_params_by_size(named_params, chunk_size):\n    return _chunk_by_size(named_params, compute_size=lambda nw: nw[1].nbytes, chunk_size=chunk_size)\n\ndef _chunk_by_size(objects, compute_size, chunk_size):\n    bucket, bucket_size = [], 0\n    for obj in objects:\n        obj_size = compute_size(obj)\n        if bucket and (bucket_size + obj_size) >= chunk_size:\n            yield bucket\n            bucket, bucket_size = [], 0\n        bucket.append(obj)\n        bucket_size += obj_size\n    if bucket:\n        yield bucket"),
+      h("p",null,"设计动机是控制显存峰值。聚合时一个 TP 切分的参数会被 all-gather 成 ",h("code",null,"tp_size")," 倍大小的完整张量，若不分桶，最大的几个张量（如词嵌入、MoE 专家矩阵）同时驻留会顶满显存。direct 路径的 ",h("code",null,"_get_megatron_local_param_info_buckets")," 在估算桶大小时特意按 ",h("code",null,"info.size * tp_size")," 计入 TP 复制后的完整尺寸，避免低估。"),
+      h(Formula,{cap:"分桶后的瞬时显存上界：与模型总参数量无关, 只与单桶上限及 TP 复制因子相关"},"$$ M_{\\text{peak}} \\;\\lesssim\\; \\text{update\\_weight\\_buffer\\_size} \\,+\\, \\max_i \\big(\\text{size}_i \\cdot \\text{tp\\_size}_i\\big) $$"),
+      h("p",null,"专家参数的分桶还要额外乘上 EP world size，因为 EP all-gather 会把各 rank 的专家收齐，",h("code",null,"_iter_expert_chunks")," 在判断阈值时即按 ",h("code",null,"buffer_size * ep_size")," 估算。增量路径的 ",h("code",null,"DeltaBucket")," 则按编码后的稀疏字节数累计，因此一桶往往能装下远多于 512 MB 原始权重对应的增量。"),
+      h("div",null,h(Src,{label:"chunk_named_params_by_size",path:"slime/utils/misc.py",line:124}),h(Src,{label:"_get_megatron_local_param_info_buckets",path:"slime/backends/megatron_utils/update_weight/hf_weight_iterator_direct.py",line:108}),h(Src,{label:"_iter_expert_chunks",path:"slime/backends/megatron_utils/update_weight/update_weight_from_distributed.py",line:177}),h(Src,{label:"--update-weight-buffer-size",path:"slime/utils/arguments.py",line:501}))
+    );
+  }
+
+  // ===== reloadable_process_group 与 tensor_backper =====
+  function SupportSection(){
+    return h("div",null,
+      h("h3",null,"reloadable_process_group：可销毁与重建的 NCCL 组"),
+      h("p",null,"共置（offload）训练把模型在训练与休眠之间切换，休眠时要释放显存，这意味着要销毁 NCCL 通信组（NCCL 组会常驻一块显存做通信缓冲）。但 PyTorch 创建的进程组本身不支持”销毁后再用同样配置重建”。",h("code",null,"reloadable_process_group.py")," 用 monkey patch 解决：它替换 ",h("code",null,"dist.new_group"),"，让所有非 Gloo、成员多于一个的组都被包成 ",h("code",null,"ReloadableProcessGroup"),"，记下其 ranks 配置。"),
+      h(Code,null,"class ReloadableProcessGroup(torch.distributed.ProcessGroup):\n    @staticmethod\n    def destroy_process_groups():\n        for g in ReloadableProcessGroup.GROUPS.get(os.getpid(), []):\n            if g.group is None: continue\n            dist.destroy_process_group(g.group)\n            del g.group\n            g.group = None\n\n    @staticmethod\n    def reload_process_groups():\n        old_new_group = old_new_group_dict.get(os.getpid())\n        for g in ReloadableProcessGroup.GROUPS.get(os.getpid(), []):\n            if g.group is not None: continue\n            g.group = old_new_group(ranks=g.group_info[\"ranks\"], backend=\"nccl\")  # 按原配置重建"),
+      h("p",null,"于是 actor 的 ",h("code",null,"sleep()")," 调 ",h("code",null,"destroy_process_groups()")," 释放显存，",h("code",null,"wake_up()")," 调 ",h("code",null,"reload_process_groups()")," 按记下的 ranks 原样重建，包装器 ",h("code",null,"ReloadableProcessGroup")," 对象身份不变，上层引用无需更新。该 patch 还给每个集合通信调用包了一层显存检查：剩余显存不足 3 GB 时先 ",h("code",null,"clear_memory()"),"，把”通信即将分配缓冲却 OOM”的隐患前置处理；查询类调用（",h("code",null,"get_rank")," 等）则跳过检查以免开销。"),
+      h("h3",null,"tensor_backper：训练侧的权重备份"),
+      h("p",null,h("code",null,"TensorBackuper")," 在训练进程内按标签（tag）备份与恢复多份权重副本，供 ",h("code",null,"actor"),"、",h("code",null,"ref"),"（参考模型）、",h("code",null,"old_actor"),"、",h("code",null,"rollout_actor"),"、",h("code",null,"teacher")," 等角色复用同一组模型缓冲而无需多份常驻显存。权重同步取数即来自它：",h("code",null,"weights_getter=lambda: self.weights_backuper.get(\"actor\")"),"。"),
+      h(Code,null,"class _TensorBackuperNormal(TensorBackuper):\n    @torch.no_grad()\n    def backup(self, tag):\n        backup_dict = self._backups[tag]\n        for name, param in self._source_getter():\n            if name not in backup_dict:\n                backup_dict[name] = torch.empty_like(param, device=torch.device(\"cpu\"), pin_memory=True)\n            backup_dict[name].copy_(param.detach(), non_blocking=True)   # GPU→固定页 CPU\n        torch.cuda.synchronize()\n\n    @torch.no_grad()\n    def restore(self, tag):\n        for name, param in self._source_getter():\n            param.copy_(self._backups[tag][name], non_blocking=True)     # 固定页 CPU→GPU"),
+      h("p",null,"备份写进固定页 CPU 内存（",h("code",null,"pin_memory=True"),"），这样 D2H/H2D 拷贝可用 ",h("code",null,"non_blocking=True")," 异步进行，与权重同步用同一类内存。",h("code",null,"keep_old_actor")," 模式下，每次同步后用 ",h("code",null,"copy")," 做队列式滚动（",h("code",null,"rollout_actor → old_actor"),"，",h("code",null,"actor → rollout_actor"),"），为重要性采样保留生成时所用的旧策略权重。另有一个 ",h("code",null,"_TensorBackuperNoop")," 变体只对张量做哈希校验而不真正复制，用于单标签、确认权重在某区间未被改动的场景。"),
+      h("div",null,h(Src,{label:"monkey_patch_torch_dist",path:"slime/utils/reloadable_process_group.py",line:30}),h(Src,{label:"ReloadableProcessGroup",path:"slime/utils/reloadable_process_group.py",line:140}),h(Src,{label:"_wrap_low_level_call（显存检查）",path:"slime/utils/reloadable_process_group.py",line:311}),h(Src,{label:"TensorBackuper.create",path:"slime/utils/tensor_backper.py",line:11}),h(Src,{label:"_TensorBackuperNormal",path:"slime/utils/tensor_backper.py",line:42}),h(Src,{label:"actor 中创建备份",path:"slime/backends/megatron_utils/actor.py",line:108}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"NCCL 用户指南",d:"集合通信原语、broadcast 与 all-gather 语义",href:"https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/"},
+    {t:"torch.distributed",d:"new_group / broadcast / all_gather / 进程组生命周期",href:"https://docs.pytorch.org/docs/stable/distributed.html"},
+    {t:"SGLang 文档",d:"权重更新接口（from_disk / from_distributed / from_tensor）",href:"https://docs.sglang.ai/"},
+    {t:"Megatron-Core 文档",d:"五维并行与参数分片布局, 转换的源头",href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},
+    {t:"safetensors",d:"增量 disk 载体使用的张量序列化格式",href:"https://huggingface.co/docs/safetensors/"},
+    {t:"slime 官方文档",d:"权重同步配置与用法",href:"https://thudm.github.io/slime/"}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:7}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 7 课 / 共 11 · 权重同步"),
+          h("h1",null,"权重同步"),
+          h("p",{className:"lead"},"本课拆解 slime 异步吞吐的核心之一：训练后如何把 Megatron 分片权重推送给 SGLang。先说清它为何是异步重叠的瓶颈，再用 Tab 探索器对比四种策略（from_disk / from_distributed / from_tensor / from_distributed_delta），随后深入增量同步的逐字节比对、位置编码、快照流水线与双载体校验，最后讲清 HF 在线转换的 bridge 与 direct 两条路径、按字节分桶控制显存峰值、可重建的 NCCL 组与张量备份。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"backends/megatron_utils/update_weight/")," 的 common / from_disk / from_distributed / from_tensor / from_distributed_delta / hf_weight_iterator_{base,bridge,direct}，以及 ",h("code",null,"utils/reloadable_process_group.py")," 与 ",h("code",null,"utils/tensor_backper.py"),"。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/slime")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"动机"),
+          h("h2",null,"为什么训练后要把权重推给推理，为何它是瓶颈"),
+          h(WhySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"四种策略"),
+          h("h2",null,"from_disk / from_distributed / from_tensor / delta"),
+          h("p",null,"四种同步策略针对不同部署形态。点 Tab 逐一查看每种策略的代码骨架与设计动机，再看下方对比表统观全局。"),
+          h(StratExplorer),
+          h(CompareSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"聚合与转换"),
+          h("h2",null,"分片如何变成 SGLang 能用的 HF 权重"),
+          h(AggregateSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"增量同步深入"),
+          h("h2",null,"distributed_delta：只传变化的字节"),
+          h("p",null,"增量同步是带宽最省的策略，也是本课最重的文件（864 行）。它的四个环节（比对、编码、快照流水线、载体与校验）逐一展开如下。"),
+          h(DeltaExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"显存峰值"),
+          h("h2",null,"按字节分桶：让峰值与模型大小解耦"),
+          h(ChunkSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"支撑设施"),
+          h("h2",null,"可重建 NCCL 组与张量备份"),
+          h(SupportSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"读权重同步时配合这些文档，能把 NCCL 集合通信、torch.distributed 进程组、SGLang 的权重更新接口与 Megatron 分片布局补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"同步是异步吞吐的硬约束"),"：生成与训练可重叠，但权重同步要求生成暂停，其耗时直接决定训练步墙钟时间的下界。优化同步即优化整体算力利用率。"),
+            h("li",null,h("strong",null,"四种策略是部署形态的权衡，不是优劣"),"：from_disk 最稳最慢（跨数据中心/容错），from_distributed 走 NCCL（非共置默认），from_tensor 走 CUDA IPC 零拷贝（共置必选），delta 只传变化字节（带宽最省）。"),
+            h("li",null,h("strong",null,"复用胜过重写"),"：四者共享”停、换、续”骨架与 HF 转换流水线；delta 继承 from_distributed，只重写发送，并通过 ",h("code",null,"load_format=\"delta\"")," 复用同一段加锁广播代码。"),
+            h("li",null,h("strong",null,"增量靠稀疏性与无损覆盖"),"：逐字节 diff 找出约 2% 的变化，按 indices/deltas/zstd 紧凑编码，接收方精确覆盖字节，无算术、无漂移；快照流水线把比对的访存藏在计算之后。"),
+            h("li",null,h("strong",null,"工程细节服务正确性与显存"),"：按字节分桶让显存峰值与模型大小解耦；校验和防线上损坏；可重建 NCCL 组支持 offload 的销毁与重建；固定页 CPU 张量备份让多角色复用同一缓冲并支持异步拷贝。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"slime-lesson-06-sglang.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 6 课：推理后端 SGLang")),
+            h("a",{href:"slime-lesson-08-rollout-async.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 8 课：Rollout 与三种异步范式"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+[submodule "AReaL"]
+	path = AReaL
+	url = https://github.com/areal-project/AReaL.git
+[submodule "slime"]
+	path = slime
+	url = https://github.com/THUDM/slime.git
+[submodule "miles"]
+	path = miles
+	url = https://github.com/radixark/miles.git
+[submodule "verl"]
+	path = verl
+	url = https://github.com/verl-project/verl.git
+[submodule "ProRL-Agent-Server"]
+	path = ProRL-Agent-Server
+	url = https://github.com/Ivis4ml/ProRL-Agent-Server.git

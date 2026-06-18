@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AReaL 逐文件精读 · 第 8 课：推理引擎</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .flow{display:grid;gap:8px;margin:14px 0;}
+    .flowstep{display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--panel);}
+    .flowstep .n{font-family:var(--mono);color:var(--amber);font-weight:800;font-size:13px;}
+    .flowstep .ft{color:var(--ink);font-weight:650;font-size:13.5px;}
+    .flowstep .fd{color:var(--muted);font-size:12.5px;margin-top:2px;}
+    table.matrix{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+    table.matrix th,table.matrix td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;}
+    table.matrix th{color:var(--faint);font-family:var(--mono);font-size:10px;text-transform:uppercase;background:#0f1620;}
+    table.matrix td{color:var(--muted);}table.matrix tr:last-child td{border-bottom:0;}table.matrix code{white-space:nowrap;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}.linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 8 课</p><h1>推理引擎</h1><p>能访问 CDN 时切换为交互版。本课详细讲 SGLang/vLLM 如何被封装成异步远程 rollout 引擎：agenerate 全流程、后端适配、推理侧权重同步、异步 staleness。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const AREAL="vscode://file/Users/xinyu/Code/Agentic-RL/AReaL/";
+  function srcUrl(p,l){return AREAL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Protocol","ModelRequest","ModelResponse","HttpRequest","WeightUpdateMeta","RolloutStat","torch","dict","list","tuple","int","float","bool","str","Future"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","areal-lesson-01-foundations.html"],[2,"数据契约","areal-lesson-02-contracts.html"],[3,"抽象基类","areal-lesson-03-interfaces.html"],[4,"RL 数学原语","areal-lesson-04-rl-math.html"],[5,"数据与奖励","areal-lesson-05-data-reward.html"],[6,"模型层","areal-lesson-06-models.html"],[7,"训练引擎","areal-lesson-07-train-engine.html"],[8,"推理引擎","areal-lesson-08-inference-engine.html"],[9,"Workflow","areal-lesson-09-workflow.html"],[10,"Trainer","areal-lesson-10-trainer.html"],[11,"编排运行时","areal-lesson-11-orchestration.html"],[12,"进阶与收尾","areal-lesson-12-advanced.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"areal-course-index.html"},"AReaL",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":(L[2]==="#"?"lchip todo":"lchip done");return L[2]==="#"?h("span",{key:L[0],className:cls},L[0]+" "+L[1]):h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 设计模式 =====
+  function PatternSection(){
+    return h("div",null,
+      h("p",null,"AReaL 把推理后端的差异压到一个 ",h("code",null,"RemoteInfBackendProtocol")," 协议里（只管“怎么拼 HTTP 请求、怎么解析响应”），由一个统一的 ",h("code",null,"RemoteInfEngine")," 持有它（管路由、重试、版本、并发、权重同步）。",h("code",null,"RemoteSGLangEngine")," 与 ",h("code",null,"RemotevLLMEngine")," 只是把内部的 ",h("code",null,"RemoteInfEngine")," 包一层、转发所有方法。纯组合，零继承。"),
+      h(Code,null,"class RemoteInfBackendProtocol(Protocol):       # 后端只实现这些\n    def build_generation_request(req, with_lora, version) -> HttpRequest: ...\n    def parse_generation_response(raw) -> HttpGenerationResult: ...\n    def build_distributed_weight_update_requests(meta, specs) -> list[HttpRequest]: ...\n    def get_pause_request() -> HttpRequest: ...\n\nclass RemoteSGLangEngine(InferenceEngine):\n    def __init__(self, config):\n        self._engine = RemoteInfEngine(config, SGLangBackend())  # 组合\n    async def agenerate(self, req):\n        return await self._engine.agenerate(req)                 # 转发"),
+      h("div",{className:"note"},"出发点：换推理后端（SGLang↔vLLM）只写一个新的 backend 协议实现，agenerate/submit/wait/权重同步/路由这套主逻辑一行不改。这与第 3 课的接口、第 7 课训练侧的边界是同一种思路。"),
+      h("div",null,h(Src,{label:"RemoteInfBackendProtocol",path:"areal/infra/remote_inf_engine.py",line:125}),h(Src,{label:"RemoteInfEngine",path:"areal/infra/remote_inf_engine.py",line:327}),h(Src,{label:"RemoteSGLangEngine",path:"areal/engine/sglang_remote.py",line:315}),h(Src,{label:"RemotevLLMEngine",path:"areal/engine/vllm_remote.py",line:277}))
+    );
+  }
+
+  // ===== agenerate 全流程 =====
+  function AgenerateSection(){const ref=useTypeset("agen");
+    const steps=[
+      ["1","按 rid 粘性路由","req.rid 命中缓存就回同一 server（复用 prefix/radix KV）；否则 choose_server() 轮询选一个并写入缓存。缓存 128 条、FIFO 淘汰。"],
+      ["2","构造 HTTP 请求","backend.build_generation_request(req, with_lora, version)；version 用于带版本号的 LoRA 名。"],
+      ["3","POST + 重试","arequest_with_retry() 向 server+endpoint 发请求，按 request_retries/request_timeout 重试，session 来自 aiohttp 连接池。"],
+      ["4","解析响应","backend.parse_generation_response(result) 抽出 output_tokens、output_logprobs、stop_reason（MoE 还有 routed_experts）。"],
+      ["5","累积 + 打版本号","把新 token 追加到列表，并给每个 token 打上 get_version() 当前版本。这正是第 2 课 ModelResponse.output_versions、第 4 课 decoupled PPO 的来源。"],
+      ["6","多步循环 + 暂停门","循环到 stop_reason∈{stop,tool_calls,length} 或达到 max_new_tokens。每步前查 workflow_executor.is_paused()，权重更新期间睡 0.5s 等待。"]
+    ];
+    return h("div",{ref:ref},
+      h("p",null,"agenerate 是把一个 ",h("code",null,"ModelRequest")," 变成 ",h("code",null,"ModelResponse")," 的异步函数，是整个数据面的最热路径。六步："),
+      h("div",{className:"flow"},steps.map(function(s,i){return h("div",{className:"flowstep",key:i},h("div",{className:"n"},s[0]),h("div",null,h("div",{className:"ft"},s[1]),h("div",{className:"fd"},s[2])));})),
+      h(Formula,{cap:"每个输出 token 携带产生它的 policy 版本"},"$$ \\text{output\\_versions}[t] = v_{\\text{engine}}\\big(\\text{token } t \\text{ 生成时}\\big) $$"),
+      h("div",{className:"warn"},"为什么要逐 token 记版本：异步训练里采样和训练并行，一条轨迹可能横跨权重更新。版本号让训练侧能算 π_proximal/π_behave 的修正（第 4 课 decoupled PPO）。框架本身不碰 KV，但必须精确记录“这个 token 是哪一版策略生成的”。"),
+      h("div",null,h(Src,{label:"agenerate",path:"areal/infra/remote_inf_engine.py",line:719}),h(Src,{label:"choose_server (轮询)",path:"areal/infra/remote_inf_engine.py",line:700}),h(Src,{label:"逐 token 版本标记",path:"areal/infra/remote_inf_engine.py",line:838}))
+    );
+  }
+
+  // ===== 后端对比 =====
+  const BACKENDS=[
+    {key:"sglang",name:"SGLang",render:function(){return [
+      h("p",null,"端点 ",h("code",null,"/generate"),"，采样参数嵌套在 ",h("code",null,"sampling_params")," 里，显式 ",h("code",null,"return_logprob=True"),"。响应里 logprob 和 token id 成对放在 ",h("code",null,"meta_info.output_token_logprobs"),"。"),
+      h(Code,null,"# build_generation_request\n{ 'input_ids': [...], 'image_data': ...,\n  'sampling_params': {'top_p','top_k','max_new_tokens','temperature',\n                      'stop_token_ids','ignore_eos','frequency_penalty'},\n  'return_logprob': True, 'stream': False,\n  'lora_path': versioned_name }       # use_lora 时\n\n# parse_generation_response\nfinish = resp['meta_info']['finish_reason']['type']   # stop/length/tool_calls/abort\ntoks  = [t for lp,t in resp['meta_info']['output_token_logprobs']]\nlogps = [lp for lp,t in resp['meta_info']['output_token_logprobs']]"),
+      h("p",null,"控制端点：",h("code",null,"/pause_generation"),"、",h("code",null,"/continue_generation"),"、磁盘更新 ",h("code",null,"/update_weights_from_disk"),"、分布式更新 ",h("code",null,"/update_weights_from_distributed"),"、offload ",h("code",null,"/release_memory_occupation"),"。"),
+      h("div",null,h(Src,{label:"SGLangBackend.build_generation_request",path:"areal/engine/sglang_remote.py",line:43}),h(Src,{label:"parse_generation_response",path:"areal/engine/sglang_remote.py",line:91}),h(Ext,{href:"https://docs.sglang.ai/"},"SGLang 文档"),h(Ext,{href:"https://arxiv.org/abs/2312.07104"},"RadixAttention 论文"))
+    ];}},
+    {key:"vllm",name:"vLLM",render:function(){return [
+      h("p",null,"端点 ",h("code",null,"/v1/completions"),"（或 chat），采样参数 ",h("strong",null,"扁平")," 放（无嵌套），token 以 ",h("code",null,"\"token:123\"")," 字符串形式回来，需要切出 id。权重更新走 AReaL 自定义端点 ",h("code",null,"/areal_*"),"（见下一节）。"),
+      h(Code,null,"# build_generation_request (扁平)\n{ 'prompt': input_ids, 'max_tokens': ..., 'temperature': ...,\n  'top_p','top_k','stop_token_ids','ignore_eos',\n  'return_tokens_as_token_ids': True, 'logprobs': 0,\n  'model': versioned_lora_name }      # use_lora 时\n\n# parse_generation_response\nfinish = resp['choices'][0]['finish_reason']\ntoks = [int(s.split(':')[1]) for s in logprobs['tokens']]   # 'token:123' -> 123"),
+      h("p",null,"控制端点都带 ",h("code",null,"areal_")," 前缀：",h("code",null,"/areal_pause_generation"),"、",h("code",null,"/areal_update_weights_xccl"),"、offload 用 vLLM 原生 ",h("code",null,"/sleep")," 与 ",h("code",null,"/wake_up"),"。"),
+      h("div",null,h(Src,{label:"VLLMBackend.build_generation_request",path:"areal/engine/vllm_remote.py",line:44}),h(Src,{label:"parse_generation_response",path:"areal/engine/vllm_remote.py",line:98}),h(Ext,{href:"https://docs.vllm.ai/"},"vLLM 文档"),h(Ext,{href:"https://arxiv.org/abs/2309.06180"},"PagedAttention 论文"))
+    ];}}
+  ];
+  function BackendExplorer(){const [s,setS]=useState(0);const d=BACKENDS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},BACKENDS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 权重同步 推理侧 =====
+  function WeightSyncSection(){const ref=useTypeset("ws");
+    return h("div",{ref:ref},
+      h("p",null,"第 7 课从训练侧看了权重同步（重建 DTensor、攒桶广播）。这一课看推理侧怎么 ",h("strong",null,"接收"),"。两条路："),
+      h("h4",null,"磁盘更新（简单、慢）"),
+      h("p",null,"训练侧存好权重后通过 name_resolve 发信号，推理引擎 POST ",h("code",null,"/update_weights_from_disk"),"（vLLM 是 ",h("code",null,"/areal_update_weights"),"），server 端 worker 调 ",h("code",null,"areal_update_weights()")," 就地 ",h("code",null,"load_weights()")," 并跨 TP rank ",h("code",null,"sync()")," 屏障。请求带 ",h("code",null,"abort_all_requests=True")," 中止在飞请求（它们属于旧策略的 KV）。"),
+      h("h4",null,"分布式 NCCL 更新（快）"),
+      h("p",null,"先建权重更新进程组：训练侧是 rank 0，每个推理 TP worker 分一个 rank。SGLang 的 rank 分配（PP=1）："),
+      h(Formula,{cap:"权重更新组的 rank 与 world_size"},"$$ \\text{rank\\_offset}_i = 1 + i\\cdot(\\text{tp}\\times\\text{pp}), \\qquad \\text{world\\_size} = N_{\\text{gen}} + 1 $$"),
+      h("p",null,"其中 +1 是训练侧那个广播源。建组后训练侧 ",h("code",null,"dist.broadcast")," 每个权重张量，推理 worker 的 ",h("code",null,"areal_update_weight_xccl()")," 按存好的 meta 分配空张量、从 NCCL 组接收、就地替换模型权重。vLLM 这套自定义端点和 worker 方法就在 ",h("code",null,"vllm_ext/"),"。"),
+      h(Code,null,"# vllm_ext/vllm_worker_extension.py\nclass VLLMWorkerExtension:\n    def areal_update_weights(self, model_path):     # 磁盘: 就地 load\n        self.model_runner.model_config.model = model_path\n        self.model_runner.model.load_weights(...)\n        self.sync()                                 # 跨 TP rank 屏障\n    def areal_update_weight_xccl(self):             # NCCL: 收广播\n        group = self.weight_update_groups[meta.group_name]\n        buf = torch.empty(shape, dtype=dtype, device='cuda')\n        # 从 NCCL 组接收每个张量, 替换 named_parameters"),
+      h("div",{className:"note"},"两条路都必须先 pause_generation（中止/排空旧请求，发 grace period），更新完 set_version 升版本，再 continue_generation。已生成的旧 token 仍带旧版本号，交给第 4 课的 decoupled PPO 处理。这就是第 6 课“权重更新切断旧 KV”那条规则在代码里的样子。"),
+      h("div",null,h(Src,{label:"init_weights_update_group",path:"areal/infra/remote_inf_engine.py",line:886}),h(Src,{label:"update_weights_from_distributed",path:"areal/infra/remote_inf_engine.py",line:945}),h(Src,{label:"SGLang rank 计算",path:"areal/engine/sglang_remote.py",line:189}),h(Src,{label:"VLLMWorkerExtension",path:"areal/engine/vllm_ext/vllm_worker_extension.py",line:30}),h(Ext,{href:"https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/"},"NCCL 文档"))
+    );
+  }
+
+  // ===== 异步 staleness =====
+  function StalenessSection(){const ref=useTypeset("stale");
+    return h("div",{ref:ref},
+      h("p",null,h("code",null,"submit")," 立刻返回 task_id（非阻塞），把任务交给 ",h("code",null,"WorkflowExecutor")," 下的 ",h("code",null,"BatchTaskDispatcher"),"：一个生产者线程在容量允许时把任务丢进 asyncio runner 跑 workflow，一个消费者线程收集结果。",h("code",null,"wait(count)")," 阻塞到攒够 count 条已接受轨迹。"),
+      h("p",null,"容量由 ",h("code",null,"StalenessManager")," 控制，限制两件事：在飞并发数、以及待训练样本相对当前版本最多落后多少："),
+      h(Formula,{cap:"rollout 容量（grep 自 staleness_manager.py:79）"},"$$ \\text{capacity} = \\min\\Big(\\underbrace{N_{\\max} - n_{\\text{run}}}_{\\text{并发}},\\ \\underbrace{(\\eta + v + 1)\\,B - (n_{\\text{acc}} + n_{\\text{run}})}_{\\text{版本落后}}\\Big) $$"),
+      h(Formula,{cap:"待提交上限"},"$$ \\text{pending\\_limit} = (\\eta + 1)\\,B $$"),
+      h("p",null,h("code",null,"η = max_staleness"),"、",h("code",null,"v")," 当前训练版本、",h("code",null,"B = consumer_batch_size"),"。",h("code",null,"η=0")," 近似同步 on-policy；增大 η 提吞吐但更 off-policy。",h("code",null,"RolloutStat")," 的四个计数在状态转移时更新：enqueued → (submitted) running → (accepted) accepted / (rejected) rejected。",h("code",null,"should_accept_fn")," 在 workflow 返回后过滤坏轨迹（拒绝的计 rejected，不进训练）。"),
+      h("div",{className:"note"},"断点恢复有个坑：恢复后 version 直接跳到 v，容量公式会突然放出 (η+v+1)·B 的额度造成请求暴涌。on_version_recovered 把 accepted 重置为 v·B 来消掉这个跳变。"),
+      h("div",null,h(Src,{label:"StalenessManager.get_capacity",path:"areal/infra/staleness_manager.py",line:79}),h(Src,{label:"WorkflowExecutor",path:"areal/infra/workflow_executor.py",line:746}),h(Src,{label:"submit / wait",path:"areal/infra/remote_inf_engine.py",line:1023}),h(Src,{label:"RolloutStat（第2课）",path:"areal/api/io_struct.py",line:341}),h(Src,{label:"AReaL 异步 RL 文档",path:"docs/en/algorithms/async.md",line:null}))
+    );
+  }
+
+  // ===== launcher =====
+  function LauncherSection(){
+    return h("div",null,
+      h("p",null,"推理 server 是独立子进程，由 launcher 拉起。流程：按 ",h("code",null,"gen_instance_size")," 把 GPU 分给每个 server（设 ",h("code",null,"CUDA_VISIBLE_DEVICES")," 隔离）、找空闲端口、用 ",h("code",null,"build_cmd()")," 拼命令、并行启动、轮询 ",h("code",null,"/health")," 或 ",h("code",null,"/v1/models")," 等就绪、把地址注册到 name_resolve（第 1 课）供引擎发现。"),
+      h(Code,null,"# vllm_server.py / sglang_server.py 大致流程\ngpus_per_server = alloc_mode.gen_instance_size      # 一个 server 占几张卡(=tp*pp)\nn_servers_per_node = n_gpus_per_node // gpus_per_server\nfor each server:\n    set CUDA_VISIBLE_DEVICES = 该 server 的 GPU 段\n    host, port, dist_init = find_free_ports(...)\n    cmd = vLLMConfig.build_cmd(tp_size, pp_size, host, port, dist_init)\n    Popen(cmd)\nwait_for_server(addr)            # 轮询健康检查\nname_resolve.add(gen_servers_key, addr)   # 注册供发现"),
+      h("p",null,"跨节点：当 ",h("code",null,"gpus_per_server > n_gpus_per_node")," 时（一个 server 要跨机），SGLang launcher 读 ",h("code",null,"AREAL_SGLANG_MULTI_NODE_*")," 环境变量做 ring init。"),
+      h("div",null,h(Src,{label:"SGLang launcher",path:"areal/infra/launcher/sglang_server.py",line:89}),h(Src,{label:"vLLM launcher",path:"areal/infra/launcher/vllm_server.py",line:88}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"SGLang 文档",d:"RadixAttention、连续批处理、服务端 API",href:"https://docs.sglang.ai/"},
+    {t:"vLLM 文档",d:"PagedAttention、OpenAI 兼容服务",href:"https://docs.vllm.ai/"},
+    {t:"PagedAttention 论文",d:"vLLM 的分页 KV cache",href:"https://arxiv.org/abs/2309.06180"},
+    {t:"RadixAttention 论文",d:"SGLang 的前缀复用 KV",href:"https://arxiv.org/abs/2312.07104"},
+    {t:"NCCL 文档",d:"权重广播用的集合通信",href:"https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/"},
+    {t:"AReaL 异步 RL（本机）",d:"docs/en/algorithms/async.md",href:srcUrl("docs/en/algorithms/async.md",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:8}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 8 课 / 共 12 · engine/ + infra/ 推理后端"),
+          h("h1",null,"推理引擎：把 SGLang/vLLM 封装成异步 rollout 引擎"),
+          h("p",{className:"lead"},"训练框架不自己管 KV cache，而是把 SGLang/vLLM 当作远程服务来调。这一课详细讲：后端适配协议、agenerate 的六步全流程、SGLang 与 vLLM 的 HTTP 差异、推理侧怎么接收权重广播、以及异步 rollout 的 staleness 控制。这是第 7 课训练侧的镜像另一半。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"infra/remote_inf_engine.py"),"（基类）、",h("code",null,"engine/sglang_remote.py"),"、",h("code",null,"engine/vllm_remote.py"),"、",h("code",null,"engine/vllm_ext/"),"、",h("code",null,"infra/launcher/{sglang,vllm}_server.py"),"、",h("code",null,"infra/workflow_executor.py")," 与 ",h("code",null,"infra/staleness_manager.py"),"。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部文档。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"设计模式"),
+          h("h2",null,"协议 + 组合：一套主逻辑，两个后端"),
+          h(PatternSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"remote_inf_engine · 最热路径"),
+          h("h2",null,"agenerate 全流程"),
+          h(AgenerateSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"sglang_remote vs vllm_remote"),
+          h("h2",null,"两个后端的 HTTP 差异"),
+          h("p",null,"同一份 agenerate 主逻辑，两套不同的请求/响应格式。点 Tab 对比。"),
+          h(BackendExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"权重同步 · 推理侧"),
+          h("h2",null,"推理引擎怎么接收新权重"),
+          h(WeightSyncSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"workflow_executor + staleness_manager"),
+          h("h2",null,"异步 rollout 与 staleness 控制"),
+          h(StalenessSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"launcher"),
+          h("h2",null,"推理 server 怎么拉起"),
+          h(LauncherSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"KV 不归框架管"),"：SGLang/vLLM 负责 paged/radix KV 与连续批处理，框架只发请求、管路由、记版本、推权重。"),
+            h("li",null,h("strong",null,"协议 + 组合换后端零成本"),"：backend 协议负责 HTTP 差异，RemoteInfEngine 负责所有公共逻辑。"),
+            h("li",null,h("strong",null,"逐 token 版本是异步正确性的根"),"：agenerate 给每个 token 打版本号，支撑 decoupled PPO。"),
+            h("li",null,h("strong",null,"权重更新是有序的硬边界"),"：pause → 中止旧请求 → NCCL/磁盘更新 → 升版本 → resume。"),
+            h("li",null,h("strong",null,"staleness 控吞吐与 off-policy 的平衡"),"：容量公式同时卡并发和版本落后。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"areal-lesson-07-train-engine.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 7 课：训练引擎")),
+            h("a",{href:"areal-course-index.html"},h("div",{className:"faint"},"下一课（待建） →"),h("strong",null,"第 9 课：Workflow"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 第 5 课：RL 数学 core_algos</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 5 课</p><h1>RL 数学 core_algos</h1><p>能访问 CDN 时切换为交互版。本课精读 verl/trainer/ppo/core_algos.py 这 2487 行的强化学习数学核心：优势估计器（GAE、GRPO、RLOO、ReMax、Reinforce++ 等）、策略损失变体（PPO clip、dual-clip、GSPO、clip-cov、kl-cov、CISPO 等）、KL 惩罚与 k1/k2/k3 估计器、熵与价值损失、优势归一化（whiten），以及 rollout_corr_helper 的 off-policy 重要性采样修正（TIS / IcePop）与 prefix_grouper、padding_utils 两个辅助模块。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const VERL="vscode://file/Users/xinyu/Code/Agentic-RL/verl/";
+  function srcUrl(p,l){return VERL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","np","Enum","DataProto","WorkerGroup","ResourcePool","RayWorkerGroup","AgentLoop","AlgoConfig","ActorConfig","AdvantageEstimator","PolicyLossFn","DictConfig","PrefixGrouper"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与HybridFlow","verl-lesson-01-foundations.html"],[2,"DataProto","verl-lesson-02-dataproto.html"],[3,"混合控制器","verl-lesson-03-single-controller.html"],[4,"配置","verl-lesson-04-config.html"],[5,"RL数学","verl-lesson-05-core-algos.html"],[6,"训练引擎","verl-lesson-06-engines.html"],[7,"Workers","verl-lesson-07-workers.html"],[8,"Rollout","verl-lesson-08-rollout.html"],[9,"异步服务","verl-lesson-09-async-server.html"],[10,"Agent Loop","verl-lesson-10-agent-loop.html"],[11,"异步训练","verl-lesson-11-async-train.html"],[12,"Trainer与端到端","verl-lesson-12-trainer-e2e.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"verl-course-index.html"},"verl",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 概览：注册表与统一签名 =====
+  function OverviewSection(){
+    return h("div",null,
+      h("p",null,"在前四课里我们已经看清 verl 的骨架：HybridFlow 的单控制器编排（第 1、3 课）、",h("code",null,"DataProto")," 作为统一数据契约（第 2 课）、Hydra 配置体系（第 4 课）。从本课开始进入算法内核。",h("code",null,"verl/trainer/ppo/core_algos.py")," 是整个框架里几乎唯一的纯数学文件：它不持有模型、不发起远程调用、不依赖任何后端，只是一组接收张量、返回张量的函数。正因为它无副作用，FSDP 后端与 Megatron 后端（第 6 课）可以共用同一份 RL 数学实现，不必各写一遍。"),
+      h("p",null,"这个文件的组织方式是两张",h("strong",null,"注册表"),"加一组数学函数。优势估计器登记在 ",h("code",null,"ADV_ESTIMATOR_REGISTRY")," 里，策略损失登记在 ",h("code",null,"POLICY_LOSS_REGISTRY")," 里，两者都用装饰器注册、用字符串名取回。这样新增一个算法只需写一个带 ",h("code",null,"@register_*")," 装饰器的函数，无需改动调用方。这是典型的开放封闭原则：对扩展开放，对修改封闭。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"注册表 1"),"优势估计器"),
+          h("p",null,h("code",null,"register_adv_est(name)")," 把函数写入 ",h("code",null,"ADV_ESTIMATOR_REGISTRY"),"；",h("code",null,"get_adv_estimator_fn(name)")," 取回。合法名字由 ",h("code",null,"AdvantageEstimator")," 这个字符串枚举登记，避免拼写错误。"),
+          h("div",null,h(Src,{label:"register_adv_est",path:"verl/trainer/ppo/core_algos.py",line:116}),h(Src,{label:"AdvantageEstimator 枚举",path:"verl/trainer/ppo/core_algos.py",line:88}))
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill purple"},"注册表 2"),"策略损失"),
+          h("p",null,h("code",null,"register_policy_loss(name)")," 把函数写入 ",h("code",null,"POLICY_LOSS_REGISTRY"),"；",h("code",null,"get_policy_loss_fn(name)")," 取回。所有损失函数共用同一个签名 ",h("code",null,"PolicyLossFn"),"（见下），因此可以互换。"),
+          h("div",null,h(Src,{label:"register_policy_loss",path:"verl/trainer/ppo/core_algos.py",line:53}),h(Src,{label:"PolicyLossFn 签名",path:"verl/trainer/ppo/core_algos.py",line:37}))
+        )
+      ),
+      h("p",null,"策略损失的统一签名值得先记住：每个损失函数都接收 ",h("code",null,"old_log_prob"),"（采样时的对数概率）、",h("code",null,"log_prob"),"（当前训练策略重新前向得到的对数概率）、",h("code",null,"advantages"),"、",h("code",null,"response_mask"),"（仅 response 段为 1，prompt 与 padding 为 0），外加聚合方式与配置，返回 ",h("code",null,"(标量损失, 指标字典)"),"。"),
+      h(Code,null,"PolicyLossFn = Callable[\n    [\n        torch.Tensor,  # old_log_prob  采样时的 logπ_old\n        torch.Tensor,  # log_prob      当前策略重算的 logπ_θ\n        torch.Tensor,  # advantages    优势 A\n        torch.Tensor,  # response_mask 仅 response 段为 1\n        str,           # loss_agg_mode 聚合方式\n        Optional[DictConfig | ActorConfig],  # config\n        torch.Tensor | None,  # rollout_log_probs / IS 权重\n    ],\n    tuple[torch.Tensor, dict[str, Any]],\n]"),
+      h("div",{className:"note"},"为什么把 RL 数学单独抽成一个无状态文件？因为 RL 训练的 bug 往往是静默的：损失算错不会报错，只会让训练曲线慢慢崩坏。把数学逻辑与分布式工程（FSDP/Megatron 切分、通信、显存）彻底分离，可以让这部分获得单元测试，并在不同后端之间保证逐位一致。第 6、7 课会看到 worker 如何调用本课的函数。")
+    );
+  }
+
+  // ===== 优势估计器探索器 =====
+  const ADV=[
+    {key:"gae",name:"GAE（带 critic）",render:function(){return [
+      h("p",null,h("strong",null,"Generalized Advantage Estimation")," 是唯一需要价值函数（critic）的估计器，也是经典 PPO 的默认选择。它在偏差与方差之间用 ",h("code",null,"\\lambda")," 做插值：",h("code",null,"\\lambda=0")," 退化为单步 TD（低方差高偏差），",h("code",null,"\\lambda=1")," 退化为蒙特卡洛回报（高方差无偏）。"),
+      h(Formula,{cap:"时序差分残差与 GAE 的递推（自后向前）"},"$$ \\delta_t = r_t + \\gamma V(s_{t+1}) - V(s_t),\\qquad \\hat{A}_t = \\delta_t + \\gamma\\lambda\\,\\hat{A}_{t+1} $$"),
+      h("p",null,"源码用反向循环实现这个递推，并用 ",h("code",null,"response_mask")," 在 EOS 之后清零，避免把无效 token 的值与 TD 残差带进来。回报由 ",h("code",null,"returns = advantages + values")," 还原，供 critic 回归。最后对优势做带掩码白化（见后文归一化一节）。"),
+      h(Code,null,"for t in reversed(range(gen_len)):\n    delta = token_level_rewards[:, t] + gamma * nextvalues - values[:, t]\n    lastgaelam_ = delta + gamma * lam * lastgaelam\n    # 在 observation token 上跳过 value 与 TD 残差\n    nextvalues = values[:, t] * response_mask[:, t] + (1 - response_mask[:, t]) * nextvalues\n    lastgaelam = lastgaelam_ * response_mask[:, t] + (1 - response_mask[:, t]) * lastgaelam\n    advantages_reversed.append(lastgaelam)\nadvantages = torch.stack(advantages_reversed[::-1], dim=1)\nreturns = advantages + values\nadvantages = verl_F.masked_whiten(advantages, response_mask)"),
+      h("p",null,h("strong",null,"适用场景"),"：需要细粒度（逐 token）信用分配、且愿意额外训练一个 critic 的场景。代价是 critic 本身要消耗显存与算力，并可能引入偏差。"),
+      h("div",null,h(Src,{label:"compute_gae_advantage_return",path:"verl/trainer/ppo/core_algos.py",line:216}),h(Ext,{href:"https://arxiv.org/abs/1506.02438"},"GAE 论文"),h(Ext,{href:"https://arxiv.org/abs/1707.06347"},"PPO 论文"))
+    ];}},
+    {key:"grpo",name:"GRPO（组内归一）",render:function(){return [
+      h("p",null,h("strong",null,"Group Relative Policy Optimization")," 抛弃 critic，改用",h("strong",null,"组内基线"),"：同一个 prompt 采样多条 response（一个 group，由 ",h("code",null,"index/uid")," 标记），用组内得分的均值作基线、标准差作尺度。这是当前大模型 RL 最常用的估计器，省掉了 critic 的全部开销。"),
+      h(Formula,{cap:"GRPO 组内归一（同一 prompt 的第 i 条 response 得到一个标量优势，再广播到该序列每个 token）"},"$$ \\hat{A}_i = \\frac{r_i - \\operatorname{mean}(\\{r_j\\}_{j\\in G})}{\\operatorname{std}(\\{r_j\\}_{j\\in G}) + \\epsilon} $$"),
+      h("p",null,"源码先把 token 级奖励沿序列求和得到每条 response 的标量得分 ",h("code",null,"scores"),"，按 ",h("code",null,"index")," 分组算 ",h("code",null,"mean/std"),"，再逐条归一并 ",h("code",null,"unsqueeze(-1) * response_mask")," 广播。一个开关 ",h("code",null,"norm_adv_by_std_in_grpo")," 决定是否除以标准差：取 False 即为 ",h("strong",null,"Dr.GRPO"),"，避免标准差归一带来的长度偏置。"),
+      h(Code,null,"scores = token_level_rewards.sum(dim=-1)\nfor idx in id2score:\n    scores_tensor = torch.stack(id2score[idx])\n    id2mean[idx] = torch.mean(scores_tensor)\n    id2std[idx]  = torch.std(scores_tensor)\nfor i in range(bsz):\n    if norm_adv_by_std_in_grpo:\n        scores[i] = (scores[i] - id2mean[index[i]]) / (id2std[index[i]] + epsilon)\n    else:                          # Dr.GRPO：只减均值，不除标准差\n        scores[i] = scores[i] - id2mean[index[i]]\nscores = scores.unsqueeze(-1) * response_mask"),
+      h("p",null,"注意当组内只有一条样本时，",h("code",null,"mean=0, std=1"),"（优势为 0，不更新），这是对退化分组的安全处理。",h("code",null,"grpo_vectorized")," 是同一公式的向量化实现，用 ",h("code",null,"group_mean_std")," 一次算完所有组，避免 Python 循环。"),
+      h("div",null,h(Src,{label:"compute_grpo_outcome_advantage",path:"verl/trainer/ppo/core_algos.py",line:268}),h(Src,{label:"grpo_vectorized",path:"verl/trainer/ppo/core_algos.py",line:335}),h(Ext,{href:"https://arxiv.org/abs/2402.03300"},"GRPO / DeepSeekMath"),h(Ext,{href:"https://arxiv.org/abs/2503.20783"},"Dr.GRPO"))
+    ];}},
+    {key:"rloo",name:"RLOO / OPO（留一基线）",render:function(){return [
+      h("p",null,h("strong",null,"RLOO")," 的基线是",h("strong",null,"留一法"),"（leave-one-out）：对第 i 条样本，基线取组内其余样本的均值，从而保证基线与被评估样本相互独立，给出无偏的优势。源码用一个等价的代数恒等式实现，无需为每条样本单独算其余项的均值。"),
+      h(Formula,{cap:"RLOO 留一基线（k 为组大小）"},"$$ \\hat{A}_i = r_i - \\frac{1}{k-1}\\sum_{j\\neq i} r_j = \\frac{k}{k-1}\\Big(r_i - \\bar{r}\\Big) $$"),
+      h(Code,null,"# compute_rloo_outcome_advantage：用 k/(k-1) 因子等价实现留一基线\nresponse_num = len(id2score[index[i]])\nif response_num > 1:\n    scores[i] = scores[i] * response_num / (response_num - 1) \\\n              - id2mean[index[i]] * response_num / (response_num - 1)"),
+      h("p",null,h("code",null,"rloo_vectorized")," 用 ",h("code",null,"torch.bincount")," 把分组求和与计数完全向量化，避免 Python 字典循环，是大批量下的推荐实现。"),
+      h("p",null,h("strong",null,"OPO")," 是 RLOO 的长度加权变体：基线改成按响应长度加权的组内平均得分（即 token 维度的期望奖励），对长度分布不均的任务更稳。"),
+      h(Formula,{cap:"OPO 长度加权基线"},"$$ b_{G} = \\frac{\\sum_{j\\in G} \\lvert y_j\\rvert\\, r_j}{\\sum_{j\\in G} \\lvert y_j\\rvert},\\qquad \\hat{A}_i = r_i - b_G $$"),
+      h("div",null,h(Src,{label:"compute_rloo_outcome_advantage",path:"verl/trainer/ppo/core_algos.py",line:588}),h(Src,{label:"rloo_vectorized",path:"verl/trainer/ppo/core_algos.py",line:832}),h(Src,{label:"compute_opo_outcome_advantage",path:"verl/trainer/ppo/core_algos.py",line:640}),h(Ext,{href:"https://arxiv.org/abs/2402.14740"},"RLOO 论文"))
+    ];}},
+    {key:"remax",name:"ReMax（贪心基线）",render:function(){return [
+      h("p",null,h("strong",null,"ReMax")," 用一条",h("strong",null,"贪心解码"),"（greedy / argmax）的轨迹作为基线。它不需要组内多采样，而是单独跑一次贪心生成、对其打分得到 ",h("code",null,"reward_baselines"),"，再用采样轨迹的累计回报减去这个基线。直觉是：把模型在确定性策略下能拿到的分数当作参照，超出部分才是值得强化的信号。"),
+      h(Formula,{cap:"ReMax 优势（b 为贪心轨迹的奖励基线）"},"$$ \\hat{A}_t = \\Big(\\textstyle\\sum_{s\\ge t} r_s\\Big) - b_{\\text{greedy}} $$"),
+      h(Code,null,"# 反向累计和得到逐 token 的 return，再减贪心基线\nreturns = (token_level_rewards * response_mask).flip(dims=[-1]).cumsum(dim=-1).flip(dims=[-1])\nadvantages = returns - reward_baselines.unsqueeze(-1) * response_mask"),
+      h("p",null,h("strong",null,"适用场景"),"：希望省掉 critic，又不想为每个 prompt 采样多条样本（GRPO/RLOO 的前提）的场景。代价是每步要额外做一次贪心生成。"),
+      h("div",null,h(Src,{label:"compute_remax_outcome_advantage",path:"verl/trainer/ppo/core_algos.py",line:733}),h(Ext,{href:"https://arxiv.org/abs/2310.10505"},"ReMax 论文"))
+    ];}},
+    {key:"rpp",name:"Reinforce++（折扣回报白化）",render:function(){return [
+      h("p",null,h("strong",null,"REINFORCE++")," 不分组、不留一，而是直接对",h("strong",null,"折扣累计回报",")"),"做全局白化作为优势。它先自后向前算折扣回报（在 EOS 处重置 running return），再对整批 response token 做 ",h("code",null,"masked_whiten"),"（减均值、除标准差）。这相当于用整个 minibatch 的统计量当基线，是最朴素却相当稳健的无 critic 方案。"),
+      h(Formula,{cap:"折扣回报与批级白化"},"$$ R_t = r_t + \\gamma R_{t+1},\\qquad \\hat{A}_t = \\frac{R_t - \\mu_{\\text{batch}}}{\\sigma_{\\text{batch}} + \\epsilon} $$"),
+      h(Code,null,"for t in reversed(range(T)):\n    running_return = token_level_rewards[:, t] + gamma * running_return\n    returns[:, t] = running_return\n    running_return = running_return * response_mask[:, t]   # EOS 后重置\nadvantages = verl_F.masked_whiten(returns, response_mask) * response_mask"),
+      h("p",null,h("strong",null,"REINFORCE++-baseline")," 是折中版：先做 GRPO 式的组内减均值，再做一次批级白化，兼顾组内相对信号与批级尺度统一。"),
+      h("div",null,h(Src,{label:"reinforce_plus_plus",path:"verl/trainer/ppo/core_algos.py",line:694}),h(Src,{label:"reinforce_plus_plus_baseline",path:"verl/trainer/ppo/core_algos.py",line:536}),h(Ext,{href:"https://arxiv.org/abs/2501.03262"},"REINFORCE++ 论文"))
+    ];}},
+    {key:"more",name:"其余估计器",render:function(){return [
+      h("p",null,"core_algos 还登记了若干面向特定目标的估计器，列举其要点："),
+      h("ul",null,
+        h("li",null,h("strong",null,"GRPO-PassK"),"（",h(Src,{label:"line 472",path:"verl/trainer/ppo/core_algos.py",line:472}),"）：面向 Pass@k 指标，组内只给最优样本一个非零优势，值为 ",h("code",null,"r_max - r_second_max"),"，其余为 0。"),
+        h("li",null,h("strong",null,"GPG"),"（Group Policy Gradient，",h(Src,{label:"line 769",path:"verl/trainer/ppo/core_algos.py",line:769}),"）：在 GRPO 减均值的基础上乘一个自适应因子 ",h("code",null,"alpha = bsz / 非零得分数"),"，对全 0 或全对的退化组做缩放修正。"),
+        h("li",null,h("strong",null,"GDPO"),"（",h(Src,{label:"line 362",path:"verl/trainer/ppo/core_algos.py",line:362}),"）：多维奖励解耦归一，对每个奖励维度分别做组内 GRPO 归一再加权求和，避免某一维强信号淹没其他维。"),
+        h("li",null,h("strong",null,"Optimal-Token-Baseline / TIR-OTB"),"（",h(Src,{label:"line 870",path:"verl/trainer/ppo/core_algos.py",line:870}),"）：逐 token 最优基线，后者针对工具集成推理（tool-integrated reasoning）的多轮场景。")
+      ),
+      h("div",{className:"note"},"所有 outcome-only 估计器（GRPO/RLOO/ReMax/Reinforce++ 等）都返回 ",h("code",null,"(advantages, returns)")," 两个张量，且对这些方法 returns 往往等于 advantages（没有独立的价值回归目标）。只有 GAE 返回真正独立的 returns 供 critic 训练。这也是为什么选 GAE 之外的估计器时，critic 整支可以关闭。")
+    ];}}
+  ];
+  function AdvExplorer(){const [s,setS]=useState(0);const d=ADV[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},ADV.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 策略损失探索器 =====
+  const LOSS=[
+    {key:"vanilla",name:"PPO clip / dual-clip",render:function(){return [
+      h("p",null,h("strong",null,"vanilla")," 是标准 PPO 的裁剪目标，也是 dual-clip 的载体。先算重要性比 ",h("code",null,"ratio = exp(logπ_θ - logπ_old)"),"，再取裁剪与未裁剪两项的逐元素最大（因为损失是负优势加权，取 max 即对应原始目标的 min）。"),
+      h(Formula,{cap:"PPO 裁剪目标（按 token，ε 由 clip_ratio 给出，可分上下限 clip_ratio_low/high 即非对称裁剪）"},"$$ L^{\\text{clip}} = -\\,\\mathbb{E}\\Big[\\min\\big(\\rho_t \\hat{A}_t,\\ \\operatorname{clip}(\\rho_t,\\,1-\\epsilon_{\\text{low}},\\,1+\\epsilon_{\\text{high}})\\,\\hat{A}_t\\big)\\Big],\\quad \\rho_t = \\frac{\\pi_\\theta}{\\pi_{\\text{old}}} $$"),
+      h("p",null,h("strong",null,"Dual-clip")," 处理一个 PPO 的失稳来源：当优势为负且比值很大时，",h("code",null,"-A·ratio")," 会变成很大的正损失，梯度爆炸。Dual-clip 给负优势项再加一道下界 ",h("code",null,"clip_ratio_c"),"（默认 3.0，且断言必须大于 1），把损失限制在 ",h("code",null,"-A·c")," 以内。"),
+      h(Formula,{cap:"Dual-clip：仅当 A<0 时再施加下界 c>1"},"$$ L^{\\text{dual}}_t = \\begin{cases} \\max\\big(L^{\\text{clip}}_t,\\ -c\\,\\hat{A}_t\\big), & \\hat{A}_t < 0\\\\[4pt] L^{\\text{clip}}_t, & \\hat{A}_t \\ge 0\\end{cases} $$"),
+      h(Code,null,"negative_approx_kl = torch.clamp(log_prob - old_log_prob, min=-20.0, max=20.0)\nratio = torch.exp(negative_approx_kl)\npg_losses1 = -advantages * ratio\npg_losses2 = -advantages * torch.clamp(ratio, 1 - cliprange_low, 1 + cliprange_high)\nclip_pg_losses1 = torch.maximum(pg_losses1, pg_losses2)          # = - min(...)\npg_losses3 = -advantages * clip_ratio_c                          # dual-clip 下界\nclip_pg_losses2 = torch.min(pg_losses3, clip_pg_losses1)\npg_losses = torch.where(advantages < 0, clip_pg_losses2, clip_pg_losses1)\npg_loss = agg_loss(pg_losses, response_mask, loss_agg_mode, **config.global_batch_info)"),
+      h("p",null,"对 ",h("code",null,"negative_approx_kl")," 先 ",h("code",null,"clamp(-20, 20)")," 再取指数，是为了防止指数溢出。",h("code",null,"clip_ratio_low != clip_ratio_high")," 即 ",h("strong",null,"DAPO")," 提倡的 clip-higher（提高上限以鼓励探索）。指标里报告 ",h("code",null,"pg_clipfrac"),"（被上裁剪的比例）与 ",h("code",null,"pg_clipfrac_lower"),"（被 dual-clip 下界触发的比例）。"),
+      h("div",null,h(Src,{label:"compute_policy_loss_vanilla",path:"verl/trainer/ppo/core_algos.py",line:1279}),h(Ext,{href:"https://arxiv.org/abs/1707.06347"},"PPO"),h(Ext,{href:"https://arxiv.org/abs/2503.14476"},"DAPO（clip-higher）"))
+    ];}},
+    {key:"gspo",name:"GSPO（序列级比值）",render:function(){return [
+      h("p",null,h("strong",null,"Group Sequence Policy Optimization")," 把重要性比从 token 级抬到",h("strong",null,"序列级"),"：先对整条 response 的对数比求平均（即几何平均的对数形式），得到一个序列级比值 ",h("code",null,"s_i"),"，再裁剪。动机是 token 级比值在长序列上方差极大、容易让单个异常 token 主导更新；序列级比值更平滑，对 MoE 等高方差模型尤其重要。"),
+      h(Formula,{cap:"GSPO 序列级重要性比（|y_i| 为响应长度）"},"$$ s_i(\\theta) = \\left(\\frac{\\pi_\\theta(y_i\\mid x)}{\\pi_{\\text{old}}(y_i\\mid x)}\\right)^{1/\\lvert y_i\\rvert} = \\exp\\!\\Big(\\frac{1}{\\lvert y_i\\rvert}\\sum_t \\log\\frac{\\pi_\\theta(y_{i,t})}{\\pi_{\\text{old}}(y_{i,t})}\\Big) $$"),
+      h("p",null,"实现上用了一个 stop-gradient 技巧，把序列级比值作为常数因子乘到每个 token 的对数概率上，使梯度仍逐 token 流动但比值是序列级的（源码注释 ",h("code",null,"log(s_i,t) = sg[log s_i] + log_prob - sg[log_prob]"),"）。GSPO 推荐配 ",h("code",null,"seq-mean-token-mean")," 聚合，源码中直接写死了这一聚合方式。"),
+      h(Code,null,"seq_lengths = torch.sum(response_mask, dim=-1).clamp(min=1)\nnegative_approx_kl_seq = torch.sum((log_prob-old_log_prob)*response_mask, dim=-1) / seq_lengths\n# 序列级比值通过 stop-grad 注入 token 级，保持逐 token 梯度\nlog_seq_importance_ratio = log_prob - log_prob.detach() + negative_approx_kl_seq.detach().unsqueeze(-1)\nseq_importance_ratio = torch.exp(torch.clamp(log_seq_importance_ratio, max=10.0))\npg_losses1 = -advantages * seq_importance_ratio\npg_losses2 = -advantages * torch.clamp(seq_importance_ratio, 1-clip_ratio_low, 1+clip_ratio_high)\npg_losses = torch.maximum(pg_losses1, pg_losses2)"),
+      h("div",null,h(Src,{label:"compute_policy_loss_gspo",path:"verl/trainer/ppo/core_algos.py",line:1539}),h(Ext,{href:"https://arxiv.org/abs/2507.18071"},"GSPO 论文"))
+    ];}},
+    {key:"cov",name:"clip-cov / kl-cov（熵控制）",render:function(){return [
+      h("p",null,"这两个损失来自对 RL 熵坍缩机制的研究：训练中熵会快速下降导致探索枯竭。它们都聚焦于",h("strong",null,"协方差"),"，即优势与对数概率偏离均值之积 ",h("code",null,"(A - Ā)(logπ - logπ̄)"),"。高协方差的 token 是熵下降的主要推手，对它们做特殊处理可以延缓熵坍缩。"),
+      h("p",null,h("strong",null,"clip-cov")," 随机选取一小批（比例 ",h("code",null,"clip_cov_ratio"),"，默认 0.0002）协方差落在 ",h("code",null,"[clip_cov_lb, clip_cov_ub]")," 之间的 token，把它们的梯度直接置零（",h("code",null,"corr=0"),"），相当于对这些 token 停止更新。"),
+      h(Code,null,"cov_all = (advantages - masked_mean(advantages, response_mask)) * \\\n          (log_prob - masked_mean(log_prob.detach(), response_mask))\nclip_num = max(int(clip_cov_ratio * response_mask.sum().item()), 1)\ntop_k_idx = (cov_all < clip_cov_ub) & (cov_all > clip_cov_lb) & (response_mask > 0)\n# 随机抽取 clip_num 个并将其梯度系数置零\ncorr[top_k_idx[:, 0], top_k_idx[:, 1]] = 0\npg_losses = torch.maximum(pg_losses1, pg_losses2) * corr"),
+      h("p",null,h("strong",null,"kl-cov")," 不置零，而是对协方差最大的 top-k token 额外加一个 KL 惩罚项 ",h("code",null,"ppo_kl_coef · |logπ_θ - logπ_old|"),"，用 KL 约束这些高协方差 token 的更新幅度。两者都是 PRIME-RL 的熵机制工作的实现。"),
+      h("div",null,h(Src,{label:"compute_policy_loss_clip_cov",path:"verl/trainer/ppo/core_algos.py",line:1736}),h(Src,{label:"compute_policy_loss_kl_cov",path:"verl/trainer/ppo/core_algos.py",line:1841}),h(Ext,{href:"https://arxiv.org/abs/2505.22617"},"Entropy Mechanism of RL"))
+    ];}},
+    {key:"cispo",name:"CISPO / geo-mean / 其它",render:function(){return [
+      h("p",null,h("strong",null,"CISPO")," 来自 MiniMax-M1：它不裁剪损失，而是裁剪重要性权重本身，并对裁剪后的权重做 stop-gradient，使梯度只通过 ",h("code",null,"log π_θ")," 流动。这样即使比值被裁剪，对应 token 仍贡献梯度（标准 PPO 中被裁剪的 token 梯度为零），从而保留更多学习信号。"),
+      h(Formula,{cap:"CISPO 目标（sg 表示 stop-gradient）"},"$$ J^{\\text{CISPO}} = \\mathbb{E}\\Big[\\operatorname{sg}\\!\\big(\\operatorname{clip}(\\rho_t,\\,1-\\epsilon_{\\text{low}},\\,1+\\epsilon_{\\text{high}})\\big)\\cdot \\hat{A}_t \\cdot \\log\\pi_\\theta(y_t)\\Big] $$"),
+      h(Code,null,"clipped_ratio = torch.clamp(ratio, 1 - clip_ratio_low, 1 + clip_ratio_high)\nclipped_ratio_sg = clipped_ratio.detach()        # 关键：stop-gradient\npg_losses = -clipped_ratio_sg * advantages * log_prob   # 梯度只过 log_prob"),
+      h("ul",null,
+        h("li",null,h("strong",null,"geo-mean (GMPO)"),"（",h(Src,{label:"line 1921",path:"verl/trainer/ppo/core_algos.py",line:1921}),"）：用序列对数比的几何平均构造序列级比值，对异常 token 更鲁棒。"),
+        h("li",null,h("strong",null,"dppo_tv / dppo_kl"),"（",h(Src,{label:"line 1373",path:"verl/trainer/ppo/core_algos.py",line:1373}),"）：用截断重要性采样（TIS，",h("code",null,"clamp(ratio, max=clip_ratio_c)"),"，默认 20）替代 dual-clip，并按概率差或 KL 设有效掩码。"),
+        h("li",null,h("strong",null,"sapo"),"（",h(Src,{label:"line 1615",path:"verl/trainer/ppo/core_algos.py",line:1615}),"）：用平滑门控函数对正/负优势分别设温度，替代硬裁剪。"),
+        h("li",null,h("strong",null,"gpg / bypass_mode"),"（",h(Src,{label:"line 1700",path:"verl/trainer/ppo/core_algos.py",line:1700}),"）：bypass_mode 是 off-policy 修正的统一入口，下一节专讲。")
+      ),
+      h("div",null,h(Src,{label:"compute_policy_loss_cispo",path:"verl/trainer/ppo/core_algos.py",line:2007}),h(Ext,{href:"https://arxiv.org/abs/2506.13585"},"CISPO / MiniMax-M1"),h(Ext,{href:"https://arxiv.org/abs/2507.20673"},"GMPO"))
+    ];}}
+  ];
+  function LossExplorer(){const [s,setS]=useState(0);const d=LOSS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},LOSS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== KL 与熵探索器 =====
+  const KLE=[
+    {key:"estimator",name:"KL 估计器 k1/k2/k3",render:function(){return [
+      h("p",null,"verl 实现了 John Schulman 提出的三个 KL 估计器，用于在采样下估计 ",h("code",null,"KL(π_θ || π_ref)"),"，调度入口是 ",h("code",null,"kl_penalty_forward"),"。三者的核心区别在偏差与方差，以及是否始终非负。"),
+      h(Formula,{cap:"三个 KL 估计器（r = logπ_θ - logπ_ref）"},"$$ k_1 = r,\\qquad k_2 = \\tfrac{1}{2}r^2,\\qquad k_3 = e^{-r} - (-r) - 1 $$"),
+      h("ul",null,
+        h("li",null,h("strong",null,"k1"),"（",h("code",null,'"kl"/"k1"'),"）：直接用对数比，无偏但方差大，且可正可负。"),
+        h("li",null,h("strong",null,"k2"),"（",h("code",null,'"mse"/"k2"'),"）：对数比平方的一半，始终非负、方差小，但有偏。它的优点是梯度恰好是 KL 的正确梯度。"),
+        h("li",null,h("strong",null,"k3"),"（",h("code",null,'"low_var_kl"/"k3"'),"）：低方差且始终非负的估计器，是当前推荐默认。源码对 ",h("code",null,"ratio")," 与结果都做了 clamp 以保数值稳定。")
+      ),
+      h(Code,null,"if kl_penalty in ('kl', 'k1'):  return logprob - ref_logprob\nif kl_penalty in ('mse', 'k2'): return 0.5 * (logprob - ref_logprob).square()\nif kl_penalty in ('low_var_kl', 'k3'):\n    kl = torch.clamp(ref_logprob - logprob, min=-20, max=20)\n    kld = (torch.exp(kl) - kl - 1).contiguous()\n    return torch.clamp(kld, min=-10, max=10)"),
+      h("p",null,"还有一个直通（straight-through）技巧：若名字以 ",h("code",null,"+")," 结尾（如 ",h("code",null,"k3+"),"），前向用 k1/k3 的无偏值，反向用 k2 的正确梯度。这是因为 k1/k3 的期望是 KL，但它们的梯度期望并非 KL 的梯度；k2 的梯度才正确。源码用 ",h("code",null,"backward - backward.detach() + forward.detach()")," 实现这个分离。"),
+      h(Code,null,"backward_score = 0.5 * (logprob - ref_logprob).square()\nreturn backward_score - backward_score.detach() + forward_score.detach()"),
+      h("div",null,h(Src,{label:"kl_penalty（含 + 直通）",path:"verl/trainer/ppo/core_algos.py",line:2126}),h(Src,{label:"kl_penalty_forward",path:"verl/trainer/ppo/core_algos.py",line:2154}),h(Ext,{href:"http://joschu.net/blog/kl-approx.html"},"Schulman: KL 近似"))
+    ];}},
+    {key:"penalty",name:"KL 惩罚位置与控制器",render:function(){return [
+      h("p",null,"KL 约束在 verl 里有两个施加位置，二者可独立开关："),
+      h("ul",null,
+        h("li",null,h("strong",null,"奖励级（reward penalty）"),"：在算优势之前，把 KL 从 token 级奖励里扣掉。",h("code",null,"compute_rewards")," 实现为 ",h("code",null,"r' = r - β·(logπ_old - logπ_ref)"),"，把偏离参考策略的代价并入回报。"),
+        h("li",null,h("strong",null,"损失级（loss penalty）"),"：在策略损失上单独加 KL 项（由 actor 侧实现，调用本文件的 ",h("code",null,"kl_penalty"),"）。")
+      ),
+      h(Code,null,"def compute_rewards(token_level_scores, old_log_prob, ref_log_prob, kl_ratio):\n    kl = old_log_prob - ref_log_prob\n    return token_level_scores - kl * kl_ratio"),
+      h("p",null,"KL 系数 β 可以固定，也可以自适应。",h("strong",null,"AdaptiveKLController")," 按当前 KL 与目标 KL 的相对误差成比例调整 β：KL 偏大就增大惩罚，偏小就放松。",h("strong",null,"FixedKLController")," 则恒定。工厂 ",h("code",null,"get_kl_controller")," 按配置返回其一。"),
+      h(Formula,{cap:"自适应 KL 控制器的更新（误差被裁剪到 ±0.2）"},"$$ e = \\operatorname{clip}\\!\\Big(\\frac{\\text{KL}}{\\text{KL}_{\\text{target}}} - 1,\\,-0.2,\\,0.2\\Big),\\qquad \\beta \\leftarrow \\beta\\,\\Big(1 + e\\,\\frac{n}{\\text{horizon}}\\Big) $$"),
+      h("div",null,h(Src,{label:"compute_rewards",path:"verl/trainer/ppo/core_algos.py",line:1122}),h(Src,{label:"AdaptiveKLController",path:"verl/trainer/ppo/core_algos.py",line:153}),h(Src,{label:"get_kl_controller",path:"verl/trainer/ppo/core_algos.py",line:193}))
+    ];}},
+    {key:"entropy",name:"熵损失与价值损失",render:function(){return [
+      h("p",null,h("strong",null,"熵损失")," 用来鼓励探索：对 logits 算逐 token 分类熵，再聚合。actor 总损失里通常按 ",h("code",null,"-entropy_coef · entropy")," 的形式加入（熵越大越好，故取负）。"),
+      h(Code,null,"def compute_entropy_loss(logits, response_mask, loss_agg_mode='token-mean'):\n    token_entropy = verl_F.entropy_from_logits(logits)        # (bs, response_len)\n    return agg_loss(token_entropy, response_mask, loss_agg_mode)"),
+      h("p",null,h("strong",null,"价值损失")," 仅在用 GAE（带 critic）时需要。它是带裁剪的均方误差：把 critic 的新预测限制在旧值的 ",h("code",null,"±cliprange_value")," 范围内，再对裁剪与未裁剪两项取最大，防止 critic 单步更新过猛。"),
+      h(Formula,{cap:"裁剪价值损失"},"$$ L^{V} = \\tfrac{1}{2}\\,\\mathbb{E}\\Big[\\max\\big((V_\\theta - R)^2,\\ (\\operatorname{clip}(V_\\theta, V_{\\text{old}}\\pm\\Delta) - R)^2\\big)\\Big] $$"),
+      h(Code,null,"vpredclipped = verl_F.clip_by_value(vpreds, values - cliprange_value, values + cliprange_value)\nvf_losses1 = (vpreds - returns) ** 2\nvf_losses2 = (vpredclipped - returns) ** 2\nvf_loss = 0.5 * agg_loss(torch.max(vf_losses1, vf_losses2), response_mask, loss_agg_mode)"),
+      h("div",null,h(Src,{label:"compute_entropy_loss",path:"verl/trainer/ppo/core_algos.py",line:2067}),h(Src,{label:"compute_value_loss",path:"verl/trainer/ppo/core_algos.py",line:2084}))
+    ];}}
+  ];
+  function KLExplorer(){const [s,setS]=useState(0);const d=KLE[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},KLE.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 归一化与聚合 =====
+  function NormSection(){const ref=useTypeset("norm");
+    return h("div",{ref:ref},
+      h("p",null,"归一化在 RL 数学里随处可见，本质都是减方差。verl 把它们统一在 ",h("code",null,"verl/utils/torch_functional.py")," 的几个带掩码函数里，核心是",h("strong",null,"白化"),"（whiten）。"),
+      h("h3",null,"带掩码白化 masked_whiten"),
+      h("p",null,"白化即标准化：对优势减均值、除标准差，使其零均值单位方差。带掩码是因为 batch 里有 padding 与 prompt token，统计量只能在 ",h("code",null,"response_mask")," 为 1 的有效 token 上计算。方差用了 Bessel 修正（",h("code",null,"n/(n-1)"),"）得到无偏估计，并对掩码和为 0 或 1 的退化情形抛错。"),
+      h(Formula,{cap:"带掩码白化（统计量仅在 mask=1 的元素上计算）"},"$$ \\tilde{x} = \\frac{x - \\mu_{\\text{mask}}}{\\sqrt{\\sigma^2_{\\text{mask}} + 10^{-8}}} $$"),
+      h(Code,null,"def masked_whiten(values, mask, shift_mean=True):\n    mean, var = masked_mean(values, mask), masked_var(values, mask)\n    whitened = (values - mean) * torch.rsqrt(var + 1e-8)\n    if not shift_mean:\n        whitened += mean\n    return whitened"),
+      h("div",{className:"note"},"白化与 GRPO 的“除标准差”是两种不同尺度的归一：GRPO 在",h("strong",null,"组内"),"归一（每个 prompt 的若干 response 之间），而 ",h("code",null,"masked_whiten")," 在",h("strong",null,"整批"),"归一（所有有效 token 之间）。GAE 与 Reinforce++ 用批级白化，GRPO 用组级归一，RLOO/OPO 用组内基线但不除标准差。理解这一点能解释为什么不同估计器的优势数值尺度差异很大。"),
+      h("h3",null,"损失聚合 agg_loss：从矩阵到标量"),
+      h("p",null,"每个损失函数算出的是 ",h("code",null,"(bs, response_length)")," 的逐 token 损失矩阵，必须聚合成一个标量才能反向传播。",h("code",null,"agg_loss")," 提供四种聚合方式，差别在于如何对 token 与序列加权，这直接影响长短序列的相对权重："),
+      h("ul",null,
+        h("li",null,h("code",null,"token-mean"),"：所有有效 token 等权平均。长序列因 token 多而权重更大。"),
+        h("li",null,h("code",null,"seq-mean-token-sum"),"：每条序列内对 token 求和，再对序列求平均。"),
+        h("li",null,h("code",null,"seq-mean-token-mean"),"：每条序列内对 token 求平均，再对序列求平均。每条序列等权，与长度无关，是 GSPO 的推荐方式。"),
+        h("li",null,h("code",null,"seq-mean-token-sum-norm"),"：在 seq-sum 基础上除以一个固定的 ",h("code",null,"loss_scale_factor"),"，是 DAPO 提倡的长度无偏归一。")
+      ),
+      h("p",null,"关键设计：聚合时传入 ",h("code",null,"dp_size")," 与全局 token 数/batch 大小（",h("code",null,"config.global_batch_info"),"），使损失对数据并行切分与 FSDP/Megatron 并行方式",h("strong",null,"不变"),"。否则不同并行配置下损失尺度会漂移，导致超参不可迁移。"),
+      h(Code,null,"if loss_agg_mode == 'token-mean':\n    if batch_num_tokens is None and dp_size > 1:\n        raise ValueError('(global) batch_num_tokens is required when dp_size > 1')\n    loss = verl_F.masked_sum(loss_mat, loss_mask) / batch_num_tokens * dp_size"),
+      h("div",null,h(Src,{label:"masked_whiten",path:"verl/utils/torch_functional.py",line:322}),h(Src,{label:"masked_var",path:"verl/utils/torch_functional.py",line:304}),h(Src,{label:"masked_mean",path:"verl/utils/torch_functional.py",line:287}),h(Src,{label:"agg_loss",path:"verl/trainer/ppo/core_algos.py",line:1138}))
+    );
+  }
+
+  // ===== off-policy 修正 =====
+  function OffpolicySection(){const ref=useTypeset("offp");
+    return h("div",{ref:ref},
+      h("p",null,"前面的损失都默认采样策略与训练策略一致（on-policy）。但实际系统里二者会偏离，原因有三：其一，推理引擎用 BF16、训练用 FP32，数值实现不同导致 token 概率有差异；其二，异步训练（第 11 课）让训练数据来自较旧的 checkpoint，即陈旧（staleness）；其三，一般性的数据采集与训练分布偏移。",h("code",null,"verl/trainer/ppo/rollout_corr_helper.py")," 这 1137 行专门处理这类 off-policy 问题。"),
+      h("h3",null,"重要性采样修正（IS / TIS）"),
+      h("p",null,"理论解药是重要性采样：用比值 ",h("code",null,"w = π_train / π_rollout")," 对每个样本加权，把 rollout 分布下的期望换算回训练分布。但 w 可能极大，方差爆炸。",h("strong",null,"截断重要性采样（TIS）")," 给 w 设一个上界做 ",h("code",null,"clamp"),"，牺牲一点偏差换取方差可控。"),
+      h(Formula,{cap:"截断重要性采样权重（token 级），上界 C 由 rollout_is_threshold 给出"},"$$ w_t = \\min\\!\\Big(\\frac{\\pi_{\\text{train}}(y_t)}{\\pi_{\\text{rollout}}(y_t)},\\ C\\Big) $$"),
+      h("p",null,"权重支持 token 级与序列级两种聚合。token 级是逐 token 比值（偏差大、方差小），序列级是整条序列对数比之和取指数（无偏、方差大）。全部在对数空间计算，并用固定安全界 ",h("code",null,"exp(±20)")," 防溢出。算完后必须 ",h("code",null,"detach()"),"：IS 权重改变的是测度而非目标，不应回传梯度。"),
+      h(Code,null,"if rollout_is == 'token':\n    raw_rollout_is_weights = torch.exp(torch.clamp(log_ratio, -SAFETY_BOUND, SAFETY_BOUND))\nelif rollout_is == 'sequence':\n    log_ratio_sum = verl_F.masked_sum(log_ratio, response_mask, axis=-1).unsqueeze(-1)\n    raw_rollout_is_weights = torch.exp(torch.clamp(log_ratio_sum, ...)).expand_as(log_ratio)\nraw_rollout_is_weights = raw_rollout_is_weights * response_mask\nif not use_icepop:\n    rollout_is_weights = raw_rollout_is_weights.clamp(max=rollout_is_threshold_upper)  # TIS\nrollout_is_weights = rollout_is_weights.detach()   # IS 不回传梯度"),
+      h("p",null,h("strong",null,"IcePop")," 是 TIS 的双边版本：阈值写成 ",h("code",null,'"lower_upper"')," 字符串（如 ",h("code",null,'"0.5_2.0"'),"），把落在 ",h("code",null,"[lower, upper]")," 之外的 token 权重直接置零，而不是裁剪到边界。这等价于一种温和的拒绝。"),
+      h("h3",null,"拒绝采样（RS）与一票否决"),
+      h("p",null,"与 IS（调整权重）互补，拒绝采样直接把离群样本",h("strong",null,"踢出训练"),"：按 token 级或序列级（sum/mean/max）的 KL 散度阈值，把超标 token 的 ",h("code",null,"response_mask")," 置零。多个判据可用逗号串联（如 ",h("code",null,'"token_k1,seq_sum_k3"'),"）。还提供 veto（一票否决）：单个 token 偏离过大就丢弃整条序列。"),
+      h("h3",null,"统一入口 bypass_mode"),
+      h("p",null,"策略损失里的 ",h("code",null,"bypass_mode")," 是这套机制的接入点。它约定 ",h("code",null,"old_log_prob = rollout_log_prob"),"，调用 ",h("code",null,"compute_rollout_correction_and_rejection_mask")," 一次性算出 IS 权重与修正后的掩码，再按 ",h("code",null,"loss_type")," 分派：",h("code",null,'"reinforce"')," 显式乘 IS 权重，",h("code",null,'"ppo_clip"')," 则不乘（因为 PPO 比值 ",h("code",null,"π_train/π_old = π_train/π_rollout")," 经裁剪已隐含修正，再乘会重复计数）。批训练侧由 ",h("code",null,"compute_rollout_correction_and_add_to_batch")," 把权重写入 batch，呼应第 11 课的异步训练。"),
+      h(Code,null,"# bypass_mode：先算修正，再按 loss_type 分派\nrollout_is_weights_proto, modified_response_mask, rollout_metrics = \\\n    compute_rollout_correction_and_rejection_mask(\n        old_log_prob=log_prob, rollout_log_prob=rollout_log_prob, response_mask=response_mask,\n        rollout_is=rollout_is, rollout_is_threshold=rollout_is_threshold,\n        rollout_rs=rollout_rs, rollout_rs_threshold=rollout_rs_threshold)\nif loss_type == 'reinforce':\n    pg_loss, m = compute_policy_loss_reinforce(..., rollout_is_weights=computed_is_weights)\nelif loss_type == 'ppo_clip':\n    pg_loss, m = compute_policy_loss_vanilla(..., rollout_is_weights=None)  # 避免重复计数"),
+      h("div",{className:"warn"},"重复计数是这里最隐蔽的陷阱：PPO-clip 的比值已经是 ",h("code",null,"π_train/π_rollout"),"，若再额外乘 IS 权重会使修正叠加两次，训练发散。源码因此对 ppo_clip 显式传 ",h("code",null,"rollout_is_weights=None"),"，并在注释里反复强调。"),
+      h("div",null,h(Src,{label:"模块头部说明",path:"verl/trainer/ppo/rollout_corr_helper.py",line:15}),h(Src,{label:"compute_rollout_correction_weights",path:"verl/trainer/ppo/rollout_corr_helper.py",line:520}),h(Src,{label:"compute_rollout_rejection_mask",path:"verl/trainer/ppo/rollout_corr_helper.py",line:195}),h(Src,{label:"_parse_rollout_is_threshold",path:"verl/trainer/ppo/rollout_corr_helper.py",line:93}),h(Src,{label:"统一入口",path:"verl/trainer/ppo/rollout_corr_helper.py",line:779}),h(Src,{label:"bypass_mode 损失",path:"verl/trainer/ppo/core_algos.py",line:2352}),h(Src,{label:"compute_policy_loss_reinforce",path:"verl/trainer/ppo/core_algos.py",line:2271})),
+      h("div",null,h(Ext,{href:"https://fengyao.notion.site/off-policy-rl"},"Off-policy RL（IS 理论）"),h(Ext,{href:"https://arxiv.org/abs/2503.14476"},"DAPO"))
+    );
+  }
+
+  // ===== 辅助模块 =====
+  function HelperSection(){
+    return h("div",null,
+      h("p",null,"core_algos 之外，",h("code",null,"trainer/ppo/")," 还有两个面向工程效率与正确性的小模块，常被忽略但很关键。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"效率"),"prefix_grouper_utils.py"),
+          h("p",null,"GRPO 类算法对同一 prompt 采样多条 response，这些 response ",h("strong",null,"共享同一段前缀"),"（prompt）。朴素做法会把前缀在每条样本里重复前向，浪费算力。",h("strong",null,"PrefixGrouper")," 把共享前缀只前向一次，再为每条后缀拼接前缀输出，从而省去重复计算。"),
+          h("p",null,h("code",null,"build_pg_from_micro_batch")," 按 ",h("code",null,"uid")," 把连续相同的样本归为一组，取每组第一条的 prompt 作为共享前缀；",h("code",null,"build_position_ids_for_prefix_grouper")," 为每条后缀从 ",h("code",null,"prefix_len")," 重新计 position id，保证位置编码正确；",h("code",null,"pg_forward")," 做分组前向并用 ",h("code",null,"split_output")," 切回逐样本的对数概率与熵。"),
+          h("div",null,h(Src,{label:"build_pg_from_micro_batch",path:"verl/trainer/ppo/prefix_grouper_utils.py",line:46}),h(Src,{label:"build_position_ids",path:"verl/trainer/ppo/prefix_grouper_utils.py",line:23}),h(Src,{label:"pg_forward",path:"verl/trainer/ppo/prefix_grouper_utils.py",line:103}))
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"正确性"),"padding_utils.py"),
+          h("p",null,"当每个 prompt 的轨迹数不固定时，全局 batch 大小可能不能被 ",h("code",null,"dp_size")," 或 ",h("code",null,"mini_batch_size")," 整除，导致并行切分失败。",h("code",null,"upsample_batch_to_divisible_size")," 追加最少数量的",h("strong",null,"合成空样本"),"把 batch 补齐到可整除。"),
+          h("p",null,"合成样本是最小化的：一个 prompt token、一个 response token，",h("code",null,"response_mask")," 全零，奖励与对数概率清零，因此",h("strong",null,"不会贡献 PPO、熵或 KL 损失"),"。它们共用一个不与真实数据重合的 ",h("code",null,"uid"),"，故也不影响 GRPO 的组内统计。标签里打上 ",h("code",null,"is_padding=True")," 以便下游指标过滤掉它们。"),
+          h("div",null,h(Src,{label:"upsample_batch_to_divisible_size",path:"verl/trainer/ppo/padding_utils.py",line:127}),h(Src,{label:"construct_minimal_padding_template",path:"verl/trainer/ppo/padding_utils.py",line:70}))
+        )
+      ),
+      h("div",{className:"note"},"这两个模块体现了 RL 框架里两类常见的工程关切：prefix_grouper 是性能优化（不改变数学结果），padding_utils 是正确性兜底（让张量形状始终满足并行约束，同时保证补齐样本对损失与指标无副作用）。")
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"GAE",d:"Generalized Advantage Estimation 原始论文",href:"https://arxiv.org/abs/1506.02438"},
+    {t:"PPO",d:"Proximal Policy Optimization 与裁剪目标",href:"https://arxiv.org/abs/1707.06347"},
+    {t:"GRPO / DeepSeekMath",d:"组内相对优势，无 critic 的主流方案",href:"https://arxiv.org/abs/2402.03300"},
+    {t:"GSPO",d:"序列级重要性比，稳定 MoE 训练",href:"https://arxiv.org/abs/2507.18071"},
+    {t:"DAPO",d:"clip-higher、token-level 归一与动态采样",href:"https://arxiv.org/abs/2503.14476"},
+    {t:"RLOO",d:"留一基线的 REINFORCE 风格优化",href:"https://arxiv.org/abs/2402.14740"},
+    {t:"REINFORCE++",d:"折扣回报批级白化与 baseline 变体",href:"https://arxiv.org/abs/2501.03262"},
+    {t:"ReMax",d:"贪心解码作基线的高效估计器",href:"https://arxiv.org/abs/2310.10505"},
+    {t:"KL 近似（Schulman）",d:"k1/k2/k3 估计器的来源",href:"http://joschu.net/blog/kl-approx.html"},
+    {t:"core_algos.py（本机）",d:"本课主文件，2487 行",href:srcUrl("verl/trainer/ppo/core_algos.py",null)},
+    {t:"rollout_corr_helper.py（本机）",d:"off-policy 修正，1137 行",href:srcUrl("verl/trainer/ppo/rollout_corr_helper.py",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:5}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 5 课 / 共 12 · RL 数学核心"),
+          h("h1",null,"RL 数学 core_algos"),
+          h("p",{className:"lead"},"这是一节承重课。我们精读 verl 唯一的纯数学文件 core_algos.py（2487 行）：它接收张量、返回张量，无任何后端依赖，因此 FSDP 与 Megatron 共用同一份 RL 数学。本课按四个主题展开：优势估计器（GAE/GRPO/RLOO/ReMax/Reinforce++ 等）、策略损失变体（PPO clip、dual-clip、GSPO、clip-cov/kl-cov、CISPO 等）、KL 与熵与价值损失，以及 rollout_corr_helper 的 off-policy 重要性采样修正（TIS/IcePop/拒绝采样）。每个主题都配完整数学与真实源码片段。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"verl/trainer/ppo/core_algos.py")," 的两张注册表、全部优势估计器与策略损失、KL/熵/价值损失；",h("code",null,"rollout_corr_helper.py")," 的 IS/RS/bypass_mode；",h("code",null,"prefix_grouper_utils.py")," 与 ",h("code",null,"padding_utils.py")," 两个辅助模块；以及 ",h("code",null,"utils/torch_functional.py")," 的带掩码归一函数。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部论文，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"概览 · 两张注册表"),
+          h("h2",null,"无状态的数学内核：注册表与统一签名"),
+          h(OverviewSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"优势估计 · advantage"),
+          h("h2",null,"优势估计器：信用如何分配"),
+          h("p",null,"优势 ",h("code",null,"A(s,a)")," 衡量一个动作比基线好多少，是策略梯度的核心权重。verl 登记了十余种估计器，主要差别在",h("strong",null,"基线如何选"),"：用 critic（GAE）、用组内统计（GRPO）、用留一法（RLOO）、用贪心轨迹（ReMax）、用批级白化（Reinforce++）。点 Tab 切换："),
+          h(AdvExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"策略损失 · policy loss"),
+          h("h2",null,"策略损失变体：如何约束更新幅度"),
+          h("p",null,"有了优势，还要决定如何用它更新策略。朴素策略梯度方差大、易失稳，因此各类损失都在",h("strong",null,"约束重要性比"),"上做文章：在哪一级（token / 序列）算比值、如何裁剪、对哪些 token 特殊处理。点 Tab 切换："),
+          h(LossExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"KL · 熵 · 价值"),
+          h("h2",null,"KL 惩罚、熵与价值损失"),
+          h("p",null,"除了主策略损失，PPO 类算法还有三个配套项：用 KL 约束策略不要偏离参考模型太远、用熵鼓励探索、用价值损失训练 critic（仅 GAE 需要）。点 Tab 切换："),
+          h(KLExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"归一化 · 聚合"),
+          h("h2",null,"奖励与优势归一化：减方差的统一手段"),
+          h(NormSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"off-policy · rollout_corr_helper"),
+          h("h2",null,"off-policy 修正：当采样与训练策略不一致"),
+          h(OffpolicySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"辅助模块"),
+          h("h2",null,"prefix_grouper 与 padding_utils"),
+          h(HelperSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"论文与本机源码"),
+          h("p",null,"本课的每个算法都有出处。下面把论文与本机源码并列，便于对照公式与实现。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"无状态、可测试、跨后端复用"),"：core_algos 不持有模型、不发起远程调用，只做张量到张量的数学。这让 FSDP 与 Megatron 共用同一份实现，并使静默的 RL bug 可被单元测试捕获。"),
+            h("li",null,h("strong",null,"两张注册表实现开放扩展"),"：优势估计器与策略损失各用装饰器注册、字符串取回。新增算法只写一个函数，不改调用方；策略损失共用统一签名，可互换。"),
+            h("li",null,h("strong",null,"优势估计的分歧在于基线"),"：GAE 用 critic 做细粒度信用分配，GRPO/RLOO/ReMax/Reinforce++ 用各种无 critic 基线（组内均值、留一、贪心、批级白化）以省去 critic 开销。outcome-only 估计器的 returns 多等于 advantages。"),
+            h("li",null,h("strong",null,"损失变体的分歧在于约束重要性比"),"：PPO 按 token 裁剪并用 dual-clip 防负优势爆炸；GSPO 抬到序列级降方差；clip-cov/kl-cov 针对高协方差 token 控熵；CISPO 裁剪权重而非损失以保留梯度。"),
+            h("li",null,h("strong",null,"KL 与归一化是减方差与稳定的统一手段"),"：k1/k2/k3 估计器在偏差与方差间取舍（k3+ 用直通获正确梯度）；masked_whiten 做批级白化，GRPO 做组级归一；agg_loss 通过传入并行信息使损失对切分方式不变。"),
+            h("li",null,h("strong",null,"off-policy 修正连接异步训练"),"：rollout_corr_helper 用 TIS/IcePop 截断 IS 权重、用拒绝采样剔除离群样本，bypass_mode 统一接入并避免 PPO 与 IS 的重复计数。这是第 11 课异步训练正确性的数学基础。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"verl-lesson-04-config.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 4 课：配置体系")),
+            h("a",{href:"verl-lesson-06-engines.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 6 课：训练引擎抽象与多后端"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoGym — RL 训练环境的自动生成与验证（v1.8）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F4F6F5; --panel:#FBFCFB; --white:#FFFFFF;
+    --ink:#15211E; --ink-soft:#47534F; --ink-faint:#7C8784;
+    --rule:#D7DEDB; --rule-soft:#E6EBE9;
+    --verified:#176B50;      /* tier-1 oracle / build / pass */
+    --verified-tint:#E7F0EB;
+    --judged:#B0761A;        /* tier-2 governed judge / caution */
+    --judged-tint:#F6EEDC;
+    --blocked:#A23A28;       /* tier-3 banned / risk */
+    --blocked-tint:#F3E3DD;
+    --adopt:#5E6F69;         /* adopted/open layers */
+    --adopt-tint:#EAEEEC;
+    --maxw:1180px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:"IBM Plex Serif",Georgia,serif; font-size:17px; line-height:1.66;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:var(--maxw); margin:0 auto; display:grid; grid-template-columns:248px 1fr; gap:0;}
+  /* ---- sidebar ---- */
+  aside{
+    position:sticky; top:0; align-self:start; height:100vh; overflow-y:auto;
+    padding:34px 22px 60px 28px; border-right:1px solid var(--rule);
+    background:linear-gradient(180deg,var(--paper),#EEF2F0);
+  }
+  .brandmark{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.22em; color:var(--verified); font-weight:600; text-transform:uppercase;}
+  .brandtitle{font-family:"IBM Plex Sans",sans-serif; font-weight:700; font-size:24px; letter-spacing:-.02em; margin:6px 0 2px; line-height:1.05;}
+  .brandsub{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-faint); letter-spacing:.04em;}
+  nav{margin-top:26px; font-family:"IBM Plex Sans",sans-serif; font-size:13.5px;}
+  nav a{display:block; color:var(--ink-soft); text-decoration:none; padding:5px 0 5px 12px; border-left:2px solid transparent; line-height:1.35;}
+  nav a .n{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--ink-faint); margin-right:8px;}
+  nav a:hover{color:var(--ink);}
+  nav a.active{color:var(--verified); border-left-color:var(--verified); font-weight:600;}
+  nav a.active .n{color:var(--verified);}
+  /* ---- main ---- */
+  main{padding:40px 56px 120px; min-width:0; background:var(--paper);}
+  .eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--verified); font-weight:600;}
+  h1{font-family:"IBM Plex Sans",sans-serif; font-weight:700; font-size:42px; line-height:1.04; letter-spacing:-.025em; margin:10px 0 14px;}
+  h2{font-family:"IBM Plex Sans",sans-serif; font-weight:700; font-size:27px; letter-spacing:-.02em; line-height:1.12; margin:0 0 4px; scroll-margin-top:22px;}
+  h3{font-family:"IBM Plex Sans",sans-serif; font-weight:600; font-size:19px; letter-spacing:-.01em; margin:30px 0 8px; color:var(--ink);}
+  h4{font-family:"IBM Plex Sans",sans-serif; font-weight:600; font-size:15px; margin:20px 0 4px; color:var(--ink);}
+  section{padding:46px 0 8px; border-top:1px solid var(--rule); margin-top:14px;}
+  section.lead{border-top:none; padding-top:8px;}
+  .sec-no{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-faint); letter-spacing:.1em; display:block; margin-bottom:6px;}
+  p{margin:0 0 14px;}
+  a.ref{text-decoration:none;}
+  sup.c{font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600; color:var(--verified); padding:0 1px; vertical-align:super; cursor:pointer;}
+  sup.c:hover{text-decoration:underline;}
+  strong{font-weight:600;}
+  em{color:var(--ink); font-style:italic;}
+  code, .mono{font-family:"IBM Plex Mono",monospace; font-size:.86em; background:var(--adopt-tint); padding:1px 5px; border-radius:3px; color:#243a34;}
+  .lede{font-size:20px; line-height:1.5; color:var(--ink); font-family:"IBM Plex Serif",serif;}
+  .meta{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-faint); margin:18px 0 2px; letter-spacing:.02em;}
+  .meta b{color:var(--ink-soft); font-weight:500;}
+
+  /* callouts */
+  .call{border:1px solid var(--rule); border-left-width:4px; background:var(--panel); padding:15px 18px; margin:18px 0; border-radius:0 6px 6px 0;}
+  .call .lab{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; font-weight:600; margin-bottom:5px; display:block;}
+  .call p:last-child{margin-bottom:0;}
+  .call.thesis{border-left-color:var(--verified); background:var(--verified-tint);}
+  .call.thesis .lab{color:var(--verified);}
+  .call.risk{border-left-color:var(--blocked); background:var(--blocked-tint);}
+  .call.risk .lab{color:var(--blocked);}
+  .call.note{border-left-color:var(--judged); background:var(--judged-tint);}
+  .call.note .lab{color:var(--judged);}
+  .call.adopt{border-left-color:var(--adopt); background:var(--adopt-tint);}
+  .call.adopt .lab{color:var(--adopt);}
+
+  /* figure */
+  figure{margin:26px 0; background:var(--white); border:1px solid var(--rule); border-radius:8px; padding:22px 20px 16px; overflow:hidden;}
+  figure svg{display:block; width:100%; height:auto;}
+  figcaption{font-family:"IBM Plex Sans",sans-serif; font-size:13px; color:var(--ink-soft); margin-top:14px; line-height:1.45; border-top:1px dashed var(--rule); padding-top:10px;}
+  figcaption b{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.06em; color:var(--verified); font-weight:600; text-transform:uppercase;}
+
+  /* trust tier chips */
+  .tier{font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:20px; letter-spacing:.04em; white-space:nowrap; display:inline-block;}
+  .t1{background:var(--verified-tint); color:var(--verified); border:1px solid #b9d6c9;}
+  .t2{background:var(--judged-tint); color:var(--judged); border:1px solid #e3cd97;}
+  .t3{background:var(--blocked-tint); color:var(--blocked); border:1px solid #e0b3a7;}
+  .tA{background:var(--adopt-tint); color:var(--adopt); border:1px solid #c6d0cc;}
+
+  /* tables */
+  .tablewrap{overflow-x:auto; margin:22px 0; border:1px solid var(--rule); border-radius:8px;}
+  table{border-collapse:collapse; width:100%; font-size:13.5px; font-family:"IBM Plex Sans",sans-serif; background:var(--white);}
+  th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--rule-soft); vertical-align:top; line-height:1.4;}
+  thead th{background:#EEF2F0; font-weight:600; font-size:12px; letter-spacing:.02em; color:var(--ink); border-bottom:2px solid var(--rule); position:sticky; top:0;}
+  td.mn{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); white-space:nowrap;}
+  tbody tr:hover{background:#F6F9F7;}
+  td .o{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--verified); font-weight:600;}
+  td .x{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-faint);}
+
+  /* definition grid */
+  .dgrid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:18px 0;}
+  .dcard{border:1px solid var(--rule); border-radius:7px; padding:14px 16px; background:var(--panel);}
+  .dcard h4{margin:0 0 6px;}
+  .dcard p{font-size:14.5px; line-height:1.5; margin:0; color:var(--ink-soft);}
+  @media(max-width:720px){.dgrid{grid-template-columns:1fr;}}
+  pre.code{font-family:"IBM Plex Mono",monospace; font-size:12px; line-height:1.55; background:var(--panel); border:1px solid var(--rule); border-radius:8px; padding:14px 16px 16px; overflow-x:auto; color:var(--ink-soft); margin:14px 0; white-space:pre;}
+  pre.code .c{color:#9aa6a2; font-style:italic;}
+  pre.code .k{color:#176B50;}
+
+  /* references */
+  ol.refs{font-family:"IBM Plex Sans",sans-serif; font-size:13.5px; line-height:1.5; padding-left:0; counter-reset:r; list-style:none;}
+  ol.refs li{counter-increment:r; padding:9px 0 9px 42px; position:relative; border-bottom:1px solid var(--rule-soft);}
+  ol.refs li::before{content:"["counter(r)"]"; position:absolute; left:0; top:9px; font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--verified); font-weight:600;}
+  ol.refs li:target{background:var(--verified-tint); border-radius:6px;}
+  ol.refs .src{color:var(--ink); font-weight:600;}
+  ol.refs .id{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-soft);}
+  ol.refs a{color:var(--verified); text-decoration:none; word-break:break-all;}
+  ol.refs a:hover{text-decoration:underline;}
+  .verify-flag{font-family:"IBM Plex Mono",monospace; font-size:10px; color:var(--judged); border:1px solid #e3cd97; border-radius:3px; padding:0 4px; margin-left:4px;}
+
+  ul.tight{margin:6px 0 16px; padding-left:20px;}
+  ul.tight li{margin:5px 0;}
+  hr.soft{border:none; border-top:1px dashed var(--rule); margin:26px 0;}
+  .metric{font-family:"IBM Plex Mono",monospace; font-weight:600; color:var(--verified);}
+
+  @media(max-width:920px){
+    .wrap{grid-template-columns:1fr;}
+    aside{position:static; height:auto; border-right:none; border-bottom:1px solid var(--rule);}
+    nav{columns:2; margin-top:16px;}
+    main{padding:30px 24px 80px;}
+    h1{font-size:32px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside>
+  <div class="brandmark">提案 · v1.8</div>
+  <div class="brandtitle">AutoGym</div>
+  <div class="brandsub">RL 环境 · 生成 + 验证回路</div>
+  <nav id="toc">
+    <a href="#summary"><span class="n">00</span>执行摘要</a>
+    <a href="#problem"><span class="n">01</span>问题与第一性原理</a>
+    <a href="#landscape"><span class="n">02</span>全景与既有工作</a>
+    <a href="#position"><span class="n">03</span>定位：不是一个 framework</a>
+    <a href="#ir"><span class="n">04</span>Core IR：Context + Tool</a>
+    <a href="#verifier"><span class="n">05</span>验证器分层</a>
+    <a href="#sandbox"><span class="n">06</span>沙箱与运行期</a>
+    <a href="#blend"><span class="n">07</span>EnvBlend 与课程</a>
+    <a href="#governance"><span class="n">08</span>信任半边（验证）</a>
+    <a href="#metagen"><span class="n">09</span>生成半边（回路）</a>
+    <a href="#roadmap"><span class="n">10</span>P0 计划与路线</a>
+    <a href="#risks"><span class="n">11</span>开放问题与风险</a>
+    <a href="#nextstep"><span class="n">12</span>下一步</a>
+    <a href="#refs"><span class="n">★</span>参考文献</a>
+  </nav>
+</aside>
+
+<main>
+<section class="lead" id="summary">
+  <div class="eyebrow">前沿研究提案 · RL 环境的自动生成与验证</div>
+  <h1>AutoGym：RL 训练环境的自动生成与验证</h1>
+  <p class="lede">agentic RL 里稀缺的不再是生成器，而是<em>可信、已验证、可归因</em>的环境。AutoGym 是一条闭合回路的 pipeline：它生成 RL 环境，并验证其中哪些可被信任用于训练，且把二者耦合起来，使验证信号引导下一步生成什么。它的贡献是这条回路本身，即一个定向生成策略加上使该策略 fitness 诚实的信任层，而非任一半边单独成立，因为裸生成正在商品化，而孤立的验证只是一道闸。</p>
+  <div class="meta"><b>团队：</b>LLM Core &amp; Agentic AI &nbsp;·&nbsp; <b>状态：</b>迭代草稿 &nbsp;·&nbsp; <b>范围：</b>coding / agentic / 长程 RL 环境 &nbsp;·&nbsp; <b>日期：</b>2026-06 &nbsp;·&nbsp; <b>版本：</b>v1.8</div>
+
+  <div class="call thesis">
+    <span class="lab">一段话论点</span>
+    <p>AutoGym 是一条闭合回路的 pipeline，它做两件事并将其耦合：<strong>生成</strong> RL 环境，并<strong>验证</strong>其中哪些可被信任用于训练，且让验证信号把生成引向真正能推动策略的那些环境。任一半边单独都不新：裸环境生成在两类 substrate 上都在商品化，即 bash/file/test（coding）与 tools/stateful-DB/grader（business），而孤立的验证只是一道闸。<strong>贡献在于这条回路，确切说是一个其 fitness 为<em>受治理、可信</em>验证器（而非可被操纵的 proxy）的生成回路</strong>，这恰是决定以往 self-play 与 meta-generation 系统是提升还是崩溃的关键。具体而言：AutoGym <strong>采用</strong>开源生成器（AWM、EnvFactory、SWE-rebench）与 NeMo Gym 的组合基底，作为置于其自有 binding 无关 Core IR 之后的组件，并<strong>自建</strong>使回路闭合的两个半边，即一个定向生成策略（朝受训者当前弱点与 projected transfer 生成，而非追求裸吞吐）以及使其 fitness 诚实的信任层（分层验证器分类、reliability auditing、环境证书、以及 agent-as-artifact provenance）。进展以 <span class="metric">transfer per unit of human effort</span> 衡量，而非裸环境数。第一垂直是 coding/SWE，因为其奖励是干净的程序 oracle；business/tool-use 垂直作为难验证情形随后，那里 ground 在真实有状态系统使验证半边成为决定性因素。</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="problem">
+  <span class="sec-no">01 — 动机</span>
+  <h2>稀缺资源是可信环境，而非裸生成</h2>
+  <p>在 2025–2026 的文献里，同一个结构性事实反复出现：造出一个候选环境是廉价的，造出一个其<em>奖励信号可信</em>的环境是昂贵的，而良率正是在这里坍塌。微软的 MAI-Thinking-1 报告给出了我们手上最硬的数字。其内部 SWE pipeline 从 1.02 亿个公开 GitHub PR 出发，保留约 487 万个带链接 issue 的，其中 <strong>42.8% 构建成可执行容器，15.3% 通过 reference-grading 信号抽取，最终只有 5.5%（265,617 个环境）通过环境与 grader 验证</strong><sup class="c" data-r="1">[1]</sup>。要点不是某一阶段主导了数量流失（构建阶段实际剔除得最多），而是<strong>可执行性是一道廉价、弱的过滤：成功构建的环境里只有 12.8%（208 万中的 26.6 万）能通过 grading 与验证两道闸</strong>，且每个幸存候选的边际成本集中在<em>构建之后</em>（两遍测试 grading、多次 golden/empty 复验、非确定性过滤、低质 spec 重写）。决定奖励可信度的，是这道闸，而非裸生成。对一条自动环境 pipeline 的含义是结构性的：因为廉价生成与稀缺可信是同一漏斗的两端，你无法只自动化其一而不顾其二，生成必须与验证耦合，而这正是 AutoGym 自建的回路。</p>
+
+  <figure>
+    <svg viewBox="0 0 980 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MAI-Thinking-1 SWE environment verification funnel">
+      <text x="0" y="18" font-family="IBM Plex Mono, monospace" font-size="12" fill="#7C8784" letter-spacing="1">MAI-THINKING-1 · SWE ENVIRONMENT FUNNEL (PUBLIC GITHUB PRs → VERIFIED RL ENVIRONMENTS)</text>
+      <!-- bars -->
+      <g font-family="IBM Plex Mono, monospace" font-size="12">
+        <!-- 102M -->
+        <rect x="0" y="44" width="940" height="30" fill="#EAEEEC" stroke="#D7DEDB"/>
+        <text x="12" y="64" fill="#15211E" font-weight="600">102,000,000</text>
+        <text x="760" y="64" fill="#47534F">collected PRs</text>
+        <!-- 4.87M -->
+        <rect x="0" y="86" width="620" height="30" fill="#EAEEEC" stroke="#D7DEDB"/>
+        <text x="12" y="106" fill="#15211E" font-weight="600">4,870,000</text>
+        <text x="450" y="106" fill="#47534F">linked to issues</text>
+        <!-- 2.08M build 42.8% -->
+        <rect x="0" y="128" width="392" height="30" fill="#E7F0EB" stroke="#176B50"/>
+        <text x="12" y="148" fill="#176B50" font-weight="600">2,080,000 — 42.8% built</text>
+        <!-- 745k grade 15.3% -->
+        <rect x="0" y="170" width="232" height="30" fill="#F6EEDC" stroke="#B0761A"/>
+        <text x="12" y="190" fill="#B0761A" font-weight="600">745,452 — 15.3% graded</text>
+        <!-- 265k verified 5.5% -->
+        <rect x="0" y="212" width="120" height="30" fill="#176B50" stroke="#0f4f3b"/>
+        <text x="132" y="232" fill="#176B50" font-weight="600">265,617 — 5.5% verified</text>
+      </g>
+      <!-- post-build trustworthiness gate bracket: built(392) -> verified(120) -->
+      <path d="M392 226 L392 240 L120 240 L120 226" fill="none" stroke="#B0761A" stroke-width="1.4"/>
+      <text x="500" y="236" font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="#B0761A" font-weight="600">trustworthiness gate: 12.8% of built envs survive</text>
+      <text x="500" y="20" font-family="IBM Plex Sans, sans-serif" font-size="11.5" fill="#5E6F69">build = cheap executability filter · grading + verification = expensive, value-deciding</text>
+    </svg>
+    <figcaption><b>图 1 — 验证漏斗。</b>构建剔除的候选最多，但它只是一道廉价的二元可执行性过滤；昂贵、决定价值的工作是构建之后的可信闸，成功构建的环境里只有 12.8% 能通过。对 AutoGym 的含义：边际投入应购买验证质量，而非更多裸生成。来源：MAI-Thinking-1 §3.3.1<sup class="c" data-r="1">[1]</sup>。</figcaption>
+  </figure>
+
+  <p>互补的发现在价值一侧：<strong>transfer 来自真实性与多样性，而非裸数量。</strong>EnvFactory 仅在 85 个 ground 于真实在线工具生态的环境上训练，便胜过用了约 5 倍合成环境的既有工作，在 BFCLv3 上把 Qwen3 提升最多 +15%<sup class="c" data-r="2">[2]</sup>。Corecraft 从质量方向给出同一论点：单个手工构建、带专家 rubric 的环境，在一个 GRPO epoch 后即带来对 Toolathlon 的 +6.8% 分布外 transfer<sup class="c" data-r="3">[3]</sup>。所以真正要紧的两个量，即<em>verified yield</em> 与<em>下游 transfer</em>，都由验证与 grounding 质量支配，而非生成器吞吐。</p>
+
+  <div class="call note">
+    <span class="lab">推论</span>
+    <p>大量生成环境是这套 stack 里廉价、已商品化、已开源的部分。研究机会在于把廉价生成转化为<em>可信训练供给</em>的那条回路：朝策略真正薄弱处生成，判定其中哪些环境足够可信到可用于训练，加以证明，并把该判断回送以引导下一轮生成。生成与验证不是两个项目，而是同一条 pipeline 的两个半边。</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="landscape">
+  <span class="sec-no">02 — 既有工作</span>
+  <h2>全景：生成拥挤，验证稀疏</h2>
+  <p>这一领域可按<strong>环境来自何处</strong>（其 grounding 来源）干净地排序，因为这条轴同时决定了多样性/真实性与验证器的难度。我们把已有工作归为五种范式：前三种是生成，第四种是组合，第五种是 meta-optimization。</p>
+
+  <figure>
+    <svg viewBox="0 0 980 270" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Five paradigms of environment generation">
+      <g font-family="IBM Plex Sans, sans-serif">
+        <text x="0" y="16" font-family="IBM Plex Mono, monospace" font-size="12" fill="#7C8784" letter-spacing="1">GENERATION PARADIGMS — ORDERED BY GROUNDING (LEFT = MOST GROUNDED IN REALITY)</text>
+        <!-- A harvested -->
+        <rect x="0" y="32" width="232" height="120" rx="6" fill="#E7F0EB" stroke="#176B50"/>
+        <text x="14" y="54" font-size="14" font-weight="700" fill="#176B50">A · Harvested</text>
+        <text x="14" y="74" font-size="12.5" fill="#15211E">from real artifacts</text>
+        <text x="14" y="96" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">SWE-reBench / -V2</text>
+        <text x="14" y="113" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">MAI SWE pipeline</text>
+        <text x="14" y="130" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">TermiGen</text>
+        <text x="14" y="147" font-size="11" fill="#176B50">reward: real tests (oracle)</text>
+        <!-- B grounded synth -->
+        <rect x="248" y="32" width="232" height="120" rx="6" fill="#EFF3F1" stroke="#5E6F69"/>
+        <text x="262" y="54" font-size="14" font-weight="700" fill="#3f4d48">B · Grounded synthesis</text>
+        <text x="262" y="74" font-size="12.5" fill="#15211E">code-built worlds</text>
+        <text x="262" y="96" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">AWM · EnvFactory</text>
+        <text x="262" y="113" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">EnvScaler · AgentScaler</text>
+        <text x="262" y="130" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">APIGen-MT · Corecraft*</text>
+        <text x="262" y="147" font-size="11" fill="#B0761A">reward: state oracle + judge</text>
+        <!-- C self-play -->
+        <rect x="496" y="32" width="232" height="120" rx="6" fill="#F6EEDC" stroke="#B0761A"/>
+        <text x="510" y="54" font-size="14" font-weight="700" fill="#B0761A">C · Self-play / co-evolve</text>
+        <text x="510" y="74" font-size="12.5" fill="#15211E">policy proposes tasks</text>
+        <text x="510" y="96" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">Absolute Zero · R-Zero</text>
+        <text x="510" y="113" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">SSR · GASP · SPICE</text>
+        <text x="510" y="130" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">Agent-World · UED/ACCEL</text>
+        <text x="510" y="147" font-size="11" fill="#A23A28">risk: ungrounded → collapse</text>
+        <!-- D composition -->
+        <rect x="744" y="32" width="236" height="56" rx="6" fill="#EAEEEC" stroke="#5E6F69"/>
+        <text x="758" y="54" font-size="14" font-weight="700" fill="#3f4d48">D · Composition</text>
+        <text x="758" y="74" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">NeMo Gym (adopt)</text>
+        <!-- E meta -->
+        <rect x="744" y="96" width="236" height="56" rx="6" fill="#EAEEEC" stroke="#5E6F69"/>
+        <text x="758" y="118" font-size="14" font-weight="700" fill="#3f4d48">E · Meta-optimize</text>
+        <text x="758" y="138" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">SkillOpt</text>
+        <!-- axis arrow -->
+        <line x1="0" y1="176" x2="728" y2="176" stroke="#D7DEDB" stroke-width="1"/>
+        <polygon points="728,172 738,176 728,180" fill="#D7DEDB"/>
+        <text x="0" y="198" font-size="12" fill="#176B50" font-family="IBM Plex Mono, monospace">verifier easy (clean oracle)</text>
+        <text x="560" y="198" font-size="12" fill="#A23A28" font-family="IBM Plex Mono, monospace">verifier hard / fitness-honesty risk</text>
+        <text x="0" y="226" font-size="12.5" fill="#47534F">* Corecraft is hand-built (a quality/transfer reference), not an automated pipeline.</text>
+        <text x="0" y="248" font-size="12.5" fill="#47534F">D and E sit above generation: they compose and optimize, they do not synthesize worlds.</text>
+      </g>
+    </svg>
+    <figcaption><b>图 2 — 五种范式。</b>grounding 从左到右递减，验证器难度随之上升。AutoGym 把 A、B 作为主要供给，C 作为必须被 ground 的机会性高方差来源，D 作为被采用的基底，E 暂缓。</figcaption>
+  </figure>
+
+  <h3>A — 从真实工件采集</h3>
+  <p>可得的最干净奖励。<strong>SWE-rebench / SWE-rebench-V2</strong>（Nebius）是把真实合并的 GitHub PR 转成逐任务 Docker 环境、以测试套件为奖励的开源 pipeline<sup class="c" data-r="4">[4]</sup>；MAI-Thinking-1 的 SWE pipeline 明确"受 SWE-ReBench 启发"，并加入 fail-to-pass / pass-to-pass（F2P / P2P）reference-grading、"时间回溯"式 git 清洗、以及 test-file 重置以阻断 reward hacking<sup class="c" data-r="1">[1]</sup>。<strong>TermiGen / terminal-bench-env</strong>（UCSB）把同一思路推广到 11 个类别下的 3,500+ Docker 环境，全部归约为"agent 发出 shell 命令；奖励 = 跑测试"<sup class="c" data-r="5">[5]</sup>。<strong>Qwen3-Coder-Next</strong> 的报告把同一 pipeline 陈述为规模化的前提：大体量 agentic 训练需要合成可验证任务并配以完全可执行的环境（其第一条合成线即把 GitHub PR 挖掘成可运行环境），外加高吞吐运行它们的执行基础设施<sup class="c" data-r="35">[35]</sup>。由于动作空间（bash）通用、奖励是真实测试套件，这一范式几乎把验证器风险消除殆尽，这也是把 coding 作为第一垂直的核心理由。</p>
+
+  <h3>B — Grounded 合成（代码构建的有状态世界）</h3>
+  <p>tool-use substrate 上的主流路线。<strong>AWM</strong>（Agent World Model，Snowflake）从 100 个种子名合成 1,000 个 SQL 支撑的 MCP 环境；每个平均 18.5 张表、35 个工具（约 2,000 行代码，FastAPI + SQLAlchemy + MCP），分两阶段构建（先 schema，后代码）以抑制长代码幻觉，并由 <em>code-augmented LLM-as-a-judge</em> 评分<sup class="c" data-r="6">[6]</sup>。<strong>EnvFactory</strong>（华为诺亚 / HKUST）在 grounding 上走相反方向：一个三 agent 回路（Search → Code → Test）从真实在线来源发现工具，构建可 Pydantic 序列化的有状态 DB 与 MCP 接口，对其施加四项执行检查校验，并在依赖工具图上采样多轮轨迹<sup class="c" data-r="2">[2]</sup>。<strong>EnvScaler</strong> 从既有任务集构建；<strong>AgentScaler</strong> 与 <strong>AutoForge</strong> 依赖预收集的工具或文档<sup class="c" data-r="2">[2]</sup>。<strong>APIGen-MT</strong>（Salesforce xLAM）是数据导向而非环境构建，但其可验证蓝图（一个 ground-truth 动作序列加预期终态，由 LLM 委员会校验）是一种干净的 oracle 侧验证模式<sup class="c" data-r="7">[7]</sup>。<strong>Corecraft</strong>（Surge AI）是手工构建而非 pipeline，但它是本组里最强的 transfer 证据，也是 state-grounded 分解 rubric 的参考<sup class="c" data-r="3">[3]</sup>。<strong>FunReason-MT</strong>、<strong>SWE-Smith</strong>、<strong>BugPilot</strong>、<strong>SWE-Mirror</strong> 等线（MAI 引用）在那些能构建但未过质量检查的环境之上提供合成问题<sup class="c" data-r="1">[1]</sup>。<strong>EnterpriseOps-Gym</strong>（Zhang 等，2026）值得标注为有状态性的极端：164 张 DB 表、512 个工具，且状态<em>跨 episode</em> 持续，经 Lee taxonomy 综述<sup class="c" data-r="8">[8]</sup>（二手来源）报告，故这些数字在成为承重论据前应对原始来源确认。<strong>DeepSeek-V3.2</strong> 是这一范式的前沿闭源实例：一条合成 pipeline，产出数千个代码构建、带程序化奖励的可执行环境，pipeline 与环境均未释出<sup class="c" data-r="6,33">[6,33]</sup>，其报告携带本提案作为既有工作所倚的两条消融。其一，<em>难度由模型 solve rate 度量</em>：在其合成任务样本上，合成模型自身 pass@1 仅 12%，而最强前沿模型达 62%，确立了合成任务可被标定为难<sup class="c" data-r="33">[33]</sup>。其二，<em>纯合成 RL 可迁移</em>：仅在合成 agentic 任务上训练，便在 τ²-Bench、MCP-Mark、MCP-Universe 上带来可观提升<sup class="c" data-r="33">[33]</sup>，这是"来自完全合成 substrate 的 transfer 真实且可测"的最强公开证据，也是 Phase 0 合成 cell 所依的前提（§10）。</p>
+
+  <div class="call note">
+    <span class="lab">命名说明 — 补充</span>
+    <p>已存在一个发表过的 <strong>"AutoEnv"</strong>：Zhang 等（2025），<em>"AutoEnv: Automated Environments for Measuring Cross-Environment Agent Learning"</em><sup class="c" data-r="31">[31]</sup>，一个以约 <strong>每环境 4.12 美元</strong>生成异构 agent 世界、用于构建跨环境学习 benchmark（AutoEnv-36，36 个环境 / 358 关）的自动框架。那与本提案是不同问题：一个用于度量 agent 如何跨环境学习的 benchmark 与环境生成器，<em>而非</em>带验证器治理的 RL 训练环境供给链。我们用 <strong>AutoGym</strong> 以回避命名与文献撞名。</p>
+  </div>
+
+  <h3>C — Self-play / 协同演化（补充，此前未在此综述）</h3>
+  <p>第三种范式：策略自身以 proposer/challenger 角色生成任务分布。<strong>Absolute Zero（AZR）</strong>训练单一模型以"低但非零"的成功率提出 coding 任务，并用 Python 解释器验证，零外部数据<sup class="c" data-r="9">[9]</sup>。<strong>R-Zero</strong> 跨多个 reasoning 领域协同演化 challenger 与 solver；<strong>SPIRAL</strong> 用零和博弈；<strong>Multi-Agent Evolve</strong> 把协同演化推广到多样任务<sup class="c" data-r="10">[10]</sup>。具体到 SWE 领域，<strong>Self-Play SWE-RL（SSR）</strong>在真实沙箱仓库上，于 bug 注入 agent 与 bug 求解 agent 之间运行对抗回路<sup class="c" data-r="11">[11]</sup>；<strong>GASP</strong>（Guided Asymmetric Self-Play）把 proposer ground 向一个指定的、真实数据的难目标集，而非自由探索<sup class="c" data-r="12">[12]</sup>。<strong>Agent-World</strong> 最接近一个自演化的<em>环境</em>竞技场：它探索真实工具生态，合成难度可控的可验证任务，再运行"诊断弱点 → 生成定向任务 → 重训"回路<sup class="c" data-r="13">[13]</sup>。整条线源自经典 RL 中的 <strong>unsupervised environment design（UED / ACCEL）</strong>与基于 regret 的自动课程<sup class="c" data-r="12">[12]</sup>。</p>
+  <div class="call risk">
+    <span class="lab">关于范式 C 的长期警告</span>
+    <p>"Zero" self-play 受限于模型既有知识与固定的环境规则；未 ground 的单种群优化倾向于坍向平庸。有效的方法都加入了 grounding（SPICE 的语料、SSR/GASP 的真实仓库）或对一个移动目标的对抗协同演化。AutoGym 应把 self-play 视为<em>喂入同一套验证器与证书闸的高方差来源</em>，绝不作为绕过它们的无监督捷径。开放的经验问题（Agent-World 的审稿人已指出）是 freeze-environment-growth 消融：增益有多少来自更难的任务，有多少来自学习信号本身<sup class="c" data-r="13">[13]</sup>。</p>
+  </div>
+
+  <h3>D — 组合 / 编排：NeMo Gym</h3>
+  <p><strong>NeMo Gym</strong>（NVIDIA，Apache-2.0）是组合层，也是本提案最重要的外部依赖。它的模块布局，即 <code>resources_servers/</code>（每个环境 = tools + state + verifier + 配置 YAML + tests）、<code>responses_api_agents/</code>、<code>responses_api_models/</code>，由 Ray 上的 <code>ng_run</code> / <code>ng_collect_rollouts</code> 驱动，正是我们想要的分解，且它以 OpenAI Responses API（而非 MCP）作为 agent↔model↔env 协议的标准<sup class="c" data-r="14">[14]</sup>。训练侧它集成 NeMo RL、OpenRLHF、Unsloth、VeRL；环境侧吸纳 Reasoning Gym、Aviary、OpenEnv、Verifiers；附带一个用于接入的 <code>.claude/skills/add-benchmark</code> Skill；并已在 Nemotron 训练中经受实战<sup class="c" data-r="14">[14]</sup>。关键在于，它的环境目录已以出货形态枚举了完整的验证器分类（见 §05）。</p>
+
+  <h3>E — 生成器的 meta-optimization：SkillOpt</h3>
+  <p><strong>SkillOpt</strong>（Microsoft）是一个文本空间优化器，把 skill 文档当作一个冻结 agent 的可训练状态：一个独立的优化器模型把打过分的 rollout 转成有界的增/删/改编辑，仅当其严格提升一个 held-out 验证分时才接受，采用 step/epoch 两时间尺度更新<sup class="c" data-r="15">[15]</sup>。它解决的是"自动改进一个生成 harness"的<em>优化器</em>；它没有解决<em>fitness 函数</em>，而对环境生成而言，后者正是验证器问题本身。见 §09。</p>
+
+  <h3>全景汇总</h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>方法</th><th>机构</th><th>Grounding</th><th>Substrate</th><th>奖励 / 验证器</th><th>开源</th><th>引用</th></tr></thead>
+    <tbody>
+      <tr><td>SWE-rebench&nbsp;V2</td><td>Nebius</td><td>real PRs</td><td>bash/file</td><td><span class="tier t1">test-suite oracle</span></td><td><span class="o">是</span></td><td class="mn">[4]</td></tr>
+      <tr><td>MAI SWE pipeline</td><td>Microsoft AI</td><td>real PRs (102M)</td><td>bash/file</td><td><span class="tier t1">F2P/P2P oracle</span></td><td><span class="x">闭源</span></td><td class="mn">[1]</td></tr>
+      <tr><td>Qwen3-Coder-Next synthesis</td><td>Qwen</td><td>real PRs + synthetic</td><td>bash/file</td><td><span class="tier t1">exec-verified tasks</span></td><td><span class="x">报告</span></td><td class="mn">[35]</td></tr>
+      <tr><td>TermiGen</td><td>UCSB</td><td>authored/real</td><td>bash/terminal</td><td><span class="tier t1">test-suite oracle</span></td><td><span class="o">是</span></td><td class="mn">[5]</td></tr>
+      <tr><td>AWM</td><td>Snowflake/UNC</td><td>seed scenarios</td><td>MCP/SQL world</td><td><span class="tier t2">code-aug. judge</span></td><td><span class="o">是</span></td><td class="mn">[6]</td></tr>
+      <tr><td>EnvFactory</td><td>Huawei/HKUST</td><td>real online tools</td><td>MCP/SQL world</td><td><span class="tier t1">exec + state oracle</span></td><td><span class="o">是</span></td><td class="mn">[2]</td></tr>
+      <tr><td>EnvScaler</td><td>—</td><td>existing task sets</td><td>tool world</td><td><span class="tier t1">checklist boolean</span></td><td><span class="o">是</span></td><td class="mn">[2,6]</td></tr>
+      <tr><td>APIGen-MT</td><td>Salesforce</td><td>blueprint</td><td>tool (data-gen)</td><td><span class="tier t1">action-seq + state</span></td><td><span class="o">是</span></td><td class="mn">[7]</td></tr>
+      <tr><td>Corecraft</td><td>Surge AI</td><td>hand-built</td><td>MCP/world</td><td><span class="tier t2">decomposed rubric</span></td><td><span class="x">bench</span></td><td class="mn">[3]</td></tr>
+      <tr><td>EnterpriseOps-Gym</td><td>Zhang&nbsp;et&nbsp;al.</td><td>authored</td><td>tool (cross-ep.)</td><td><span class="tier t1">state oracle</span></td><td><span class="x">—</span></td><td class="mn">[8]</td></tr>
+      <tr><td>DeepSeek-V3.2 synthesis</td><td>DeepSeek</td><td>synthesized (code-built)</td><td>tool/code world</td><td><span class="tier t1">programmatic reward</span></td><td><span class="x">闭源</span></td><td class="mn">[33]</td></tr>
+      <tr><td>Absolute Zero</td><td>Zhao&nbsp;et&nbsp;al.</td><td>self-play (none)</td><td>code/Python</td><td><span class="tier t1">interpreter</span></td><td><span class="o">是</span></td><td class="mn">[9]</td></tr>
+      <tr><td>SSR · GASP</td><td>Wei / —</td><td>self-play + real repos</td><td>bash/file</td><td><span class="tier t1">test oracle</span></td><td><span class="o">部分</span></td><td class="mn">[11,12]</td></tr>
+      <tr><td>Agent-World</td><td>—</td><td>real tools + co-evolve</td><td>MCP/world</td><td><span class="tier t1">structured verifiable</span></td><td><span class="o">是</span></td><td class="mn">[13]</td></tr>
+      <tr><td>NeMo Gym</td><td>NVIDIA</td><td>composition</td><td>both</td><td><span class="tier tA">all tiers (catalog)</span></td><td><span class="o">是</span></td><td class="mn">[14]</td></tr>
+      <tr><td>SkillOpt</td><td>Microsoft</td><td>meta-optimize</td><td>n/a</td><td><span class="tier tA">held-out gate</span></td><td><span class="o">是</span></td><td class="mn">[15]</td></tr>
+      <tr><td>SWE-MiniSandbox</td><td>Yuan&nbsp;et&nbsp;al.</td><td>runtime</td><td>bash/file</td><td><span class="tier tA">container-free</span></td><td><span class="o">是</span></td><td class="mn">[16]</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Part B — 验证与 provenance：被低估综述的一侧</h3>
+  <p>上表之所以密集，是因为这一领域把力气集中在了生成。如今这一点在视野内的每个前沿配方上都重复出现：MAI<sup class="c" data-r="1">[1]</sup>、DeepSeek-V3.2/V4<sup class="c" data-r="33,34">[33,34]</sup>、Qwen3-Coder-Next<sup class="c" data-r="35">[35]</sup> 都在规模上出货合成 pipeline 与沙箱基础设施（仅 DeepSeek 的 DSec 就运行数十万个并发沙箱<sup class="c" data-r="34">[34]</sup>），却没有人出货验证器治理或证书层。它们之中最接近者值得精确陈述：DSec 维护一份全局有序的逐沙箱轨迹日志，其声明用途包含 <em>fine-grained provenance</em> 与 <em>deterministic replay</em><sup class="c" data-r="34">[34]</sup>，但那证明的是<em>执行</em>（哪些命令跑了、哪些状态变了），而非奖励可信：没有验证器分层、没有 reliability audit、没有覆盖构建与奖励 pipeline 的证书、没有从 requirement 到 spec 到 reward 的 lineage。前沿的 provenance 止步于本提案贡献开始处的下一层。相比之下，本贡献所倚的文献散落在彼此鲜少互引的不同社区，且无一被应用于 RL 环境合成。两条线要紧，它们映射到贡献的两个半边。</p>
+
+  <p><strong>Line 1 — 奖励可信</strong>（验证器分类与 Tier-2 reliability audit 的理论锚，§05）。Gao、Schulman 与 Hilton 确立：把一个 proxy 奖励优化过头会依 Goodhart 定律退化 gold 奖励，且 proxy 与 gold 的 divergence 随优化压力规律性地变化<sup class="c" data-r="18">[18]</sup>。这恰是 Tier-2 reliability audit 在经验上测量的（proxy = judge，gold = oracle 或人工标注），而 <strong>distribution-aware 再审是对 overoptimization 的在线检测</strong>，在策略已访问状态分布上进行，把 §05 从一条工程启发式重新 ground 为对一个已知现象的测量。judge 一侧，Zheng 等记录了使"仅看 transcript"的 judge 可被操纵的具体失效模式：position、verbosity、self-enhancement 偏置，以及有限 reasoning<sup class="c" data-r="19">[19]</sup>；这些正是 Tier-3 禁令与 code-augmentation 要求所针对的。RewardBench 是为 reward 与 judge 模型打分的 meta-evaluation<sup class="c" data-r="20">[20]</sup>，是 EnvFamily reliability audit 的自然对比基线。而 PRM 一线（Lightman 等，过程级验证，奖励每一步而非最终答案）<sup class="c" data-r="21">[21]</sup>，是 Tier-2 以分解、逐判据、state-grounded 评分取代整体式判定的渊源。</p>
+
+  <p><strong>Line 2 — provenance 与 attestation</strong>（证书与 lineage 模型的锚，§08）。软件供应链框架早已把签名的、可验证的工件 provenance 形式化：in-toto 证明一个工件由谁/由什么、经哪些步骤产出<sup class="c" data-r="22">[22]</sup>，SLSA 定义构建 provenance 完整性的分级<sup class="c" data-r="23">[23]</sup>。C2PA 为内容来源做类似之事<sup class="c" data-r="24">[24]</sup>。Datasheets for Datasets 与 Model Cards 是训练数据与已训模型的文档化对应物<sup class="c" data-r="25,26">[25,26]</sup>。结构上，<strong>AutoGym 的证书 + provenance→agent lineage 模型，是面向 RL 环境的 SLSA 式 provenance，并以奖励可靠性审计加以扩展</strong>：EnvFamily / TaskSet / EpisodeReplay 是覆盖环境构建与奖励 pipeline 的签名 attestation，而 EnvFamily 证书是一个环境 family 的 datasheet。</p>
+
+  <div class="call thesis">
+    <span class="lab">贡献超出既有 attestation 之处</span>
+    <p>主动陈述此点，因为审稿人否则会提出：SLSA / in-toto 证明一次构建如声称般发生；它们对一个<em>奖励信号</em>在学习策略下是否可信或可复现只字未提。本贡献补上了供应链 attestation 从不需要（因其工件是静态的）的两样东西：(1) <strong>distribution-aware 再签名</strong>：证书针对当前策略的已访问状态分布被重新校验，而非一次性签发，因为威胁是一个学会利用验证器的策略，而非被篡改的构建；(2) <strong>奖励可复现容差带</strong>：Tier-2 奖励仅在固定 judge 快照下、于某个容差内可复现。一句话定位：<em>面向 RL 环境的 SLSA，外加静态 attestation 从不需要的奖励可信机制。</em>这正是生成表所显现的缺口：每一行都解决了生成，但<strong>我们未发现任何开源系统同时具备以下四者：closed-loop directed generation、verifier reliability auditing、environment certificates、transfer attribution</strong>。单个行各自出货局部（可执行任务、replay 日志、质量过滤、一个 verified 子集），但没有人出货这个组合，而该组合的既有工作散落于两支文献，据我们所知本提案是首个为环境合成将其汇合者。</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="position">
+  <span class="sec-no">03 — 定位</span>
+  <h2>AutoGym 是一条架于开源组件之上的回路，而非一个新 framework</h2>
+  <p>从分层后退一步看：搭一条自动环境 pipeline 是<strong>四件事</strong>，其中只有两件是开放问题。<em>去哪找 case</em> 与<em>如何做大</em>在开源界正在商品化，AutoGym 采用之。<em>该信任哪些 case</em> 与<em>如何引导下一步造什么</em>尚未解决，AutoGym 自建之，而它们正是回路的两个半边。（下方的 stack 按层展示同一切分；这里是按任务的同一切分。）</p>
+
+  <div class="dgrid">
+    <div class="dcard" style="border-left:3px solid #5E6F69"><h4><span style="color:#5E6F69;font-weight:700">ADOPT</span> · 去哪找好 case</h4><p>grounding 来源：采集的真实工件（SWE-rebench、TermiGen）、grounded 合成（AWM、EnvFactory）、self-play（AZR、SSR）。正在商品化，置于 IR 之后采用。我们保留的唯一判断及其边界：realism 胜过 volume<sup class="c" data-r="2">[2]</sup>是一种逐环境优势，而非前提，纯合成代码构建任务在前沿规模上同样可迁移<sup class="c" data-r="33">[33]</sup>。<em>§02。</em></p></div>
+    <div class="dcard" style="border-left:3px solid #5E6F69"><h4><span style="color:#5E6F69;font-weight:700">ADOPT</span> · 如何做大</h4><p>生成吞吐是生成器的问题；rollout / 训练规模是已知工程，即面向并发的沙箱路由与一套开源 RL rollout 栈。是配置，不是研究。<em>§06 · §12。</em></p></div>
+    <div class="dcard" style="border-left:3px solid #176B50"><h4><span style="color:#176B50;font-weight:700">BUILD</span> · 如何过滤不可信 case</h4><p>承重的一半，且"坏"是三件不同的事：<em>构建失败 / flaky</em>（廉价的 TaskSet 检查）、<strong>奖励不可信</strong>（验证器分类 + 受治理 Tier-2 judge + reliability audit）、以及<strong>不迁移</strong>（attribution）。第一件是廉价闸；后两件是贡献。<em>§05 · §08。</em></p></div>
+    <div class="dcard" style="border-left:3px solid #176B50"><h4><span style="color:#176B50;font-weight:700">BUILD</span> · 如何定向生成</h4><p>事后过滤即"多造、再扔掉大部分"，其成本随体量增长。把信任 + transfer 信号回送，使下一批朝着可信且高 transfer 的方向生成，便把供给规模转化为<em>有用</em>供给的规模。<em>§09。</em></p></div>
+  </div>
+
+  <p>这两个自建的半边是<strong>定向生成策略</strong>与<strong>验证层</strong>；策略实际产出的是一个 <strong>EnvSpec</strong>（§04），即一个环境的声明式描述，也是人类从 requirement 编写出的同一工件（图 8），由 L0 构建、L2 实例化为可运行的 Core IR 实例。因此一轮读作<em>requirement 或弱点分析 → EnvSpec → build → IR → rollout → verify → certify</em>，信任信号回闭到策略上。下方静态 stack 展示哪些层是采用的、哪些是自建的；回路是从信任层（L5）回到生成（L0）的反馈边，见 §08–§09。</p>
+
+  <figure>
+    <svg viewBox="0 0 980 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The AutoGym layered stack">
+      <g font-family="IBM Plex Sans, sans-serif">
+        <!-- build bracket -->
+        <rect x="0" y="20" width="730" height="118" rx="8" fill="#E7F0EB" stroke="#176B50" stroke-width="1.5"/>
+        <!-- L5 -->
+        <text x="18" y="46" font-size="11" font-family="IBM Plex Mono, monospace" fill="#176B50" letter-spacing="1">L5 · GOVERNANCE CONTROL PLANE — what AutoGym uniquely owns</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="#15211E">
+          <rect x="18" y="56" width="168" height="22" rx="4" fill="#fff" stroke="#176B50"/><text x="26" y="71">3-tier certificates</text>
+          <rect x="196" y="56" width="158" height="22" rx="4" fill="#fff" stroke="#176B50"/><text x="204" y="71">provenance→agent</text>
+          <rect x="364" y="56" width="176" height="22" rx="4" fill="#fff" stroke="#176B50"/><text x="372" y="71">verifier-reliability audit</text>
+          <rect x="550" y="56" width="162" height="22" rx="4" fill="#fff" stroke="#176B50"/><text x="558" y="71">agent-as-artifact</text>
+        </g>
+        <!-- L4 verifier -->
+        <text x="18" y="100" font-size="11" font-family="IBM Plex Mono, monospace" fill="#176B50" letter-spacing="1">L4 · VERIFIER TAXONOMY</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5">
+          <rect x="18" y="108" width="210" height="22" rx="4" fill="#E7F0EB" stroke="#176B50"/><text x="26" y="123" fill="#176B50">T1 oracle</text>
+          <rect x="238" y="108" width="280" height="22" rx="4" fill="#F6EEDC" stroke="#B0761A"/><text x="246" y="123" fill="#B0761A">T2 code-augmented decomposed judge</text>
+          <rect x="528" y="108" width="184" height="22" rx="4" fill="#F3E3DD" stroke="#A23A28"/><text x="536" y="123" fill="#A23A28">T3 transcript judge — banned</text>
+        </g>
+        <text x="744" y="74" font-size="22" font-weight="700" fill="#176B50" font-family="IBM Plex Sans">BUILD</text>
+        <text x="744" y="96" font-size="12" fill="#47534F">the differentiated</text>
+        <text x="744" y="112" font-size="12" fill="#47534F">governance layers</text>
+
+        <!-- adopt bracket -->
+        <rect x="0" y="152" width="730" height="248" rx="8" fill="#EAEEEC" stroke="#5E6F69" stroke-width="1.5"/>
+        <!-- L3 -->
+        <text x="18" y="178" font-size="11" font-family="IBM Plex Mono, monospace" fill="#3f4d48" letter-spacing="1">L3 · SANDBOX &amp; RUNTIME (eval vs train; isolation by threat-model)</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11" fill="#3f4d48">
+          <rect x="18" y="186" width="160" height="22" rx="4" fill="#fff" stroke="#5E6F69"/><text x="26" y="201">Docker / K8s</text>
+          <rect x="188" y="186" width="170" height="22" rx="4" fill="#fff" stroke="#5E6F69"/><text x="196" y="201">Apptainer + venv</text>
+          <rect x="368" y="186" width="180" height="22" rx="4" fill="#fff" stroke="#5E6F69"/><text x="376" y="201">container-free ns</text>
+          <rect x="558" y="186" width="154" height="22" rx="4" fill="#fff" stroke="#5E6F69"/><text x="566" y="201">microVM (ext.)</text>
+        </g>
+        <!-- L2 -->
+        <text x="18" y="232" font-size="11" font-family="IBM Plex Mono, monospace" fill="#3f4d48" letter-spacing="1">L2 · CORE IR (binding-agnostic) — AutoGym owns the abstraction boundary</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11" fill="#15211E">
+          <rect x="18" y="240" width="694" height="40" rx="4" fill="#fff" stroke="#176B50" stroke-dasharray="4 3"/>
+          <text x="30" y="256" font-size="12" font-weight="600" fill="#176B50">Context + (stateful) Tool/Action schema + world backend + out-of-context grader</text>
+          <text x="30" y="273" font-size="11" fill="#47534F">bindings: MCP · OpenAI Responses API · function-calling · bash</text>
+        </g>
+        <!-- L1 -->
+        <text x="18" y="304" font-size="11" font-family="IBM Plex Mono, monospace" fill="#3f4d48" letter-spacing="1">L1 · COMPOSITION / ROLLOUT</text>
+        <rect x="18" y="312" width="694" height="24" rx="4" fill="#fff" stroke="#5E6F69"/>
+        <text x="30" y="328" font-size="12" font-family="IBM Plex Mono, monospace" fill="#15211E">NeMo Gym — adopted behind a Core-IR adapter (resources_servers · responses_api · ng_collect_rollouts)</text>
+        <!-- L0 -->
+        <text x="18" y="360" font-size="11" font-family="IBM Plex Mono, monospace" fill="#3f4d48" letter-spacing="1">L0 · GENERATORS</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11" fill="#15211E">
+          <rect x="18" y="368" width="220" height="22" rx="4" fill="#E7F0EB" stroke="#176B50"/><text x="26" y="383" fill="#176B50">harvested: SWE-rebench</text>
+          <rect x="248" y="368" width="248" height="22" rx="4" fill="#fff" stroke="#5E6F69"/><text x="256" y="383">grounded: AWM · EnvFactory</text>
+          <rect x="506" y="368" width="206" height="22" rx="4" fill="#F6EEDC" stroke="#B0761A"/><text x="514" y="383" fill="#B0761A">self-play: AZR · SSR</text>
+        </g>
+        <text x="744" y="250" font-size="22" font-weight="700" fill="#3f4d48" font-family="IBM Plex Sans">ADOPT</text>
+        <text x="744" y="272" font-size="12" fill="#47534F">open, battle-tested</text>
+        <text x="744" y="288" font-size="12" fill="#47534F">— behind our IR</text>
+        <!-- ===== L0.5 directed-generation policy: the BUILD component on the loop ===== -->
+        <rect x="0" y="410" width="730" height="48" rx="8" fill="#E7F0EB" stroke="#176B50" stroke-width="1.5"/>
+        <text x="18" y="430" font-size="11" font-family="IBM Plex Mono, monospace" fill="#176B50" letter-spacing="1">L0.5 · DIRECTED-GENERATION POLICY  (BUILD)</text>
+        <text x="18" y="448" font-size="11.5" font-family="IBM Plex Sans, sans-serif" fill="#15211E">reads the L5 verification signal → emits an EnvSpec (§04) that L0 builds</text>
+        <text x="636" y="441" font-size="20" font-weight="700" fill="#176B50" font-family="IBM Plex Sans">BUILD</text>
+        <!-- loop edge: L5 trust signal -> directed-generation policy -->
+        <circle cx="730" cy="67" r="3.5" fill="#A23A28"/>
+        <path d="M 730 67 C 858 40, 915 55, 915 120 L 915 402 C 915 442, 858 434, 742 434" fill="none" stroke="#A23A28" stroke-width="2.2" stroke-dasharray="7 4"/>
+        <polygon points="742,434 757,426 757,442" fill="#A23A28"/>
+        <text x="938" y="235" font-family="IBM Plex Sans, sans-serif" font-size="12.5" font-weight="600" fill="#A23A28" text-anchor="middle" transform="rotate(-90 938 235)">verification signal steers generation</text>
+        <!-- directed-generation policy -> L0, carrying the EnvSpec -->
+        <path d="M 366 410 L 366 393" stroke="#176B50" stroke-width="2"/>
+        <polygon points="366,392 360,404 372,404" fill="#176B50"/>
+        <text x="376" y="405" font-size="10" font-family="IBM Plex Mono, monospace" fill="#176B50">EnvSpec</text>
+      </g>
+    </svg>
+    <figcaption><b>图 3 — AutoGym stack 与回路。</b>贡献是两个自建组件，而非一个：绿色的 <strong>L4–L5</strong> 信任半边，以及绿色的 <strong>L0.5 定向生成策略</strong>，后者读取验证信号并设定 L0 的生成目标。L0–L3 置于 Core IR 边界（L2）之后采用。<span style="color:#A23A28;font-weight:600">红色虚线边</span>是回路：L5 的验证信号流入定向生成策略，策略产出一个 <strong>EnvSpec</strong>（L0 构建、L2 实例化为可运行 IR 实例的工件；§04、图 8），从而引导 L0。NeMo Gym<sup class="c" data-r="14">[14]</sup>提供 L1；生成器<sup class="c" data-r="1,2,4,6">[1,2,4,6]</sup>提供 L0；SWE-MiniSandbox<sup class="c" data-r="16">[16]</sup>与 Apptainer 提供 L3。</figcaption>
+  </figure>
+
+  <p>这不是收窄野心，而是把工作放到回路上。生成器已商品化且在开源界持续改进；它们都未出货的，是<em>引导</em>生成的回路，以及使其 fitness 诚实的信任层。两个半边都是贡献：一个针对受训者弱点与 projected transfer 的定向生成策略（§09），以及决定一个奖励何时可信、并使所得能力可复现、可归因的验证器合同 + provenance 模型（§08）。二者不可分割：没有可信 fitness 的定向生成就是 meta-reward-hacking（会坍塌，§09），而没有生成的验证只是一道静态闸。NeMo Gym 做了轻量的逐环境 license 追踪与 tests<sup class="c" data-r="14">[14]</sup>，但没有定向生成回路、没有验证器分类、没有 reliability auditing、没有 provenance-to-agent lineage，而这正是本项目所承担的范围。</p>
+
+  <div class="call note">
+    <span class="lab">由构造保证低摩擦</span>
+    <p>一个控制平面只有在"认证比绕过它更便宜"时才值得存在。认证必须作为 CI 中对每个环境的自动检查运行，而非一道人工把关步骤，即一条一行命令的 <code>autogym certify</code> 路径，并对尚未通过的环境给出明确状态（可用于实验，排除于可信训练混合之外）。让治理层被忽略的，是摩擦，而非能力。</p>
+  </div>
+
+  <div class="call adopt">
+    <span class="lab">IR 独立性，强制执行而非口头声明</span>
+    <p>NeMo Gym 明确处于早期、API 仍在演进<sup class="c" data-r="14">[14]</sup>。我们把它作为 L1 的一种<em>实现</em>，置于一个接到我们自有 Core IR（L2）的 adapter 之后。一个只对单一 backend 编写的 adapter，不过是改了字段名的那个 backend，所以 IR 独立性被设为一条<strong>退出条件，而非一条原则</strong>：该 IR 必须绑定<em>两个</em>组合 backend，即 NeMo Gym 与 OpenEnv（AWM 的基础设施已并入 OpenEnv<sup class="c" data-r="6">[6]</sup>，故第二个绑定几乎是免费的）。在它绑定两个之前，L2 边界只是名义上的。</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="ir">
+  <span class="sec-no">04 — 抽象</span>
+  <h2>Core IR：Context + Tool，而非 MCP</h2>
+  <p>我们关心的两类 substrate 表面看不同：coding agent 驱动终端与文件系统；business agent 对一个有状态数据库调用 typed tools。但它们共享一个抽象。一个环境向 agent 暴露一个 <strong>context/observation</strong>、一个架于<strong>可变 world backend</strong> 之上的 <strong>action/tool schema</strong>，并由一个 <strong>out-of-context grader</strong> 评分。MCP 是该 action schema 的一种线缆编码，而非抽象本身。</p>
+
+  <p>这不是理论，而是前沿实验室实际的构建方式。MAI-Thinking-1 对 SWE 与 tool use 都跑同一个 ReAct 回路：SWE 中动作是 <code>bash</code> 与一个字符串替换编辑器，tool use 中是对带种子数据库的 typed 调用，而 tool schema 用的是 <em>OpenAI function-calling schema，而非 MCP</em><sup class="c" data-r="1">[1]</sup>。NeMo Gym 以 <em>OpenAI Responses API</em> 为标准<sup class="c" data-r="14">[14]</sup>。AWM 与 EnvFactory 用 <em>MCP</em><sup class="c" data-r="2,6">[2,6]</sup>。三个前沿系统，三种不同 binding，这正是抽象 binding、而非锁定其一的论据。</p>
+
+  <p>该抽象的<em>运行期实现</em>，即一个被编译并绑定到 backend 的 EnvSpec，我们称之为 <strong>Env/Gym</strong>：一个 substrate 无关的接口，每个被构建的环境都遵从它，因此不论底层世界是代码容器还是 SQL 数据库，trainer 看到的都是同一份合同。</p>
+<pre class="code"><span class="k">reset</span>(instance)  -&gt; observation                        <span class="c">// 起沙箱、置初态、返回 agent 可见观测</span>
+<span class="k">step</span>(action)     -&gt; observation, terminated, truncated  <span class="c">// terminated = 任务结束；truncated = 预算/超时截断</span>
+<span class="k">grade</span>()           -&gt; {verified: r, preference: r'}        <span class="c">// channel-tagged；preference 永不并入 verified（§05/§07）</span>
+<span class="c">// truncated episode 被标记并排除评分、不记为失败；runtime 截断不得被读成 reward-hacking（§05；Phase 0 divergence 指标）</span>
+<span class="c">// dual-control 变体（如 τ²-bench）：一个配对的 UserGym，user-simulator 也 reset/step 共享世界</span></pre>
+  <p>这正是 NeMo Gym 与 Harbor 已暴露的接口<sup class="c" data-r="14">[14]</sup>，所以给它命名只是固定了一条生态早已遵守的边界：<strong>EnvSpec 是源形态；Env/Gym 是运行期工件</strong>，而"一致格式"意味着 §04 表中的每个来源，不论 substrate，都编译到同一套 reset / step / grade 合同。§04 的 Core IR <em>就是</em>这个 Env/Gym，只是从 binding 一侧描述；二者是同一对象的源态与运行期两个名字。</p>
+
+  <figure>
+    <svg viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two substrates collapse into one IR with bindings">
+      <g font-family="IBM Plex Sans, sans-serif">
+        <text x="0" y="16" font-family="IBM Plex Mono, monospace" font-size="12" fill="#7C8784" letter-spacing="1">ONE IR, TWO SUBSTRATES, MANY BINDINGS</text>
+        <!-- substrate 1 -->
+        <rect x="0" y="34" width="300" height="86" rx="7" fill="#E7F0EB" stroke="#176B50"/>
+        <text x="16" y="56" font-size="14" font-weight="700" fill="#176B50">Substrate 1 — coding / SWE</text>
+        <text x="16" y="77" font-size="12.5" fill="#15211E" font-family="IBM Plex Mono, monospace">action: bash + str-replace</text>
+        <text x="16" y="95" font-size="12.5" fill="#15211E" font-family="IBM Plex Mono, monospace">world: container filesystem</text>
+        <text x="16" y="113" font-size="12.5" fill="#176B50" font-family="IBM Plex Mono, monospace">grader: test suite (oracle)</text>
+        <!-- substrate 2 -->
+        <rect x="0" y="130" width="300" height="86" rx="7" fill="#EFF3F1" stroke="#5E6F69"/>
+        <text x="16" y="152" font-size="14" font-weight="700" fill="#3f4d48">Substrate 2 — business / tool</text>
+        <text x="16" y="173" font-size="12.5" fill="#15211E" font-family="IBM Plex Mono, monospace">action: N typed tools</text>
+        <text x="16" y="191" font-size="12.5" fill="#15211E" font-family="IBM Plex Mono, monospace">world: stateful SQL DB</text>
+        <text x="16" y="209" font-size="12.5" fill="#B0761A" font-family="IBM Plex Mono, monospace">grader: state oracle + judge</text>
+        <!-- arrow -->
+        <line x1="312" y1="125" x2="372" y2="125" stroke="#176B50" stroke-width="2"/>
+        <polygon points="372,120 384,125 372,130" fill="#176B50"/>
+        <!-- IR box -->
+        <rect x="392" y="48" width="588" height="150" rx="8" fill="#fff" stroke="#176B50" stroke-width="1.8"/>
+        <text x="410" y="74" font-size="13" font-family="IBM Plex Mono, monospace" fill="#176B50" letter-spacing="1">CORE IR</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="12.5" fill="#15211E">
+          <rect x="410" y="84" width="250" height="26" rx="4" fill="#E7F0EB" stroke="#176B50"/><text x="420" y="101">Context / observation view</text>
+          <rect x="668" y="84" width="294" height="26" rx="4" fill="#E7F0EB" stroke="#176B50"/><text x="678" y="101">(stateful) Tool / Action schema</text>
+          <rect x="410" y="116" width="250" height="26" rx="4" fill="#EFF3F1" stroke="#5E6F69"/><text x="420" y="133">Mutable world backend</text>
+          <rect x="668" y="116" width="294" height="26" rx="4" fill="#F6EEDC" stroke="#B0761A"/><text x="678" y="133">Out-of-context grader</text>
+        </g>
+        <text x="410" y="164" font-size="11.5" fill="#A23A28" font-family="IBM Plex Sans">↑ Context is the curated agent-visible surface — verifier_payload stays out (anti-leak).</text>
+        <text x="410" y="182" font-size="11.5" fill="#47534F" font-family="IBM Plex Sans">↑ "Tool" means stateful tool use over a backend, not stateless function calls.</text>
+        <!-- bindings -->
+        <text x="392" y="236" font-size="11" font-family="IBM Plex Mono, monospace" fill="#3f4d48" letter-spacing="1">BINDINGS (interchangeable encodings of the action schema)</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="#15211E">
+          <rect x="392" y="246" width="120" height="24" rx="12" fill="#EAEEEC" stroke="#5E6F69"/><text x="408" y="262">MCP</text>
+          <rect x="522" y="246" width="170" height="24" rx="12" fill="#EAEEEC" stroke="#5E6F69"/><text x="538" y="262">Responses API</text>
+          <rect x="702" y="246" width="160" height="24" rx="12" fill="#EAEEEC" stroke="#5E6F69"/><text x="718" y="262">function-calling</text>
+          <rect x="872" y="246" width="90" height="24" rx="12" fill="#EAEEEC" stroke="#5E6F69"/><text x="888" y="262">bash</text>
+        </g>
+      </g>
+    </svg>
+    <figcaption><b>图 4 — Context + Tool。</b>两类 substrate 都是同一 IR 的实例；<code>bash</code> 只是"架于文件系统之上的一个工具"。MCP 从"那个接口"降格为若干 binding 之一。简化中必须存活两条不变量：world backend 的<em>有状态性</em>，以及 <em>Context / verifier-payload 边界</em>（MAI 在推理时隐藏 test diff，仅在 grading 时施加<sup class="c" data-r="1">[1]</sup>）。</figcaption>
+  </figure>
+
+  <div class="dgrid">
+    <div class="dcard"><h4>为什么这是正确的边界</h4><p>bash 接口把逐领域的工具合成问题归约为零，你只需合成 world + verifier。typed-tool 环境仍需逐领域工具，但 trivially container-free。两者都从一个带声明式 action schema 与 binding 的 IR 中落出。</p></div>
+    <div class="dcard"><h4>泛化出来的是什么</h4><p>不是"coding"本身，而是<em>agentic skill</em>。TermiGen→SWE 与 Corecraft→Toolathlon 的 transfer 表明多步分解、工具探索、约束处理可跨表面迁移<sup class="c" data-r="3,5">[3,5]</sup>。coding/terminal 是最佳训练 substrate，是因为其奖励干净，而非因为该技能是 coding 特有的。</p></div>
+  </div>
+
+  <h3>一种编写格式：EnvSpec（种子版）</h3>
+  <p>上面的 IR 是<em>运行期</em>形态，即 agent 与 trainer 所面对的。它还有一个源形态，即环境被<em>构建自</em>的统一输入：一份声明式 <strong>EnvSpec</strong>，描述一个任务 family 的 context 表面、action/tool schema、world backend、grounding 来源，以及（闭合回路的那部分）其验证合同（verifier tier、grader、anti-hacking 姿态）与 provenance 字段。这条 pipeline 是 compiler 形的：编写或生成一个 EnvSpec → 一个 builder 将其物化 → 它被实例化为一个 Core IR 实例 → 绑定到一个运行期。spec 是生成半边所<em>产出</em>、验证半边所<em>认证</em>的；trainer 消费的是实例化后的 IR 实例，而非 spec 本身。这在所引工作中已现端倪：AWM 的两阶段 <em>schema→code</em><sup class="c" data-r="6">[6]</sup>、NeMo Gym 的 resource / <code>add-benchmark</code> 声明<sup class="c" data-r="14">[14]</sup>、APIGen-MT 的任务蓝图<sup class="c" data-r="7">[7]</sup>，而 AutoGym 的新增是把验证合同与 provenance 折入同一份 spec。这也把 §04 焊到 §08：由于 in-toto 式 attestation 附着于工件，而 EnvSpec <em>就是</em>该工件，<strong>EnvFamily 证书签名 (EnvSpec, builder 版本) 这一对</strong>。</p>
+
+  <p>一个种子 schema，填入了一个 Tier-1 SWE family：</p>
+<pre class="code">{
+  <span class="k">"envspec_version"</span>: "0.1-seed",
+  <span class="k">"family_id"</span>: "swe.django.orm",
+  <span class="k">"substrate"</span>: "code",                  <span class="c">// code | tool</span>
+  <span class="k">"context"</span>: {
+    "agent_visible": ["repo_tree", "issue_text", "failing_test_names"],
+    "verifier_payload": ["hidden_test_diff", "golden_patch"]   <span class="c">// 永不进入 context（anti-leak）</span>
+  },
+  <span class="k">"action_schema"</span>: {
+    "binding": "bash",                  <span class="c">// mcp | responses_api | function_calling | bash</span>
+    "tools": ["bash", "str_replace_editor"]
+  },
+  <span class="k">"world_backend"</span>: {
+    "type": "container_fs",             <span class="c">// container_fs | sql_db | ...</span>
+    "stateful": true,
+    "image": "ghcr.io/org/django-3.2:base",
+    "reset": "per_episode"
+  },
+  <span class="k">"grounding"</span>: {
+    "source": "github_pr",
+    "selector": {                       <span class="c">// 解析为 N 个真实 PR → N 个 instance（即 TaskSet）</span>
+      "repo": "django/django",
+      "paths": ["django/db/models/"],
+      "merged_after": "2022-01-01",
+      "must_link_tests": true
+    },
+    "license": "BSD-3-Clause"
+  },
+  <span class="k">"verification_contract"</span>: {
+    "tier": 1,                          <span class="c">// 1 oracle | 2 governed judge | 3 banned</span>
+    "grader": {
+      "kind": "test_suite",
+      "tests_from": "linked_pr",        <span class="c">// f2p / p2p 逐 instance 从各 PR 的 tests 解析</span>
+      "require": ["f2p_pass", "p2p_no_regression"]
+    },
+    "anti_hacking": ["network_off", "git_scrub_after_base", "test_file_reset", "hidden_tests"],
+    "reproducibility": { "trials": 3, "tolerance_band": 0.0 }
+  },
+  <span class="k">"provenance"</span>: {
+    "generator_agent": "envgen@2026.05.1",
+    "builder": "swe-rebench-v2@9f2a1c",
+    "created": "2026-06-09"
+  }
+}</pre>
+  <p>一个 EnvSpec 描述一个 <strong>family</strong>，而非一个 task，这正是 <code>grounding.selector</code> 与 grader 的 <code>tests_from</code> 是<em>规则</em>而非字面值的原因。builder 的第一项工作是<strong>把 family 展开为一个 TaskSet</strong>，即一个 episode 实际运行的具体 instance。两种展开模式，由 substrate 固定。<strong>采集型</strong> family（这个 Tier-1 SWE 例）<em>枚举</em>：selector 解析到范围内的真实 PR，每个 PR 成为一个 instance，携带自身的 issue 文本、base commit、链接的 F2P/P2P tests、以及 held-out golden patch。<strong>合成型</strong> family（下面的 Tier-2 SQL 例）<em>生成</em>：builder 跑 schema→code，逐 instance 产出 (初始 DB 状态, 请求, 预期终态) 三元组。无论哪种，<strong>family 级字段</strong>（tier、anti-hacking、action schema、binding）在整个 TaskSet 上共享，而<strong>逐 instance 字段</strong>（哪个 bug、哪些 tests、哪个初态）各异；随后 RL 从 TaskSet 采样 instance，每 episode 一个，而该采样器本身就是一种课程，注意回路在<strong>两种粒度</strong>上运行：family 级（生成什么，§09）与 instance 级（replay 哪些 instance，PLR 的主场<sup class="c" data-r="28">[28]</sup>）。这条 <strong>family → TaskSet → episode</strong> 粒度，正是 §08 证书在每一级所签名的：EnvFamily 证书签 <code>(EnvSpec, builder)</code>；TaskSet 证书签实例化后的 instance 集（dedup、decontamination、难度覆盖）；EpisodeReplay 签单次已评分运行。这串里有一个术语需要一个定义，否则全文凡用到处都欠它：<strong>难度是一个被测量的量，而非一个凭信念贴的标签</strong>，即一组固定参考模型 panel 的 solve rate（每 instance n 次 rollout 上的 pass@k）。这正是 SWE-rebench-V2 难度标签背后、以及 DeepSeek-V3.2 对其合成任务标定背后的机制（同一样本上，合成模型 pass@1 为 12%，前沿模型至多 62%）<sup class="c" data-r="4,33">[4,33]</sup>。其成本是 rollout，计入 verifier compute（§08）；且它是<em>策略相对</em>的：固定 panel 给出一个稳定的准入期标签，而课程的实时信号是受训者自身的 solve rate，后者随策略改进而漂移，这正是 PLR 式 replay 所针对的非平稳性<sup class="c" data-r="28">[28]</sup>。</p>
+
+  <h3>从 spec 到被训练的环境：数据进，过滤出</h3>
+  <p>一个 EnvSpec 是<em>规则</em>，不是一个环境。两件事把它变成环境。其一，构建时注入<strong>真实数据</strong>，即 selector 的 PR、合成的 DB seed、task 文件，把 family 的规则变成具体 instance（候选 TaskSet）。其二，一道<strong>过滤</strong>移除无法被训练的 instance。候选 TaskSet 不是可训练的环境；<em>认证后</em>的那个才是。</p>
+
+  <p><strong>真实数据从何而来</strong>，是它自己的三阶段前端，位于 builder 上游。<strong>Crawl</strong> 获取原始工件，即 GitHub PR、终端会话、业务日志与工具 trace。<strong>Process</strong> 把它们变成可构建单元：容器化、固定依赖版本、抽取奖励信号（SWE 中把一个 PR 解析为 issue + base commit + 链接 tests；SQL 或对话中抽取或合成 schema、工具集与 policy）。<strong>Filter</strong> 丢弃低质，其具体做法因任务而异，但跨 substrate 共享共同模式：golden-passes / empty-fails 检查、按日期 decontamination、dedup、难度与质量标签，这正是下图所绘的闸逻辑。对 coding 而言，这套前端在很大程度上<em>已公开</em>：SWE-rebench-V2 出货约 3.2 万个已爬取、已处理、带质量标签、覆盖 20 种语言并附预构建镜像的任务<sup class="c" data-r="4">[4]</sup>，故 crawl 与 process 是采用而非重建。对 business 或内部 grounded 的 substrate，crawl 与 process 需要<strong>数据团队支持</strong>（内部系统，外加隐私与 licensing），这一依赖首次成为承重项是在 business 垂直（Phase 1），而非 coding。<em>Phase 0a（SWE）今天就数据无阻；Phase 0b 的 τ² dual-control cell（§10）自带 Gym 与混合 grader，是带真实搭建成本的那部分。</em></p>
+
+  <figure>
+    <svg viewBox="0 0 980 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="EnvSpec plus data, built and filtered into a trained-on environment">
+      <g font-family="IBM Plex Sans, sans-serif">
+        <!-- inputs -->
+        <rect x="0" y="22" width="196" height="44" rx="7" fill="#E7F0EB" stroke="#176B50"/>
+        <text x="12" y="40" font-size="12.5" font-weight="700" fill="#176B50">EnvSpec — family</text>
+        <text x="12" y="57" font-size="11" fill="#15211E">rules: substrate · grader · anti-hack</text>
+        <rect x="0" y="92" width="196" height="44" rx="7" fill="#EFF3F1" stroke="#5E6F69"/>
+        <text x="12" y="110" font-size="12.5" font-weight="700" fill="#3f4d48">Real data</text>
+        <text x="12" y="127" font-size="11" fill="#15211E" font-family="IBM Plex Mono, monospace">PRs · DB seeds · task files</text>
+        <!-- to builder -->
+        <path d="M196 44 C 222 44, 228 68, 250 68" fill="none" stroke="#5E6F69" stroke-width="1.8"/>
+        <polygon points="252,68 242,63 242,73" fill="#5E6F69"/>
+        <path d="M196 114 C 222 114, 228 92, 250 92" fill="none" stroke="#5E6F69" stroke-width="1.8"/>
+        <polygon points="252,92 242,87 242,97" fill="#5E6F69"/>
+        <!-- builder -->
+        <rect x="254" y="52" width="100" height="56" rx="7" fill="#EFF3F1" stroke="#5E6F69"/>
+        <text x="304" y="76" font-size="12.5" font-weight="700" fill="#3f4d48" text-anchor="middle">builder</text>
+        <text x="304" y="93" font-size="11" fill="#15211E" text-anchor="middle">expand</text>
+        <line x1="354" y1="80" x2="384" y2="80" stroke="#5E6F69" stroke-width="1.8"/>
+        <polygon points="386,80 376,75 376,85" fill="#5E6F69"/>
+        <!-- candidate TaskSet -->
+        <rect x="388" y="52" width="156" height="56" rx="7" fill="#fff" stroke="#5E6F69" stroke-dasharray="4 3"/>
+        <text x="466" y="76" font-size="12.5" font-weight="700" fill="#3f4d48" text-anchor="middle">candidate TaskSet</text>
+        <text x="466" y="93" font-size="11" fill="#15211E" text-anchor="middle">N concrete instances</text>
+        <line x1="544" y1="80" x2="572" y2="80" stroke="#B0761A" stroke-width="1.8"/>
+        <polygon points="574,80 564,75 564,85" fill="#B0761A"/>
+        <!-- filter -->
+        <rect x="576" y="40" width="150" height="80" rx="7" fill="#F6EEDC" stroke="#B0761A" stroke-width="1.6"/>
+        <text x="651" y="60" font-size="12.5" font-weight="700" fill="#B0761A" text-anchor="middle">FILTER</text>
+        <text x="588" y="79" font-size="10.5" fill="#7a5a14">1 · build ok? (§06)</text>
+        <text x="588" y="94" font-size="10.5" fill="#7a5a14">2 · reward trusted? (§05)</text>
+        <text x="588" y="109" font-size="10.5" fill="#7a5a14">3 · transfers? (§08) *</text>
+        <text x="578" y="137" font-size="9.5" font-style="italic" fill="#7a5a14">* retrospective — post first run</text>
+        <!-- pass -->
+        <path d="M726 60 C 744 60, 746 40, 762 40" fill="none" stroke="#176B50" stroke-width="1.8"/>
+        <polygon points="764,40 754,35 754,45" fill="#176B50"/>
+        <rect x="766" y="16" width="212" height="46" rx="7" fill="#E7F0EB" stroke="#176B50" stroke-width="1.6"/>
+        <text x="872" y="35" font-size="12.5" font-weight="700" fill="#176B50" text-anchor="middle">Certified TaskSet</text>
+        <text x="872" y="52" font-size="11" fill="#15211E" text-anchor="middle">= the trained-on environment</text>
+        <!-- fail -->
+        <path d="M726 100 C 744 100, 746 126, 762 126" fill="none" stroke="#A23A28" stroke-width="1.8"/>
+        <polygon points="764,126 754,121 754,131" fill="#A23A28"/>
+        <rect x="766" y="100" width="212" height="58" rx="7" fill="#F3E3DD" stroke="#A23A28"/>
+        <text x="872" y="120" font-size="12" font-weight="700" fill="#A23A28" text-anchor="middle">dropped (logged)</text>
+        <text x="872" y="138" font-size="10.5" fill="#15211E" text-anchor="middle">won't-build · untrusted reward</text>
+        <text x="872" y="152" font-size="10.5" fill="#15211E" text-anchor="middle">· doesn't transfer</text>
+      </g>
+    </svg>
+    <figcaption><b>图 5 — EnvSpec + 数据 → 过滤后的环境。</b>spec 是规则；<strong>真实数据在 builder 处进入</strong>以造出具体 instance；<strong>过滤</strong>是三道闸，即 build-ok（§06）、reward-trustworthy（§05）、transfers（§08），但它们并非同时运行：<strong>闸 1–2 是训练前准入；闸 3 是回溯性的</strong>，因为 transfer 只有在一个 family 被训练过一次后才能测得。首次准入依靠 §08 的冷启动先验；随后实测 transfer 决定保留或退役该 family，这正是"被丢弃堆"的反馈。所以在首次运行前，一个 family 仅持有 EnvFamily + TaskSet 证书，而 transfer 戳在第一次运行后到来。这是 §01 漏斗（成功构建环境中 12.8% 通过可信闸）在单个 EnvSpec 层级上的画法，因此能看清数据从<em>何处</em>进入、良率在<em>何处</em>损失；被丢弃堆被记录而非悄然弃置，因为一个其 instance 多数未过某闸的 family，本身就是回送给生成策略的信号（§09）。</figcaption>
+  </figure>
+
+  <p>同一骨架，一个 <strong>Tier-2 SQL business family</strong>，即 AWM 式合成世界、受治理 judge，只是取值不同：</p>
+<pre class="code">{
+  <span class="k">"envspec_version"</span>: "0.1-seed",
+  <span class="k">"family_id"</span>: "biz.cases.sql",
+  <span class="k">"substrate"</span>: "tool",
+  <span class="k">"context"</span>: {
+    "agent_visible": ["tool_catalog", "user_request", "db_schema"],
+    "verifier_payload": ["expected_final_state", "rubric"]      <span class="c">// 永不进入 context</span>
+  },
+  <span class="k">"action_schema"</span>: {
+    "binding": "mcp",
+    "tools": ["query_records", "apply_resolution", "read_policy"]    <span class="c">// 架于世界之上的 typed tools</span>
+  },
+  <span class="k">"world_backend"</span>: {
+    "type": "sql_db",
+    "stateful": true,
+    "build": "schema_to_code",          <span class="c">// AWM 式：合成 DB + tools，无预制镜像</span>
+    "reset": "per_episode"
+  },
+  <span class="k">"grounding"</span>: {
+    "source": "synthesized",            <span class="c">// instance 是生成的，非枚举的</span>
+    "seed": "policy-bound case resolution; ambiguous + exception cases",
+    "realism_ref": "real case-resolution policy doc"
+  },
+  <span class="k">"verification_contract"</span>: {
+    "tier": 2,                          <span class="c">// 受治理 judge，无完整程序化 oracle</span>
+    "grader": {
+      "kind": "code_augmented_judge",
+      "state_diff": "records + resolutions, before vs after",        <span class="c">// 由代码抽取证据</span>
+      "decomposed_criteria": ["resolution_correct", "policy_respected", "no_side_effects"],
+      "judge_snapshot": "judge-llm@2026.04",
+      "decoding_params": { "temperature": 0.0 },
+      "reliability_audit": "audit_set://case-resolution.v3"             <span class="c">// §05 两部分审计</span>
+    },
+    "anti_hacking": ["network_off", "tool_allowlist", "state_snapshot_compare"],
+    "reproducibility": { "trials": 3, "tolerance_band": 0.05 }  <span class="c">// 随机 judge → 容差带</span>
+  },
+  <span class="k">"provenance"</span>: {
+    "generator_agent": "awm-gen@2026.04",
+    "builder": "awm-schema2code@1c4f",
+    "created": "2026-06-09"
+  }
+}</pre>
+
+  <p>该格式并非 coding 专用，它是跨 substrate 的同一骨架，只是取值不同。四个既有环境来源如何映射到一个 EnvSpec：</p>
+  <table>
+    <thead><tr><th>来源 — 原生单元</th><th>substrate</th><th>world_backend</th><th>instance 展开</th><th>verifier · grader</th></tr></thead>
+    <tbody>
+      <tr><td>SWE-rebench — 一个 PR<sup class="c" data-r="4">[4]</sup></td><td>code</td><td>container_fs（固定镜像）</td><td><strong>harvest</strong> — 枚举 selector 内的 PR</td><td><span class="tier t1">T1 · linked test-suite (F2P/P2P)</span></td></tr>
+      <tr><td>AWM — 一个合成场景<sup class="c" data-r="6">[6]</sup></td><td>tool</td><td>sql_db（由 schema→code 构建）</td><td><strong>synthesize</strong> — 生成 (DB, 请求, 终态) 三元组</td><td><span class="tier t2">T2 · code-augmented judge</span></td></tr>
+      <tr><td>terminal-bench / TermiGen — 一个终端任务<sup class="c" data-r="5">[5]</sup></td><td>terminal</td><td>container_fs</td><td><strong>harvest / author</strong> 逐任务</td><td><span class="tier t1">T1 · output / final-state check</span></td></tr>
+      <tr><td>Harbor — task.toml + Dockerfile + test.sh</td><td>terminal / code</td><td>container_fs（即 Dockerfile）</td><td><strong>direct-map</strong> — 每任务 = 一个 instance</td><td><span class="tier t1">T1 · test.sh exit code</span></td></tr>
+      <tr><td>τ²-bench — 一个 dual-control 领域<sup class="c" data-r="32">[32]</sup></td><td>dialogue / dual-control</td><td>json_db（agent DB + user DB）</td><td><strong>synthesize</strong> — 组合式任务生成器</td><td><span class="tier t1">T1 state</span> + <span class="tier t2">T2 goal-judge</span></td></tr>
+    </tbody>
+  </table>
+  <p>三种转换模式覆盖它们。<strong>Harvest</strong> 读取一条既有工件流，填充 <code>grounding</code> 与逐 instance 字段（SWE-rebench、terminal-bench）。<strong>Synthesize</strong> 经 schema→code 生成世界本身，故 <code>world_backend</code> 与 instance 是被产出而非枚举的，这是 AWM 与整条 Tier-2 路径，其中"many scenarios"意味着许多被合成的 SQL/tool 世界<sup class="c" data-r="6">[6]</sup>。<strong>Direct-map</strong> 是说明性的一例：一个 Harbor 任务（NeMo Gym 所集成的环境库之一<sup class="c" data-r="14">[14]</sup>）已经是一个伪装的 EnvSpec。它的 <code>Dockerfile</code> <em>就是</em> world backend，<code>instruction.md</code> 是 context，<code>test.sh</code> 是 Tier-1 grader，<code>task.toml</code> 是 config；转换是字段改名，而非重写。既有格式一旦把字段命名后<em>就已经是</em> EnvSpec，这是该抽象真实而非强加的证据，也是最便宜的接入路径：包装，而非编写。</p>
+
+  <p>余下两个来源是上述原型的变体，故以字段 delta 而非重复完整 spec 的形式展示：</p>
+<pre class="code"><span class="c">// terminal-bench / TermiGen — 带终端 substrate 的 SWE 原型</span>
+"substrate": "terminal",
+"action_schema":  { "binding": "bash", "tools": ["bash"] },
+"world_backend":  { "type": "container_fs", "image": "tbench/task-xxxx:base", "reset": "per_episode" },
+"verification_contract": { "tier": 1, "grader": { "kind": "script", "check": "expected_output | final_fs_state" } }
+
+<span class="c">// Harbor — direct-map：它的四个 task 文件就是这些字段</span>
+"world_backend":          { "type": "container_fs", "from": "Dockerfile" },
+"context":                { "agent_visible_from": "instruction.md" },
+"verification_contract":  { "tier": 1, "grader": { "kind": "script", "from": "test.sh" } },
+"_built_from":            "task.toml"
+
+<span class="c">// τ²-bench — dual-control：第二个 actor + 一个混合 grader（新字段，SWE 原型里没有）</span>
+"substrate": "dialogue",
+"action_schema":   { "binding": "function_calling", "agent_tools": [...], "user_tools": [...], "shared_state": true },
+"user_simulator":  { "spec": "UserSimSpec", "snapshot": "user-llm@2026.05", "decoding_params": {...} },   <span class="c">// 受治理 + pinned，与 judge 同理（§08）</span>
+"world_backend":   { "type": "json_db", "agent_db": "...", "user_db": "..." },
+"verification_contract": { "tier": "mixed",
+  "grader": { "state_check": "tool-call / DB correctness (T1 oracle)", "goal_judge": "NL goals (T2 governed judge)" } }</pre>
+
+  <div class="call note">
+    <span class="lab">种子版，而非冻结的标准</span>
+    <p>该格式起于这个最小种子，并随垂直接入而经验性地精炼。它刻意<em>不</em>预先定稿：过早把环境格式标准化，正是你最终得到一份没有生成器真能产出的 spec 的原因。种子的存在是为了让回路可运行，而非作为最终接口。</p>
+  </div>
+
+  <h3>spec 之上：人类 requirement 向下编译到它</h3>
+  <p>一个 EnvSpec 精确到足以据此构建，这意味着人类通常不直接写它。人类提供的是<em>意图</em>：一段松散的、requirement 级的描述（场景、所针对的能力、何为成功、硬约束、一个 grounding 提示），再由一个 LLM <strong>requirement-to-spec 编译器</strong>填入 substrate、action schema、world backend 与 grader 接线。人类说<em>造什么、何为正确</em>；模型说<em>如何组装</em>。同一个 case-resolution family，以 requirement 而非 spec 陈述：</p>
+<pre class="code">{
+  <span class="k">"goal"</span>: "train an agent to resolve policy-bound customer case requests",
+  <span class="k">"scenario"</span>: "support agent with read access to a records DB and a resolution-policy
+               document; must decide eligibility and apply the correct resolution",
+  <span class="k">"capability_targeted"</span>: "multi-step tool use under a policy constraint",   <span class="c">// 可选的引导提示</span>
+  <span class="k">"success_criteria"</span>: [                                  <span class="c">// 这就是 eval，用业务语言表述</span>
+    "the resolution matches policy for the record's state",
+    "no resolution applied when policy forbids it",
+    "agent cites the policy clause it applied"
+  ],
+  <span class="k">"constraints"</span>: ["read-only on records except the resolution field", "no external network"],
+  <span class="k">"grounding_hint"</span>: "real resolution policy + record schema with ambiguous / exception edge cases"
+}</pre>
+  <p>刻意地，这个 schema 与 EnvSpec 毫不相像。若 requirement 携带 <code>substrate</code>、<code>binding</code> 或 <code>world_backend.type</code>，它就成了一份逼着人类手工填的 EnvSpec，翻译层也就失去意义；两个 schema 形状不同，正是它们做不同工作的证据：一个捕获业务意图，另一个是构建目标。而 <code>success_criteria</code> 正是<strong>验证合同的来源</strong>：人类陈述"正确"何意，编译器决定如何<em>自动判定</em>它，"the resolution matches policy"编译为一个 Tier-1 状态 oracle；"cites the policy clause it applied"是软判据，编译为一个 Tier-2 分解 judge。验证器合同由此锚定于人类对成功的定义，而非凭空生成，这正是 Tier-2 软判据所要求的。</p>
+
+  <div class="call risk">
+    <span class="lab">编译器是信任链的第一环，它也必须被审计</span>
+    <p>由于 <code>success_criteria</code> 是<em>由一个 LLM</em> 编译到 verifier tier 与 grader 的，一次误编译（把"the resolution matches policy"接到一个草率的状态检查，或把一条已陈述约束从 <code>decomposed_criteria</code> 中悄然丢弃）会<em>在出生时</em>就败坏验证合同，位于 §05/§08 每一道审计的上游。证书签 <code>(EnvSpec, builder)</code>，但目前没有任何东西证明 <strong>requirement→EnvSpec 的保真度</strong>。所以编译器作为 agent-as-artifact 受治理（§08），并携带一道廉价的保真检查：对人类编写的 family，把编译出的 <code>verification_contract</code> <strong>回读</strong>给 requirement 作者签字确认；结构上，做一次 <strong>round-trip 反编译并比对</strong>（从 EnvSpec 重新生成一份 requirement 摘要，并与原文 diff）。没有这一步，信任链就有一个未经审计的第一环。</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="verifier">
+  <span class="sec-no">05 — 脊柱</span>
+  <h2>验证器分类</h2>
+  <p>这是整个平台的承重墙。早先的设计草案曾把 LLM-as-judge 一概逐出 verified tier。<strong>那一立场被那些恰被引为 verified 环境权威的系统所反驳</strong>，它必须被一份分层合同取代。这一重构立足于文献反复浮现的 false-positive / false-negative 权衡。</p>
+
+  <div class="dgrid">
+    <div class="dcard"><h4>纯 oracle — 低 FP，高 FN</h4><p>程序化的终态 / 测试检查几乎无法被操纵，但脆：瞬时失败、边角情形、部分执行都会被记为失败。在 RL 中一个 false negative 惩罚正确行为并毒化学习信号，AWM 正是基于这一风险来论证其 judge<sup class="c" data-r="6">[6]</sup>。</p></div>
+    <div class="dcard"><h4>仅看 transcript 的 judge — 高 FP</h4><p>一个 LLM 读一段对话并打分是灵活的（低 FN），但可被操纵：策略学会满足表面线索。这正是必须留在 verified tier 之外的形态。</p></div>
+  </div>
+
+  <p>每个展示出 transfer 的系统所用的合成都相同：<strong>代码抽取 state-grounded 证据，分解 judge 在该证据上推理。</strong>AWM 的"code-augmented LLM-as-a-judge"比较数据库前后，抽取变更记录与诊断，再据此判定<sup class="c" data-r="6">[6]</sup>。Corecraft 把每个任务分解为细粒度、客观、state-grounded 的判据，各自独立评分<sup class="c" data-r="3">[3]</sup>。MAI-Thinking-1 对 SWE 用可验证测试奖励，<em>同时</em>对合成 tool-use 环境用一个分解子任务 LLM judge，外加对 tests 无法规定者用 AI-feedback 奖励<sup class="c" data-r="1">[1]</sup>。NeMo Gym 的目录并排出货两种形态，甚至同一领域两种形态并存：<em>Spider2-Lite</em> 是基于执行的 text-to-SQL，奖励为结果集等价的二元判定且明确无 judge，而 <em>Text-To-SQL</em> 用一个 LLM-as-judge 等价检查；<em>Math-With-Judge</em> 把 <code>math-verify</code> 与一个 LLM judge 结合<sup class="c" data-r="14">[14]</sup>。</p>
+
+  <figure>
+    <svg viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three-tier verifier taxonomy with FP/FN axis">
+      <g font-family="IBM Plex Sans, sans-serif">
+        <text x="0" y="16" font-family="IBM Plex Mono, monospace" font-size="12" fill="#7C8784" letter-spacing="1">VERIFIER CONTRACT — TIER DECIDES TRUST, NOT DOMAIN</text>
+        <!-- T1 -->
+        <rect x="0" y="34" width="316" height="150" rx="8" fill="#E7F0EB" stroke="#176B50" stroke-width="1.6"/>
+        <text x="16" y="58" font-size="15" font-weight="700" fill="#176B50">Tier 1 · Pure oracle</text>
+        <text x="16" y="80" font-size="12.5" fill="#15211E">final state / tests programmable</text>
+        <text x="16" y="100" font-size="12" fill="#47534F" font-family="IBM Plex Mono, monospace">SWE tests · SQL state-diff</text>
+        <text x="16" y="117" font-size="12" fill="#47534F" font-family="IBM Plex Mono, monospace">Spider2-Lite · Lean4 · math-verify</text>
+        <text x="16" y="140" font-size="12" fill="#176B50">FP↓↓  FN↑   → verified tier</text>
+        <text x="16" y="162" font-size="12" fill="#176B50">trust root: gold-tier, ABI-hashed</text>
+        <!-- T2 -->
+        <rect x="332" y="34" width="316" height="150" rx="8" fill="#F6EEDC" stroke="#B0761A" stroke-width="1.6"/>
+        <text x="348" y="58" font-size="15" font-weight="700" fill="#B0761A">Tier 2 · Code-aug. decomposed judge</text>
+        <text x="348" y="80" font-size="12.5" fill="#15211E">code extracts state evidence →</text>
+        <text x="348" y="97" font-size="12.5" fill="#15211E">judge scores per-criterion</text>
+        <text x="348" y="117" font-size="12" fill="#47534F" font-family="IBM Plex Mono, monospace">AWM · Corecraft · MAI tool-use</text>
+        <text x="348" y="140" font-size="12" fill="#B0761A">FP↓ FN↓ → verified tier IF governed</text>
+        <text x="348" y="162" font-size="12" fill="#B0761A">gate: reliability audit + adversary</text>
+        <!-- T3 -->
+        <rect x="664" y="34" width="316" height="150" rx="8" fill="#F3E3DD" stroke="#A23A28" stroke-width="1.6"/>
+        <text x="680" y="58" font-size="15" font-weight="700" fill="#A23A28">Tier 3 · Transcript-only judge</text>
+        <text x="680" y="80" font-size="12.5" fill="#15211E">reads trajectory, no state grounding</text>
+        <text x="680" y="100" font-size="12" fill="#47534F" font-family="IBM Plex Mono, monospace">holistic "looks correct" scoring</text>
+        <text x="680" y="123" font-size="12" fill="#A23A28">FP↑↑ (gameable)</text>
+        <text x="680" y="150" font-size="13" fill="#A23A28" font-weight="700">NEVER in verified tier</text>
+        <!-- axis -->
+        <line x1="0" y1="214" x2="980" y2="214" stroke="#D7DEDB"/>
+        <text x="0" y="236" font-size="12" fill="#176B50" font-family="IBM Plex Mono, monospace">brittle / false-negatives</text>
+        <text x="700" y="236" font-size="12" fill="#A23A28" font-family="IBM Plex Mono, monospace">gameable / false-positives</text>
+        <text x="340" y="262" font-size="13" fill="#15211E" font-family="IBM Plex Sans">code-augmentation suppresses FP · decomposition + reasoning suppresses FN</text>
+      </g>
+    </svg>
+    <figcaption><b>图 6 — 验证器合同。</b>tier 逐任务由"终态是否可程序化检查"选定，而非由领域选定。Tier 2 在<em>受治理时</em>是一等的 verified-tier 机制。这就是取代"一概禁 judge"与 v2"rubric-as-code"占位的新 <code>verification_contract</code>。</figcaption>
+  </figure>
+
+  <h3>治理 Tier 2</h3>
+  <p>把 judge 提升进 verified tier，只有在源系统<em>未</em>出货的治理下才安全。AutoGym 增加三样。(1) 一道<strong>judge-reliability 审计</strong>，测量 judge 的 false-positive 率，但注意其引导问题：一个任务处于 Tier 2 <em>正因为</em>不存在完整程序化 oracle，故审计集分两部分：(a) 那些<em>确实</em>有完整 oracle 的任务子集，廉价地用来标定 judge–oracle 一致度；(b) 真正软判据的人工标注样本，其标注成本是实打实的，并<strong>显式计入验证成本核算</strong>（§08），而非藏在"curation"里。(2) <strong>分解、state-grounded 的判据</strong>，连续奖励等于被满足断言的比例（Corecraft 式），取代 AWM 粗糙的 1.0 / 0.1 / 0.0 整体分<sup class="c" data-r="3,6">[3,6]</sup>。(3) <strong>distribution-aware 再审。</strong>对静态集测得的 false-positive 率，并不能约束训练策略在其学会利用 judge 时、其分布下的 FP 率。修法复用文档已为 EpisodeReplay 准备的机制：把 Karten 式再签名扩展到 judge 审计，在<em>当前最强策略的已访问状态分布</em>上重新校验 judge 可靠性<sup class="c" data-r="17">[17]</sup>。adversary 协同演化是它的<em>补充</em>，而非替代。judge 的 rubric prompt 本身是一个带版本、可优化的工件，NeMo Gym 已对 judge prompt 做版本（Terminus "rubrics v4" vs "simple"）<sup class="c" data-r="14">[14]</sup>，这接到 §09 的 SkillOpt 回路。</p>
+
+  <h3>preference 通道，一条不同的轴，而非第四个 tier</h3>
+  <p>三个 tier 测量同一件事：一个任务的<em>正确性</em>有多可验证。但 AutoGym 采用的配方还用到了根本与正确性无关的奖励。MAI 对"tests 无法规定者"用 AI-feedback 奖励（任务解读、helpfulness、轨迹质量）<sup class="c" data-r="1">[1]</sup>，而 Nemotron-3 的第 3 阶段是带 principle-following GenRM 的 RLHF<sup class="c" data-r="14">[14]</sup>。这些不是关于正确性的 Tier-3 transcript judge；它们是<strong>正交轴上的 preference/alignment 信号</strong>（helpfulness、style、safety）。因此合同声明一条独立的 <strong>preference 通道</strong>：在训练中合法可用，<em>永不混入 verified-reward 核算</em>，并在 EnvBlend 中作为一条独立、不可替代的奖励流携带（§07）。没有它，<code>verification_contract</code> 甚至无法表示 §07 作为既有工作采用的 Nemotron 配方，而一份无法表达它所引配方的合同终将被忽略。</p>
+
+  <h3>冻结 judge 与训练 judge，合同必须声明的第二条轴</h3>
+  <p>上述 tier 默默假定 Tier-2 judge 是一个<em>冻结</em>工件：一个带固定 rubric 的 pinned 快照，每版审计一次、可永久 replay。该领域正朝另一方向移动。GenRM 一线<em>训练</em> judge，即 Nemotron 的 principle-following GenRM<sup class="c" data-r="14">[14]</sup>，以及 DeepSeek-V4 的 generative reward model，其中 actor 模型自身充当 judge，且该评判行为与生成一道用 RL 优化<sup class="c" data-r="34">[34]</sup>。一个训练过的 judge 改变的是失效模式，而不仅是实现：judge–policy 协同适配可能超出任何固定审计节奏，而 self-judging 配置在构造上就让生成器与评估器共享盲点。它还打破 EpisodeReplay 前提：一个持续更新的 judge 没有可 pin 的快照，故其奖励不可 replay。因此合同显式声明这条轴：</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Judge 体制</th><th>进 verified tier？</th><th>所需治理</th></tr></thead>
+    <tbody>
+      <tr><td>冻结快照（AWM 式 code-augmented judge<sup class="c" data-r="6">[6]</sup>）</td><td><span class="tier t2">是 — Tier 2</span></td><td>reliability audit + distribution-aware 再审；快照 pin 在 EpisodeReplay 中</td></tr>
+      <tr><td>训练型，逐训练轮快照（GenRM 一线<sup class="c" data-r="14">[14]</sup>）</td><td><span class="tier t2">是 — 逐快照</span></td><td>每轮 checkpoint 须重过 reliability audit，其奖励方计为 verified；证书 pin 该轮快照</td></tr>
+      <tr><td>持续更新，无 pinned 快照</td><td><span class="tier t3">否</span></td><td>仅 preference 通道，奖励不可 replay，故 verified-tier 可复现性无定义</td></tr>
+      <tr><td>Self-judging（actor = judge，V4-GRM 式<sup class="c" data-r="34">[34]</sup>）</td><td><span class="tier t3">否</span></td><td>仅 preference 通道，reliability audit 预设 judge/policy 独立，而 self-judging 在构造上消除了它</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>一句话立场：<strong>训练型 judge 只能以被审计的快照身份进入 verified tier</strong>，被 verified 的从来不是"那个 judge"，而是一个通过 §05 审计并 pin 在证书中的具体 (checkpoint, rubric, decoding) 三元组，与冻结 judge 完全一样。两次审计之间移动的一切都是 preference 通道信号。一条定价注记：GRM 一线声称的卖点是监督的经济性，V4 报告称仅用极少量人工标注即可从 rubric 引导的数据获得稳健评分<sup class="c" data-r="34">[34]</sup>。在本合同下，这份经济并非免费：judge <em>训练</em>所省下的任何标注，reliability <em>审计</em>都会在准入期重新引入，并显式计价于 §08 成本核算，标注从 judge 移到它的审计，不会消失。</p>
+
+  <p>MAI 的 anti-reward-hacking 清单是 Tier 1 与 Conformance 层的具体防御基线：网络访问控制、对 base 之后任何 commit 的"时间回溯"git 清洗、以及带隐藏 test diff 的 test-file 重置<sup class="c" data-r="1">[1]</sup>。</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="sandbox">
+  <span class="sec-no">06 — 运行期</span>
+  <h2>沙箱与运行期：按威胁模型隔离</h2>
+  <p>最常见的单一架构错误，是假定评测拓扑能迁移到训练。它不能。一个 eval harness 在几百个任务上大致每任务跑一次尝试；那里 pod-per-instance 加 Docker-in-pod 没问题，因为 pod 启动延迟会在一段长 rollout 上摊薄。RL 训练需要<em>每步</em> 10²–10³ 个并发 episode、持续数千步，那里启动成本主导 wall-clock。所以 eval 与 train 是两条运行期路径，隔离强度应是<strong>谁写了被执行的代码 × eval-还是-train</strong> 的函数，而非垂直的函数。</p>
+
+  <figure>
+    <svg viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sandbox routing matrix">
+      <g font-family="IBM Plex Sans, sans-serif">
+        <text x="0" y="16" font-family="IBM Plex Mono, monospace" font-size="12" fill="#7C8784" letter-spacing="1">SANDBOX ROUTING — TWO AXES, FOUR REGIMES</text>
+        <!-- axes labels -->
+        <text x="250" y="44" font-size="12.5" font-weight="600" fill="#3f4d48">EVALUATION / external submission</text>
+        <text x="640" y="44" font-size="12.5" font-weight="600" fill="#3f4d48">TRAINING rollout (high concurrency)</text>
+        <text x="6" y="120" font-size="12.5" font-weight="600" fill="#3f4d48" transform="rotate(-90 6 120)">untrusted code</text>
+        <text x="6" y="250" font-size="12.5" font-weight="600" fill="#3f4d48" transform="rotate(-90 6 250)">own model / curated repos</text>
+        <!-- grid -->
+        <!-- top-left: eval + isolation -->
+        <rect x="40" y="56" width="450" height="100" rx="7" fill="#EAEEEC" stroke="#5E6F69"/>
+        <text x="56" y="80" font-size="14" font-weight="700" fill="#3f4d48">Docker / K8s</text>
+        <text x="56" y="101" font-size="12.5" fill="#15211E">eval, external submissions, reproducibility</text>
+        <text x="56" y="120" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">strong isolation · low concurrency OK</text>
+        <text x="56" y="140" font-size="11.5" fill="#47534F">a standard SWE-bench-Verified eval pipeline lives here</text>
+        <!-- top-right: microVM -->
+        <rect x="510" y="56" width="450" height="100" rx="7" fill="#F3E3DD" stroke="#A23A28"/>
+        <text x="526" y="80" font-size="14" font-weight="700" fill="#A23A28">microVM — gVisor / Firecracker</text>
+        <text x="526" y="101" font-size="12.5" fill="#15211E">untrusted external submissions ONLY</text>
+        <text x="526" y="120" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">kernel-level isolation · highest overhead</text>
+        <text x="526" y="140" font-size="11.5" fill="#A23A28">no published frontier SWE-RL recipe puts microVM on the training path</text>
+        <!-- bottom-left -->
+        <rect x="40" y="166" width="450" height="100" rx="7" fill="#EFF3F1" stroke="#5E6F69"/>
+        <text x="56" y="190" font-size="14" font-weight="700" fill="#3f4d48">Docker / MAI "SEE"</text>
+        <text x="56" y="211" font-size="12.5" fill="#15211E">fresh container per task, network-isolated</text>
+        <text x="56" y="230" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">MAI's choice for SWE training [1]</text>
+        <!-- bottom-right -->
+        <rect x="510" y="166" width="450" height="100" rx="7" fill="#E7F0EB" stroke="#176B50" stroke-width="1.6"/>
+        <text x="526" y="190" font-size="14" font-weight="700" fill="#176B50">Apptainer+venv  ·  container-free ns</text>
+        <text x="526" y="211" font-size="12.5" fill="#15211E">GPU-cluster training rollout, max concurrency</text>
+        <text x="526" y="230" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">Apptainer: rootless/SLURM (Nemotron)</text>
+        <text x="526" y="249" font-size="11.5" fill="#47534F" font-family="IBM Plex Mono, monospace">ns+chroot+venv: SWE-MiniSandbox ≈ Docker [16]</text>
+      </g>
+    </svg>
+    <figcaption><b>图 7 — 沙箱路由。</b><span class="tier t1">Apptainer + venv-overlay</span> 是共享 GPU 调度器上正确的训练路径默认值，即 rootless、SLURM 原生、无特权 daemon，如 Nemotron 的 SWE-RL 所用。<span class="tier t1">container-free namespace + venv</span>（SWE-MiniSandbox）在同质 Python 依赖上达到最高并发，且训练上经验等价于 Docker<sup class="c" data-r="16">[16]</sup>。microVM 保留给 untrusted-external 层。路由还取决于依赖同质性：异质系统依赖（TermiGen 那一堆）仍需容器。DSec<sup class="c" data-r="34">[34]</sup>是覆盖全谱的生产级参考，即在 function-call / container / microVM / VM substrate 之上的一个 API、10⁵ 并发，并在本矩阵之下加了最轻的一档（预热的 function-call dispatch），见末段。</figcaption>
+  </figure>
+
+  <p>两个实现细节使训练路径可控。其一，沉重的 Python 依赖被<strong>预取到置于 base 镜像之外的 venv/conda overlay</strong>，Nemotron 的 SWE 容器构建与 SWE-MiniSandbox 的 conda 版本分层是同一招，把 base 保持小、逐任务搭建压到一个 venv overlay<sup class="c" data-r="16">[16]</sup>。其二，在 container-free 训练中，对 reward hacking 的唯一结构性防御是 Conformance 纪律，外加把 <strong>verifier 与 agent 工作区放在不同沙箱</strong>运行；这一点在此比在完整容器隔离下更要紧。</p>
+
+  <p>本节的生产级存在性证明是 DeepSeek 的 <strong>DSec</strong><sup class="c" data-r="34">[34]</sup>：一个统一 API（单一 Python SDK），覆盖四种按隔离成本排序的执行 substrate，即 function call、container、microVM（Firecracker）、完整 VM（QEMU），在单一集群上运行数十万个并发沙箱，substrate 间切换只是改一个参数。对上面的路由有三点推论。<strong>(1) 谱系获得最轻的一档：</strong>DSec 的 function-call substrate 把无状态调用 dispatch 到一个<em>预热</em>池，消除逐调用冷启动<sup class="c" data-r="34">[34]</sup>；对一个可信、合成的纯 Python tool 世界（AWM 式 FastAPI + SQL 进程），同一逻辑延伸到完全不带沙箱的进程内执行。无论哪种，地板都落在 container-free 之下，路由矩阵应为 Tier-2 合成世界路径提供它。<strong>(2) 启动延迟有第三种缓解：</strong>除 container-free 执行与 venv overlay 外，分层按需镜像加载（DSec 挂载 3FS 支撑的只读 EROFS 层）在不放弃容器的前提下攻击同一成本<sup class="c" data-r="34">[34]</sup>，恰在 TermiGen 式异质依赖那一堆逼你用容器处相关。<strong>(3) Replay 双重承重。</strong>DSec 为每个沙箱维护一份全局有序轨迹日志，报告点名其用途：抢占后快进（replay 缓存结果，绝不重执行非幂等命令）、<em>fine-grained provenance</em>、以及任意历史会话的 <em>deterministic replay</em><sup class="c" data-r="34">[34]</sup>，正是 EpisodeReplay 证书所需的同一确定性机制（§08），已作为前沿规模的基础设施出货。且该需求有一个超出效率或信任的训练正确性面向：V4 的 rollout 服务观察到，从头重生一个被中断的请求在统计上是错的，较短的响应更常在抢占中存活，故重生会把数据偏向短序列，这正是它改为从 token 粒度 write-ahead log 续跑的原因<sup class="c" data-r="34">[34]</sup>。一个确定性 replay 的奖励，就是一段免费续跑的 rollout，<em>同时</em>是一份在抢占下保持无偏的数据分布。</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="blend">
+  <span class="sec-no">07 — 课程</span>
+  <h2>EnvBlend：簇内混合，跨簇分阶段</h2>
+  <p>实际出货的配方比"全混在一起"更微妙。Nemotron-3 Super 跑三个 RL 阶段，即一个跨约 21 个环境、37 个数据集（math、code、STEM、safety、agentic、reasoning-gym）的多环境 RLVR 阶段，再到 SWE-RL（OpenHands + Apptainer），再到带 principle-following GenRM 的 RLHF<sup class="c" data-r="14">[14]</sup>。第 1 阶段大量混合；<em>Nemotron</em> 在 RLVR、SWE、RLHF 之间的分阶段边界是 infra 驱动的，那些簇需要<strong>不同的基础设施与不同的奖励机制</strong>，但不应被过度解读为"分离从不助益学习"：下面第二个出货配方出于学习侧理由而分离。</p>
+  <div class="call note">
+    <span class="lab">细化</span>
+    <p>一个 EnvBlend 在<strong>一个 infra/reward 同质的簇内混合，并在运行期或 verifier 类型不同时跨簇分阶段</strong>。这纠正了"全混胜过分阶段"的过简读法，并把课程直接系到 §06 的沙箱路由决策。把 Nemotron 的 blend schema（rlvr / swe / rlhf family）作为 EnvBlend 工件的既有工作采用，并把其生命周期（版本、隔离检疫、退役）作为控制平面的一部分治理。blend 必须把 §05 的 <strong>preference 通道</strong>（RLHF / GenRM）作为一条独立、不可替代的流携带，永不并入 verified reward。</p>
+  </div>
+  <div class="call note">
+    <span class="lab">第二种出货消费模式：先专家，后蒸馏</span>
+    <p>DeepSeek-V4 根本不跨领域混合：独立的领域专家（如 mathematics、coding、agent、instruction following）各自在自身同质供给上以 SFT + GRPO 训练，再经<strong>来自十余个 teacher 模型的 on-policy distillation</strong> 合并（在 student 采样轨迹上做 reverse-KL，全词表 logits）<sup class="c" data-r="34">[34]</sup>。动机是学习侧而非 infra 侧，报告称该 OPD 合并规避了 mixed-RL 与权重合并路线中遇到的性能退化<sup class="c" data-r="34">[34]</sup>，且合并发生在蒸馏空间，那里不再消费环境。对 AutoGym 而言这是定位的一个特性，而非矛盾：<strong>认证供给与消费者无关</strong>。同一批认证 family 既可喂 Nemotron 式混合 blend，也可等同地喂 V4 式逐专家 pipeline；后者中 EnvBlend 工件退化为每专家一个同质 blend，而蒸馏阶段消费的是轨迹，不是环境。因此 §07 规则有其范围：簇内混合 / 跨簇分阶段描述的是<em>一个策略</em>应如何消费混合供给，而是否要只训练一个策略，是 trainer 的配方选择，位于供给层上游、且对供给层不可见。</p>
+  </div>
+  <div class="call note">
+    <span class="lab">范围决策 — 责任人：business 垂直</span>
+    <p>跨 episode 持久状态（EnterpriseOps-Gym 维护 164 表 / 512 工具，状态跨 episode 携带<sup class="c" data-r="8">[8]</sup>）<em>不是</em>一个可归档了事的边角情形。对企业运营工作流（带持久跨会话状态的有状态业务领域）而言，持久状态可能是核心特性，而非极端。IR 是否在 v1 支持跨 episode 状态，是由该垂直的实际需求驱动的决策，而非由 IR 便利或 per-episode-reset 的 replay 模型驱动；在此标出，供垂直责任人在 §05 的 EpisodeReplay 确定性假设被锁定前解决。</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="governance">
+  <span class="sec-no">08 — 贡献（1/2）</span>
+  <h2>回路的信任半边：一个奖励何时可信</h2>
+  <p>回路有两个半边。本节是决定何为<em>可信</em>的那一半，即生成半边（§09）被其引导的 fitness 函数。它有两重：决定一个奖励信号何时可信，以及使所得供给可归因、可复现。生成器在开源界正在商品化；这个信任层无一系统已解决，而它正是使生成回路不坍塌为 meta-reward-hacking 的东西。</p>
+
+  <p>验证最难处，也是最有价值的环境所在。EnvFactory 的结果（ground 于真实、有状态系统的环境比更大体量的合成环境更易 transfer<sup class="c" data-r="2">[2]</sup>）意味着最高价值的供给，恰是缺少干净程序化 oracle 的那部分供给（真实系统有软成功判据、部分状态、副作用）。所以信任层不是对有价值环境征的税，而是使它们根本可用、并使回路<em>朝</em>它们而非背离它们生成的东西。</p>
+
+  <h3>把贡献表述为可证伪的断言</h3>
+  <p>下面的工件（verifier 合同、证书、provenance、auditing）是<em>系统</em>贡献，将开源发布。<em>研究</em>贡献是一组实验可反驳的断言，在此陈述，使本提案可凭"什么会证伪它"来评判。</p>
+  <div class="dgrid">
+    <div class="dcard"><h4>H1 · 受治理 judge 产出 oracle 质量信号</h4><p>一个受治理 Tier-2 judge 在<em>无</em>完整程序化 oracle 的任务上提供改进策略的训练信号，在有 oracle 可比的子集上达到与 oracle 训练所得改进的同等水平（在策略改进 Δ 上、于一个<strong>预注册的非劣性边界 δ</strong> 之内），且<strong>不</strong>诱发 false-positive 驱动的 reward hacking。<span class="mn">证伪条件：在 oracle 子集上，受治理 judge 的改进低于 oracle 超过 δ；或出现 oracle 臂没有的 reward-hacking 坍塌。</span></p></div>
+    <div class="dcard"><h4>H2 · 再审更早检测到被利用</h4><p>distribution-aware 再审比静态审计<em>更早</em>检测到 judge 被利用，可度量为 false-positive 率相对训练步数的漂移。由于利用未必在一次运行中自发出现，测试在<strong>诱导利用条件</strong>下进行（一个被刻意削弱的 judge，或一个对抗微调的策略），以保证该现象存在以供检测。<span class="mn">证伪条件：在诱导利用下，静态与 distribution-aware 审计在统计上不可区分的步数处报警。</span></p></div>
+    <div class="dcard"><h4>H3 · attribution 是廉价的</h4><p>family 粒度的 transfer attribution 可在每轮 <em>k</em> 个 family 的 <em>O(k)</em> 额外训练成本内可行，而非精确 leave-one-out 所要求的 <em>k+1</em> 次完整运行。<span class="mn">证伪条件：没有任何廉价估计量能在可接受误差内追踪 leave-one-out attribution。</span></p></div>
+    <div class="dcard"><h4>H4 · 回路胜过开环生成</h4><p>闭合回路（以验证信号引导生成，即受训者弱点 × projected transfer，并以一个可信 fitness 把关）带来比<em>同等体量</em>开环生成更高的每 GPU-hour transfer，且不像 proxy 把关的 self-play 那样坍塌。这是双核断言：回路，而非任一半边，才是贡献。<span class="mn">证伪条件：在等算力下定向生成与开环持平；或尽管有受治理 fitness 仍坍塌；或受治理臂 (c) 在 proxy 把关臂 (b) 未坍塌时也未能胜过 (b)，即治理对回路毫无增益（§10，Phase 2）。</span></p></div>
+  </div>
+
+  <h3>证书模型</h3>
+  <div class="dgrid">
+    <div class="dcard"><h4>EnvFamily 证书</h4><p>grounding 来源的 provenance 与 license、构建确定性、verifier tier 及其 reliability audit、anti-hacking 姿态。没有它，任何 family 都不得进入可信 blend。</p></div>
+    <div class="dcard"><h4>TaskSet 证书</h4><p>一个 EnvSpec 展开成的 instance 集（§04）。签名 golden-passes / empty-fails 检查、对 held-out eval 的 decontamination、难度与多样性覆盖（难度按 §04 定义：参考 panel 的 solve rate）、泄漏风险。</p></div>
+    <div class="dcard"><h4>EpisodeReplay 证书</h4><p>确定性 replay 与可复现奖励，<strong>针对当前策略的已访问状态分布再签名</strong><sup class="c" data-r="17">[17]</sup>。对 Tier-2 奖励，可复现性要求 pin 住 <strong>judge 模型快照 + decoding 参数 + rubric 版本</strong>；对随机奖励，证书携带一条 <strong>replay 容差带</strong>而非精确匹配。judge 弃用按设计使证书失效，而非悄然失效。</p></div>
+    <div class="dcard"><h4>Provenance → agent lineage</h4><p>每个可信环境、task、reward 都可追溯到签名它的生成 agent 版本与 verifier 版本。这使一次训练运行可复现，使你能把一次能力变化归因于导致它的供给，并通过 replay 其 lineage 来 debug 一次回退。</p></div>
+  </div>
+
+  <h3>Agent-as-artifact</h3>
+  <p>生成、修复、验证环境的那些 agent，即把 <code>success_criteria</code> 接成验证合同的 <strong>requirement-to-spec 编译器</strong>（§04），以及在 dual-control 环境中的 <strong>user simulator</strong>（一个 <code>UserSimSpec</code>），它们本身就是带版本、lineage 可追踪的工件（<code>AgentSpec</code> + <code>AgentVerifier</code> + <code>Scorecard</code>）。编译器与 user simulator 列入此名单的理由与 verifier 相同：二者都是<strong>奖励决定者</strong>。一次误编译在每道审计上游败坏合同；一个糟糕的 user simulator 可使任务无解或泄漏答案，这是 τ-bench 一线有详细记录的噪声源，故二者受同样治理。这是 meta-generation 层（§09）所优化的 substrate，而它在所综述的每个 framework 中都缺席。</p>
+
+  <h3>验证的经济学</h3>
+  <p>验证成本并不均匀，预算必须分配，而非平摊。三类成本是 <strong>verifier compute</strong>（容器执行、多次复验，逐次便宜，随 rollout 数量增长）、<strong>人工标注</strong>（Tier-2 审计集，逐任务昂贵，真正稀缺的输入）、以及 <strong>adversary 协同演化</strong>（周期性，在一个 family 上摊薄）。分配策略由下面的成功度量得出：<strong>昂贵的 Tier-2 人工审计被把关给高 projected transfer 的 family</strong>，而低 transfer 或纯 Tier-1 的 family 走廉价自动检查。在一个模板化 Tier-1 family 与一个高 transfer grounded family 上花同等验证力气，正是该度量旨在防止的浪费。<strong>冷启动告诫：</strong>projected transfer 来自 attribution，attribution 需要一次训练运行，运行需要一个认证 family，起点处是一条循环依赖。在任何 attribution 数据存在之前的引导先验，是 projected transfer 的一个廉价 proxy：grounding 真实性、多样性覆盖、以及与目标 benchmark 的领域接近度。</p>
+
+  <h3>如何度量进展</h3>
+  <p>进展以 <span class="metric">transfer per unit of human effort</span> 报告，即价值比成本，而非单看成本。价值是一次训练运行中可归因于某环境 family 的 held-out 能力变动（如 SWE-bench-Verified Δ）；成本是抵达一个 verified 环境的力气，三个分量被显式列出以免任何一个被隐藏：人工分钟（含 §05 的 Tier-2 标注）、GPU-hour、认证算力。路线图的逐 GPU-hour 读数（§10）是同一度量的算力分量，而非一个竞争指标；人工力气仍是头条，因为它是稀缺输入。把价值与成本配对，避免了纯成本度量的失效模式（那会奖励廉价模板化 Tier-1 环境，正是 §01 所警告的"计数而非多样性"陷阱），并封闭了任何"可被操纵的 proxy 不算数"防护中的循环：<strong>一个操纵了其 verifier 却未推动 held-out 能力的环境，在价值上得零分</strong>，故 transfer 信号本身就是对 gaming 的首要检查，reliability audit（§05）为次要检查。</p>
+
+  <div class="call risk">
+    <span class="lab">一个 held-out benchmark，一旦回路朝它优化，就不再是 held-out 的</span>
+    <p>生成一旦被"对某 benchmark 的 projected transfer"引导，那个 benchmark 就进入了上一层的优化，且回路会经<em>分布收敛</em>对它行 Goodhart（生成一份模仿该 benchmark 任务统计的训练混合），这是 §05 overoptimization 结果的 meta 级形态，是 instance 级 TaskSet decontamination 检查抓不到的。在回路下存活的度量纪律是一道<strong>second-level holdout</strong>：回路的 fitness 在一个<em>steering</em> benchmark A 上计算，而 H4 及每个报告的 transfer 数值都在对 fitness 永不可见的<em>held-out</em> benchmark B/C 上读取（如在 SWE-bench-Verified 上 steer；在 SWE-bench-Pro 与 Terminal-Bench 上报告），并跨运行轮换。单层"held-out"对开环臂已足够；只有闭环需要第二层。该现象在生态尺度上已可见：NIST/CAISI 对 DeepSeek-V4 的独立评测发现，在该实验室自家报告未含的 benchmark 上（一个 held-out 软件工程集、ARC-AGI-2 semi-private），结果明显弱于其报告所选 benchmark 给人的印象<sup class="c" data-r="36">[36]</sup>，无论是否显式闭合了一个回路，实验室自选 benchmark 都表现得像一个 steering 集。</p>
+  </div>
+
+  <h3>Transfer attribution 是度量的根基，也是一个开放问题</h3>
+  <p>上面每个定量断言都立足于"把 held-out 能力变动归因于某个具体环境 family"：分配策略、anti-gaming 防护、以及 §09 的 meta-generation fitness 都消费它。所以 attribution 不是脚注，它是承重的，而显而易见的方法不可扩展。精确 leave-one-out 每 family 花一次训练运行；每轮 <em>k</em> 个 family 就是 <em>k+1</em> 次运行，在任何真实 family 数下都不可持续。因此研究项是<strong>廉价 attribution 估计量</strong>，即 grouped / cluster 级消融（hold out 簇而非单例）、从单次运行做 influence-function 式估计、以及 reward-correlation 诊断，并在一个小参考集上对精确 leave-one-out 校验。一个基础设施杠杆直接改善该参考集：<strong>确定性、batch-invariant 的训练 kernel</strong>。DeepSeek-V4 在训练与推理上出货端到端 bitwise batch-invariant 的确定性 kernel，其动机是 debugging、定位 loss spike 等异常的数值成因、以及一致的 post-training 行为<sup class="c" data-r="34">[34]</sup>。对 attribution 的推论由我们来下，且很直接：bitwise 可复现的运行从精确 LOO 基线中移除 run-to-run 非确定性，攻击 attribution 三个障碍之一（noise），而留下另两个（non-additivity、drift）不变。这就是上面的 H3，单凭它就是本提案里更具发表价值的开放问题之一：一个在 mixed RL 训练中做 O(k) 成本 family 粒度 credit assignment 的方法，其用处远超本平台。</p>
+
+  <div class="call thesis">
+    <span class="lab">分工，重述</span>
+    <p>NeMo Gym 做组合。开源生成器做合成。verifier 库做评分。<strong>AutoGym 闭合回路：它引导生成什么、决定什么可信、对其认证、并把该判断回送以引导下一轮，使所得能力可复现、可归因。</strong>这句话就是贡献。</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="metagen">
+  <span class="sec-no">09 — 贡献（2/2）</span>
+  <h2>回路的生成半边：定向合成，诚实把关</h2>
+  <p>这是另一半，也是本项目是一条<em>回路</em>、而非把一个 verifier 螺接到生成器上的原因。定向生成策略朝策略当前薄弱处与 transfer 最高处合成，随后验证决定什么存活并把该判断回送。该机制有已出货的既有工作。<strong>SkillOpt</strong> 提供一个有纪律的优化器：把一个生成 harness 表为 skill 文档，以受 held-out 验证分把关的有界编辑改进，并用 step/epoch 两时间尺度更新<sup class="c" data-r="15">[15]</sup>。<strong>Agent-World</strong> 提供协同演化参考：explore → diagnose-weakness → generate-targeted-tasks → retrain<sup class="c" data-r="13">[13]</sup>。二者都未提供、且使这成为一项贡献而非一次重实现的，是一个你能信任的 fitness 函数。</p>
+
+  <div class="call risk">
+    <span class="lab">为何这一半依赖另一半，全提案的承重点</span>
+    <p>SkillOpt 解决优化器；它不解决 <em>fitness 函数</em>。对一个生成 skill，验证分<em>就是</em> §05/§08 的 verifier 问题。把定向生成以一个廉价 proxy（verifier pass-rate）把关，就是 meta-reward-hacking，会坍向与未 ground 的 self-play 相同的平庸，这正是回路在没有信任半边时危险、且两个核不可分割的原因。<strong>用 SkillOpt 的两时间尺度结构，把廉价 proxy（L0–L2 conformance）放在 step 编辑上，把诚实而昂贵的信号（Tier-1 奖励稳定性 + adversary 存活 + held-out 下游 transfer，§08）放在 epoch 闸上</strong>，并协同演化一个 adversary，使 fitness 是一个移动目标而非静态集。</p>
+  </div>
+
+  <p>排序：回路是终点，但它按顺序、而非一次性建成。信任半边（§08）必须在回路闭合前稳固，否则定向生成策略会去优化一个它能操纵的 fitness。所以实际的第一形态是<strong>接入时的逐类型 harness 适配</strong>（一个新 Gym 类型 → 种子 skill → SkillOpt 适配），而非一个单一的全局 meta-agent；完整的跨 pipeline 回路只在存在 2–3 条带 instrumentation 的生成 pipeline 后闭合，每条都产出干净的 Scorecard 遥测与一个 held-out、decontaminated 的 generation-target 验证集。解锁回路的第一个工作项是定义那个逐类型 fitness（即 §08 verifier 合同），而非搭建优化器。</p>
+
+  <h3>两条上游汇入一份 spec，以及人类上游为何是平等的</h3>
+  <p>以弱点引导生成，预设了弱点<em>可见</em>。自动信号使它可见，但只在一个边界之内。rollout-failure 分布显示策略<em>在已存在的环境上</em>何处失败；transfer attribution（H3）对<em>已训练过的 family</em> 排序；adversary 协同演化<em>在当前环境的编辑空间内</em>搜索。三者都在已有覆盖的分布上加密，而无一能看见一条<strong>根本没有任何环境</strong>的能力轴：一个新垂直、一种未被代表的工具组合、一类无人为之造过世界的真实约束。那是 regret 式 autocurricula 的<strong>结构性盲点</strong>，而非调参缺口，信号是<em>定义在</em>既有分布之上的，故它无法指向其外。</p>
+
+  <figure>
+    <svg viewBox="0 0 980 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two upstreams converging on one EnvSpec">
+      <g font-family="IBM Plex Sans, sans-serif">
+        <!-- human source -->
+        <rect x="0" y="22" width="244" height="60" rx="7" fill="#EFF3F1" stroke="#5E6F69"/>
+        <text x="14" y="46" font-size="13" font-weight="700" fill="#3f4d48">Human requirement (intent)</text>
+        <text x="14" y="66" font-size="11" font-family="IBM Plex Mono, monospace" fill="#15211E">goal · scenario · success_criteria · constraints</text>
+        <!-- machine source -->
+        <rect x="0" y="128" width="244" height="60" rx="7" fill="#EFF3F1" stroke="#5E6F69"/>
+        <text x="14" y="152" font-size="13" font-weight="700" fill="#3f4d48">Weakness / transfer signal</text>
+        <text x="14" y="172" font-size="11" font-family="IBM Plex Mono, monospace" fill="#15211E">rollout failure · attribution · adversary</text>
+        <!-- converge arrows -->
+        <path d="M 244 52 C 330 52, 352 100, 408 100" fill="none" stroke="#176B50" stroke-width="2"/>
+        <polygon points="408,100 397,95 397,105" fill="#176B50"/>
+        <text x="330" y="40" font-size="11.5" font-weight="600" fill="#176B50" text-anchor="middle">LLM requirement→spec</text>
+        <path d="M 244 158 C 330 158, 352 122, 408 122" fill="none" stroke="#176B50" stroke-width="2"/>
+        <polygon points="408,122 397,117 397,127" fill="#176B50"/>
+        <text x="330" y="182" font-size="11.5" font-weight="600" fill="#176B50" text-anchor="middle">L0.5 directed-gen policy</text>
+        <!-- EnvSpec node -->
+        <rect x="412" y="82" width="128" height="58" rx="7" fill="#E7F0EB" stroke="#176B50" stroke-width="1.6"/>
+        <text x="476" y="108" font-size="14" font-weight="700" fill="#176B50" text-anchor="middle">EnvSpec</text>
+        <text x="476" y="126" font-size="11" fill="#15211E" text-anchor="middle" font-family="IBM Plex Mono, monospace">(unified)</text>
+        <!-- builder -->
+        <line x1="540" y1="111" x2="586" y2="111" stroke="#5E6F69" stroke-width="2"/>
+        <polygon points="588,111 578,106 578,116" fill="#5E6F69"/>
+        <rect x="590" y="82" width="150" height="58" rx="7" fill="#EFF3F1" stroke="#5E6F69"/>
+        <text x="665" y="115" font-size="12.5" fill="#15211E" text-anchor="middle">builder → Core IR</text>
+        <!-- verify -->
+        <line x1="740" y1="111" x2="786" y2="111" stroke="#176B50" stroke-width="2"/>
+        <polygon points="788,111 778,106 778,116" fill="#176B50"/>
+        <rect x="790" y="82" width="186" height="58" rx="7" fill="#E7F0EB" stroke="#176B50" stroke-width="1.6"/>
+        <text x="883" y="108" font-size="12.5" font-weight="700" fill="#176B50" text-anchor="middle">verify · certify</text>
+        <text x="883" y="126" font-size="11" fill="#15211E" text-anchor="middle">· attribute (upstream-agnostic)</text>
+      </g>
+    </svg>
+    <figcaption><b>图 8 — 两条上游，一个工件。</b>一个人类 requirement 被一个 LLM 编译成 EnvSpec；定向生成策略从弱点/transfer 信号产出 EnvSpec。两者产出<em>同一</em>统一格式，故下游一切（build、验证、认证、attribution）都相同且与上游无关。人类一线提供自动信号在结构上看不见的分布外方向。</figcaption>
+  </figure>
+
+  <p>所以人类编写的 requirement 是一条<strong>平等的上游，而非一根可退役的引导拐杖</strong>。人类提供分布外方向，即那个说"这个垂直重要、且无人造过"的领域先验，这是 explore/exploit 权衡的探索一端，而自动 regret（偏向加密已知困难区域）在结构上对其供给不足。两条上游汇于同一 EnvSpec：人类一线是 requirement → LLM 翻译 → EnvSpec（§04）；机器一线是弱点/transfer 信号 → 定向生成策略 → EnvSpec。它们把同一工件产入同一池子，被同等地 build、验证、认证、attribute，故信任与 attribution 机制<em>不以</em>哪条上游产出该 family <em>为条件</em>。provenance 仍记录它（每个 family 携带其 <code>generator_agent</code>），但没有任何闸把人类编写的 family 与策略生成的区别对待。用 UED 的话说这是一个老张力：regret 式 autocurricula 朝<em>已知</em>难度的前沿锐化（下一小节），而搜索空间本身的广度向来来自 domain randomization 或人类设计的 level 分布。EnvSpec 不过是人类打开空间、策略在其内运行 regret 的那个接口。</p>
+
+  <h3>它在生成侧文献中的位置</h3>
+  <p>以受训者弱点引导合成，就是 <strong>unsupervised environment design</strong> 的 regret 式课程：PAIRED 的 minimax-regret teacher<sup class="c" data-r="27">[27]</sup>、PLR 的 regret 优先 level replay<sup class="c" data-r="28">[28]</sup>、ACCEL 的 edit-and-evolve learnability 前沿<sup class="c" data-r="29">[29]</sup>，而 Agent-World 是同一 explore-diagnose-generate 回路的 agentic-LLM 实例<sup class="c" data-r="13">[13]</sup>。以 <em>projected transfer</em> 引导它则是另一渊源：data-mixture / data-selection 优化，属 DoReMi 式混合 reweighting 一线<sup class="c" data-r="30">[30]</sup>。AutoGym 的生成半边不属于其中任一单独者，它是 <strong>受治理 verifier 下的、transfer 加权的 regret</strong>：UED 的难度信号被 §05 信任半边变得可信（使 teacher 无法靠生成无解或误评的 level 取胜），并从裸难度重新指向 held-out transfer。两个引导信号可分离，将被<strong>独立消融</strong>，即仅弱点（纯 regret，无 attribution）、仅 transfer（纯 data-selection）、以及二者之积，因为它们有不同的失效模式与不同的成本。</p>
+
+  <p>把一个 benchmark 放进回路，带来两条诚实约束。其一，回路的 fitness 在一个 steering benchmark 上计算，而 H4 在 §08 的 <strong>second-level holdout</strong>（B/C）上测量，回路从不看见评判它的那个 benchmark。其二，transfer 加权消费 H3 的廉价 attribution 估计量，故回路有一条言明的<strong>降级路径</strong>而非悄然失败：若 H3 不成立，定向生成回退到仅弱点引导（无需 attribution）加粗粒度 grouped-cluster 消融，H4 在降低的引导分辨率下仍可测。</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="roadmap">
+  <span class="sec-no">10 — 执行</span>
+  <h2>P0 计划与路线图</h2>
+  <p>Coding/SWE 是第一垂直，且是一个严格的去风险选择：奖励是干净的程序 oracle（Tier 1），它复用一条标准 SWE-bench-Verified eval pipeline，并携带最强的泛化叙事。policy-bound case-resolution / SQL 垂直作为<em>难验证</em>情形（Tier 2）随后，那里 oracle-vs-judge 的切分可被廉价证明。</p>
+
+  <h3>Phase 0 — 先证认证价值，再证外部效度（P0a → P0b）</h3>
+  <p>Phase 0 被排序，使第一发是"能给出有信息量失败的最小之物"。<strong>P0a</strong> 在最干净的 substrate（SWE，Tier-1）上证明认证有价值，且今天就数据无阻；<strong>P0b</strong> 加入 τ² dual-control substrate，以检验该结果不是 SWE 的特例，它带真实 infra 成本，故跟在 P0a 之后而非阻塞它。两个子阶段合起来构成 2×2（substrate × filter）：P0a 是闸，P0b 是外部效度。</p>
+  <p class="meta"><b>共享控制平面（两个子阶段）：</b>把 Core IR adapter 架到 NeMo Gym resources-servers 上<sup class="c" data-r="14">[14]</sup>；出货 EnvFamily + TaskSet + EpisodeReplay 证书 v0；从第一天起就给成本分母（human-minutes-to-verified）做 instrumentation。</p>
+
+  <p><strong>P0a — 仅 SWE、Tier-1、certified-vs-raw（先跑）。</strong></p>
+  <ul class="tight">
+    <li>采用 <strong>SWE-rebench-V2</strong> 构建 pipeline，并以 <strong>SWE-MiniSandbox</strong> / Apptainer 作为 L3 训练运行期<sup class="c" data-r="4,16">[4,16]</sup>；eval 保留一条标准 Docker/K8s pipeline。action schema = bash + str-replace；带 MAI anti-hacking 清单的证书 Tier-1 路径<sup class="c" data-r="1">[1]</sup>。</li>
+    <li><strong>在匹配的环境数、匹配的难度桶、匹配的 rollout 预算下，训练（GRPO）两个臂：</strong>certified = SWE-rebench-V2 带质量标签、按日期 decontaminated、附预构建镜像的子集；raw = 同一 pipeline 中"可构建但未验证"instance 的随机样本（此臂预设可访问 pre-filter 中间产物，须确认公开发布是否暴露它们，否则需预算把开源 crawl/process 阶段在关闭质量闸下重跑一次）。</li>
+    <li><strong>测量</strong>每 GPU-hour 的 held-out SWE-bench-Verified transfer 与 reward-hacking 发生率（test-edit / hidden-test 规避、reward–true-success divergence、<em>按 §04 排除 truncated episode</em>）。<strong>需控制的混杂：</strong>验证可能过滤掉 flaky-hard 任务，移动 certified 的难度构成；报告难度匹配结果或逐臂分布。读数是<em>臂级</em>的，故 P0a 不依赖于解决 family 级 attribution，那是 Phase-2 的研究项（§08/§09）。</li>
+  </ul>
+
+  <p><strong>P0b — 加入 τ² dual-control substrate（外部效度，待 infra 就绪）。</strong></p>
+  <ul class="tight">
+    <li>采用 <strong>τ²-bench</strong> 的 AgentGym / UserGym 及其组合式任务生成器<sup class="c" data-r="32">[32]</sup>；action schema 变为 <strong>dual-control</strong>（agent tools + user tools 架于共享状态之上）。这是终结"纯 SWE、数据无阻"便利的那一项：它额外需要混合的 Tier-1（DB-state）+ Tier-2（NL-goal judge）grader，以及 EpisodeReplay 中的一个 <strong>pinned user-simulator 快照</strong>（§08），故其 infra 成本是实打实的，必须预算。</li>
+    <li>跑 τ² cell：certified = 通过混合 grader 可靠性闸的 family（judge 审计 + pinned user-sim）；raw = 生成但未审计的 family。<strong>τ²-bench-Verified</strong> 的存在（一次社区再发布，修正了原集中的 task 与评测判据错配）是这条 raw→certified 差距真实而非假想的直接证据。配上 P0a 的 SWE cell，这就补全了 2×2。</li>
+  </ul>
+  <div class="call thesis">
+    <span class="lab">Phase 0 退出条件 — 先闸，后交互</span>
+    <p><strong>P0a 闸：</strong>在 SWE 上，certified 臂在匹配的数量与预算下展现出<strong>更高的每 GPU-hour transfer 且/或显著更低的 reward-hacking 发生率</strong>，这是"验证增加价值"的可证伪检验。若 P0a 失败，议程在此止步；若通过，P0b 即获正当性。<strong>P0b 读数 — substrate × filter 交互：</strong>若 certified-vs-raw 的增益在 τ²（一个带<em>合成</em>世界、<em>协同行动</em>用户、<em>部分被判定</em>奖励的 substrate）上复现，则信任半边的价值是一种普遍属性，而非 SWE 特例；若它只在 SWE 上出现，则贡献比所声称的更窄，跨 substrate 的框定是错的。（来自合成 substrate 的 transfer 根本可测，这是已确立的既有工作：DeepSeek-V3.2 的纯合成 RL 提升 τ²-Bench、MCP-Mark、MCP-Universe<sup class="c" data-r="33">[33]</sup>。）合起来，Phase 0 报告的是<strong>外部效度</strong>，而不仅是一个效应，它在两个 substrate 上检验 H1 的"不坍塌"部分，并为最初的若干 family 引导起 transfer attribution（§08）。</p>
+  </div>
+
+  <h3>Phase 1 — business / tool-use 垂直（难验证器）</h3>
+  <ul class="tight">
+    <li>在 IR 之后采用 <strong>EnvFactory</strong>（真实工具 grounding、依赖工具图）与 <strong>AWM</strong>（两阶段 schema→code）生成器<sup class="c" data-r="2,6">[2,6]</sup>；把 case-resolution / SQL 垂直 ground 在一个<strong>真实、有状态的业务领域</strong>（那里软成功判据逼出 Tier-2 路径）。</li>
+    <li>实现带两部分 reliability audit 与 distribution-aware 再审的 <strong>Tier-2 code-augmented 分解 judge</strong><sup class="c" data-r="14">[14]</sup>。</li>
+    <li><strong>跑头条实验（受治理 judge vs oracle，同领域）：</strong>在一个<em>确实</em>存在程序化 oracle 的领域（Spider2-Lite 式执行检查），用 oracle 训练一个臂、用受治理 Tier-2 judge 训练一个臂；再把 judge 臂扩展到 oracle 无法评分的"oracle 不可表达"任务。检验受治理 judge 是否 (i) 在二者皆适用处达到与 oracle 的策略改进同等水平，以及 (ii) 在不出现 reward-hacking 退化的前提下解锁 oracle 不可表达的任务。这就是 H1。</li>
+    <li>加入 <strong>preference 通道</strong>；把 MCP 提升为与 Responses API 并列的一等 binding。</li>
+  </ul>
+  <div class="call thesis">
+    <span class="lab">Phase 1 退出条件</span>
+    <p>(a) <strong>双 backend IR conformance</strong>，即 Core IR 绑定 NeMo Gym <em>与</em> OpenEnv（使 L2 成真的检验，因 AWM 已并入 OpenEnv 而几乎免费<sup class="c" data-r="6">[6]</sup>）。(b) H1 结果：在共享子集上<strong>受治理 judge 与 oracle 持平</strong>，外加在 oracle 不可表达任务上的 transfer 增益，且 reward-hacking 发生率不劣于 oracle 臂。(c) 在真实系统 grounded 垂直上、于当前策略分布上审计得到的一个 Tier-2 judge false-positive 率，并有一个可归因于某 Tier-2 认证 grounded family 的 transfer delta。</p>
+  </div>
+
+  <h3>Phase 2 — 闭合回路（定向生成 + blend）</h3>
+  <ul class="tight">
+    <li>用一个隔离"受治理 fitness delta"的<strong>三臂</strong>实验闭合回路：<strong>(a)</strong> 开环生成；<strong>(b)</strong> 以<em>廉价 proxy</em> fitness 把关的定向生成（verifier pass-rate，即 Agent-World 式信号<sup class="c" data-r="13">[13]</sup>）；<strong>(c)</strong> 以 §08 <em>受治理</em> fitness 把关的定向生成。(a)→(c) 检验回路是否有用；<strong>(b)→(c) 是相对既有定向回路工作的 delta，也是对坍塌断言的直接检验</strong>，没有臂 (b)，结果只是再证"定向 &gt; 非定向"，而 Agent-World 已展示这点。</li>
+    <li>EnvBlend 工件 + Nemotron 式 blend schema；簇内混合 / 跨簇分阶段；preference 通道作为一条不可替代的流<sup class="c" data-r="14">[14]</sup>。</li>
+    <li>经同一套证书闸纳入 <strong>self-play</strong> 来源（SWE 的 SSR/GASP）；跑 Agent-World 的 freeze-growth 消融<sup class="c" data-r="11,12,13">[11,12,13]</sup>。</li>
+    <li>SkillOpt 逐类型 harness 适配，以诚实的 epoch-fitness 把关<sup class="c" data-r="15">[15]</sup>。</li>
+  </ul>
+  <div class="call thesis">
+    <span class="lab">Phase 2 退出条件 — 检验 H4</span>
+    <p>在三个臂中，<strong>(c) 在每 GPU-hour 的 held-out transfer 上胜过 (a)</strong>，且（承重结果）<strong>(c) 胜过 (b)，同时 (b) 表现出 (c) 没有的 proxy 把关坍塌</strong>。(b)-vs-(c) 的对照，正是把 AutoGym 与一条架在廉价 proxy 上的定向回路区分开的东西；没有它，回路就是多加了几步的 Agent-World。transfer 在 held-out B/C benchmark 上读取（§08/§09），绝不在 steering benchmark 上。<span style="color:var(--ink-faint)">逐阶段的规模与责任人留待一次规划处理；此处把退出条件作为当前最低标准给出。</span></p>
+  </div>
+
+  <h3>数据 pipeline，外部 vs 内部，是一条横切依赖</h3>
+  <p>上面每个阶段都消费 §04 的 crawl → process → filter 前端，而该前端是 AutoGym 唯一一个其可行性<em>不</em>在项目掌控之内的部分。对<strong>外部</strong>来源，它基本已解决：GitHub PR 以 SWE-rebench-V2 的形态预先爬取、处理、带质量标签而来（约 3.2 万任务、20 种语言、预构建镜像、CC-BY-4.0）<sup class="c" data-r="4">[4]</sup>；terminal-bench<sup class="c" data-r="5">[5]</sup>与 τ²-bench 生成器<sup class="c" data-r="32">[32]</sup>覆盖其余 Phase-0 substrate。当需要更新或更宽的切片时，SWE-rebench 的 crawl pipeline 是开源的，可在对源仓库加 license 过滤后重跑。<strong>外部数据是一项成本，而非一道阻塞。</strong></p>
+  <p><strong>内部</strong>来源在性质上不同，而非程度上不同，它们才是项目真正可能卡住之处。把一个垂直 ground 在真实内部代码库、工具目录或业务数据库上（正是这一点赋予 business 垂直相对合成世界的价值）需要四样东西，无一是研究问题、无一在贡献之内：<strong>(i) 访问</strong>，构建与训练 infra 必须穿过内部系统的安全控制抵达它们；<strong>(ii) 清洗</strong>，内部工件携带 secret、凭据、PII，必须在进入任何策略可记忆的 context 之前移除，这是 anti-hacking 机制必须延伸覆盖的义务；<strong>(iii) IP / licensing</strong>，provenance 必须记录某 family 训练于内部数据，因为这约束了所得模型可作为什么被分享（EnvFamily 证书 lineage 承载此点，但围绕它的策略是组织决策）；以及 <strong>(iv) 一条数据团队工作线</strong>，用以大规模 crawl、scrub、process。</p>
+  <div class="call risk">
+    <span class="lab">内部数据获取是 AutoGym 最可能的外部阻塞</span>
+    <p>该依赖位于<em>整个贡献的上游</em>：若前端无法以足够的体量与质量供给可 ground 的工件，信任半边就无物可认证，定向生成回路就无物可据以生成，回路在它自己的任何机制运行之前就已供给枯竭。所以诚实陈述 AutoGym 最大的外部风险，不是一个建模风险；而是内部数据的访问、清洗、licensing 构成一条数据团队与组织层面的依赖，它把 Phase 0 公共数据 SWE cell 之后的每个垂直都卡住。缓解是排序，而非机巧：在公共数据上跑 Phase 0（今天就无阻），并把内部数据的访问、清洗、licensing 作为一条显式的<em>并行</em> Phase-1 工作线启动，而非在集成时才发现。</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="risks">
+  <span class="sec-no">11 — 诚实</span>
+  <h2>开放问题与风险</h2>
+  <ul class="tight">
+    <li><strong>Verifier 可靠性是全部胜负所在。</strong>若 Tier-2 reliability audit 薄弱，受治理 judge 会悄悄重新放进该 tier 本要排除的 false-positive。该审计的引导需要对真正软判据的人工标注（按 Tier 2 定义，无 oracle 存在）；该标注成本显式计入 §08 成本分母，不被隐藏。</li>
+    <li><strong>数据获取是最可能的<em>外部</em>阻塞。</strong>外部数据（经 SWE-rebench-V2 的 GitHub PR）是已解决的成本；<strong>内部</strong>数据（真实代码库、工具目录、业务数据库）是一条访问 / PII 清洗 / licensing / 数据团队依赖，位于贡献之外，并把 Phase 0 公共数据 cell 之后的每个垂直卡住。若前端跟不上，回路就供给枯竭。缓解是排序（§10）：现在跑公共数据 Phase 0，并把内部数据访问作为一条显式并行的 Phase-1 工作线启动。</li>
+    <li><strong>Tier-2 replay 可复现性。</strong>一个 judge 评分的奖励只有在 pinned judge 快照 + decoding 参数 + rubric 版本下才可复现；随机 judge 需要 replay 容差带。EpisodeReplay 证书现已携带这些（§08），但 judge 模型的生命周期管理是一项长期运营成本。</li>
+    <li><strong>回路可能污染它自己的评测。</strong>以 projected transfer 引导生成，会把被引导的那个 benchmark 拉进上一层的优化，回路可经分布收敛对它行 Goodhart，这是 instance 级 decontamination 检查抓不到的失效。缓解是 second-level holdout（§08/§09）：fitness 在一个 steering benchmark 上，所有报告的 transfer 在回路从不看见的 held-out benchmark 上，并轮换。此风险为闭环所特有，对仅验证的框定并不存在。</li>
+    <li><strong>Meta-reward-hacking。</strong>对生成器的任何自动优化都继承 verifier 问题作为其 fitness，并能更快地操纵它。缓解是 fitness 诚实（§09），而非更多优化器。</li>
+    <li><strong>生态锁定 / 频繁变动。</strong>NeMo Gym 处于早期、API 在变<sup class="c" data-r="14">[14]</sup>；双 backend conformance 退出条件（§10）是强制执行的缓解，但它带真实维护成本。</li>
+    <li><strong>Self-play grounding。</strong>范式 C 来源高方差，未 ground 时可能坍塌；它们必须与任何其他来源一样通过同一套证书闸，绝不绕过。</li>
+    <li><strong>跨 episode 状态</strong>是一个垂直需求决策，而非 IR 便利决策（§07）：对有状态业务领域它可能是核心特性。在 EpisodeReplay 确定性模型被锁定前与垂直责任人解决它。</li>
+    <li><strong>引文核验。</strong>承重参考文献均已对原始来源核验：生成侧系统（EnvFactory、AWM、MAI-Thinking-1、SWE-rebench-V2、τ²-bench、AutoEnv）以及 §02/§05/§06/§08 所倚的四份前沿报告，即 DeepSeek-V3.2（arXiv:2512.02556）、DeepSeek-V4、Qwen3-Coder-Next（arXiv:2603.00729）、NIST/CAISI 的 DeepSeek-V4 评测，全部核对无误。DeepSeek-V4 的论断已对原始报告确认（§5.2.5 DSec、§5.1.1 GRM、§5.1、§3.3），过程中纠正了两处二手来源的失真（确定性 kernel 言明的动机是 debugging 与数值异常诊断，而非数据消融；agentic 数据进入于 mid-training，而非作为 pre-training 的侧重），这正是"对原始来源确认"纪律为何存在的一个实证。§02 Part A 中若干非承重的 2602/2603 标识符（如 TermiGen、SkillOpt）应在对外流通前再过一遍。</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="nextstep">
+  <span class="sec-no">12 — 下一步</span>
+  <h2>接到一个 RL trainer 上</h2>
+  <p>AutoGym 是环境与验证的供给；最直接的下一步是把它接到消费它的 RL 训练栈上，使回路端到端运行，而非止步于认证工件。集成面很小且已规定：Core IR rollout 接口（§04）喂 trainer 的 rollout worker，<code>verification_contract</code>（§05）<em>就是</em> trainer 调用的奖励函数，而一个认证 EnvBlend（§07）定义训练混合及其逐通道奖励核算（verified vs. preference）。具体而言，这意味着把 IR 绑定到一个开源 RL framework，即 <strong>verl / SkyRL / slime / miles / AReaL / NeMo-RL</strong> 一类 trainer，作为 GRPO/DAPO 的 rollout 与奖励后端（miles 是 slime 面向生产 MoE 的 fork；AReaL 完全异步的 generation–training 解耦天然契合这条 rollout 密集的回路），并以 §06 的沙箱路由决定 rollout 运行期（训练路径用 Apptainer / container-free）。Phase-0a 的 SWE certified-vs-raw 运行（§10）是第一个集成里程碑：它在一个垂直上演练整条路径（IR → trainer → reward → 证书 → transfer attribution），而一旦该路径跑通，闭合回路（§09，Phase 2）就只是把 attribution 信号路由回定向生成策略的事，而非新基础设施。关于该绑定的两条范围注记。其一，trainer 选型应在吞吐之外权衡<strong>确定性、batch-invariant 执行</strong>：bitwise 可复现的运行正是使 H3 精确 leave-one-out 参考集可负担的东西（§08）<sup class="c" data-r="34">[34]</sup>。其二，<strong>RL 是第一个消费者，而非唯一一个</strong>，认证环境也产出轨迹，而前沿配方已在 RL 上游消费它们（DeepSeek-V4 在 mid-training 阶段纳入 agentic 数据以增强 coding 能力；Qwen3-Coder-Next 同样让其合成任务过 mid-training 以及 RL<sup class="c" data-r="34,35">[34,35]</sup>），故同一批认证供给以更低集成成本喂 SFT / mid-training distillation，这也是若 RL 绑定延误时最便宜的回退集成。</p>
+</section>
+<!-- ============================================================ -->
+<section id="faq">
+  <span class="sec-no">13 — FAQ</span>
+  <h2>评审中提出的问题</h2>
+  <p class="meta">读者反复提出的问题，附文档当前的回答。凡诚实回答是"这是一个开放问题"处，即如实陈述，而非掩盖。</p>
+
+  <h3>Q1 · Attribution 在整条链上承重，为何把它留作开放问题？</h3>
+  <p>它在四处承重：价值度量（可归因于某 family 的 transfer）、引导信号（projected transfer）、成本闸（昂贵审计流向高 projected-transfer 的 family）、以及回路 fitness（H4 消费 H3 的估计）。移除它，价值论证即坍塌。它之所以开放，是因为它是一次混合、非平稳 RL 运行中的 credit assignment：干净方法（leave-one-out 重训）是 O(k) 次重训，且被 RL 方差淹没（这是一个地板，而现已在前沿规模出货的确定性、batch-invariant 训练 kernel<sup class="c" data-r="34">[34]</sup>能直接将其降低，§08）；family 贡献是非可加的（协同与冗余破坏线性分解）；边际价值随策略变化而漂移；而小贡献落到 held-out 噪声地板之下。它是 data attribution / influence functions / data-Shapley 的 RL 类比，这些在监督学习中尚且都是近似，无一能干净地迁移到多步 RL。因此文档把它当作一个可证伪假设（H3），并给出言明的回退：若廉价 attribution 失败，回路降级为仅弱点引导加粗粒度 grouped-cluster 消融（H3→H4 路径，§09），而非悄然失败。</p>
+
+  <h3>Q2 · "second-level holdout"究竟是什么，如何运行？</h3>
+  <p>first-level holdout 是寻常的那个：不在测试集上训练，在 instance 级做 decontamination（TaskSet 证书）。一旦回路以 projected transfer 朝某 benchmark 引导生成，它便不足够，因为回路能经<em>分布收敛</em>对该 benchmark 行 Goodhart，即生成一份模仿其任务统计、却不复制任何一个任务的训练混合，这是 instance 级 decontamination 抓不到的。second-level holdout 把 benchmark 分为一个 steering 集 A（回路 fitness 只读 A）与报告集 B/C（fitness 从不看见它们）；H4 与所有 transfer 数值在 B/C 上读取，而 A 跨运行轮换。操作上它需要 ≥2–3 个相互独立、难度与领域可比的 benchmark、严格隔离（没有 B/C 的选择信号回流进生成）、以及轮换。微妙之处（也是操作关键）在于 B/C 必须足够独立以抓住 meta-overfitting，又足够相关以测量真实 transfer：太独立则不反映 A 的能力增益；太相关则在 A 上的收敛会抬高 B/C 并掩盖 Goodhart。</p>
+
+  <h3>Q3 · Tier-2 引导中 oracle 子集可能极小，那么人工标注不就是瓶颈吗？</h3>
+  <p>真实的张力，Tier-2 按定义就是无完整 oracle 的任务，故自然带 oracle 的子集很小。四样东西使它可控。<strong>(i)</strong> 校准集是<em>构造</em>出来的，而非一个自然比例：构建同时携带 oracle 与软判据的任务（如注入已知正确与已知错误的解），以便即使在生产 family 没有 oracle 处也能测量 judge 可靠性，你校准的是 judge，而非每个任务。<strong>(ii)</strong> 人类审计一个<em>分层样本</em>，而非全部：judge 预标注，人类在决策边界附近、judge 自相矛盾处、或 judge 与弱信号分歧处复核（active / disagreement 采样）。<strong>(iii)</strong> 校准按 (judge 快照 + rubric 版本) <em>摊薄</em>，在所有使用该 judge 的任务间共享。<strong>(iv)</strong> 成本闸拒绝不值得的 family，一个几乎无 oracle 子集、标注沉重、transfer 不确定的 family，正是成本模型应拒绝接入的。残留是诚实的：对无 oracle 子集且核心判据为软的 family，人工标注是一个不可约的地板，显式计入 §08 成本分母而非隐藏。</p>
+
+  <h3>Q4 · requirement→EnvSpec：read-back 与 round-trip 当真可行吗，且必须由人来做吗？</h3>
+  <p>这个图景是对的：人类提供意图，一个 LLM 编译器产出 EnvSpec。两道检查各异。<strong>Read-back</strong>（一个人对编译出的 <code>verification_contract</code> 签字确认）需要人，但它是 family 级、一次性的，故摊薄后便宜，尽管它只适用于存在人类作者处。<strong>Round-trip 反编译并比对</strong>（从 EnvSpec 重新生成一份 requirement 摘要，并与原文 diff）是自动的，但<em>部分</em>：它抓住粗错（丢掉的约束、错的 tier、结构性遗漏），错过细错（约束在但接到了一个草率检查）。所以人类复核并非普遍必需：人类编写的 family 走便宜的 read-back；机器生成的 family（无人类作者）依赖 round-trip 加一道下游兜底，一份产出可被操纵奖励的误编译合同，终会在 §05/§08 审计中显现为 reward–true-success divergence，故编译器不是单点失效。在规模上，人类复核是定向抽样（一个样本加高 projected-transfer 的 family），而非全覆盖。编译器的误编译率本身是一个经验量，这正是它作为带 Scorecard 的 agent-as-artifact 受治理的原因（§08）。</p>
+
+  <h3>Q5 · IR 独立性退出条件：执行顺序是否有风险，"conformance"精确指什么？</h3>
+  <p>这一关切的两半都对。<strong>执行顺序是风险：</strong>把整个系统对着 backend 1 构建、只在最后才让 backend 2 conform，有把 backend 特有假设焊进去的风险，使 conformance 变成一次昂贵的改装。修法是让 conformance 成为一道<em>持续</em>检查，即从早期就在 CI 中对两个 backend 跑一组 canary EnvSpec，而非一道最终闸。<strong>关于判据本身：</strong>同一个 EnvSpec 在固定策略与固定 instance 集下，应在两个 backend 间产生在一条<em>预注册容差带</em>内一致的奖励分布（与 Tier-2 replay 容差同一概念），而非 bit 相等，因为环境语义（世界动力学 + grader 合同）与 binding 无关，而 binding 只是一种线缆编码。这条"容差内分布一致"<em>就是</em> conformance 的操作定义。超出容差不是失败而是一个发现：binding 正把语义泄漏进环境（如不同的 tool-timeout 行为改变结果），正是 IR 所禁止的耦合，修 IR/binding，或把该 family 标为 backend 特定。若某 family 在某 backend 上根本无法表达（缺失能力，如没有有状态 DB），则判据收窄到两个 backend 都能表达的 family，而单 backend family 被记为一条 backend 特定的边界，这是对 IR 普遍性的一个诚实限制。</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="refs">
+  <span class="sec-no">★ — 来源</span>
+  <h2>参考文献</h2>
+  <ol class="refs">
+    <li id="ref-1"><span class="src">MAI-Thinking-1: Building a Hill-Climbing Machine.</span> The Microsoft AI Team. Technical report, 2026.</li>
+    <li id="ref-2"><span class="src">EnvFactory: Scaling Tool-Use Agents via Executable Environments Synthesis and Robust RL.</span> Xu, Wang, Deng, … Zeng, Guo (Huawei Noah's Ark / HKUST-GZ), 2026. <span class="id">arXiv:2605.18703</span> · <a href="https://github.com/LARK-AI-Lab/EnvFactory">github.com/LARK-AI-Lab/EnvFactory</a></li>
+    <li id="ref-3"><span class="src">EnterpriseBench Corecraft: Training Generalizable Agents on High-Fidelity RL Environments.</span> Mehta, Ritchie, Garre, Niebres, Heiner, Chen (Surge AI), 2026. <span class="id">arXiv:2602.16179</span></li>
+    <li id="ref-4"><span class="src">SWE-rebench-V2.</span> Badertdinov et&nbsp;al. (Nebius), 2026. <span class="id">arXiv:2602.23866</span> · <a href="https://github.com/SWE-rebench/SWE-rebench-V2">github.com/SWE-rebench/SWE-rebench-V2</a></li>
+    <li id="ref-5"><span class="src">TermiGen / terminal-bench-env.</span> UCSB-MLSec, 2026. <span class="id">arXiv:2602.07274</span> · <a href="https://github.com/ucsb-mlsec/terminal-bench-env">github.com/ucsb-mlsec/terminal-bench-env</a></li>
+    <li id="ref-6"><span class="src">Agent World Model (AWM): Infinity Synthetic Environments for Agentic RL.</span> Wang, Xu, Liu, Wang, Han, Yao, Yao, He (Snowflake AI Research / UNC-Chapel Hill), ICML 2026. <span class="id">arXiv:2602.10090</span> · <a href="https://github.com/Snowflake-Labs/agent-world-model">github.com/Snowflake-Labs/agent-world-model</a></li>
+    <li id="ref-7"><span class="src">APIGen-MT: Agentic Pipeline for Multi-Turn Data Generation via Simulated Agent-Human Interplay.</span> Prabhakar, Wang, Zhang, … Ren (Salesforce), 2025. <span class="id">arXiv:2504.03601</span> · <a href="https://apigen-mt.github.io">apigen-mt.github.io</a></li>
+    <li id="ref-8"><span class="src">A Taxonomy of RL Environments for LLM Agents.</span> H. Lee, 2026. <a href="https://leehanchung.github.io/blogs/2026/03/21/rl-environments-for-llm-agents/">leehanchung.github.io</a></li>
+    <li id="ref-9"><span class="src">Absolute Zero: Reinforced Self-play Reasoning with Zero Data.</span> Zhao, Wu, Yue, … Huang, 2025. <span class="id">arXiv:2505.03335</span></li>
+    <li id="ref-10"><span class="src">Multi-Agent Evolve: LLM Self-Improve through Co-evolution.</span> 2025. <span class="id">arXiv:2510.23595</span></li>
+    <li id="ref-11"><span class="src">Toward Training Superintelligent Software Agents through Self-Play SWE-RL (SSR).</span> Wei et&nbsp;al., 2025. <span class="id">arXiv:2512.18552</span></li>
+    <li id="ref-12"><span class="src">GASP: Guided Asymmetric Self-Play for Coding LLMs.</span> 2026. <span class="id">arXiv:2603.15957</span></li>
+    <li id="ref-13"><span class="src">Agent-World: Scaling Real-World Environment Synthesis for Evolving General Agent Intelligence.</span> 2026. <span class="id">arXiv:2604.18292</span> · <a href="https://agent-tars-world.github.io/-/">agent-tars-world.github.io</a></li>
+    <li id="ref-14"><span class="src">NeMo Gym: An Open Source Library for Scaling RL Environments for LLM.</span> NVIDIA, 2025. <a href="https://github.com/NVIDIA-NeMo/Gym">github.com/NVIDIA-NeMo/Gym</a></li>
+    <li id="ref-15"><span class="src">SkillOpt: Executive Strategy for Self-Evolving Agent Skills.</span> Yang, Gong, Huang, … Luo (Microsoft), 2026. <span class="id">arXiv:2605.23904</span> · <a href="https://github.com/microsoft/SkillOpt">github.com/microsoft/SkillOpt</a></li>
+    <li id="ref-16"><span class="src">SWE-MiniSandbox: Container-Free Reinforcement Learning for Building Software Engineering Agents.</span> Yuan, Wu, Wang, Zhao, Zhang, Zhao, 2026. <span class="id">arXiv:2602.11210</span> · <a href="https://github.com/lblankl/SWE-MiniSandbox">github.com/lblankl/SWE-MiniSandbox</a></li>
+    <li id="ref-17"><span class="src">Automatic Generation of High-Performance RL Environments.</span> Karten, Appapogu, Jin (Princeton), 2026. <span class="id">arXiv:2603.12145</span></li>
+    <li id="ref-18"><span class="src">Scaling Laws for Reward Model Overoptimization.</span> Gao, Schulman, Hilton (OpenAI). ICML 2023 (PMLR v202, 10835–10866). <span class="id">arXiv:2210.10760</span></li>
+    <li id="ref-19"><span class="src">Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena.</span> Zheng et&nbsp;al. NeurIPS 2023 Datasets &amp; Benchmarks. <span class="id">arXiv:2306.05685</span></li>
+    <li id="ref-20"><span class="src">RewardBench: Evaluating Reward Models for Language Modeling.</span> Lambert et&nbsp;al. (AI2), 2024. <span class="id">arXiv:2403.13787</span></li>
+    <li id="ref-21"><span class="src">Let's Verify Step by Step.</span> Lightman et&nbsp;al. (OpenAI). ICLR 2024. <span class="id">arXiv:2305.20050</span></li>
+    <li id="ref-22"><span class="src">in-toto: Providing Farm-to-Table Guarantees for Bits and Bytes.</span> Torres-Arias, Afzal, Kuppusamy, Curtmola, Cappos. USENIX Security 2019.</li>
+    <li id="ref-23"><span class="src">SLSA: Supply-chain Levels for Software Artifacts.</span> OpenSSF, specification. <a href="https://slsa.dev">slsa.dev</a></li>
+    <li id="ref-24"><span class="src">C2PA: Coalition for Content Provenance and Authenticity.</span> Technical specification. <a href="https://c2pa.org">c2pa.org</a></li>
+    <li id="ref-25"><span class="src">Datasheets for Datasets.</span> Gebru et&nbsp;al. CACM 64(12), 2021. <span class="id">arXiv:1803.09010</span></li>
+    <li id="ref-26"><span class="src">Model Cards for Model Reporting.</span> Mitchell et&nbsp;al. FAT* 2019. <span class="id">arXiv:1810.03993</span></li>
+    <li id="ref-27"><span class="src">Emergent Complexity and Zero-shot Transfer via Unsupervised Environment Design (PAIRED).</span> Dennis et&nbsp;al. NeurIPS 2020. <span class="id">arXiv:2012.02096</span></li>
+    <li id="ref-28"><span class="src">Prioritized Level Replay.</span> Jiang, Grefenstette &amp; Rocktäschel. ICML 2021. <span class="id">arXiv:2010.03934</span></li>
+    <li id="ref-29"><span class="src">Evolving Curricula with Regret-Based Environment Design (ACCEL).</span> Parker-Holder et&nbsp;al. ICML 2022. <span class="id">arXiv:2203.01302</span></li>
+    <li id="ref-30"><span class="src">DoReMi: Optimizing Data Mixtures Speeds Up Language Model Pretraining.</span> Xie et&nbsp;al. NeurIPS 2023. <span class="id">arXiv:2305.10429</span></li>
+    <li id="ref-31"><span class="src">AutoEnv: Automated Environments for Measuring Cross-Environment Agent Learning.</span> Zhang, Peng, Kong, … Luo (HKUST-GZ / DeepWisdom), 2025. <span class="id">arXiv:2511.19304</span> · <a href="https://github.com/FoundationAgents/AutoEnv">github.com/FoundationAgents/AutoEnv</a></li>
+    <li id="ref-32"><span class="src">τ²-Bench: Evaluating Conversational Agents in a Dual-Control Environment.</span> Barres, Dong, Ray, Si &amp; Narasimhan (Sierra), 2025. <span class="id">arXiv:2506.07982</span> · <a href="https://github.com/sierra-research/tau2-bench">github.com/sierra-research/tau2-bench</a> (τ²-bench-Verified: github.com/amazon-agi/tau2-bench-verified)</li>
+    <li id="ref-33"><span class="src">DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models.</span> DeepSeek-AI, 2025. <span class="id">arXiv:2512.02556</span> — §4.3 covers the synthetic-agentic-task ablations cited here.</li>
+    <li id="ref-34"><span class="src">DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence.</span> DeepSeek-AI, 2026. Technical report (DeepSeek_V4.pdf) · <a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro">huggingface.co/deepseek-ai/DeepSeek-V4-Pro</a> — claims verified against the primary: §5.2.5 (DSec, trajectory log, four substrates), §5.1.1 (GRM, rubric-guided RL), §5.1 (specialist training + on-policy distillation), §5.2.3 (WAL, length-bias argument), §3.3 (batch-invariant deterministic kernels), §4.1 (mid-training agentic data).</li>
+    <li id="ref-35"><span class="src">Qwen3-Coder-Next Technical Report.</span> Qwen Team, 2026. <span class="id">arXiv:2603.00729</span></li>
+    <li id="ref-36"><span class="src">CAISI Evaluation of DeepSeek V4 Pro.</span> NIST Center for AI Standards and Innovation, May 2026. <a href="https://www.nist.gov/news-events/news/2026/05/caisi-evaluation-deepseek-v4-pro">nist.gov</a></li>
+  </ol>
+  <p class="meta" style="margin-top:22px">正文中引用、无独立条目的补充谱系：SWE 合成数据有 SWE-Smith（Yang et al., 2026）、BugPilot（Sonwane et al., 2025）、SWE-Mirror（Wang et al., 2025）；tool-use 合成有 FunReason-MT（Xu / Hao, 2025）；grounded-synthesis family 有 EnvScaler、AgentScaler、AutoForge；作为 SWE/agent 数据集与 benchmark 的有 R2E-Gym、SWE-Gym、Toolathlon/toolathlon_gym。被 NeMo Gym 吸收的环境库：Reasoning Gym、Aviary、OpenEnv、Verifiers、Harbor。</p>
+</section>
+
+</main>
+</div>
+
+<script>
+  // scroll-spy
+  (function(){
+    var links = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+    var map = {};
+    links.forEach(function(a){ var id=a.getAttribute('href').slice(1); var s=document.getElementById(id); if(s) map[id]=a; });
+    var ids = Object.keys(map);
+    function onScroll(){
+      var pos = window.scrollY + 140; var current = ids[0];
+      ids.forEach(function(id){ var s=document.getElementById(id); if(s && s.offsetTop <= pos) current = id; });
+      links.forEach(function(a){ a.classList.remove('active'); });
+      if(map[current]) map[current].classList.add('active');
+    }
+    window.addEventListener('scroll', onScroll, {passive:true});
+    onScroll();
+  })();
+  // citation jump (smooth) — superscripts link to references
+  document.querySelectorAll('sup.c').forEach(function(c){
+    c.addEventListener('click', function(){
+      var r = c.getAttribute('data-r'); if(!r) return;
+      var first = r.split(',')[0].trim();
+      var t = document.getElementById('ref-'+first);
+      if(t){ t.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth', block:'center'}); }
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Polar 逐文件精读 · 第 2 课：Agent 与 Harness 层</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 2 课</p><h1>Agent 与 Harness 层</h1><p>能访问 CDN 时切换为交互版。本课讲清 Polar 如何用一个统一的 BaseHarness 契约描述"一个 agent harness"，如何按 AgentSpec 配置实例化（factory），以及八种真实商用 harness（claude_code、codex、gemini_cli、opencode、openhands_sdk、pi、qwen_code、shell）如何零改造接入：每个 harness 只负责拼出启动命令，gateway 通过注入 ANTHROPIC_BASE_URL / OPENAI_BASE_URL / GOOGLE_API_URL 等环境变量把它们的推理请求重定向到训练中的模型。这正是"把成熟商业 agent 直接当 RL 环境"的范式。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const POLAR="vscode://file/Users/xinyu/Code/Agentic-RL/ProRL-Agent-Server/";
+  function srcUrl(p,l){return POLAR+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","str","Literal","Field","BaseModel","Sample","Args","RolloutController","RolloutManager","RolloutPipeline","Runtime","BaseRuntime","Harness","BaseHarness","Trajectory","GatewayNode","AgentSpec","AgentRunResult","MCPServerSpec","ExecInput","ClaudeCodeHarness","CodexHarness","ShellHarness","ray","asyncio"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","polar-lesson-01-foundations.html"],[2,"Agent与Harness","polar-lesson-02-agent-harness.html"],[3,"Gateway","polar-lesson-03-gateway.html"],[4,"协议变换","polar-lesson-04-transform.html"],[5,"Runtime池化","polar-lesson-05-runtime.html"],[6,"Rollout服务","polar-lesson-06-rollout-server.html"],[7,"轨迹与评估","polar-lesson-07-trajectory.html"],[8,"slime集成","polar-lesson-08-slime-bridge.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"polar-course-index.html"},"Polar",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 设计动机：为什么是“零改造接入商用 harness” =====
+  function MotivationSection(){
+    return h("div",null,
+      h("p",null,"传统的 RL 训练框架要把环境（Env）写成自己的接口，agent 也是框架自带的最小循环。Polar 走的是另一条路：它把 ",h("strong",{className:"hl-amber"},"已经成熟的商用 agent harness")," 直接当作 RL 的环境与策略执行体。Claude Code、Codex、Gemini CLI、OpenHands 这些工具本来是给人类工程师用的命令行 agent，它们内部已经实现了完整的工具调用、文件编辑、终端执行、多轮规划。Polar 不去重写这些能力，而是把训练中的模型伪装成它们要连的那个云端 API，让这些 harness 在不知情的前提下，把每一次推理请求发给训练中的模型。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"传统做法"),"自研 Env + 自研 agent 循环"),
+          h("p",null,"框架自带工具集与对话循环，环境逻辑要按框架接口重写。商用 agent 的工程能力（沙箱、权限、流式解析、错误恢复）无法直接复用，每接入一个新 agent 都要移植。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"Polar 做法"),"商用 harness 即环境"),
+          h("p",null,"harness 原封不动地以非交互模式启动，其推理流量经环境变量重定向到 gateway，再转给训练中的模型。harness 跑出的完整轨迹（工具调用、文件改动、最终结果）就是 RL 的一条 rollout。")
+        )
+      ),
+      h("p",null,"这种范式对应一个具体的工程目标：在成熟的商业方案之上搭建 RL 基础设施，而不是从零造一个 agent。它的前提是，绝大多数商用 agent 都遵循同一个约定，即推理端点可以由环境变量重定向，例如 Anthropic 系列读 ",h("code",null,"ANTHROPIC_BASE_URL"),"，OpenAI 兼容系列读 ",h("code",null,"OPENAI_BASE_URL"),"，Google 系列读 ",h("code",null,"GOOGLE_GEMINI_BASE_URL"),"。Polar 只要把这些变量指向自己的 gateway，就能把训练中的模型接入任何遵循该约定的 harness。对于不遵循该约定的 harness（例如 pi 把 base URL 写死在模型注册表里），Polar 改为写入该 harness 自己的配置文件来达到同样效果。"),
+      h("div",{className:"note"},"本课聚焦 ",h("code",null,"src/polar/agent/")," 的三个抽象文件与八种 harness 实现。它们如何被 gateway 调度（setup → run_steps → 执行 → postprocess），以及推理请求被重定向后在 gateway 内部如何转成训练后端的请求，分别是第 3 课（Gateway 节点与 proxy）与第 4 课（协议变换）的主题。"),
+      h("div",null,h(Src,{label:"agent/README.md",path:"src/polar/agent/README.md"}),h(Ext,{href:"https://docs.anthropic.com/en/docs/claude-code"},"Claude Code 文档"),h(Ext,{href:"https://github.com/All-Hands-AI/OpenHands"},"OpenHands"),h(Ext,{href:"https://github.com/google-gemini/gemini-cli"},"Gemini CLI"))
+    );
+  }
+
+  // ===== 三个抽象文件：base / models / factory =====
+  const ABSTR=[
+    {key:"base",name:"base.py · BaseHarness 契约",render:function(){return [
+      h("p",null,"所有 harness 都继承 ",h("code",null,"BaseHarness"),"。它是一个抽象基类，把“启动一个 agent”拆成四个可重写的步骤。最核心的契约是：harness 不直接执行任何东西，它只负责把结构化的 ",h("code",null,"AgentSpec")," 配置翻译成一串 ",h("code",null,"ExecInput")," 命令，真正在 runtime 里执行命令的是 gateway 节点。这条边界让 harness 保持纯粹：它是一个命令生成器，不持有进程、不管理连接。"),
+      h(Code,null,"class BaseHarness(ABC):\n    def __init__(self, agent_spec: AgentSpec) -> None:\n        self.agent_spec = agent_spec\n        self.model_name = agent_spec.model_name\n        self.settings = agent_spec.settings\n        self.env = agent_spec.env\n        self.mcp_servers = agent_spec.mcp_servers\n        self.skills_path = agent_spec.skills_path\n\n    async def setup(self, runtime: BaseRuntime) -> None:\n        \"\"\"运行 agent 之前的可选准备步骤 (写配置, 装包, 拷 skills)。\"\"\"\n\n    @abstractmethod\n    def run_steps(self, instruction: str) -> list[ExecInput]:\n        \"\"\"返回执行该 agent 任务的有序命令列表。\"\"\"\n\n    def postrun_steps(self) -> list[ExecInput]:\n        \"\"\"评估之后, 停止 runtime 之前的尽力清理命令。\"\"\"\n        return []\n\n    async def postprocess(self, runtime: BaseRuntime, result: AgentRunResult) -> None:\n        \"\"\"run-step 执行循环结束后的可选产物收集。\"\"\""),
+      h("p",null,"四个步骤的分工：",h("code",null,"setup")," 在 agent 启动前写配置文件、注册 MCP 服务、拷贝 skills；",h("code",null,"run_steps")," 是唯一的抽象方法，每个 harness 必须实现，它把任务指令拼成实际的命令行；",h("code",null,"postprocess")," 在 agent 跑完后收集产物，无论 agent 是成功、失败还是超时都会执行，便于从失败的运行中仍然拿到部分结果；",h("code",null,"postrun_steps")," 返回轨迹构建与评估之后的清理命令。"),
+      h("div",null,h(Src,{label:"BaseHarness",path:"src/polar/agent/base.py",line:12}),h(Src,{label:"run_steps（抽象方法）",path:"src/polar/agent/base.py",line:37}),h(Src,{label:"setup",path:"src/polar/agent/base.py",line:30}),h(Src,{label:"postprocess",path:"src/polar/agent/base.py",line:48}),h(Src,{label:"postrun_steps",path:"src/polar/agent/base.py",line:40}))
+    ];}},
+    {key:"models",name:"models.py · AgentSpec 配置契约",render:function(){return [
+      h("p",null,h("code",null,"AgentSpec")," 是任务里 ",h("code",null,"agent")," 字段的数据模型，描述“要跑哪个 agent、用哪个模型、带什么配置”。两个互斥的来源字段决定 harness 从何而来：",h("code",null,"harness")," 指向内置的八种之一，",h("code",null,"import_path")," 指向用户自带的 harness 类。校验器强制二者恰好提供一个。"),
+      h(Code,null,"class AgentSpec(BaseModel):\n    harness: str | None = None\n    import_path: str | None = None\n    model_name: str | None = None\n    settings: dict[str, Any] = Field(default_factory=dict)\n    env: dict[str, str] = Field(default_factory=dict)\n    mcp_servers: list[MCPServerSpec] = Field(default_factory=list)\n    skills_path: str | None = None\n    custom_shell: ExecInput | None = None\n\n    @model_validator(mode=\"after\")\n    def _validate_agent_source(self) -> AgentSpec:\n        sources = sum(1 for s in (self.harness, self.import_path) if s is not None)\n        if sources != 1:\n            raise ValueError(\"exactly one of harness or import_path must be provided\")\n        # custom_shell 仅当 harness == 'shell' 时有效, 且不能与 mcp/skills 同用\n        ..."),
+      h("p",null,"几个字段的角色值得点明：",h("code",null,"model_name")," 是要训练的那个模型名（多数 harness 会用它拼 ",h("code",null,"--model")," 标志或写进配置）；",h("code",null,"settings")," 是 harness 专属的开关（如 max_turns、reasoning_effort），各 harness 自行解释；",h("code",null,"env")," 会与 gateway 注入的代理环境变量合并后传给命令；",h("code",null,"mcp_servers")," 与 ",h("code",null,"skills_path")," 由支持工具服务与技能目录的 harness 在 setup 阶段写入各自的配置格式；",h("code",null,"custom_shell")," 是 shell harness 专用的逃逸口。"),
+      h("p",null,h("code",null,"MCPServerSpec")," 描述一个 MCP 工具服务，按 transport（stdio / sse / streamable-http）校验必填字段；",h("code",null,"AgentRunResult")," 是 agent 执行的终态，状态为 completed / failed / timeout 之一，附带返回码与可选错误。"),
+      h("div",null,h(Src,{label:"AgentSpec",path:"src/polar/agent/models.py",line:32}),h(Src,{label:"_validate_agent_source",path:"src/polar/agent/models.py",line:44}),h(Src,{label:"MCPServerSpec",path:"src/polar/agent/models.py",line:12}),h(Src,{label:"AgentRunResult",path:"src/polar/agent/models.py",line:69}),h(Src,{label:"ExecInput",path:"src/polar/runtime/models.py",line:10}))
+    ];}},
+    {key:"factory",name:"factory.py · 按配置实例化",render:function(){return [
+      h("p",null,h("code",null,"create_harness")," 是从 ",h("code",null,"AgentSpec")," 得到一个 harness 实例的唯一入口。逻辑很直接：若指定了 ",h("code",null,"import_path")," 就动态导入用户的 harness 类；否则按 ",h("code",null,"harness")," 名字在内置映射表里查找。内置表用一个延迟导入的函数返回，避免在模块加载时产生循环导入。"),
+      h(Code,null,"def create_harness(agent_spec: AgentSpec) -> BaseHarness:\n    if agent_spec.import_path is not None:\n        cls = _import_harness_class(agent_spec.import_path)\n        return cls(agent_spec)\n\n    if agent_spec.harness is not None:\n        harness_map = _builtin_harness_map()\n        cls = harness_map.get(agent_spec.harness)\n        if cls is None:\n            raise ValueError(f\"Unknown harness: {agent_spec.harness!r}\")\n        return cls(agent_spec)\n\n    raise ValueError(\"AgentSpec must specify harness or import_path\")"),
+      h("p",null,"内置映射表 ",h("code",null,"_builtin_harness_map")," 把八个字符串名字对应到八个 harness 类。这张表就是“Polar 原生支持哪些商用 agent”的完整清单。用户要加新 agent 有两条路径：把 harness 实现放进 ",h("code",null,"harnesses/")," 并登记进这张表，或者把代码留在 Polar 之外、在任务里用 ",h("code",null,"import_path")," 指向自己的类。后者通过 ",h("code",null,"import_subclass")," 校验导入的类确实继承了 ",h("code",null,"BaseHarness"),"。"),
+      h("div",null,h(Src,{label:"create_harness",path:"src/polar/agent/factory.py",line:33}),h(Src,{label:"_builtin_harness_map",path:"src/polar/agent/factory.py",line:10}),h(Src,{label:"_import_harness_class",path:"src/polar/agent/factory.py",line:49}),h(Src,{label:"import_subclass",path:"src/polar/_imports.py",line:11}))
+    ];}}
+  ];
+  function AbstrExplorer(){const [s,setS]=useState(0);const d=ABSTR[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},ABSTR.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 重定向机制：gateway 注入的代理环境变量 =====
+  function RedirectSection(){
+    return h("div",null,
+      h("p",null,"理解八种 harness 之前，必须先理解那个让“零改造接入”成立的中心机制：harness 自己不知道要连哪个模型，是 gateway 节点在执行命令前往 runtime 环境里注入了一组代理环境变量，把所有主流 agent 协议的端点统一指向 gateway 自身。这段逻辑在 ",h("code",null,"GatewayNode._runtime_env")," 里。"),
+      h(Code,null,"# polar/gateway/node.py · _runtime_env (节选)\nreturn {\n    \"ANTHROPIC_BASE_URL\": self.gateway_url,\n    \"ANTHROPIC_API_KEY\": request.session_id,\n    \"OPENAI_BASE_URL\": f\"{self.gateway_url.rstrip('/')}/v1\",\n    \"OPENAI_API_KEY\": request.session_id,\n    \"GOOGLE_API_URL\": self.gateway_url,\n    \"GOOGLE_API_KEY\": request.session_id,\n    \"SESSION_ID\": request.session_id,\n    \"TASK_ID\": request.task_id,\n    ...\n    **{k: str(v) for k, v in runtime_env.items()},\n    **{k: str(v) for k, v in agent_env.items()},   # AgentSpec.env 覆盖在最上层\n}"),
+      h("p",null,"三点设计要点。第一，",h("strong",null,"三套协议的 base URL 都指向同一个 ",h("code",null,"self.gateway_url")),"：Anthropic 风格的 harness（claude_code）走 ",h("code",null,"ANTHROPIC_BASE_URL"),"，OpenAI 兼容的（codex、opencode、openhands_sdk、pi、qwen_code）走 ",h("code",null,"OPENAI_BASE_URL"),"，Google 风格的（gemini_cli）走 ",h("code",null,"GOOGLE_API_URL"),"。gateway 收到请求后再按路径/请求体探测协议类型，统一变换成训练后端的请求。第二，",h("strong",null,"API key 被复用为 ",h("code",null,"session_id")),"：harness 必须带一个密钥才肯发请求，Polar 干脆把会话 id 塞进密钥位，gateway 据此识别这条请求属于哪个 rollout 会话。第三，",h("strong",null,"AgentSpec.env 合并在最上层"),"，因此任务可以按需覆盖或追加变量。"),
+      h("p",null,"这组变量在 ",h("code",null,"_handle_run")," 里通过 ",h("code",null,"_runtime_env(..., include_agent_env=True)")," 取得，再与 harness ",h("code",null,"run_steps")," 返回的每个 ",h("code",null,"ExecInput.env")," 合并后传给 ",h("code",null,"_run_exec_inputs")," 执行。也就是说，harness 在自己的代码里看到的 ",h("code",null,"$OPENAI_BASE_URL")," / ",h("code",null,"$ANTHROPIC_BASE_URL")," 等，在命令真正执行时已经被替换成 gateway 地址。"),
+      h(Formula,{cap:"重定向不变式：harness 发出的每一次推理请求都被导向 gateway，再转给训练中的模型 θ"},"$$ \\text{harness} \\xrightarrow{\\;\\texttt{*\\_BASE\\_URL}\\,=\\,\\text{gateway}\\;} \\text{gateway} \\xrightarrow{\\;\\text{transform}\\;} \\pi_\\theta $$"),
+      h("div",{className:"note"},"运行编排顺序在 ",h("code",null,"GatewayNode._handle_run"),"：先 ",h("code",null,"_resolve_agent_harness")," 调 ",h("code",null,"create_harness"),"，再 ",h("code",null,"harness.setup(runtime)")," 写配置，然后 ",h("code",null,"harness.run_steps(instruction)")," 取命令，注入环境后执行，最后 ",h("code",null,"harness.postprocess")," 收产物。gateway 与 proxy 的内部细节是第 3 课，协议变换是第 4 课。"),
+      h("div",null,h(Src,{label:"_runtime_env",path:"src/polar/gateway/node.py",line:744}),h(Src,{label:"代理变量字典",path:"src/polar/gateway/node.py",line:766}),h(Src,{label:"_handle_run（编排）",path:"src/polar/gateway/node.py",line:305}),h(Src,{label:"run_steps 调用",path:"src/polar/gateway/node.py",line:324}),h(Src,{label:"_resolve_agent_harness",path:"src/polar/gateway/node.py",line:354}))
+    );
+  }
+
+  // ===== 八种 harness 探索器 =====
+  const HARNESS=[
+    {key:"claude_code",name:"claude_code",pill:"anthropic",render:function(){return [
+      h("p",null,"Claude Code CLI 以非交互模式运行。重定向走 Anthropic 协议：gateway 注入的 ",h("code",null,"ANTHROPIC_BASE_URL")," 让 CLI 把请求发到 gateway，而不是 api.anthropic.com。这个 harness 的实现细节最丰富，集中体现了“零改造接入”要处理的各种现实问题。"),
+      h(Code,null,"def run_steps(self, instruction: str) -> list[ExecInput]:\n    escaped = shlex.quote(instruction)\n    flags = [\n        \"--verbose\", \"--output-format=stream-json\",\n        \"--dangerously-skip-permissions\",\n    ]\n    # settings 里的开关映射成 CLI 标志: max_turns, reasoning_effort, ...\n    ...\n    env = {\n        **self.env,\n        \"CLAUDE_CONFIG_DIR\": self._config_dir,\n        \"IS_SANDBOX\": \"1\",                                  # 允许跳过权限\n        \"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC\": \"1\",   # 抑制 telemetry\n    }\n    # 若指定 model_name, 把所有 tier 别名都钉死到同一模型,\n    # 防止 claude-code 把 sub-agent / fallback 请求路由回 api.anthropic.com\n    if self.model_name:\n        for alias in (\"ANTHROPIC_MODEL\", \"ANTHROPIC_DEFAULT_SONNET_MODEL\",\n                      \"ANTHROPIC_DEFAULT_OPUS_MODEL\", ...):\n            env[alias] = self.model_name\n    return [ExecInput(command=f\"claude {flags_str}{model_flag} -p {escaped} \"\n                      f\"2>&1 | tee {RUNTIME_AGENT_LOG_DIR}/claude-code.txt\", env=env)]"),
+      h("p",null,"几个细节解释了“零改造”的代价。其一，",h("code",null,"--output-format=stream-json")," 让 CLI 以流式 JSON 输出，便于后续解析成轨迹。其二，",h("code",null,"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1")," 抑制 CLI 即使在 base URL 被改写后仍会向官方端点发起的 Statsig / 遥测调用。其三，把 ANTHROPIC_MODEL 等所有等级别名都设成同一个模型名，是为了防止 CLI 把 sub-agent 或 fallback 请求按等级路由回官方 API，从而绕过 gateway。",h("code",null,"setup")," 阶段会把 MCP 服务写成 ",h("code",null,".claude.json"),"、把 skills 拷进配置目录。"),
+      h("div",null,h(Src,{label:"ClaudeCodeHarness",path:"src/polar/agent/harnesses/claude_code.py",line:14}),h(Src,{label:"run_steps",path:"src/polar/agent/harnesses/claude_code.py",line:53}),h(Src,{label:"setup（MCP/skills）",path:"src/polar/agent/harnesses/claude_code.py",line:23}),h(Ext,{href:"https://docs.anthropic.com/en/docs/claude-code"},"Claude Code 文档"))
+    ];}},
+    {key:"codex",name:"codex",pill:"openai_responses",render:function(){return [
+      h("p",null,"OpenAI Codex CLI 以非交互模式运行。Codex 不读简单的 ",h("code",null,"OPENAI_BASE_URL")," 全局变量，而是要求定义一个自定义的 model_provider。因此该 harness 用 ",h("code",null,"-c")," 配置项在命令行上现场注册一个名为 harness_proxy 的 provider，其 base_url 取自 ",h("code",null,"$OPENAI_BASE_URL"),"（即 gateway），wire_api 设为 responses（OpenAI Responses 协议）。"),
+      h(Code,null,"flags = [\n    \"--dangerously-bypass-approvals-and-sandbox\",\n    \"--skip-git-repo-check\", \"--json\", \"--enable unified_exec\",\n    \"-c 'model_provider=\\\"harness_proxy\\\"'\",\n    '-c \"model_providers.harness_proxy.base_url=\\\\\\\"$OPENAI_BASE_URL\\\\\\\"\"',\n    \"-c 'model_providers.harness_proxy.env_key=\\\"OPENAI_API_KEY\\\"'\",\n    \"-c 'model_providers.harness_proxy.wire_api=\\\"responses\\\"'\",\n]\n# 第一步先写合成 auth.json 让 codex 拾取 OPENAI_API_KEY (= session_id)\n# 第二步执行 codex exec ... -- <instruction>"),
+      h("p",null,"两步执行：先用 ",h("code",null,"printf")," 把 ",h("code",null,"$OPENAI_API_KEY")," 写进 ",h("code",null,"auth.json"),"，再执行 ",h("code",null,"codex exec"),"。setup 阶段还做了一件特别处理：对宿主上传的工作目录执行 ",h("code",null,"chown"),"，因为宿主 UID 会阻塞 codex 基于 exec_command 的文件编辑。模型名经 ",h("code",null,"_cli_model_name")," 剥掉 ",h("code",null,"openai/")," 等 provider 前缀。"),
+      h("div",null,h(Src,{label:"CodexHarness",path:"src/polar/agent/harnesses/codex.py",line:13}),h(Src,{label:"run_steps（自定义 provider）",path:"src/polar/agent/harnesses/codex.py",line:60}),h(Src,{label:"setup（chown/TOML）",path:"src/polar/agent/harnesses/codex.py",line:23}),h(Src,{label:"_cli_model_name",path:"src/polar/agent/harnesses/codex.py",line:116}),h(Ext,{href:"https://github.com/openai/codex"},"Codex"))
+    ];}},
+    {key:"gemini_cli",name:"gemini_cli",pill:"google",render:function(){return [
+      h("p",null,"Google Gemini CLI 以非交互模式运行。重定向走 Google 协议：在命令里把 ",h("code",null,"GEMINI_API_KEY")," 设为注入的 ",h("code",null,"$GOOGLE_API_KEY"),"（即 session_id），把 ",h("code",null,"GOOGLE_GEMINI_BASE_URL")," 设为 ",h("code",null,"$GOOGLE_API_URL"),"（即 gateway）。这是 Gemini CLI 文档约定的端点重定向变量。"),
+      h(Code,null,"def run_steps(self, instruction: str) -> list[ExecInput]:\n    escaped = shlex.quote(instruction)\n    env = {\"GEMINI_CLI_TRUST_WORKSPACE\": \"true\", **self.env}\n    flags = [\"--approval-mode=yolo\"]          # 非交互, 自动批准\n    if self.model_name:\n        flags.append(f\"--model={shlex.quote(self.model_name)}\")\n    return [ExecInput(command=(\n        'export GEMINI_API_KEY=\"$GOOGLE_API_KEY\" '\n        'GOOGLE_GEMINI_BASE_URL=\"$GOOGLE_API_URL\" && '\n        f\"gemini {flags_str} --prompt={escaped} \"\n        f\"2>&1 </dev/null | tee {RUNTIME_AGENT_LOG_DIR}/gemini-cli.txt\"), env=env)]"),
+      h("p",null,h("code",null,"--approval-mode=yolo")," 是文档化的非交互自动批准模式（取代旧的 ",h("code",null,"--yolo")," 标志），保证 CLI 不会在工具调用处停下来等人确认。sandbox 默认关闭，仅在 settings 显式开启时才加 ",h("code",null,"--sandbox"),"。setup 阶段把 MCP 服务写进 ",h("code",null,"$HOME/.gemini/settings.json"),"。"),
+      h("div",null,h(Src,{label:"GeminiCliHarness",path:"src/polar/agent/harnesses/gemini_cli.py",line:14}),h(Src,{label:"run_steps（端点重定向）",path:"src/polar/agent/harnesses/gemini_cli.py",line:49}),h(Src,{label:"setup（MCP settings.json）",path:"src/polar/agent/harnesses/gemini_cli.py",line:21}),h(Ext,{href:"https://github.com/google-gemini/gemini-cli"},"Gemini CLI"))
+    ];}},
+    {key:"opencode",name:"opencode",pill:"openai_chat",render:function(){return [
+      h("p",null,"OpenCode CLI 以非交互模式运行（",h("code",null,"opencode run"),"），走 OpenAI Chat 协议，因此直接吃 gateway 注入的 ",h("code",null,"OPENAI_BASE_URL")," 与 ",h("code",null,"OPENAI_API_KEY"),"。setup 阶段写一份 ",h("code",null,"opencode.json"),"，里面除了注册 provider 与模型，关键是把所有权限项都设为 allow。"),
+      h(Code,null,"config = {\n    \"provider\": {provider: {\"models\": {model_id: {}}}},\n    # 每一项权限都自动放行：`opencode run` 是非交互的,\n    # 任何 \"ask\" 提示都会让会话永久阻塞\n    \"permission\": {\n        \"read\": \"allow\", \"edit\": \"allow\", \"bash\": \"allow\",\n        \"webfetch\": \"allow\", \"websearch\": \"allow\", ... },\n}"),
+      h("p",null,"这份配置精确说明了“零改造接入非交互 agent”必须解决的一个共性问题：商用 agent 默认会在危险操作处征求用户确认，而 RL rollout 没有人在终端前。因此几乎每个 harness 都用某种“全部放行”开关（claude_code 的 ",h("code",null,"--dangerously-skip-permissions"),"、codex 的 ",h("code",null,"--dangerously-bypass-approvals-and-sandbox"),"、gemini_cli 的 yolo 模式、opencode 的全 allow 权限表）来避免会话卡死。run 阶段以 ",h("code",null,"--format=json")," 输出，模型默认 ",h("code",null,"openai/gpt-5.4"),"。"),
+      h("div",null,h(Src,{label:"OpenCodeHarness",path:"src/polar/agent/harnesses/opencode.py",line:14}),h(Src,{label:"setup（全 allow 权限）",path:"src/polar/agent/harnesses/opencode.py",line:21}),h(Src,{label:"run_steps",path:"src/polar/agent/harnesses/opencode.py",line:76}),h(Ext,{href:"https://github.com/opencode-ai/opencode"},"OpenCode"))
+    ];}},
+    {key:"openhands_sdk",name:"openhands_sdk",pill:"openai_chat",render:function(){return [
+      h("p",null,"OpenHands 不是命令行 CLI 而是一个 Python SDK，因此这个 harness 与众不同：它在 setup 阶段把一段内嵌的 Python 运行脚本写进 ",h("code",null,"/tmp/polar_openhands_sdk_run.py"),"，run 阶段直接用 runtime 里的 Python 解释器跑这个脚本。模型与端点通过环境变量传给脚本，脚本内部构造 LLM、Agent、Conversation 三件套并执行。"),
+      h(Code,null,"# run_steps 把模型/指令/端点塞进 env, 再跑内嵌脚本\nreturn [ExecInput(command=(\n    'export LLM_API_KEY=\"$OPENAI_API_KEY\" LLM_BASE_URL=\"$OPENAI_BASE_URL\" && '\n    'PYTHON_BIN=\"$HOME/.venv/bin/python\"; '\n    '[ -x \"$PYTHON_BIN\" ] || PYTHON_BIN=\"/opt/openhands-sdk-venv/bin/python\"; '\n    '[ -x \"$PYTHON_BIN\" ] || PYTHON_BIN=\"$(command -v python3 || command -v python)\"; '\n    f'\"$PYTHON_BIN\" {self._runner_script} '\n    f\"2>&1 | tee {RUNTIME_AGENT_LOG_DIR}/openhands-sdk.txt\"), env=env)]\n\n# 内嵌脚本核心 (_RUNNER_SCRIPT):\nllm = LLM(model=model, api_key=api_key, base_url=base_url)  # base_url = gateway\ntools = [Tool(name=TerminalTool.name), Tool(name=FileEditorTool.name),\n         Tool(name=TaskTrackerTool.name)]\nagent = Agent(llm=llm, tools=tools, agent_context=AgentContext(skills=...))\nconversation = Conversation(agent=agent, workspace=workspace,\n                            max_iteration_per_run=max_iterations)\nconversation.send_message(instruction); conversation.run()"),
+      h("p",null,"由于是 SDK，端点重定向直接体现在 ",h("code",null,"LLM(base_url=...)")," 上，base_url 取自 ",h("code",null,"$OPENAI_BASE_URL"),"。脚本用三层回退查找 Python 解释器（项目 venv、专用 venv、系统 python），并把 MCP 服务以 JSON 环境变量、skills 以路径环境变量传入，由脚本内的 ",h("code",null,"_load_mcp_config")," / ",h("code",null,"_load_skills")," 解析。这是 README 表中唯一 require_streaming 为 false 的 CLI 风格 harness 之一。"),
+      h("div",null,h(Src,{label:"OpenHandsSdkHarness",path:"src/polar/agent/harnesses/openhands_sdk.py",line:14}),h(Src,{label:"run_steps",path:"src/polar/agent/harnesses/openhands_sdk.py",line:29}),h(Src,{label:"内嵌运行脚本 _RUNNER_SCRIPT",path:"src/polar/agent/harnesses/openhands_sdk.py",line:83}),h(Src,{label:"脚本 main()",path:"src/polar/agent/harnesses/openhands_sdk.py",line:156}),h(Ext,{href:"https://github.com/All-Hands-AI/OpenHands"},"OpenHands"))
+    ];}},
+    {key:"pi",name:"pi",pill:"openai_chat",render:function(){return [
+      h("p",null,"pi coding agent 是重定向机制的反例，也最能说明 Polar 的应变方式。pi 把 provider 的 base URL 写死在它的模型注册表里，没有 ",h("code",null,"OPENAI_BASE_URL")," 这样的环境变量入口。因此该 harness 改为在运行命令里现场生成一份 ",h("code",null,"models.json"),"，把所选 provider 的 baseUrl 覆盖成 gateway，并在其下注册请求的模型。"),
+      h(Code,null,"models_config = {\"providers\": {provider: {\n    \"baseUrl\": \"__POLAR_GATEWAY_BASE_URL__\",   # 占位符\n    \"compat\": compat,\n    \"models\": [{\"id\": model_id, \"api\": api_type, ...}],\n}}}\n# 运行时把占位符 sed 替换成真实的 $OPENAI_BASE_URL, 避免 shell 引号麻烦\nreturn [ExecInput(command=(\n    f\"printf '%s' {shlex.quote(config_json)} \"\n    f'| sed \"s|__POLAR_GATEWAY_BASE_URL__|$OPENAI_BASE_URL|g\" '\n    f\"> {self._AGENT_DIR}/models.json && \"\n    f\"pi --print --mode json --no-session \"\n    f\"--provider {provider} --model {model_id} ... {escaped} ...\"), env=...)]"),
+      h("p",null,"实现里用一个 ",h("code",null,"__POLAR_GATEWAY_BASE_URL__")," 占位符让 JSON 保持静态，再在执行时用 ",h("code",null,"sed")," 替换成真实 base URL，从而绕开 shell 在 JSON 里嵌变量的引号问题。",h("code",null,"model_name")," 必须是 ",h("code",null,"provider/model")," 形式，首个 ",h("code",null,"/")," 之后全是模型 id。这个反例印证了前面的判断：重定向不一定靠环境变量，写入 harness 自己的配置文件同样能达到目的。"),
+      h("div",null,h(Src,{label:"PiHarness",path:"src/polar/agent/harnesses/pi.py",line:14}),h(Src,{label:"run_steps（models.json 覆盖）",path:"src/polar/agent/harnesses/pi.py",line:38}),h(Src,{label:"占位符 sed 替换",path:"src/polar/agent/harnesses/pi.py",line:90}),h(Ext,{href:"https://github.com/mariozechner/pi-coding-agent"},"pi-coding-agent"))
+    ];}},
+    {key:"qwen_code",name:"qwen_code",pill:"openai_chat",render:function(){return [
+      h("p",null,"Qwen Code CLI 以非交互模式运行，走 OpenAI Chat 协议，直接复用 gateway 注入的 ",h("code",null,"OPENAI_BASE_URL")," 与 ",h("code",null,"OPENAI_API_KEY"),"。它是八个 harness 里最薄的命令行实现之一：run_steps 只拼一行 ",h("code",null,"qwen --yolo --prompt=..."),"。"),
+      h(Code,null,"def run_steps(self, instruction: str) -> list[ExecInput]:\n    escaped = shlex.quote(instruction)\n    env = {**self.env}\n    # qwen-code 从 OPENAI_MODEL 读模型; 同时给 env 和 --model 会在代理后端\n    # 上冲突, 所以只用 env 变量形式\n    if self.model_name:\n        env[\"OPENAI_MODEL\"] = self.model_name\n    return [ExecInput(command=(\n        f\"qwen --yolo --prompt={escaped} \"\n        f\"2>&1 | tee {RUNTIME_AGENT_LOG_DIR}/qwen-code.txt\"), env=env)]"),
+      h("p",null,"一个值得记住的工程细节：注释说明模型名只用 ",h("code",null,"OPENAI_MODEL")," 环境变量传，不再加 ",h("code",null,"--model")," CLI 标志，因为在代理后端上同时给两者会冲突。setup 阶段把 MCP 服务写进 ",h("code",null,"$HOME/.qwen/settings.json"),"，skills 拷进对应目录。"),
+      h("div",null,h(Src,{label:"QwenCodeHarness",path:"src/polar/agent/harnesses/qwen_code.py",line:14}),h(Src,{label:"run_steps",path:"src/polar/agent/harnesses/qwen_code.py",line:49}),h(Src,{label:"setup",path:"src/polar/agent/harnesses/qwen_code.py",line:21}),h(Ext,{href:"https://github.com/QwenLM/qwen-code"},"Qwen Code"))
+    ];}},
+    {key:"shell",name:"shell",pill:"逃逸口",render:function(){return [
+      h("p",null,h("code",null,"shell")," harness 是一等的逃逸口：当一个 agent 无法套进上述任何模式时，可以把它直接写成一条 shell 命令。该 harness 只是把 ",h("code",null,"AgentSpec.custom_shell")," 里的单个 ",h("code",null,"ExecInput")," 原样返回，不做任何配置写入。"),
+      h(Code,null,"class ShellHarness(BaseHarness):\n    def __init__(self, agent_spec: AgentSpec) -> None:\n        super().__init__(agent_spec)\n        if agent_spec.custom_shell is None:\n            raise ValueError(\"ShellHarness requires custom_shell in AgentSpec\")\n        self._shell = agent_spec.custom_shell\n\n    def run_steps(self, instruction: str) -> list[ExecInput]:\n        return [self._shell]"),
+      h("p",null,"它依然受益于同一套重定向机制：",h("code",null,"custom_shell")," 里的命令在执行时同样能看到 gateway 注入的 ",h("code",null,"OPENAI_BASE_URL")," 等变量。模型层的校验器（见 AgentSpec）保证 ",h("code",null,"custom_shell")," 只在 ",h("code",null,"harness == 'shell'")," 时出现，且不能与 mcp_servers / skills_path 同用。这是为自定义包装 agent 准备的最小接入路径：把你自己的 agent 启动命令塞进 ",h("code",null,"custom_shell")," 即可。"),
+      h("div",null,h(Src,{label:"ShellHarness",path:"src/polar/agent/harnesses/shell.py",line:10}),h(Src,{label:"run_steps",path:"src/polar/agent/harnesses/shell.py",line:19}),h(Src,{label:"custom_shell 校验",path:"src/polar/agent/models.py",line:51}))
+    ];}}
+  ];
+  function HarnessExplorer(){const [s,setS]=useState(0);const d=HARNESS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},HARNESS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},h("span",null,x.name),h("span",{className:"pill"+(i===s?"":" "),style:{marginLeft:"6px",opacity:.85}},x.pill));})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 八种 harness 对照表 =====
+  const TABLE=[
+    {n:"claude_code",api:"anthropic",stream:"true",redir:"ANTHROPIC_BASE_URL 环境变量",file:["src/polar/agent/harnesses/claude_code.py",14]},
+    {n:"codex",api:"openai_responses",stream:"true",redir:"-c 自定义 model_provider，base_url=$OPENAI_BASE_URL",file:["src/polar/agent/harnesses/codex.py",13]},
+    {n:"gemini_cli",api:"google",stream:"true",redir:"GOOGLE_GEMINI_BASE_URL=$GOOGLE_API_URL",file:["src/polar/agent/harnesses/gemini_cli.py",14]},
+    {n:"opencode",api:"openai_chat",stream:"true",redir:"OPENAI_BASE_URL 环境变量 + opencode.json",file:["src/polar/agent/harnesses/opencode.py",14]},
+    {n:"openhands_sdk",api:"openai_chat",stream:"false",redir:"LLM(base_url=$OPENAI_BASE_URL)（SDK 内嵌脚本）",file:["src/polar/agent/harnesses/openhands_sdk.py",14]},
+    {n:"pi",api:"openai_chat",stream:"false",redir:"models.json 覆盖 provider.baseUrl（写死无环境变量入口）",file:["src/polar/agent/harnesses/pi.py",14]},
+    {n:"qwen_code",api:"openai_chat",stream:"true",redir:"OPENAI_BASE_URL 环境变量 + OPENAI_MODEL",file:["src/polar/agent/harnesses/qwen_code.py",14]},
+    {n:"shell",api:"由 custom_shell 决定",stream:"由 custom_shell 决定",redir:"沿用 gateway 注入的环境变量",file:["src/polar/agent/harnesses/shell.py",10]}
+  ];
+  function TableSection(){
+    return h("div",null,
+      h("p",null,"八个内置 harness 的对照。",h("code",null,"API type")," 决定 gateway 用哪条变换路径把请求转给训练后端（第 4 课），",h("code",null,"require_streaming")," 描述请求风格，",h("code",null,"重定向方式")," 是各 harness 把推理流量导向 gateway 的具体手段。版本号见 ",h("code",null,"agent/README.md")," 表（如 claude-code 2.1.116、codex 0.122.0、gemini-cli 0.38.1）。"),
+      h("div",{className:"linkgrid"},TABLE.map(function(r,i){return h("div",{className:"linkcard",key:i},
+        h("div",{className:"lt"},h("code",null,r.n),h("span",{className:"pill teal",style:{marginLeft:"8px"}},r.api)),
+        h("div",{className:"ld"},h("span",{className:"pill"+(r.stream==="true"?" green":" amber")},"stream "+r.stream)),
+        h("div",{className:"ld",style:{marginTop:"6px",color:"var(--muted)"}},"重定向：",r.redir),
+        h("div",null,h(Src,{path:r.file[0],line:r.file[1]})));}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"Claude Code 文档",d:"非交互模式、stream-json、权限与环境变量",href:"https://docs.anthropic.com/en/docs/claude-code"},
+    {t:"OpenHands",d:"SDK 形态的 agent，base_url 直接传给 LLM",href:"https://github.com/All-Hands-AI/OpenHands"},
+    {t:"Gemini CLI",d:"GOOGLE_GEMINI_BASE_URL 端点重定向、yolo 模式",href:"https://github.com/google-gemini/gemini-cli"},
+    {t:"OpenAI Codex",d:"自定义 model_provider、responses wire_api",href:"https://github.com/openai/codex"},
+    {t:"OpenCode",d:"opencode run 非交互、权限表全 allow",href:"https://github.com/opencode-ai/opencode"},
+    {t:"Qwen Code",d:"OPENAI_MODEL 读模型、OpenAI 兼容协议",href:"https://github.com/QwenLM/qwen-code"},
+    {t:"pi coding agent",d:"base URL 写死在模型注册表，需 models.json 覆盖",href:"https://github.com/mariozechner/pi-coding-agent"},
+    {t:"agent/README.md（本机）",d:"内置 harness 清单、API type、版本号表",href:srcUrl("src/polar/agent/README.md",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:2}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 2 课 / 共 8 · Agent 与 Harness 层"),
+          h("h1",null,"Agent 与 Harness 层"),
+          h("p",{className:"lead"},"这是与用户需求最直接对应的一层：Polar 如何把成熟的商用 agent harness 直接当作 RL 环境。本课先讲统一的 BaseHarness 契约与 AgentSpec / factory 三件套，再讲那个让“零改造接入”成立的中心机制（gateway 注入代理环境变量重定向推理端点），最后逐一拆解八种真实 harness 各自如何被启动、其推理请求如何被重定向到训练中的模型。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"src/polar/agent/")," 的 base.py / models.py / factory.py，",h("code",null,"harnesses/")," 下的八个实现（claude_code、codex、gemini_cli、opencode、openhands_sdk、pi、qwen_code、shell），以及 ",h("code",null,"gateway/node.py")," 中负责重定向的 ",h("code",null,"_runtime_env"),"。绿色 ",h("span",{className:"hl-green"},"↗")," 为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 用 vscode 打开本机 ",h("code",null,"ProRL-Agent-Server")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"设计动机"),
+          h("h2",null,"把商用 agent 直接当 RL 环境"),
+          h(MotivationSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"agent/base · models · factory"),
+          h("h2",null,"统一抽象：契约、配置、实例化"),
+          h("p",null,"Polar 用三个文件描述“一个 agent harness 是什么、怎么配、怎么造出来”。点 Tab 依次看：BaseHarness 的四步契约、AgentSpec 的配置字段、factory 的实例化逻辑。"),
+          h(AbstrExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"gateway/node · _runtime_env"),
+          h("h2",null,"重定向机制：让零改造接入成立"),
+          h(RedirectSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"agent/harnesses · 八种实现"),
+          h("h2",null,"八种真实 harness：各自如何被启动与重定向"),
+          h("p",null,"每个 harness 的工作只有两件：在 setup 阶段写好它自己理解的配置（MCP、skills、provider），在 run_steps 阶段拼出非交互启动命令，并让推理端点指向 gateway。点 Tab 逐一查看每种 harness 的实现与重定向手段。"),
+          h(HarnessExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"对照表"),
+          h("h2",null,"八种 harness 一览"),
+          h(TableSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"读 harness 实现时配合各 agent 的官方文档，能确认每个 CLI 标志与环境变量的真实语义。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"harness 是命令生成器，不是执行器"),"：",h("code",null,"BaseHarness")," 只把 ",h("code",null,"AgentSpec")," 翻译成一串 ",h("code",null,"ExecInput"),"，真正执行命令、注入环境、收集产物的是 gateway 节点。这条边界让 harness 保持纯粹、可测、可替换。"),
+            h("li",null,h("strong",null,"一个统一契约，八种内置实现，外加 import_path 与 shell 两条逃逸口"),"：",h("code",null,"factory")," 的内置映射表就是原生支持清单；自带 agent 走 ",h("code",null,"import_path"),"，无法套模式的走 ",h("code",null,"shell")," 的 ",h("code",null,"custom_shell"),"。"),
+            h("li",null,h("strong",null,"重定向是零改造接入的关键"),"：gateway 在 ",h("code",null,"_runtime_env")," 里把 ",h("code",null,"ANTHROPIC_BASE_URL")," / ",h("code",null,"OPENAI_BASE_URL"),"/",h("code",null,"GOOGLE_API_URL")," 都指向自身，把 session_id 复用为 API key。harness 在不知情的前提下，把每次推理请求发给了训练中的模型。"),
+            h("li",null,h("strong",null,"现实问题集中在两处"),"：非交互模式必须用各种“全部放行”开关避免会话等待人工确认；端点重定向不一定靠环境变量（pi 需改写 models.json，codex 需自定义 provider），Polar 按每个 harness 的约定各自处理。"),
+            h("li",null,h("strong",null,"这正是“在成熟商业方案上搭 RL infra”的范式"),"：把 Claude Code、Codex、OpenHands 等成熟 agent 原封不动地当作 RL 环境，它们跑出的完整轨迹就是 rollout 的数据来源。轨迹如何被捕获与评估见第 7 课。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"polar-lesson-01-foundations.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 1 课：地基与全局观")),
+            h("a",{href:"polar-lesson-03-gateway.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 3 课：Gateway 节点与 proxy"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

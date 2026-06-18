@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Polar 逐文件精读 · 第 1 课：地基与全局观</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 1 课</p><h1>地基与全局观</h1><p>能访问 CDN 时切换为交互版。本课讲清 Polar 的三条设计主张（Harness as Environment、Smart Rollout Pipeline、Rollout as a Service），从 Rollout Server 到分布式 Gateway Node 的架构总览，cli.py 入口与 config/topology 拓扑配置，以及 Polar 作为 NVIDIA-NeMo 出品、trainer-agnostic 且自带 slime bridge 的定位。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const POLAR="vscode://file/Users/xinyu/Code/Agentic-RL/ProRL-Agent-Server/";
+  function srcUrl(p,l){return POLAR+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","Sample","Args","RolloutController","RolloutManager","RayTrainGroup","RayActor","SglangEngine","Box","ray","asyncio","Timer","ParamInfo","RolloutBatch","GatewayNode","GatewayNodeManager","RolloutPipeline","Pipeline","Runtime","BaseRuntime","RuntimeSpec","Harness","BaseHarness","Trajectory","SessionDispatcher","SessionStage","ManagedSession","SGLangClient","TopologyConfig","GatewayNodeConfig","AgentSpec","ExecInput","SessionResult","SessionContext"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基","polar-lesson-01-foundations.html"],[2,"Agent与Harness","polar-lesson-02-agent-harness.html"],[3,"Gateway","polar-lesson-03-gateway.html"],[4,"协议变换","polar-lesson-04-transform.html"],[5,"Runtime池化","polar-lesson-05-runtime.html"],[6,"Rollout服务","polar-lesson-06-rollout-server.html"],[7,"轨迹与评估","polar-lesson-07-trajectory.html"],[8,"slime集成","polar-lesson-08-slime-bridge.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"polar-course-index.html"},"Polar",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 三条设计主张 =====
+  function PhilosophySection(){
+    return h("div",null,
+      h("p",null,"读 Polar 之前，先把它要解决的问题讲清。强化学习训练大模型 agent 时，rollout（采样真实轨迹）这一侧的工程成本远超训练侧：一条轨迹往往不是一次推理，而是 agent 在某个执行环境里反复调用模型、执行命令、读写文件、调用工具，最后才得到可计算奖励的结果。Polar 是 ",h("strong",{className:"hl-teal"},"NVIDIA-NeMo")," 出品的 RL rollout 框架（全称 ProRL-Agent-Server），目标是把任意现成的 ",h("strong",null,"agent harness")," 当作 RL 可用的环境接入，并以服务方式对接任意训练框架。它在 README 顶部用三句话概括了全部设计意图。"),
+      h("div",{className:"split"},
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill teal"},"主张一"),"Harness as Environment"),
+          h("p",null,"把你的 agent harness 当作 RL 可用的环境直接接入，无需改动其代码。Polar 不要求 harness 暴露训练接口，而是用一个抽象基类把 harness 配置翻译成在隔离 runtime 中执行的命令序列，由 Polar 负责采样轨迹与计算奖励。")
+        ),
+        h("div",{className:"card"},
+          h("div",{className:"card-title"},h("span",{className:"pill amber"},"主张二"),"Smart Rollout Pipeline"),
+          h("p",null,"用并行的 Rollout Staging 与 Runtime Pooling 节省 GPU 小时。一条轨迹的准备（拉起 runtime）、执行（跑 agent）、收尾（评估）被拆成独立的阶段，各阶段有独立的工作线程池，使得推理服务的 GPU 不必干等环境准备。")
+        )
+      ),
+      h("div",{className:"card",style:{marginTop:"16px"}},
+        h("div",{className:"card-title"},h("span",{className:"pill purple"},"主张三"),"Rollout as a Service"),
+        h("p",null,"以服务方式设计（server mode by design）：Polar 暴露一套 HTTP 接口，训练框架以客户端身份提交任务、轮询结果。因此 Polar 与具体训练器无关（trainer-agnostic），异步 RL 可以接到任意训练框架上，而不必把训练器的内核派生（fork）进来。仓库已经带了一个面向 ",h(Ext,{href:"https://github.com/THUDM/slime"},"slime")," 的 bridge 作为示例集成。")
+      ),
+      h("h3",null,"这三条主张如何对应真实需求"),
+      h("ul",null,
+        h("li",null,h("strong",null,"从静态环境到动态环境（static → dynamic env）"),"：传统 RL 数据集是静态的 prompt-answer 对；agent 任务的环境是动态的，每一步动作改变环境状态。Harness as Environment 把一个完整 harness（含其文件系统、工具、多轮交互）封装为可重复采样的动态环境，而不要求把它改写成静态数据。"),
+        h("li",null,h("strong",null,"异步效率"),"：rollout 的瓶颈在于环境准备与执行的等待，而非 GPU 算力本身。Smart Rollout Pipeline 用阶段隔离的工作线程池把准备、执行、评估重叠起来，使推理 GPU 的利用率提高，从而节省 GPU 小时。"),
+        h("li",null,h("strong",null,"在商业 Env 上搭基础设施"),"：当环境是一个无法改动的第三方 harness（例如 SWE-bench 官方评测 harness、各类商业 agent）时，Rollout as a Service 的服务边界让 Polar 只通过 HTTP 与命令执行与之交互，因此能在不侵入 harness 的前提下为其补齐 RL 训练所需的采样、轨迹构建与评估设施。")
+      ),
+      h("div",{className:"note"},"本课只建立全局观、读地基文件与拓扑配置。Agent 与 Harness 层见第 2 课、Gateway 见第 3 课、协议变换见第 4 课、Runtime 池化见第 5 课、Rollout 服务见第 6 课、轨迹与评估见第 7 课、slime 集成见第 8 课。"),
+      h("div",null,h(Src,{label:"README.md（三条主张）",path:"README.md"}),h(Src,{label:"polar/__init__.py",path:"src/polar/__init__.py",line:5}),h(Ext,{href:"https://arxiv.org/pdf/2605.24220"},"Polar Tech Report"),h(Ext,{href:"https://github.com/THUDM/slime"},"slime"))
+    );
+  }
+
+  // ===== 架构总览：从 Rollout Server 到 Gateway Node =====
+  function ArchSection(){
+    return h("div",null,
+      h("p",null,"README 的架构图配文给出了一句精确的总述：Rollout Server 接收并分发客户端请求到分布式的 Gateway Node，后者异步地准备 runtime、执行 agent、构建轨迹并评估；agent harness 由一个 proxy 监听，这个 proxy 坐在与具体 agent 无关的执行进程和推理服务之间。把这句话拆成三个角色，就是理解全仓库的骨架。"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"角色一 · Rollout Server（中央编排）"),
+          h("p",null,"单一的中央服务，默认监听 8080 端口。它对外暴露任务提交接口 ",h("code",null,"POST /rollout/task/submit")," 与状态轮询接口 ",h("code",null,"GET /rollout/task/{task_id}"),"，对内维护 Gateway Node 的注册表（",h("code",null,"/nodes/register"),"）。训练框架作为客户端只与它通信，这正是 Rollout as a Service 的入口。"),
+          h("div",null,h(Src,{label:"serve（rollout）",path:"src/polar/rollout/server.py",line:223}),h(Src,{label:"task/submit",path:"src/polar/rollout/server.py",line:109}),h(Src,{label:"nodes/register",path:"src/polar/rollout/server.py",line:136}))
+        ),
+        h("div",null,
+          h("h4",null,"角色二 · Gateway Node（分布式执行）"),
+          h("p",null,"每个 Gateway Node 是一个独立服务（默认 8100+ 端口），由 ",h("code",null,"serve_gateway")," 拉起，启动后向 Rollout Server 注册并定期发心跳。它接收 Rollout Server 分发来的会话（session），在本节点把一条 rollout 轨迹从准备走到评估。核心实现是 ",h("code",null,"GatewayNodeManager"),"。"),
+          h("div",null,h(Src,{label:"serve_gateway",path:"src/polar/gateway/server.py",line:812}),h(Src,{label:"GatewayNodeManager",path:"src/polar/gateway/node.py",line:47}),h(Src,{label:"dispatch",path:"src/polar/gateway/node.py",line:152}))
+        )
+      ),
+      h("h4",null,"角色三 · Proxy（坐在执行进程与推理服务之间）"),
+      h("p",null,"Gateway Node 内部运行一个 FastAPI proxy。agent harness 在 runtime 里以普通进程运行，它对模型的调用是发往一个 OpenAI 兼容地址的 HTTP 请求；proxy 拦截这些请求（",h("code",null,"POST /{path:path}"),"），识别 API 类型，按会话补充必要信息后转发给真正的推理服务 SGLang，再把响应转回。因此 harness 完全不知道自己在被训练，它只是在和一个看起来普通的推理端点对话。这正是 Harness as Environment 得以免改造的关键机制。"),
+      h("p",null,"proxy 与 SGLang 之间通过 ",h("code",null,"SGLangClient")," 通信。注意它的超时设计：每次调用的真实时限来自会话的剩余预算（在 Gateway Node 用 ",h("code",null,"_await_with_budget")," 施加），而 httpx 内部超时只是一个很高的存活上限，防止卡住的 SGLang 把请求拖过会话截止时间。"),
+      h(Code,null,"# Gateway proxy: 拦截 harness 发出的推理请求并转发给 SGLang\n@app.api_route(\"/{path:path}\", methods=[\"POST\"])\nasync def proxy_request(request: Request, path: str):\n    state = get_state()\n    body = await request.json()\n    headers = {k: v for k, v in request.headers.items()}\n    full_path = request.url.path\n    api_type = detect(full_path, headers, body)          # OpenAI / Anthropic / Google ...\n    session_id = _resolve_session_id(headers, body, ...) # 把请求归属到某个会话\n    transformer = state.transform_manager.get(api_type)  # 选择协议变换器 (第 4 课)\n    # ... 变换后转发给 SGLang, 再把响应转回 ..."),
+      h("div",null,h(Src,{label:"proxy_request 路由",path:"src/polar/gateway/server.py",line:608}),h(Src,{label:"detect/transform 入口",path:"src/polar/gateway/server.py",line:632}),h(Src,{label:"SGLangClient",path:"src/polar/gateway/proxy.py",line:51}),h(Src,{label:"completion",path:"src/polar/gateway/proxy.py",line:105}))
+    );
+  }
+
+  // ===== Smart Rollout Pipeline：阶段隔离与 runtime 池化 =====
+  function PipelineSection(){
+    return h("div",null,
+      h("p",null,"第二条主张的实现分两层。第一层在 Rollout Server 内：",h("code",null,"Pipeline")," 把一个任务的若干会话并发地分发到各 Gateway Node 并收集结果（",h("code",null,"run_batch")," 用 ",h("code",null,"asyncio.gather")," 一次性发起全部会话）。第二层在每个 Gateway Node 内：",h("code",null,"SessionDispatcher")," 把单条会话的生命周期拆成四个阶段，每个阶段配独立的工作线程池。"),
+      h(Code,null,"# dispatcher.py 的模块说明 (逐字摘自源码 docstring)\n\"\"\"Stage-isolated session dispatcher for gateway execution.\n\nDrives four stages -- INIT, READY, RUNNING, POSTRUN -- each with an isolated\nworker pool. Queued vs. executing within a stage is the `inflight` bool on\n`ManagedSession`, so the stage enum stays small.\n\"\"\"\n\nclass SessionStage(str, Enum):\n    INIT = \"INIT\"        # 准备 runtime (Rollout Staging)\n    READY = \"READY\"      # runtime 就绪, 等一个运行槽位\n    RUNNING = \"RUNNING\"  # 执行 agent\n    POSTRUN = \"POSTRUN\"  # 构建轨迹、评估、收尾"),
+      h("p",null,"四个阶段对应 README 那句话里的动作链：INIT 阶段 ",h("strong",null,"准备 runtime"),"（这就是 Rollout Staging），READY 阶段等待运行槽位（",h("code",null,"max_run_workers")," 个并发名额由信号量控制），RUNNING 阶段 ",h("strong",null,"执行 agent"),"，POSTRUN 阶段 ",h("strong",null,"构建轨迹并评估"),"。把准备与执行拆开的意义在于：当一条会话正在 RUNNING 占用推理 GPU 时，另一条会话可以同时在 INIT 阶段准备它的 runtime，二者不互相阻塞。这就是省 GPU 小时的来源。"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"Rollout Staging（INIT 阶段）"),
+          h("p",null,"每个节点的 INIT、RUN、POSTRUN 三个池子的工作线程数在拓扑里可单独配置（",h("code",null,"max_init_workers")," 等）。",h("code",null,"SessionDispatcher")," 构造时若任一计数小于 1 即报错，保证每个阶段至少一个工作线程。准备工作（创建 runtime、上传文件、执行准备命令）放在 INIT，使执行侧不被准备拖慢。"),
+          h("div",null,h(Src,{label:"SessionDispatcher",path:"src/polar/gateway/dispatcher.py",line:83}),h(Src,{label:"SessionStage",path:"src/polar/gateway/dispatcher.py",line:31}),h(Src,{label:"_handle_init",path:"src/polar/gateway/node.py",line:225}))
+        ),
+        h("div",null,
+          h("h4",null,"Runtime Pooling（评估 runtime 预热）"),
+          h("p",null,"评估往往需要一个与执行环境隔离的干净 runtime。Polar 在会话进入运行阶段时就用一个后台任务 ",h("code",null,"_start_eval_prewarm")," 提前预热好评估用的 runtime，到 POSTRUN 评估时再 ",h("code",null,"_acquire_prepared_eval_runtime")," 取用，避免评估阶段临时拉起 runtime 的等待。这种把昂贵的 runtime 准备提前、并复用就绪资源的做法，即 Runtime Pooling 的体现。"),
+          h("div",null,h(Src,{label:"_start_eval_prewarm",path:"src/polar/gateway/node.py",line:408}),h(Src,{label:"_acquire_prepared_eval_runtime",path:"src/polar/gateway/node.py",line:462}))
+        )
+      ),
+      h(Formula,{cap:"阶段隔离下单节点的活跃会话数：各阶段队列与在途之和"},"$$ \\text{active} = q_{\\text{init}} + n_{\\text{init}} + n_{\\text{ready}} + n_{\\text{run}} + q_{\\text{post}} + n_{\\text{post}} $$"),
+      h("p",null,"上式即 ",h("code",null,"DispatcherSnapshot.active_count")," 的定义：它把六个计数（INIT 队列与在途、READY 深度、RUNNING 在途、POSTRUN 队列与在途）相加，作为节点负载的度量，",h("code",null,"polar status")," 命令的 Live Load 区段就读这些数。当 RUNNING 在途数达到 ",h("code",null,"max_run_workers")," 时，新会话会停在 INIT/READY 排队，因此推理 GPU 始终有活干而不空转。"),
+      h("div",null,h(Src,{label:"Pipeline",path:"src/polar/rollout/pipeline.py",line:33}),h(Src,{label:"run_batch",path:"src/polar/rollout/pipeline.py",line:84}),h(Src,{label:"DispatcherSnapshot",path:"src/polar/gateway/dispatcher.py",line:39}),h(Src,{label:"active_count",path:"src/polar/gateway/dispatcher.py",line:48}))
+    );
+  }
+
+  // ===== cli.py 入口骨架 =====
+  const CLI=[
+    {key:"overview",name:"五个子命令",render:function(){return [
+      h("p",null,"Polar 的全部操作通过一个命令行入口 ",h("code",null,"polar")," 完成，共五个子命令，每个都接同一份 ",h("code",null,"topology.yaml"),"。前两个是长期运行的服务进程，后三个是与运行中拓扑交互的客户端命令。这组命令直接映射到上一节的三个角色。"),
+      h(Code,null,"polar serve_rollout   -c topology.yaml                   # 中央编排器 (8080)\npolar serve_gateway   -c topology.yaml --node-id <node>  # 每个网关节点一个 (8100+)\npolar dashboard       -c topology.yaml [--port 8090]     # 观测与监控面板\npolar submit          <task.json|yaml> -c topology.yaml  # 提交任务并跟踪\npolar status          -c topology.yaml                   # 一次性健康/拓扑检查"),
+      h("p",null,"入口实现极薄：",h("code",null,"build_parser")," 用 ",h("code",null,"argparse")," 注册子命令，",h("code",null,"main")," 按 ",h("code",null,"args.command")," 分派。",h("code",null,"serve_rollout")," 与 ",h("code",null,"serve_gateway")," 直接调用各自模块里的 ",h("code",null,"serve")," 函数把服务跑起来；其余命令走 HTTP 客户端。"),
+      h("div",null,h(Src,{label:"cli.py · build_parser",path:"src/polar/cli.py",line:23}),h(Src,{label:"main",path:"src/polar/cli.py",line:110}),h(Src,{label:"导入 serve",path:"src/polar/cli.py",line:17}))
+    ];}},
+    {key:"serve",name:"两个 serve 入口",render:function(){return [
+      h("p",null,"两个服务命令的实现高度对称：都先 ",h("code",null,"configure_server")," 读拓扑并装配全局状态，再读回状态里的 host/port，最后用 ",h("code",null,"uvicorn.run")," 启动同一个 FastAPI ",h("code",null,"app"),"。差别只在 Gateway 需要 ",h("code",null,"node_id")," 来从拓扑里选出本进程对应的那个节点。"),
+      h(Code,null,"# rollout/server.py\ndef serve(topology_path=\"topology.yaml\", *, log_level=\"info\"):\n    import uvicorn\n    configure_server(topology_path)\n    state = get_state()\n    uvicorn.run(app, host=state.rollout.host, port=state.rollout.port, log_level=log_level)\n\n# gateway/server.py\ndef serve(topology_path=\"topology.yaml\", *, node_id=None, log_level=\"info\"):\n    import uvicorn\n    configure_server(topology_path, node_id=node_id)\n    state = get_state()\n    uvicorn.run(app, host=state.node.host, port=state.node.port, log_level=log_level)"),
+      h("p",null,"两个服务都支持环境变量回退：",h("code",null,"POLAR_TOPOLOGY")," 指定拓扑文件，Gateway 还认 ",h("code",null,"POLAR_GATEWAY_NODE_ID"),"。这让同一份镜像在不同容器里只靠环境变量就能扮演不同角色。"),
+      h("div",null,h(Src,{label:"serve（rollout）",path:"src/polar/rollout/server.py",line:223}),h(Src,{label:"serve（gateway）",path:"src/polar/gateway/server.py",line:812}),h(Src,{label:"create_session 路由",path:"src/polar/gateway/server.py",line:523}))
+    ];}},
+    {key:"client",name:"submit 与 status",render:function(){return [
+      h("p",null,h("code",null,"submit")," 把任务文件 POST 到 ",h("code",null,"/rollout/task/submit")," 拿到 ",h("code",null,"task_id"),"，随后按 ",h("code",null,"--poll-interval")," 轮询 ",h("code",null,"/rollout/task/{task_id}"),"，直到状态变为 ",h("code",null,"completed")," 或 ",h("code",null,"failed"),"。这正是 Rollout as a Service 在客户端一侧的形态：提交，然后轮询，不需要把训练器与 rollout 进程耦合在一个地址空间里。"),
+      h(Code,null,"# cli.py: _handle_submit (精简)\nwith httpx.Client(base_url=rollout_url, timeout=timeout) as client:\n    submit_resp = client.post(\"/rollout/task/submit\", json=payload)\n    task_id = submit_resp.json()[\"task_id\"]\n    while True:\n        time.sleep(poll_interval)\n        result = client.get(f\"/rollout/task/{task_id}\").json()\n        if str(result.get(\"status\")) in (\"completed\", \"failed\"):\n            break"),
+      h("p",null,h("code",null,"status")," 则一次性拉取 Rollout Server 的 ",h("code",null,"/health")," 与 ",h("code",null,"/rollout/status"),"，并逐个探测各 Gateway Node 的健康状况，渲染成拓扑树与 Live Load 表（前面提到的六个阶段计数就在这里显示）。两个命令都通过 ",h("code",null,"_resolve_rollout_url")," 从拓扑或 ",h("code",null,"--rollout-url")," 推断服务地址。"),
+      h("div",null,h(Src,{label:"_handle_submit",path:"src/polar/cli.py",line:151}),h(Src,{label:"_handle_status",path:"src/polar/cli.py",line:191}),h(Src,{label:"_resolve_rollout_url",path:"src/polar/cli.py",line:337}),h(Src,{label:"_build_live_load_lines",path:"src/polar/cli.py",line:268}))
+    ];}}
+  ];
+  function CliExplorer(){const [s,setS]=useState(0);const d=CLI[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},CLI.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== topology.py 拓扑配置 =====
+  function TopologySection(){
+    return h("div",null,
+      h("p",null,"整套系统的部署形态由一个 ",h("code",null,"topology.yaml")," 描述，",h("code",null,"config/topology.py")," 负责加载与校验它。这个文件是 Pydantic 模型，刻意采用严格模式：基类 ",h("code",null,"_StrictModel")," 设置 ",h("code",null,"extra=\"forbid\", frozen=True"),"，因此任何被删除的旧配置项一旦残留就会显式报错，且配置对象不可变。这种以正确性为先的取向，与 RL 系统中静默 bug 代价高昂的特点相符。"),
+      h(Code,null,"class _StrictModel(BaseModel):\n    \"\"\"Pydantic base that rejects unknown keys so removed knobs fail loudly.\"\"\"\n    model_config = ConfigDict(extra=\"forbid\", frozen=True)\n\nclass TopologyConfig(_StrictModel):\n    rollout: RolloutServiceConfig = Field(default_factory=RolloutServiceConfig)\n    gateway: GatewayConfig\n    path: Path | None = None"),
+      h("p",null,"顶层 ",h("code",null,"TopologyConfig")," 只有两个实质字段：",h("code",null,"rollout")," 描述中央服务（host/port/public_url/save_dir 等），",h("code",null,"gateway")," 描述网关集群。",h("code",null,"GatewayConfig.nodes")," 是一个长度至少为 1 的 ",h("code",null,"GatewayNodeConfig")," 元组，每个节点带自己的端口、对外 URL、所连 SGLang 的 ",h("code",null,"base_url"),"，以及三个阶段池的工作线程上限。",h("code",null,"load")," 类方法在解析后还会把未设置的 ",h("code",null,"gateway.rollout_server_url")," 默认填为 ",h("code",null,"rollout.public_url"),"，使网关知道回调地址。"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"节点配置 GatewayNodeConfig"),
+          h("p",null,"每个网关节点的 ",h("code",null,"max_init_workers / max_run_workers / max_postrun_workers")," 正是上一节阶段隔离池的容量。它还有一个可选的 ",h("code",null,"default_runtime: RuntimeSpec"),"，把 Runtime 层（第 5 课）的规格直接嵌进拓扑。",h("code",null,"public_url")," 若留空会按 host/port 自动推导（",h("code",null,"0.0.0.0")," 推为 ",h("code",null,"127.0.0.1"),"）。"),
+          h("div",null,h(Src,{label:"GatewayNodeConfig",path:"src/polar/config/topology.py",line:31}),h(Src,{label:"GatewayConfig",path:"src/polar/config/topology.py",line:81}),h(Src,{label:"sglang_base_url",path:"src/polar/config/topology.py",line:71}))
+        ),
+        h("div",null,
+          h("h4",null,"加载与派生"),
+          h("p",null,h("code",null,"load")," 读 YAML、校验、回填默认回调地址；",h("code",null,"bootstrap_nodes")," 把节点信息整理成 Rollout Server 启动时的注册种子；",h("code",null,"select_gateway_node")," 在多节点拓扑中要求显式 ",h("code",null,"--node-id"),"。URL 一律经 ",h("code",null,"_normalize_http_url")," 校验协议与去尾斜杠。"),
+          h("div",null,h(Src,{label:"TopologyConfig.load",path:"src/polar/config/topology.py",line:153}),h(Src,{label:"bootstrap_nodes",path:"src/polar/config/topology.py",line:180}),h(Src,{label:"select_gateway_node",path:"src/polar/config/topology.py",line:193}))
+        )
+      ),
+      h("div",{className:"note"},"一份拓扑就把“中央服务 + 若干网关 + 各自的 SGLang + 各阶段池容量”完整描述清楚。因此扩容只是往 ",h("code",null,"gateway.nodes")," 里加节点，无需改代码。详见仓库内 ",h(Src,{label:"config/README.md",path:"src/polar/config/README.md"}),"。"),
+      h("div",null,h(Src,{label:"_StrictModel",path:"src/polar/config/topology.py",line:16}),h(Src,{label:"TopologyConfig",path:"src/polar/config/topology.py",line:147}),h(Src,{label:"config/__init__.py 导出",path:"src/polar/config/__init__.py",line:3}))
+    );
+  }
+
+  // ===== 定位与 slime bridge =====
+  function PositioningSection(){
+    return h("div",null,
+      h("p",null,"最后明确 Polar 在生态中的位置。它由 ",h("strong",{className:"hl-teal"},"NVIDIA-NeMo")," 出品，定位是 trainer-agnostic 的 RL rollout 框架：只负责采样、轨迹构建与评估这一侧，训练侧交给任意训练框架。这与 README 路线图里“找到能覆盖多种训练与推理框架的最近公共祖先、保持低侵入与中立”的目标一致。"),
+      h("p",null,"为证明这种解耦可行，仓库内置了一个面向 ",h("strong",null,"slime")," 的 bridge（",h("code",null,"src/slime_bridge"),"）。它的依赖方向值得注意：bridge 依赖 Polar，Polar 不依赖 bridge。换言之，Polar 通过稳定的 HTTP 服务边界对外，任何训练框架都可以在自己一侧写一个薄薄的适配层接进来，而不需要 Polar 为它改动。"),
+      h(Code,null,"# src/slime_bridge/__init__.py\n\"\"\"Slime <-> Polar bridge.\n\nSlime-trainer-facing adapter between Slime's rollout interface and Polar's\nHTTP surface. Depends on Polar; Polar does **not** depend on this package.\n\"\"\""),
+      h("p",null,"bridge 的核心 ",h("code",null,"src/slime_bridge/rollout.py")," 同样只说 Polar 的异步 HTTP 接口：它把 slime 的一批 prompt 转成 Polar 任务，提交到 ",h("code",null,"/rollout/task/submit"),"，再把回收的轨迹转回 slime 期望的样本格式。第 8 课会完整展开这条集成路径，包括权重更新前如何暂停网关侧的生成（",h("code",null,"/admin/sglang/pause"),"）以保证版本一致。"),
+      h("div",{className:"note"},"路线图显示 Polar 还在补更多内置评估器、vLLM 双推理支持，以及更多训练器 bridge（NemoRL、VERL 等）。本课只需记住：slime bridge 是“以服务方式接入任意训练框架”这条主张的第一个示例，不是 Polar 的必需组件。"),
+      h("div",null,h(Src,{label:"slime_bridge/__init__.py",path:"src/slime_bridge/__init__.py",line:1}),h(Src,{label:"slime_bridge/rollout.py",path:"src/slime_bridge/rollout.py",line:1}),h(Src,{label:"slime_bridge/README.md",path:"src/slime_bridge/README.md"}),h(Ext,{href:"https://github.com/THUDM/slime"},"slime 仓库"),h(Ext,{href:"https://docs.sglang.ai/"},"SGLang 文档"))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"Polar Tech Report",d:"Agentic RL on Any Harness at Scale（arXiv）",href:"https://arxiv.org/pdf/2605.24220"},
+    {t:"slime",d:"内置 bridge 对接的训练框架示例",href:"https://github.com/THUDM/slime"},
+    {t:"SGLang 文档",d:"Polar 当前的推理后端，proxy 转发的目标",href:"https://docs.sglang.ai/"},
+    {t:"README（本机）",d:"三条设计主张与架构总览",href:srcUrl("README.md",null)},
+    {t:"config/README（本机）",d:"部署拓扑配置说明",href:srcUrl("src/polar/config/README.md",null)},
+    {t:"rollout/README（本机）",d:"客户端任务提交（rollout API）",href:srcUrl("src/polar/rollout/README.md",null)},
+    {t:"agent/README（本机）",d:"选择 Agent Harness",href:srcUrl("src/polar/agent/README.md",null)},
+    {t:"trajectory/README（本机）",d:"轨迹构建与评估",href:srcUrl("src/polar/trajectory/README.md",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:1}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 1 课 / 共 8 · 地基与全局观"),
+          h("h1",null,"地基与全局观"),
+          h("p",{className:"lead"},"这是全系列的校准课，先把 Polar 的全貌讲清：三条设计主张（Harness as Environment、Smart Rollout Pipeline、Rollout as a Service），从 Rollout Server 到分布式 Gateway Node 再到 proxy 的架构总览，cli.py 入口骨架与 config/topology 的拓扑配置，以及 Polar 作为 NVIDIA-NeMo 出品、trainer-agnostic 且自带 slime bridge 的定位。读完这一课，后续每一课都能在这张全局图上找到自己的位置。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"README.md")," 三条主张与架构、",h("code",null,"src/polar/cli.py")," 入口、",h("code",null,"src/polar/config/topology.py")," 拓扑、",h("code",null,"src/polar/__init__.py"),"，以及 ",h("code",null,"src/slime_bridge")," 的定位。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机 ",h("code",null,"ProRL-Agent-Server")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"README · 设计主张"),
+          h("h2",null,"三条设计主张：先看见整个系统"),
+          h(PhilosophySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"架构总览"),
+          h("h2",null,"Rollout Server → Gateway Node → Proxy"),
+          h(ArchSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"Smart Rollout Pipeline"),
+          h("h2",null,"阶段隔离与 Runtime 池化：省 GPU 小时的来源"),
+          h(PipelineSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"src/polar/cli.py"),
+          h("h2",null,"命令行入口骨架"),
+          h("p",null,"Polar 的全部使用方式收敛到一个 ",h("code",null,"polar")," 命令。点 Tab 切换：先看五个子命令的全貌，再看两个 serve 入口如何拉起服务，最后看 submit/status 客户端如何与运行中的拓扑交互。"),
+          h(CliExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"src/polar/config/topology.py"),
+          h("h2",null,"拓扑配置：一份 YAML 描述整套部署"),
+          h(TopologySection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"定位 · slime bridge"),
+          h("h2",null,"trainer-agnostic 与内置集成"),
+          h(PositioningSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"读地基时配合这些文档，能把三条主张、架构角色与 Polar 的生态定位补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"三条主张是总纲"),"：Harness as Environment（免改造接入任意 harness）、Smart Rollout Pipeline（阶段隔离 + runtime 池化省 GPU 小时）、Rollout as a Service（服务边界使其 trainer-agnostic）。后续每一课都在落实其中某一条。"),
+            h("li",null,h("strong",null,"三个角色构成骨架"),"：Rollout Server 编排并分发任务，Gateway Node 异步准备 runtime、执行 agent、构建轨迹并评估，proxy 坐在 harness 执行进程与 SGLang 之间，使 harness 不知自己在被训练。"),
+            h("li",null,h("strong",null,"阶段隔离即效率来源"),"：",h("code",null,"SessionDispatcher")," 的 INIT/READY/RUNNING/POSTRUN 四阶段各有独立工作线程池，准备与执行重叠，运行槽位由信号量限流，使推理 GPU 不空转。"),
+            h("li",null,h("strong",null,"一份拓扑描述整套部署"),"：",h("code",null,"topology.py")," 用严格不可变的 Pydantic 模型描述中央服务、网关集群、各自的 SGLang 与阶段池容量；",h("code",null,"cli.py")," 五个子命令都接同一份 YAML。"),
+            h("li",null,h("strong",null,"服务边界换来解耦"),"：Polar 只暴露 HTTP 接口，slime bridge 单向依赖 Polar 而非相反，证明任意训练框架都能以薄适配层接入。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"polar-course-index.html"},h("div",{className:"faint"},"← 课程总览"),h("strong",null,"Polar · 逐文件精读")),
+            h("a",{href:"polar-lesson-02-agent-harness.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 2 课：Agent 与 Harness 层"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>verl 逐文件精读 · 第 6 课：训练引擎抽象与多后端</title>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0f14;--panel:#121820;--panel-2:#17212c;--panel-3:#0f151d;--line:#273240;--line-2:#3a4656;--ink:#f1f5f9;--muted:#a7b1bf;--faint:#707c8d;--amber:#f1b65c;--teal:#5fd3cf;--green:#72d17d;--red:#ef7e75;--blue:#8bb8ff;--purple:#c59bff;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+    *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+    body{margin:0;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 360px),repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 64px),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.68;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal);text-decoration:none;}a:hover{text-decoration:underline;}
+    code{font-family:var(--mono);font-size:.9em;color:#ffe0a6;background:#101722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+    pre{margin:0;overflow:auto;background:#0c1119;border:1px solid var(--line);border-radius:10px;padding:15px 17px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:#d6deea;}
+    pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit;}
+    .tok-keyword{color:#c59bff;}.tok-class{color:#5fd3cf;font-weight:700;}.tok-fn{color:#8bb8ff;}.tok-type{color:#72d17d;}.tok-decorator{color:#f1b65c;}.tok-comment{color:#5e6b7d;font-style:italic;}.tok-string{color:#e8c98a;}.tok-number{color:#f0a37e;}
+    .course-nav{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .course-nav .home{font-weight:850;font-size:14px;}.course-nav .home .dot{color:var(--amber);}
+    .lessons{display:flex;gap:4px;flex-wrap:wrap;}
+    .lchip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);}
+    .lchip.done{color:var(--teal);border-color:#265450;}.lchip.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}.lchip.todo{opacity:.5;}
+    main{max-width:1120px;margin:0 auto;padding:0 28px 80px;}
+    section{padding:44px 0;border-bottom:1px solid var(--line);}
+    .kicker{color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+    h1{font-size:42px;line-height:1.1;margin:0 0 16px;letter-spacing:-.01em;}
+    h2{font-size:27px;margin:0 0 12px;}h3{font-size:17px;margin:22px 0 9px;}h4{font-size:13px;margin:16px 0 7px;color:var(--blue);font-family:var(--mono);}
+    p{margin:0 0 13px;color:var(--muted);}.lead{font-size:16.5px;color:#c4ced9;max-width:840px;}
+    strong{color:var(--ink);}.faint{color:var(--faint);}.hl-teal{color:var(--teal);}.hl-amber{color:var(--amber);}.hl-green{color:var(--green);}.hl-red{color:var(--red);}.hl-purple{color:var(--purple);}.hl-blue{color:var(--blue);}
+    .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;color:var(--blue);background:#0e1626;border:1px solid #233149;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .src::before{content:"\203A_";color:var(--faint);}.src:hover{border-color:var(--blue);text-decoration:none;background:#121d33;}
+    .ext{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--green);background:#0e1c12;border:1px solid #234a2e;border-radius:6px;padding:2px 8px;margin:3px 6px 3px 0;}
+    .ext::before{content:"\2197";color:var(--faint);}.ext:hover{border-color:var(--green);text-decoration:none;background:#102417;}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px 19px;}
+    .card-title{font-weight:750;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .note{border-left:3px solid var(--amber);padding:4px 14px;margin:13px 0;color:var(--muted);background:#1a160d33;border-radius:0 8px 8px 0;}
+    .warn{border-left:3px solid var(--red);padding:4px 14px;margin:13px 0;color:var(--muted);background:#2110100f;border-radius:0 8px 8px 0;}
+    .formula{background:var(--panel-3);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:6px 16px;margin:13px 0;overflow-x:auto;}
+    .formula .cap{color:var(--faint);font-family:var(--mono);font-size:11px;margin-bottom:2px;display:block;}
+    ul,ol{color:var(--muted);margin:8px 0 13px;padding-left:22px;}li{margin:4px 0;}
+    .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);}
+    .pill.teal{color:var(--teal);border-color:#265450;background:#0e2120;}.pill.amber{color:var(--amber);border-color:#5a4424;background:#211a0e;}.pill.purple{color:var(--purple);border-color:#3d2d5c;background:#160f21;}.pill.green{color:var(--green);border-color:#2c5232;background:#0f2113;}.pill.blue{color:var(--blue);border-color:#2d3f5c;background:#101626;}
+    .tabstrip{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px;}
+    .tab{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+    .tab:hover{color:var(--ink);}.tab.active{background:var(--teal);color:#08201f;border-color:var(--teal);font-weight:700;}
+    .tab.mega.active{background:var(--purple);color:#160f21;border-color:var(--purple);}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    .linkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:14px;}
+    .linkcard{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;}
+    .linkcard .lt{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:3px;}
+    .linkcard .ld{color:var(--faint);font-size:11.5px;margin-bottom:6px;}
+    .foot{display:flex;justify-content:space-between;gap:12px;margin-top:30px;flex-wrap:wrap;}
+    .foot a{border:1px solid var(--line);border-radius:10px;padding:12px 18px;display:block;}
+    .fallback{max-width:900px;margin:0 auto;padding:56px 28px;}
+    @media(max-width:880px){h1{font-size:32px;}.split{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div id="root"><main class="fallback"><p class="kicker">Static fallback · 第 6 课</p><h1>训练引擎抽象与多后端</h1><p>能访问 CDN 时切换为交互版。本课讲清 verl 的统一训练引擎抽象 BaseEngine（前向反向、优化器步进、分片、checkpoint 的接口），FSDP2 与 Megatron 两套主力后端的分片与并行实现，损失跨数据并行的归一化与跨分片梯度裁剪的分布式正确性，以及融合 kernel 的设计。</p></main></div>
+  <script>
+  const h=React.createElement;const {useState,useEffect,useRef}=React;
+  const VERL="vscode://file/Users/xinyu/Code/Agentic-RL/verl/";
+  function srcUrl(p,l){return VERL+p+(l?(":"+l):"");}
+  function Src(props){const label=props.label||(props.path.split("/").pop()+(props.line?(":"+props.line):""));return h("a",{className:"src",href:srcUrl(props.path,props.line),title:props.path+(props.line?(":"+props.line):"")},label);}
+  function Ext(props){return h("a",{className:"ext",href:props.href,target:"_blank",rel:"noopener"},props.children);}
+  function useTypeset(dep){const ref=useRef(null);useEffect(function(){const M=window.MathJax;if(M&&M.typesetPromise&&ref.current){if(M.typesetClear){try{M.typesetClear([ref.current]);}catch(e){}}M.typesetPromise([ref.current]).catch(function(){});}},[dep]);return ref;}
+  function Formula(props){return h("div",{className:"formula"},props.cap?h("span",{className:"cap"},props.cap):null,props.children);}
+  const PY_KW=["and","as","assert","async","await","break","class","continue","def","elif","else","except","finally","for","from","if","import","in","is","lambda","None","not","or","pass","raise","return","try","while","with","yield","True","False","global"];
+  const PY_TY=["Any","ABC","Optional","Callable","Tensor","DTensor","torch","dist","nn","int","float","bool","dict","list","tuple","DataProto","WorkerGroup","ResourcePool","RayWorkerGroup","AgentLoop","BaseEngine","FSDPEngine","MegatronEngine","EngineRegistry","TensorDict","MixedPrecisionPolicy","CPUOffloadPolicy","FSDP","FSDPModule","MixedPrecision","TransformerConfig"];
+  function escapeHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hp(text){const esc=escapeHtml(text);const re=new RegExp("(@[A-Za-z_]\\w*)|\\b(class|def)\\s+([A-Za-z_]\\w*)|\\b("+PY_KW.join("|")+")\\b|\\b("+PY_TY.join("|")+")\\b|\\b([A-Za-z_]\\w*)(?=\\s*\\()|\\b(\\d+(?:\\.\\d+)?)\\b","g");return esc.replace(re,function(m,deco,kind,decl,kw,ty,fn,num){if(deco)return '<span class="tok-decorator">'+deco+'</span>';if(kind&&decl)return '<span class="tok-keyword">'+kind+'</span> <span class="'+(kind==="class"?"tok-class":"tok-fn")+'">'+decl+'</span>';if(kw)return '<span class="tok-keyword">'+kw+'</span>';if(ty)return '<span class="tok-type">'+ty+'</span>';if(fn)return '<span class="tok-fn">'+fn+'</span>';if(num)return '<span class="tok-number">'+num+'</span>';return m;});}
+  function highlight(code){let out="",plain="",i=0;const flush=function(){if(plain){out+=hp(plain);plain="";}};while(i<code.length){const ch=code[i];if(ch==="#"){flush();let j=i;while(j<code.length&&code[j]!=="\n")j++;out+='<span class="tok-comment">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else if(ch==='"'||ch==="'"){flush();const q=ch;let j=i+1;while(j<code.length&&code[j]!==q){if(code[j]==="\\")j++;j++;}j++;out+='<span class="tok-string">'+escapeHtml(code.slice(i,j))+'</span>';i=j;}else{plain+=ch;i++;}}flush();return out;}
+  function Code(props){return h("pre",null,h("code",{dangerouslySetInnerHTML:{__html:highlight(props.children)}}));}
+
+  const LESSONS=[[1,"地基与HybridFlow","verl-lesson-01-foundations.html"],[2,"DataProto","verl-lesson-02-dataproto.html"],[3,"混合控制器","verl-lesson-03-single-controller.html"],[4,"配置","verl-lesson-04-config.html"],[5,"RL数学","verl-lesson-05-core-algos.html"],[6,"训练引擎","verl-lesson-06-engines.html"],[7,"Workers","verl-lesson-07-workers.html"],[8,"Rollout","verl-lesson-08-rollout.html"],[9,"异步服务","verl-lesson-09-async-server.html"],[10,"Agent Loop","verl-lesson-10-agent-loop.html"],[11,"异步训练","verl-lesson-11-async-train.html"],[12,"Trainer与端到端","verl-lesson-12-trainer-e2e.html"]];
+  function CourseNav(props){return h("div",{className:"course-nav"},h("a",{className:"home",href:"verl-course-index.html"},"verl",h("span",{className:"dot"},"·"),"逐文件精读"),h("div",{className:"lessons"},LESSONS.map(function(L){const cls=L[0]===props.current?"lchip active":"lchip done";return h("a",{key:L[0],className:cls,href:L[2]},L[0]+" "+L[1]);})));}
+
+  // ===== 统一抽象 BaseEngine =====
+  function AbstractSection(){const ref=useTypeset("abs");
+    return h("div",{ref:ref},
+      h("p",null,"前几课已经建立了三层概念：",h("code",null,"DataProto")," 是数据契约（第 2 课），混合控制器把单进程的算法脚本广播到一组 worker 上（第 3 课），",h("code",null,"core_algos")," 提供 PPO/GRPO 等损失与优势的纯数学函数（第 5 课）。本课处理的是这套体系的承重层：一个 worker 拿到一批数据后，究竟由谁来执行“前向得到 logits、按损失函数反向、裁剪梯度、优化器步进、把分片权重导出给推理引擎”。这件事被统一收敛到一个抽象基类 ",h("strong",{className:"hl-teal"},"BaseEngine"),"。"),
+      h("p",null,"为什么需要一层引擎抽象？因为 verl 要在同一套算法代码下支持多种分布式训练后端：PyTorch 原生的 FSDP2、NVIDIA 的 Megatron-Core、字节自研的 VeOmni、PyTorch 实验性的 TorchTitan、华为 Ascend 的 MindSpeed，以及 NeMo Automodel。这些后端的分片方式、混合精度策略、checkpoint 格式、权重导出协议各不相同。如果让 PPO 训练脚本直接调用某一个后端的 API，换后端就要重写算法代码。引擎抽象的作用，是把“算法关心的接口”（前向反向、优化器步、损失归一化、权重导出）与“后端关心的实现”（如何分片、如何 all-gather、如何 reduce-scatter）分离开。"),
+      h("div",{className:"split"},
+        h("div",null,
+          h("h4",null,"接口的几个分组"),
+          h("ul",null,
+            h("li",null,h("code",null,"initialize")," / ",h("code",null,"train_mode")," / ",h("code",null,"eval_mode"),"：构建模型与优化器，进入训练或评测的上下文（含参数与优化器 offload 的进出）。"),
+            h("li",null,h("code",null,"forward_backward_batch"),"：对一批数据做前向，并在非 forward_only 时做反向累积梯度。这是各后端差异最大的方法。"),
+            h("li",null,h("code",null,"optimizer_zero_grad")," / ",h("code",null,"optimizer_step")," / ",h("code",null,"lr_scheduler_step"),"：优化器三步曲，",h("code",null,"optimizer_step")," 内含梯度裁剪与非有限值跳过。"),
+            h("li",null,h("code",null,"get_data_parallel_size/rank/group"),"：暴露数据并行拓扑，损失归一化要用到。"),
+            h("li",null,h("code",null,"get_per_tensor_param"),"：把分片权重重建成逐张量的完整权重，供权重同步给推理引擎（第 7、8 课）。"),
+            h("li",null,h("code",null,"save_checkpoint")," / ",h("code",null,"load_checkpoint")," / ",h("code",null,"to"),"：断点续训与设备搬移（offload）。")),
+          h("div",null,h(Src,{label:"BaseEngine",path:"verl/workers/engine/base.py",line:30}),h(Src,{label:"forward_backward_batch",path:"verl/workers/engine/base.py",line:99}),h(Src,{label:"train_batch",path:"verl/workers/engine/base.py",line:113}))
+        ),
+        h("div",null,
+          h("p",null,h("code",null,"train_batch")," 是在基类里就写好的模板方法：它把三步曲编排成一步训练，子类只需提供 ",h("code",null,"forward_backward_batch")," 与 ",h("code",null,"optimizer_step")," 的具体实现。模板里的 ",h("code",null,"is_mp_src_rank_with_outputs")," 用来判断当前 rank 是否持有模型输出（在模型并行组里只有一份输出的那个 rank），避免在每个 rank 上重复记录指标。"),
+          h(Code,null,"def train_batch(self, data, loss_function):\n    maybe_fix_3d_position_ids(data)\n    self.optimizer_zero_grad()\n    outputs = self.forward_backward_batch(\n        data, loss_function, forward_only=False)\n    grad_norm = self.optimizer_step()       # 裁剪 + step, 返回范数\n    if self.is_mp_src_rank_with_outputs():\n        outputs[\"metrics\"][\"grad_norm\"] = grad_norm\n    return outputs")
+        )
+      ),
+      h("h3",null,"按 (模型类型, 后端, 设备, 厂商) 注册与查找"),
+      h("p",null,"换后端不靠 if-else，而靠一个注册表 ",h("code",null,"EngineRegistry"),"。每个具体引擎类用 ",h("code",null,"@EngineRegistry.register(model_type=..., backend=..., device=..., vendor=...)")," 装饰，把自己登记到一个四层字典里。运行时 ",h("code",null,"get_engine_cls(model_type, backend)")," 先读出该后端的注册项，再按当前设备与厂商查找：先试 ",h("code",null,"(device, vendor)")," 精确匹配，回退到仅 ",h("code",null,"device")," 的注册，对 CUDA 兼容厂商再回退到 ",h("code",null,'"nvidia"'),"。环境变量 ",h("code",null,"VERL_ENGINE_DEVICE"),"/",h("code",null,"VERL_ENGINE_VENDOR")," 可覆盖自动探测。"),
+      h("p",null,"这一设计的动机是：同一个 ",h("code",null,"backend=\"megatron\"")," 在 NVIDIA GPU 上用 ",h("code",null,"MegatronEngineWithLMHead"),"，在 NPU 上自动切换到 MindSpeed 的子类，算法层完全无感。",h("code",null,"model_type")," 区分 ",h("code",null,"language_model"),"（带 LM head，输出 logits）与 ",h("code",null,"value_model"),"（带 value head，输出标量价值），两者只在“如何从原始输出抽取需要的量”上不同。"),
+      h(Code,null,"# 注册：一个类可同时声明多个 backend 与 device 别名\n@EngineRegistry.register(\n    model_type=\"language_model\",\n    backend=[\"fsdp\", \"fsdp2\"],\n    device=[\"cuda\", \"npu\"],\n)\nclass FSDPEngineWithLMHead(FSDPEngine):\n    ...\n\n# 查找：按 (device, vendor) -> device -> (cuda, nvidia) 逐级回退\nengine_cls = EngineRegistry.get_engine_cls(model_type, backend)\nengine = engine_cls(model_config, engine_config, optimizer_config, ckpt_config)"),
+      h("div",null,h(Src,{label:"EngineRegistry",path:"verl/workers/engine/base.py",line:269}),h(Src,{label:"register 装饰器",path:"verl/workers/engine/base.py",line:281}),h(Src,{label:"get_engine_cls 回退逻辑",path:"verl/workers/engine/base.py",line:329}),h(Src,{label:"BaseEngineCtx（offload 上下文）",path:"verl/workers/engine/base.py",line:230})),
+      h("div",{className:"note"},h("code",null,"BaseEngineCtx")," 是 train/eval 上下文的基类：进入时把参数（必要时还有优化器与梯度缓冲）搬到 GPU，退出时搬回 CPU。是否搬移由 ",h("code",null,"is_param_offload_enabled")," 与 ",h("code",null,"is_optimizer_offload_enabled")," 决定。这套 offload 机制是 verl 在共置（colocate）模式下让训练与推理交替占用同一批 GPU 的基础。")
+    );
+  }
+
+  // ===== 多后端总览 =====
+  const BACKENDS=[
+    {n:"fsdp/transformer_impl.py",p:"语言模型 / 价值模型 · cuda, npu",d:"FSDPEngine 与其 LMHead / ValueHead 子类。PyTorch 原生 FullyShardedDataParallel（FSDP1）与 fully_shard（FSDP2）两条路径，支持 ZeRO-3 全分片、混合精度、Ulysses 序列并行、参数/优化器/激活 offload、LoRA、QAT。是 verl 上手最快的默认后端。",links:[["FSDPEngine","verl/workers/engine/fsdp/transformer_impl.py",85],["FSDPEngineWithLMHead","verl/workers/engine/fsdp/transformer_impl.py",925],["FSDPEngineWithValueHead","verl/workers/engine/fsdp/transformer_impl.py",1312]]},
+    {n:"megatron/transformer_impl.py",p:"语言模型 / 价值模型 · cuda",d:"MegatronEngine 与其子类。封装 NVIDIA Megatron-Core 的五维并行（TP/PP/CP/EP/ETP），用 mbridge 做 HF 与 Megatron 之间的配置与权重转换，支持 1F1B 与交错式虚拟流水线、MoE 专家并行、分布式优化器。强项是超大模型与 MoE。",links:[["MegatronEngine","verl/workers/engine/megatron/transformer_impl.py",76],["MegatronEngineWithLMHead","verl/workers/engine/megatron/transformer_impl.py",799],["initialize_model_parallel","verl/workers/engine/megatron/transformer_impl.py",154]]},
+    {n:"veomni/transformer_impl.py",p:"语言模型 / 价值模型 · cuda, npu",d:"VeOmniEngine 继承 FSDPEngine，接入字节自研 VeOmni 训练框架的并行原语：对视觉语言模型的掩码处理、序列并行的分片收集器、由 position_ids 构造 flash-attn kwargs。复用 FSDP 的 offload 与 checkpoint 路径，叠加 VeOmni 的并行状态管理。",links:[["VeOmniEngine","verl/workers/engine/veomni/transformer_impl.py",62],["VeOmniEngineWithLMHead","verl/workers/engine/veomni/transformer_impl.py",848]]},
+    {n:"torchtitan/transformer_impl.py",p:"语言模型 · cuda, npu",d:"TorchTitanEngine 直接实现 BaseEngine，遵循 PyTorch TorchTitan 的设计：在 FSDP2 之上叠加张量并行，支持激活/优化器 offload、LoRA 与序列并行。是面向 PyTorch 原生大规模并行栈的实验性后端。",links:[["TorchTitanEngine","verl/workers/engine/torchtitan/transformer_impl.py",73],["TorchTitanEngineWithLMHead","verl/workers/engine/torchtitan/transformer_impl.py",575]]},
+    {n:"mindspeed/transformer_impl.py",p:"语言模型 / 价值模型 · npu",d:"为华为 Ascend NPU 而设：MindspeedEngineWithLMHead 继承 MegatronEngineWithLMHead，以 backend=\"megatron\"、device=\"npu\" 注册，因此在 NPU 上选择 megatron 后端时自动落到这里。另有 backend=\"mindspeed_megatron\" 的变体。算法层无需感知。",links:[["MindspeedEngineWithLMHead","verl/workers/engine/mindspeed/transformer_impl.py",62],["MindSpeedMegatronEngineWithLMHead","verl/workers/engine/mindspeed/transformer_impl.py",117]]},
+    {n:"automodel/transformer_impl.py",p:"语言模型 · cuda",d:"AutomodelEngine 直接实现 BaseEngine，接入 NeMo Automodel 的分布式训练。提供与其它后端一致的 train/eval 上下文、forward_backward 与 checkpoint 接口，作为又一个可插拔后端登记到注册表。",links:[["AutomodelEngine","verl/workers/engine/automodel/transformer_impl.py",71],["AutomodelEngineWithLMHead","verl/workers/engine/automodel/transformer_impl.py",474]]}
+  ];
+  function BackendSection(){
+    return h("div",null,
+      h("p",null,"注册表里目前有六套后端实现。它们共享 ",h("code",null,"BaseEngine")," 接口与 ",h("code",null,"workers/engine/utils.py")," 里的损失归一化骨架，差异集中在分片与并行策略。本课重点讲 FSDP 与 Megatron 两套主力，其余四套给出定位与 ",h("code",null,"Src")," 入口，便于检索。"),
+      h("div",{className:"linkgrid"},BACKENDS.map(function(b,i){return h("div",{className:"linkcard",key:i},
+        h("div",{className:"lt"},h("code",null,b.n)),
+        h("div",{className:"ld"},h("span",{className:"pill teal"},b.p)),
+        h("div",{className:"ld"},b.d),
+        h("div",null,b.links.map(function(l,j){return h(Src,{key:j,label:l[0],path:l[1],line:l[2]});})));}))
+    );
+  }
+
+  // ===== 损失跨 DP 归一化的共享骨架 =====
+  function NormSection(){const ref=useTypeset("norm");
+    return h("div",{ref:ref},
+      h("p",null,"两套主力后端共享 ",h("code",null,"workers/engine/utils.py")," 里的两个函数：",h("code",null,"prepare_micro_batches")," 把一批数据切成若干 micro-batch（动态批长时按 token 预算装箱，见第 4 课的 ",h("code",null,"seqlen_balancing"),"），",h("code",null,"postprocess_batch_func")," 在前向反向之后把各 micro-batch 的输出按原始顺序还原并拼接。它们解决的核心问题是分布式损失归一化的正确性。"),
+      h("h3",null,"问题：每个 DP rank 拿到的有效 token 数不同"),
+      h("p",null,"强化学习里一批数据按数据并行（DP）维切到各 rank，每条序列长度不一、每个 rank 的有效 token（",h("code",null,"loss_mask")," 为真的位置）数目也不同。如果各 rank 各自对本地 token 求平均再让 FSDP/Megatron 自动对梯度求 DP 平均，最终结果不等于“对全局所有有效 token 求平均”，长序列样本会被系统性地低估。正确做法是先跨 DP 求出全局有效 token 总数 ",h("code",null,"batch_num_tokens"),"，所有 rank 用同一个分母。"),
+      h(Code,null,"# forward_backward_batch 开头（FSDP 与 Megatron 一致）\nbatch_num_tokens = data[\"loss_mask\"].sum().to(device)\ntorch.distributed.all_reduce(            # 跨 DP 求全局有效 token 数\n    batch_num_tokens, op=ReduceOp.SUM, group=self.get_data_parallel_group())\ntu.assign_non_tensor(data, batch_num_tokens=batch_num_tokens.item())\ntu.assign_non_tensor(data, dp_size=self.get_data_parallel_size())"),
+      h("p",null,"损失函数（如 ",h("code",null,"sft_loss"),"、",h("code",null,"ppo_loss"),"）拿到 ",h("code",null,"batch_num_tokens")," 与 ",h("code",null,"dp_size")," 后，对本地损失先求和、除以全局 token 数，再乘回 ",h("code",null,"dp_size"),"。乘 ",h("code",null,"dp_size")," 是为了抵消 FSDP/Megatron 在规约梯度时自动除以 DP 大小这一步，使最终梯度恰好等于“对全局所有有效 token 求平均”的梯度。"),
+      h(Formula,{cap:"全局损失 = 对所有 DP rank、所有有效 token 求平均"},"$$ \\mathcal{L} = \\frac{1}{W}\\sum_{r=1}^{N_{dp}}\\sum_{t}\\, m_{r,t}\\,\\ell_{r,t}, \\qquad W=\\texttt{batch\\_num\\_tokens}=\\sum_{r}\\sum_{t} m_{r,t} $$"),
+      h(Formula,{cap:"每个 DP rank 本地损失的缩放（抵消后端对梯度的 DP 平均）"},"$$ \\tilde{\\ell}_{r} = \\Big(\\sum_{t} m_{r,t}\\,\\ell_{r,t}\\Big)\\cdot \\frac{N_{dp}}{W} $$"),
+      h("p",null,"对应到源码：",h("code",null,"loss = -masked_sum(log_prob, loss_mask) / batch_num_tokens * dp_size"),"。其中 ",h("code",null,"masked_sum")," 是带掩码的求和，",h("code",null,"batch_num_tokens")," 即上式的 ",h("code",null,"W"),"，",h("code",null,"dp_size")," 即 ",h("code",null,"N_{dp}"),"。这样无论数据如何在 DP 维上不均匀切分，梯度尺度都保持一致，这是 RL 训练数值正确性的一个静默而关键的细节。"),
+      h("div",{className:"warn"},"Megatron 还要额外乘一次 ",h("code",null,"num_micro_batch"),"：",h("code",null,"scaled_loss = loss * data[\"num_micro_batch\"]"),"。因为 Megatron 的 1F1B 流水线调度会在内部对各 micro-batch 的损失求平均（除以 micro-batch 数），这里先乘回来抵消，保证两套后端在数值上等价。见 ",h(Src,{label:"postprocess_micro_batch_func",path:"verl/workers/engine/megatron/transformer_impl.py",line:982}),"。"),
+      h("div",null,h(Src,{label:"prepare_micro_batches",path:"verl/workers/engine/utils.py",line:57}),h(Src,{label:"postprocess_batch_func",path:"verl/workers/engine/utils.py",line:98}),h(Src,{label:"FSDP forward_backward_batch（all_reduce 全局 token）",path:"verl/workers/engine/fsdp/transformer_impl.py",line:617}),h(Src,{label:"Megatron forward_backward_batch",path:"verl/workers/engine/megatron/transformer_impl.py",line:607}),h(Src,{label:"sft_loss（归一化公式）",path:"verl/workers/utils/losses.py",line:28}))
+    );
+  }
+
+  // ===== 四个 Tab 探索器 =====
+  const TABS=[
+    {key:"abstract",name:"引擎抽象",cls:"",render:function(){return [
+      h("p",null,"引擎抽象的关键不在于罗列方法，而在于它把“算法看到的统一接口”与“后端各异的分片实现”切开。这里再补两个设计点。"),
+      h("h4",null,"forward_step 的钩子分层"),
+      h("p",null,h("code",null,"FSDPEngine.forward_backward_batch")," 是模板，逐 micro-batch 调用 ",h("code",null,"forward_step"),"；而 ",h("code",null,"forward_step")," 在基类里抛 ",h("code",null,"NotImplementedError"),"，由 ",h("code",null,"FSDPEngineWithLMHead")," 与 ",h("code",null,"FSDPEngineWithValueHead")," 提供。两者的差异只在 ",h("code",null,"prepare_model_outputs"),"：LM head 从 logits 算 log-prob 与熵，value head 从输出抽取逐 token 的标量价值。这种“前向骨架共享、输出抽取分化”的分层，使得 actor 与 critic 复用同一套分片与 offload 代码。"),
+      h(Code,null,"# FSDPEngine.forward_backward_batch（精简）\nfor micro_batch in micro_batches:\n    with ctx:                                  # forward_only 时为 no_grad\n        loss, meta = self.forward_step(\n            micro_batch, loss_function, forward_only)\n        if not forward_only:\n            if scaler is not None:             # fp16 才有 GradScaler\n                scaler.scale(loss).backward()\n            else:\n                loss.backward()                # FSDP 在 backward 内自动 reduce-scatter\n    output_lst.append(meta)\nreturn postprocess_batch_func(output_lst, indices, data)"),
+      h("h4",null,"is_mp_src_rank_with_outputs"),
+      h("p",null,"在序列并行（SP）打开时，同一条序列被切到 SP 组的多个 rank 上，模型输出只在 SP 组的 0 号 rank 完整。",h("code",null,"is_mp_src_rank_with_outputs")," 据此判断当前 rank 是否应收集输出与记录指标，避免 SP 组内重复计入。这与第 3 课提到的“在模型并行组里只有源 rank 持有完整输出”是同一思路。"),
+      h("div",null,h(Src,{label:"forward_backward_batch",path:"verl/workers/engine/fsdp/transformer_impl.py",line:617}),h(Src,{label:"forward_step（LM head）",path:"verl/workers/engine/fsdp/transformer_impl.py",line:1256}),h(Src,{label:"is_mp_src_rank_with_outputs",path:"verl/workers/engine/fsdp/transformer_impl.py",line:176}),h(Src,{label:"BaseEngine.forward_backward_batch（接口）",path:"verl/workers/engine/base.py",line:99}))
+    ];}},
+    {key:"fsdp",name:"FSDP 后端",cls:"",render:function(){return [
+      h("p",null,"FSDP2（",h("code",null,"torch.distributed.fsdp.fully_shard"),"）是 ZeRO-3 的 PyTorch 原生实现，把参数、梯度、优化器状态全部沿 DP 维切片，每张卡只常驻 ",h("code",null,"1/N_dp"),"。前向到某层时临时 all-gather 出该层完整参数，算完按 ",h("code",null,"reshard_after_forward")," 决定是否立即丢弃；反向同样临时 all-gather，算完梯度用 reduce-scatter 切回分片。"),
+      h(Formula,{cap:"混合精度 Adam 的常驻显存（每参数字节）"},"$$ \\text{bytes/param} = \\underbrace{2}_{\\text{bf16 权重}} + \\underbrace{2}_{\\text{bf16 梯度}} + \\underbrace{4}_{\\text{fp32 master}} + \\underbrace{4{+}4}_{\\text{Adam } m,v} = 16 $$"),
+      h(Formula,{cap:"FSDP 单卡常驻 vs 普通 DDP"},"$$ M_{\\text{FSDP}} \\approx \\frac{16\\,P}{N_{dp}} + \\underbrace{2\\,P_{\\text{layer}}^{\\max}}_{\\text{临时 all-gather}}, \\qquad M_{\\text{DDP}} = 16\\,P $$"),
+      h("p",null,"verl 在 ",h("code",null,"_build_fsdp_module")," 里同时支持 FSDP1（",h("code",null,"FSDP")," 包装器）与 FSDP2（",h("code",null,"apply_fsdp2")," 逐层 ",h("code",null,"fully_shard"),"），由 ",h("code",null,"engine_config.strategy")," 选择。混合精度策略是关键选择：模型以 fp32 加载作为 master 权重，",h("code",null,"MixedPrecisionPolicy(param_dtype=bf16, reduce_dtype=fp32, cast_forward_inputs=True)")," 让前向用 bf16 算、梯度用 fp32 规约、输入自动转 bf16。fp16 训练才需要 ",h("code",null,"ShardedGradScaler")," 做损失缩放以避免梯度下溢。"),
+      h(Code,null,"# FSDP2 路径（_build_fsdp_module 精简）\nmp_policy = MixedPrecisionPolicy(\n    param_dtype=param_dtype,        # bf16: 前向/反向计算精度\n    reduce_dtype=reduce_dtype,      # fp32: 梯度规约精度\n    cast_forward_inputs=True,\n)\noffload_policy = CPUOffloadPolicy(pin_memory=True) if offload else None\nfsdp_kwargs = {\"mesh\": fsdp_mesh, \"mp_policy\": mp_policy,\n               \"offload_policy\": offload_policy,\n               \"reshard_after_forward\": cfg.reshard_after_forward}\nfull_state = module.state_dict()\napply_fsdp2(module, fsdp_kwargs, self.engine_config)   # 逐层 fully_shard\nfsdp2_load_full_state_dict(module, full_state, fsdp_mesh, offload_policy)"),
+      h("h4",null,"叠加张量并行与序列并行"),
+      h("p",null,"DP 之外，verl 的 FSDP 后端用 Ulysses 序列并行（",h("code",null,"ulysses_sequence_parallel_size > 1"),"）处理超长序列：把序列维切到 SP 组，注意力计算时用 all-to-all 在序列维与注意力头维之间互换分片。打开 SP 必须同时开 ",h("code",null,"use_remove_padding"),"（去掉 padding，按 ",h("code",null,"cu_seqlens")," 打包），否则报错。设备网格在 ",h("code",null,"_init_device_mesh")," 里建为 ",h("code",null,"(dp, sp)")," 两维。"),
+      h(Formula,{cap:"张量并行经典模式：列并行接行并行，每层前向一次 all-reduce"},"$$ Y = \\big[\\,X A_1,\\ X A_2\\,\\big]\\,\\big[\\,B_1; B_2\\,\\big] = \\sum_{i} (X A_i) B_i \\;\\xrightarrow{\\text{all-reduce}}\\; Y $$"),
+      h("div",null,h(Src,{label:"_build_fsdp_module（FSDP1/FSDP2 分支）",path:"verl/workers/engine/fsdp/transformer_impl.py",line:340}),h(Src,{label:"_init_device_mesh（dp×sp）",path:"verl/workers/engine/fsdp/transformer_impl.py",line:211}),h(Src,{label:"apply_fsdp2",path:"verl/utils/fsdp_utils.py",line:559}),h(Src,{label:"get_sharding_strategy",path:"verl/workers/engine/fsdp/utils.py",line:61}),h(Ext,{href:"https://docs.pytorch.org/docs/stable/distributed.fsdp.fully_shard.html"},"PyTorch fully_shard"),h(Ext,{href:"https://arxiv.org/abs/1910.02054"},"ZeRO 论文"))
+    ];}},
+    {key:"clip",name:"梯度裁剪与 offload",cls:"",render:function(){return [
+      h("p",null,"梯度被切在 DP（与 SP）维度上，要算全局 L2 范数必须跨所有分片规约。",h("code",null,"optimizer_step")," 按模型类型分派：FSDP1 用包装器自带的 ",h("code",null,"clip_grad_norm_"),"，FSDP2（",h("code",null,"FSDPModule"),"）用 ",h("code",null,"fsdp2_clip_grad_norm_"),"，普通模块用 ",h("code",null,"torch.nn.utils.clip_grad_norm_"),"。范数若是 ",h("code",null,"DTensor")," 则先 ",h("code",null,"full_tensor()")," 跨分片重建为标量。"),
+      h(Formula,{cap:"全局梯度范数（p 范数，对所有分片求和后开根）"},"$$ \\|g\\|_p = \\Big(\\sum_{\\text{param } i} \\|g_i\\|_p^{\\,p}\\Big)^{1/p} $$"),
+      h(Formula,{cap:"裁剪系数（按 max_norm 缩放）"},"$$ g_i \\leftarrow g_i \\cdot \\min\\!\\Big(1,\\ \\frac{\\text{clip\\_grad}}{\\|g\\|_p + 10^{-6}}\\Big) $$"),
+      h("p",null,h("code",null,"fsdp2_clip_grad_norm_")," 的实现要点是 DTensor 兼容：PyTorch 的 ",h("code",null,"clip_grad_norm_")," 不能直接对 CPU 上的参数 DTensor 运行，因此它用底层的 ",h("code",null,"_get_total_norm")," 算出总范数后搬到当前设备，再用 ",h("code",null,"_clip_grads_with_norm_")," 原地缩放。范数非有限（inf/nan）时跳过本次更新并清零梯度，避免污染优化器状态。"),
+      h(Code,null,"# optimizer_step（精简）\nif isinstance(self.module, FSDP):\n    grad_norm = self.module.clip_grad_norm_(cfg.clip_grad)\nelif isinstance(self.module, FSDPModule):\n    grad_norm = fsdp2_clip_grad_norm_(self.module.parameters(), max_norm=cfg.clip_grad)\nif isinstance(grad_norm, DTensor):\n    grad_norm = grad_norm.full_tensor()\nif not torch.isfinite(grad_norm):       # inf/nan 跳过更新\n    self.optimizer.zero_grad()\nelse:\n    self.optimizer.step()\nreturn grad_norm.item()"),
+      h("h4",null,"offload：让训练与推理共用同一批 GPU"),
+      h("p",null,"共置模式下训练完一步要把参数与优化器状态搬回 CPU，腾出显存给 rollout。FSDP1 与 FSDP2 的 offload 实现不同：FSDP1 逐个 ",h("code",null,"flat_param")," 在 CPU 与 GPU 之间搬移并维护 ",h("code",null,"_local_shard")," 指针；FSDP2 直接 ",h("code",null,"model.cpu()"),"/",h("code",null,"model.to(device)"),"。优化器状态 offload 则逐张量搬移。",h("code",null,"to(device, model, optimizer, grad)")," 是统一入口，",h("code",null,"BaseEngineCtx")," 在 train/eval 上下文进出时自动调用。"),
+      h("div",{className:"note"},"一个反直觉的细节：actor 的 FSDP1 路径强制关闭 ",h("code",null,"CPUOffload"),"，因为它在梯度累积时会产生不正确的结果；参考策略（ref）反而强制开 ",h("code",null,"CPUOffload")," 以省显存。这是正确性优先于显存的取舍。"),
+      h("div",null,h(Src,{label:"optimizer_step（裁剪+跳过）",path:"verl/workers/engine/fsdp/transformer_impl.py",line:665}),h(Src,{label:"fsdp2_clip_grad_norm_",path:"verl/utils/fsdp_utils.py",line:615}),h(Src,{label:"to（设备搬移）",path:"verl/workers/engine/fsdp/transformer_impl.py",line:721}),h(Src,{label:"offload_fsdp_model_to_cpu",path:"verl/utils/fsdp_utils.py",line:167}),h(Src,{label:"load_fsdp_model_to_gpu",path:"verl/utils/fsdp_utils.py",line:201}),h(Src,{label:"get_fsdp_wrap_policy",path:"verl/utils/fsdp_utils.py",line:79}))
+    ];}},
+    {key:"export",name:"权重导出与 checkpoint",cls:"",render:function(){return [
+      h("p",null,"训练一步后要把分片权重导给推理引擎（第 7、8 课从推理侧看接收）。",h("code",null,"get_per_tensor_param")," 是 FSDP 侧的导出器：参数是 DTensor 分片，先按需 ",h("code",null,"load_fsdp_model_to_gpu")," 上 GPU，再对每个参数 ",h("code",null,".full_tensor()")," 跨 DP all-gather 重建完整张量并转 bf16，以惰性生成器逐个产出，控制重建完整权重时的显存峰值。LoRA 与 QAT 在此处有专门分支：只导适配器权重、或先做量化再导出。"),
+      h(Code,null,"# get_per_tensor_param 的核心生成器（精简）\nload_fsdp_model_to_gpu(self.module)\nparams = self.module.state_dict()\nper_tensor_param = (\n    (name,\n     param.to(device, non_blocking=True).full_tensor().to(torch.bfloat16)\n     if isinstance(param, DTensor) else param)\n    for name, param in params.items()\n)\nif self._is_offload_param:\n    offload_fsdp_model_to_cpu(self.module)\nreturn per_tensor_param, peft_config"),
+      h("h4",null,"两条 checkpoint 路径"),
+      h("p",null,"FSDP 的权重是分片的，存盘走 ",h("code",null,"FSDPCheckpointManager"),"：FSDP1 设 ",h("code",null,"SHARDED_STATE_DICT")," 让各 rank 存自己的分片（单卡时退化为 ",h("code",null,"FULL_STATE_DICT"),"），FSDP2 用 ",h("code",null,"fsdp2_sharded_save_to_cpu"),"/",h("code",null,"fsdp2_sharded_load_from_cpu"),"。",h("code",null,"save_checkpoint")," 会在参数被 offload 时先搬回 GPU 再存，存完再搬回，避免半搬移状态。"),
+      h("div",{className:"warn"},"FSDP2 的 ",h("code",null,"CPUOffloadPolicy")," 自己管理 CPU 与 GPU 的放置，此时不能再手动 ",h("code",null,"model.to(device)"),"，否则模块处于半搬移状态会让 ",h("code",null,"state_dict()")," 崩溃。代码用 ",h("code",null,"_uses_fsdp2_cpu_offload_policy")," 标记位规避（对应 issue #5995），是分布式工程里典型的“两套 offload 机制不能叠加”的坑。"),
+      h("div",null,h(Src,{label:"get_per_tensor_param",path:"verl/workers/engine/fsdp/transformer_impl.py",line:796}),h(Src,{label:"save_checkpoint",path:"verl/workers/engine/fsdp/transformer_impl.py",line:749}),h(Src,{label:"load_checkpoint",path:"verl/workers/engine/fsdp/transformer_impl.py",line:774}),h(Src,{label:"fsdp2_load_full_state_dict",path:"verl/utils/fsdp_utils.py",line:474}),h(Src,{label:"get_shard_placement_fn",path:"verl/utils/fsdp_utils.py",line:602}),h(Ext,{href:"https://docs.pytorch.org/docs/stable/distributed.checkpoint.html"},"PyTorch DCP"))
+    ];}}
+  ];
+  function TabExplorer(){const [s,setS]=useState(0);const d=TABS[s];const ref=useTypeset(d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},TABS.map(function(x,i){return h("div",{key:i,className:"tab"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== Megatron 后端 =====
+  const MEGA=[
+    {key:"5d",name:"五维并行",render:function(){return [
+      h("p",null,"Megatron-Core 支持五个并行维度，",h("code",null,"_init_device_mesh")," 调 ",h("code",null,"mpu.initialize_model_parallel")," 按各维度的大小建组。建组顺序决定哪些 rank 物理相邻、走更快的 NVLink。",h("code",null,"MegatronEngine")," 要求 ",h("code",null,"use_mbridge=True"),"，用 mbridge 在 HF 与 Megatron 之间做配置与权重转换。"),
+      h("ul",null,
+        h("li",null,h("strong",{className:"hl-teal"},"TP")," 张量并行（",h("code",null,"tensor_model_parallel_size"),"）：切单层的矩阵，列并行接行并行。"),
+        h("li",null,h("strong",{className:"hl-purple"},"PP")," 流水并行（",h("code",null,"pipeline_model_parallel_size"),"）：把层切成多段分到不同卡，配 ",h("code",null,"virtual_pipeline_model_parallel_size")," 做交错式 VPP。"),
+        h("li",null,h("strong",{className:"hl-amber"},"CP")," 上下文并行（",h("code",null,"context_parallel_size"),"）：切序列维处理超长序列。"),
+        h("li",null,h("strong",{className:"hl-green"},"EP")," 专家并行（",h("code",null,"expert_model_parallel_size"),"）：MoE 的专家分到不同卡。"),
+        h("li",null,h("strong",{className:"hl-blue"},"ETP")," 专家张量并行（",h("code",null,"expert_tensor_parallel_size"),"）：专家内部再做 TP。")),
+      h(Formula,{cap:"约束（非专家维度，世界大小等于各维乘积）"},"$$ N_{\\text{world}} = \\text{dp}\\times\\text{tp}\\times\\text{pp}\\times\\text{cp} $$"),
+      h("p",null,"相比 FSDP（只有 DP/SP/TP、无 PP），Megatron 的强项是大模型的 PP 与 MoE 的 EP。代价是配置复杂、要做 HF 与 Megatron 的权重双向转换。",h("code",null,"_build_tf_config")," 把 HF 配置经 mbridge（vanilla 或 megatron-bridge 两种）转成 ",h("code",null,"TransformerConfig"),"，并设置 ",h("code",null,"variable_seq_lengths"),"、flash attention 后端、MoE token dispatcher 类型等。"),
+      h("div",null,h(Src,{label:"MegatronEngine.__init__",path:"verl/workers/engine/megatron/transformer_impl.py",line:76}),h(Src,{label:"initialize_model_parallel",path:"verl/workers/engine/megatron/transformer_impl.py",line:154}),h(Src,{label:"_build_tf_config",path:"verl/workers/engine/megatron/transformer_impl.py",line:166}),h(Ext,{href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},"Megatron-Core 文档"),h(Ext,{href:"https://arxiv.org/abs/1909.08053"},"Megatron-LM TP 论文"))
+    ];}},
+    {key:"pp",name:"流水线调度",render:function(){return [
+      h("p",null,"PP 把 L 层切成 P 段，每卡一段，micro-batch 像流水线一样在段间流动。朴素做法（所有前向再所有反向）气泡很大；Megatron 用 ",h("strong",null,"1F1B"),"（稳态下一前向紧跟一反向）压缩气泡，",h("strong",null,"交错式 VPP")," 让每卡持有多个不连续的层块进一步压缩。"),
+      h(Formula,{cap:"流水线气泡占比（m 个 micro-batch，v 个虚拟段）"},"$$ \\text{bubble} = \\frac{P-1}{m \\cdot v} $$"),
+      h("p",null,"verl 不自己写调度，而是直接调 Megatron 的 ",h("code",null,"get_forward_backward_func()")," 拿到 1F1B 或交错式调度函数，把 ",h("code",null,"forward_step")," 回调交给它编排，梯度累积由调度内部完成。注意 ",h("code",null,"seq_length=1")," 与 ",h("code",null,"micro_batch_size=1")," 是占位：真正的通信形状由点对点通信（P2P）在运行时确定，因为序列长度可变。"),
+      h(Code,null,"# Megatron forward_backward_batch（精简）\nforward_backward_func = get_forward_backward_func()   # 1F1B / 交错式\nbatch_generator = make_batch_generator(micro_batches, vpp_size=len(self.module))\nlosses_reduced = forward_backward_func(\n    forward_step_func=forward_step,\n    data_iterator=batch_generator,\n    model=self.module,\n    num_microbatches=n_micro_batch,\n    seq_length=1, micro_batch_size=1,   # 通信形状由 P2P 在运行时确定\n    forward_only=forward_only,\n)\nif mpu.is_pipeline_last_stage(ignore_virtual=True):     # 只有最后一段持有输出\n    output = postprocess_batch_func(losses_reduced, indices, data)"),
+      h("p",null,"输出只在流水线最后一段（last PP stage）完整，因此 ",h("code",null,"postprocess_batch_func")," 只在 ",h("code",null,"is_pipeline_last_stage")," 为真时调用。VPP 打开时还要保证 micro-batch 数能被 ",h("code",null,"microbatch_group_size_per_vp_stage")," 整除，否则交错调度无法正确编排。"),
+      h("div",null,h(Src,{label:"forward_backward_batch",path:"verl/workers/engine/megatron/transformer_impl.py",line:607}),h(Src,{label:"is_pipeline_last_stage 收集输出",path:"verl/workers/engine/megatron/transformer_impl.py",line:714}),h(Ext,{href:"https://arxiv.org/abs/2104.04473"},"1F1B / 交错流水线论文"))
+    ];}},
+    {key:"optim",name:"优化器与 offload",render:function(){return [
+      h("p",null,"Megatron 的优化器步进与 FSDP 不同：",h("code",null,"optimizer.step()")," 直接返回 ",h("code",null,"(update_successful, grad_norm, num_zeros_in_grad)")," 三元组，梯度裁剪在 Megatron 分布式优化器内部完成（按 TP/PP 维去重并规约范数）。verl 只需读出 ",h("code",null,"grad_norm"),"；若 ",h("code",null,"update_successful")," 为假则视为严重错误抛异常。"),
+      h(Code,null,"def optimizer_step(self):\n    update_successful, grad_norm, num_zeros = self.optimizer.step()\n    if not update_successful:\n        raise NotImplementedError(\"Megatron optimizer step failed.\")\n    return grad_norm"),
+      h("p",null,"offload 比 FSDP 复杂：Megatron 的模型与优化器存储分四类（bf16 参数按模型并行组切、fp32 梯度按模型并行组切、fp32 主参数按模型加 DP 组切、fp32 优化器状态按模型加 DP 组切）。",h("code",null,"offload_megatron_model_to_cpu")," 复用单块固定（pinned）的 CPU 缓冲做 D2H 拷贝，避免每次 offload 都重新分配固定内存造成两倍峰值（在大模型上这一峰值会触发 cgroup 限制把进程杀掉）。"),
+      h("div",{className:"note"},h("code",null,"optimizer_zero_grad")," 除了 ",h("code",null,"optimizer.zero_grad()")," 还要对每个 model chunk 调 ",h("code",null,"zero_grad_buffer()"),"，因为 Megatron 用连续的梯度缓冲（contiguous grad buffer）做高效规约，必须显式清零。"),
+      h("div",null,h(Src,{label:"optimizer_step",path:"verl/workers/engine/megatron/transformer_impl.py",line:481}),h(Src,{label:"optimizer_zero_grad",path:"verl/workers/engine/megatron/transformer_impl.py",line:471}),h(Src,{label:"to（设备搬移）",path:"verl/workers/engine/megatron/transformer_impl.py",line:510}),h(Src,{label:"offload_megatron_model_to_cpu",path:"verl/utils/megatron_utils.py",line:494}),h(Src,{label:"load_megatron_optimizer",path:"verl/utils/megatron_utils.py",line:758}))
+    ];}},
+    {key:"convert",name:"权重转换",render:function(){return [
+      h("p",null,"Megatron 后端最重的工程是权重的双向转换。训练前要把 HF checkpoint 的权重布局转成 Megatron 的并行布局（按 TP/PP/EP 切分），训练后导出给推理引擎时再转回 HF 布局。两条方向都要处理 QKV 融合、gate/up 融合、专家权重的 EP 切分等。"),
+      h("p",null,h("code",null,"get_per_tensor_param")," 调 mbridge 的 ",h("code",null,"export_hf_weights")," 或 ",h("code",null,"export_weights")," 完成 Megatron 到 HF 的导出；底层的 ",h("code",null,"per_tensor_generator")," 负责跨 PP 各段、各 VPP 块收集参数名与张量，先用 ",h("code",null,"all_gather_object")," 让所有 rank 知道完整的参数清单，再逐个跨 TP 组 all-gather、按 ",h("code",null,"default_tp_concat_fn")," 拼接复原。"),
+      h(Code,null,"# get_per_tensor_param（Megatron，精简）\nload_megatron_model_to_gpu(self.module, load_grad=False, load_frozen_params=...)\nif self.vanilla_bridge:\n    per_tensor_param = self.bridge.export_weights(self.module)\nelse:\n    per_tensor_param = self.bridge.export_hf_weights(self.module)\nif self._qat_enabled:\n    per_tensor_param = export_qat_weights(per_tensor_param, self.module, ...)\nreturn per_tensor_param, peft_config"),
+      h("p",null,"权重转换之所以是承重点，是因为它直接决定权重同步的正确性：一旦 QKV 融合顺序或专家切分错位，推理引擎拿到的权重就是错的，而 RL 的 bug 往往是静默的（loss 不报错但策略学不动）。MoE 模型还有 router 偏置等参数没有注册到 ",h("code",null,"named_parameters")," 而只在 ",h("code",null,"state_dict")," 里，需要专门补齐。"),
+      h("div",null,h(Src,{label:"get_per_tensor_param",path:"verl/workers/engine/megatron/transformer_impl.py",line:723}),h(Src,{label:"per_tensor_generator",path:"verl/utils/megatron_utils.py",line:1214}),h(Src,{label:"default_tp_concat_fn",path:"verl/utils/megatron_utils.py",line:1132}),h(Src,{label:"convert_megatron_model_to_transformers_model",path:"verl/utils/megatron_utils.py",line:929}),h(Ext,{href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},"Megatron-Core 文档"))
+    ];}}
+  ];
+  function MegaExplorer(){const [s,setS]=useState(0);const d=MEGA[s];const ref=useTypeset("m"+d.key);
+    return h("div",null,
+      h("div",{className:"tabstrip"},MEGA.map(function(x,i){return h("div",{key:i,className:"tab mega"+(i===s?" active":""),onClick:function(){setS(i);}},x.name);})),
+      h("div",{key:d.key,ref:ref,className:"card"},d.render()));
+  }
+
+  // ===== 融合 kernel =====
+  function KernelSection(){const ref=useTypeset("kern");
+    return h("div",{ref:ref},
+      h("p",null,"训练 LLM 时显存的一个大头是 logits：形状 ",h("code",null,"(num_tokens, vocab_size)"),"，对大词表（如 15 万）与长序列会非常大。如果先用 lm_head 把 hidden 映射成完整 logits、再算交叉熵与熵，会materialize出整个 logits 张量。",h("code",null,"verl/utils/kernel/kernels.py")," 提供的融合 kernel 把“线性投影 + 交叉熵 + token 熵”三步合成一个 Triton kernel，沿词表维分块计算，从不materialize完整 logits，因此显存占用从 ",h("code",null,"O(num_tokens × vocab)")," 降到 ",h("code",null,"O(num_tokens)")," 量级。"),
+      h(Formula,{cap:"logits 在 softmax 下的对数配分函数（按词表分块在线计算 max 与 sum）"},"$$ \\text{logsumexp}(z) = m + \\log\\sum_{v} e^{z_v - m}, \\qquad m=\\max_v z_v $$"),
+      h(Formula,{cap:"目标 token 的 log-prob 与该位置的熵"},"$$ \\log p_{y} = z_{y} - \\text{logsumexp}(z), \\qquad H = -\\sum_{v} p_v \\log p_v = \\text{logsumexp}(z) - \\sum_v p_v z_v $$"),
+      h("p",null,"实现上 ",h("code",null,"LinearCrossEntropy")," 是一个 ",h("code",null,"torch.autograd.Function"),"：前向 ",h("code",null,"efficient_entropy_forward")," 把词表切成 ",h("code",null,"1024")," 一段（",h("code",null,"vocab_per_split"),"），对每段在线维护 max 与 accumulate（即在线 softmax），同时产出 log-prob 与熵，只保存反向所需的中间量（",h("code",null,"_maximum"),"、",h("code",null,"_accumulate"),"、",h("code",null,"_entropy_b"),"）而非完整 logits；反向 ",h("code",null,"efficient_entropy_backward")," 用这些中间量重算梯度 ",h("code",null,"d_hidden")," 与 ",h("code",null,"d_weight"),"。",h("code",null,"reduction")," 支持 none/sum/mean 三种（",h("code",null,"EntropyReductionEnum"),"），",h("code",null,"dist_process_group")," 支持词表并行（vocab parallel）时跨 TP 组规约。"),
+      h(Code,null,"class LinearCrossEntropy(torch.autograd.Function):\n    @staticmethod\n    def forward(ctx, hidden, weight, labels, temperature=1.0,\n                reduction=\"none\", dist_process_group=None):\n        # hidden (N, H), weight (V, H), labels (N,)\n        REDUCTION = kernels.get_entropy_reduction_enum_number(reduction.lower())\n        logprobs, entropy, _max, _acc, _eb = kernels.efficient_entropy_forward(\n            hidden, weight, labels, REDUCTION, temperature, dist_process_group)\n        ctx.save_for_backward(hidden, weight, labels, _max, _acc, _eb)  # 不存完整 logits\n        return logprobs, entropy"),
+      h("div",{className:"note"},"配套还有 ",h("code",null,"fp8_kernel.py"),"（FP8 量化 kernel，Hopper/Blackwell 才有 FP8 张量核）与 ",h("code",null,"linear_cross_entropy.py"),"（对外暴露的 ",h("code",null,"linear_cross_entropy")," autograd 入口）。融合 kernel 是规模化后的显存与吞吐优化：词表越大、序列越长，收益越显著。引擎侧通过 ",h("code",null,"use_fused_kernels")," 开关接入，前向时把 hidden 与 lm_head 权重直接喂给这个 kernel，而非先算完整 logits。"),
+      h("div",null,h(Src,{label:"kernels.py（融合实现）",path:"verl/utils/kernel/kernels.py",line:1}),h(Src,{label:"efficient_entropy_forward",path:"verl/utils/kernel/kernels.py",line:566}),h(Src,{label:"efficient_entropy_backward",path:"verl/utils/kernel/kernels.py",line:1515}),h(Src,{label:"EntropyReductionEnum",path:"verl/utils/kernel/kernels.py",line:103}),h(Src,{label:"LinearCrossEntropy",path:"verl/utils/kernel/linear_cross_entropy.py",line:38}),h(Src,{label:"fp8_kernel.py",path:"verl/utils/kernel/fp8_kernel.py",line:1}))
+    );
+  }
+
+  const DOCLINKS=[
+    {t:"PyTorch FSDP2 (fully_shard)",d:"ZeRO-3 风格分片的官方 API 与语义",href:"https://docs.pytorch.org/docs/stable/distributed.fsdp.fully_shard.html"},
+    {t:"PyTorch DTensor / Tensor Parallel",d:"分布式张量与张量并行 API",href:"https://docs.pytorch.org/docs/stable/distributed.tensor.parallel.html"},
+    {t:"PyTorch Distributed Checkpoint",d:"DCP 分片存取",href:"https://docs.pytorch.org/docs/stable/distributed.checkpoint.html"},
+    {t:"ZeRO 论文",d:"FSDP 的理论基础：优化器状态/梯度/参数分片",href:"https://arxiv.org/abs/1910.02054"},
+    {t:"Megatron-LM 论文",d:"张量并行的列/行切分方案",href:"https://arxiv.org/abs/1909.08053"},
+    {t:"Megatron 流水线论文",d:"1F1B 与交错式虚拟流水线调度",href:"https://arxiv.org/abs/2104.04473"},
+    {t:"Megatron-Core 文档",d:"NVIDIA 官方并行训练库",href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},
+    {t:"Triton 文档",d:"融合 kernel 所用的 GPU 编程语言",href:"https://triton-lang.org/"},
+    {t:"AReaL 第 7 课（深度基准）",d:"FSDP/Megatron 引擎的姊妹讲解，含完整数学",href:srcUrl("docs/AReaL/areal-lesson-07-train-engine.html",null)}
+  ];
+
+  function App(){
+    return h("div",null,
+      h(CourseNav,{current:6}),
+      h("main",null,
+        h("section",null,
+          h("p",{className:"kicker"},"第 6 课 / 共 12 · workers/engine 训练后端"),
+          h("h1",null,"训练引擎抽象与多后端"),
+          h("p",{className:"lead"},"这是全系列信息量最大的一课。verl 用一个统一抽象 BaseEngine 把算法关心的接口（前向反向、优化器步进、损失归一化、权重导出、checkpoint）与各后端的分片实现切开，再用 EngineRegistry 按（模型类型, 后端, 设备, 厂商）注册查找具体引擎。本课把 FSDP2 与 Megatron 两套主力后端的分片原理、张量/流水/上下文并行、损失跨数据并行的归一化、跨分片梯度裁剪、权重双向转换与融合 kernel 逐一讲清。"),
+          h("div",{className:"note"},"覆盖范围：",h("code",null,"workers/engine/base.py")," 统一抽象、",h("code",null,"workers/engine/utils.py")," 损失归一化骨架、",h("code",null,"fsdp/")," 与 ",h("code",null,"megatron/")," 两套主力后端、veomni/torchtitan/mindspeed/automodel 四套补充后端、",h("code",null,"utils/fsdp_utils.py"),"、",h("code",null,"utils/megatron_utils.py"),"、",h("code",null,"utils/kernel/")," 融合 kernel。绿色 ",h("span",{className:"hl-green"},"↗")," 标签为外部权威文档，蓝色 ",h("span",{className:"hl-blue"},"›_")," 标签用 vscode 打开本机 ",h("code",null,"/Users/xinyu/Code/Agentic-RL/verl")," 源码行。")
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"workers/engine/base.py"),
+          h("h2",null,"统一抽象 BaseEngine 与注册表"),
+          h(AbstractSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"workers/engine 多后端"),
+          h("h2",null,"六套后端：一张接口，多种分片"),
+          h(BackendSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"workers/engine/utils.py"),
+          h("h2",null,"损失跨数据并行的归一化"),
+          h(NormSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"抽象 · FSDP · 裁剪 · 导出"),
+          h("h2",null,"引擎抽象与 FSDP 后端细读"),
+          h("p",null,"四个栏目从引擎抽象的分层，到 FSDP2 的分片原理、跨分片梯度裁剪与 offload、权重导出与 checkpoint。点 Tab 切换。"),
+          h(TabExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"megatron 后端"),
+          h("h2",null,"Megatron 引擎：五维并行与权重转换"),
+          h("p",null,"NVIDIA Megatron-Core 封装，强在五维并行与 MoE。四个栏目讲并行维度、流水线调度、优化器与 offload、权重双向转换。"),
+          h(MegaExplorer)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"utils/kernel"),
+          h("h2",null,"融合 kernel：从不materialize完整 logits"),
+          h(KernelSection)
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"延伸阅读"),
+          h("h2",null,"外部与本机文档"),
+          h("p",null,"读引擎源码时配合这些文档，能把 PyTorch / Megatron 的原语语义和论文背景补齐。"),
+          h("div",{className:"linkgrid"},DOCLINKS.map(function(L,i){return h("div",{className:"linkcard",key:i},h("div",{className:"lt"},L.t),h("div",{className:"ld"},L.d),h("a",{className:L.href.indexOf("vscode")===0?"src":"ext",href:L.href,target:L.href.indexOf("http")===0?"_blank":undefined,rel:"noopener"},"打开"));}))
+        ),
+        h("section",null,
+          h("p",{className:"kicker"},"小结"),
+          h("h2",null,"这一层的设计主线"),
+          h("ul",null,
+            h("li",null,h("strong",null,"一张接口，多种分片"),"：",h("code",null,"BaseEngine")," 把算法关心的接口与后端各异的分片实现切开，",h("code",null,"EngineRegistry")," 按（模型类型, 后端, 设备, 厂商）注册查找。换后端、换硬件，算法代码不动。"),
+            h("li",null,h("strong",null,"FSDP 与 Megatron 的取舍"),"：FSDP2 是 PyTorch 原生 ZeRO-3，上手快、适合中小模型与快速迭代；Megatron 强在五维并行（PP/EP）、适合超大模型与 MoE，代价是配置复杂与权重双向转换。"),
+            h("li",null,h("strong",null,"分布式正确性藏在细节里"),"：损失必须跨 DP 用全局有效 token 数归一化（再乘 ",h("code",null,"dp_size")," 抵消后端的梯度平均，Megatron 还要乘 ",h("code",null,"num_micro_batch"),"）；梯度范数要跨所有分片规约、非有限时跳过更新。"),
+            h("li",null,h("strong",null,"offload 是共置的基础"),"：",h("code",null,"to(device)")," 与 ",h("code",null,"BaseEngineCtx")," 让训练与推理交替占用同一批 GPU，FSDP1/FSDP2/Megatron 各有不同的搬移实现，且两套 offload 机制不可叠加。"),
+            h("li",null,h("strong",null,"权重导出与融合 kernel"),"：",h("code",null,"get_per_tensor_param")," 把分片权重重建为逐张量完整权重供推理引擎接收（第 7、8 课）；融合 kernel 把线性投影加交叉熵加熵合成一个 Triton kernel，从不materialize完整 logits 以省显存。")
+          ),
+          h("div",{className:"foot"},
+            h("a",{href:"verl-lesson-05-core-algos.html"},h("div",{className:"faint"},"← 上一课"),h("strong",null,"第 5 课：RL 数学 core_algos")),
+            h("a",{href:"verl-lesson-07-workers.html"},h("div",{className:"faint"},"下一课 →"),h("strong",null,"第 7 课：Workers 与角色"))
+          )
+        )
+      )
+    );
+  }
+  window.addEventListener("load",function(){if(!window.React||!window.ReactDOM)return;ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));var t=function(){if(window.MathJax&&window.MathJax.typesetPromise){window.MathJax.typesetPromise().catch(function(){});}else{setTimeout(t,120);}};setTimeout(t,60);});
+  </script>
+</body>
+</html>
