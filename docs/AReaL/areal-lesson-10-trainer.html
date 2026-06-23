@@ -150,7 +150,7 @@
       h("p",null,"直接偏好优化：用成对 (chosen, rejected) 偏好数据（第 5 课 hhrlhf），不需要 reward 模型，也不需要 rollout。损失把“policy 相对 ref 在 chosen 上的对数比”推高、在 rejected 上推低。"),
       h(Formula,{cap:"DPO 损失（sigmoid 形式）"},"$$ \\mathcal{L}_{\\text{DPO}} = -\\log\\sigma\\Big(\\beta\\big[(\\log\\tfrac{\\pi_\\theta}{\\pi_{\\text{ref}}})_{c} - (\\log\\tfrac{\\pi_\\theta}{\\pi_{\\text{ref}}})_{r}\\big]\\Big) $$"),
       h("p",null,"chosen/rejected 成对打包，用第 4 课的 ",h("code",null,"dpo_pair_logratios")," 在 packed 批上聚合每条序列的 logp 再配对。"),
-      h("div",null,h(Src,{label:"DPOTrainer",path:"areal/trainer/dpo_trainer.py",line:84}),h(Src,{label:"compute_dpo_loss",path:"areal/trainer/dpo/dpo_engine.py",line:147}),h(Src,{label:"dpo_pair_logratios",path:"areal/utils/functional/functional.py",line:641}))
+      h("div",null,h(Src,{label:"DPOTrainer",path:"areal/trainer/dpo_trainer.py",line:84}),h(Src,{label:"compute_dpo_loss",path:"areal/trainer/dpo/dpo_engine.py",line:147}),h(Src,{label:"dpo_pair_logratios",path:"areal/utils/functional/functional.py",line:665}))
     ];}},
     {key:"rw",name:"RW（奖励模型）",render:function(){return [
       h("p",null,"训练奖励模型：给序列打分。同样用成对偏好数据，Bradley-Terry 损失让 chosen 的分高于 rejected。训出的 RW 可作为 PPO 的 reward 来源（替代可验证奖励）。"),

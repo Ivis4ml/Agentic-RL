@@ -92,7 +92,7 @@
       h("p",null,"AReaL 把推理后端的差异压到一个 ",h("code",null,"RemoteInfBackendProtocol")," 协议里（只管“怎么拼 HTTP 请求、怎么解析响应”），由一个统一的 ",h("code",null,"RemoteInfEngine")," 持有它（管路由、重试、版本、并发、权重同步）。",h("code",null,"RemoteSGLangEngine")," 与 ",h("code",null,"RemotevLLMEngine")," 只是把内部的 ",h("code",null,"RemoteInfEngine")," 包一层、转发所有方法。纯组合，零继承。"),
       h(Code,null,"class RemoteInfBackendProtocol(Protocol):       # 后端只实现这些\n    def build_generation_request(req, with_lora, version) -> HttpRequest: ...\n    def parse_generation_response(raw) -> HttpGenerationResult: ...\n    def build_distributed_weight_update_requests(meta, specs) -> list[HttpRequest]: ...\n    def get_pause_request() -> HttpRequest: ...\n\nclass RemoteSGLangEngine(InferenceEngine):\n    def __init__(self, config):\n        self._engine = RemoteInfEngine(config, SGLangBackend())  # 组合\n    async def agenerate(self, req):\n        return await self._engine.agenerate(req)                 # 转发"),
       h("div",{className:"note"},"出发点：换推理后端（SGLang↔vLLM）只写一个新的 backend 协议实现，agenerate/submit/wait/权重同步/路由这套主逻辑一行不改。这与第 3 课的接口、第 7 课训练侧的边界是同一种思路。"),
-      h("div",null,h(Src,{label:"RemoteInfBackendProtocol",path:"areal/infra/remote_inf_engine.py",line:125}),h(Src,{label:"RemoteInfEngine",path:"areal/infra/remote_inf_engine.py",line:327}),h(Src,{label:"RemoteSGLangEngine",path:"areal/engine/sglang_remote.py",line:315}),h(Src,{label:"RemotevLLMEngine",path:"areal/engine/vllm_remote.py",line:277}))
+      h("div",null,h(Src,{label:"RemoteInfBackendProtocol",path:"areal/infra/remote_inf_engine.py",line:126}),h(Src,{label:"RemoteInfEngine",path:"areal/infra/remote_inf_engine.py",line:340}),h(Src,{label:"RemoteSGLangEngine",path:"areal/engine/sglang_remote.py",line:367}),h(Src,{label:"RemotevLLMEngine",path:"areal/engine/vllm_remote.py",line:318}))
     );
   }
 
@@ -111,7 +111,7 @@
       h("div",{className:"flow"},steps.map(function(s,i){return h("div",{className:"flowstep",key:i},h("div",{className:"n"},s[0]),h("div",null,h("div",{className:"ft"},s[1]),h("div",{className:"fd"},s[2])));})),
       h(Formula,{cap:"每个输出 token 携带产生它的 policy 版本"},"$$ \\text{output\\_versions}[t] = v_{\\text{engine}}\\big(\\text{token } t \\text{ 生成时}\\big) $$"),
       h("div",{className:"warn"},"为什么要逐 token 记版本：异步训练里采样和训练并行，一条轨迹可能横跨权重更新。版本号让训练侧能算 π_proximal/π_behave 的修正（第 4 课 decoupled PPO）。框架本身不碰 KV，但必须精确记录“这个 token 是哪一版策略生成的”。"),
-      h("div",null,h(Src,{label:"agenerate",path:"areal/infra/remote_inf_engine.py",line:719}),h(Src,{label:"choose_server (轮询)",path:"areal/infra/remote_inf_engine.py",line:700}),h(Src,{label:"逐 token 版本标记",path:"areal/infra/remote_inf_engine.py",line:838}))
+      h("div",null,h(Src,{label:"agenerate",path:"areal/infra/remote_inf_engine.py",line:781}),h(Src,{label:"choose_server (轮询)",path:"areal/infra/remote_inf_engine.py",line:762}),h(Src,{label:"逐 token 版本标记",path:"areal/infra/remote_inf_engine.py",line:900}))
     );
   }
 
@@ -148,7 +148,7 @@
       h("p",null,"其中 +1 是训练侧那个广播源。建组后训练侧 ",h("code",null,"dist.broadcast")," 每个权重张量，推理 worker 的 ",h("code",null,"areal_update_weight_xccl()")," 按存好的 meta 分配空张量、从 NCCL 组接收、就地替换模型权重。vLLM 这套自定义端点和 worker 方法就在 ",h("code",null,"vllm_ext/"),"。"),
       h(Code,null,"# vllm_ext/vllm_worker_extension.py\nclass VLLMWorkerExtension:\n    def areal_update_weights(self, model_path):     # 磁盘: 就地 load\n        self.model_runner.model_config.model = model_path\n        self.model_runner.model.load_weights(...)\n        self.sync()                                 # 跨 TP rank 屏障\n    def areal_update_weight_xccl(self):             # NCCL: 收广播\n        group = self.weight_update_groups[meta.group_name]\n        buf = torch.empty(shape, dtype=dtype, device='cuda')\n        # 从 NCCL 组接收每个张量, 替换 named_parameters"),
       h("div",{className:"note"},"两条路都必须先 pause_generation（中止/排空旧请求，发 grace period），更新完 set_version 升版本，再 continue_generation。已生成的旧 token 仍带旧版本号，交给第 4 课的 decoupled PPO 处理。这就是第 6 课“权重更新切断旧 KV”那条规则在代码里的样子。"),
-      h("div",null,h(Src,{label:"init_weights_update_group",path:"areal/infra/remote_inf_engine.py",line:886}),h(Src,{label:"update_weights_from_distributed",path:"areal/infra/remote_inf_engine.py",line:945}),h(Src,{label:"SGLang rank 计算",path:"areal/engine/sglang_remote.py",line:189}),h(Src,{label:"VLLMWorkerExtension",path:"areal/engine/vllm_ext/vllm_worker_extension.py",line:30}),h(Ext,{href:"https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/"},"NCCL 文档"))
+      h("div",null,h(Src,{label:"init_weights_update_group",path:"areal/infra/remote_inf_engine.py",line:948}),h(Src,{label:"update_weights_from_distributed",path:"areal/infra/remote_inf_engine.py",line:1007}),h(Src,{label:"SGLang rank 计算",path:"areal/engine/sglang_remote.py",line:241}),h(Src,{label:"VLLMWorkerExtension",path:"areal/engine/vllm_ext/vllm_worker_extension.py",line:30}),h(Ext,{href:"https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/"},"NCCL 文档"))
     );
   }
 
@@ -161,7 +161,7 @@
       h(Formula,{cap:"待提交上限"},"$$ \\text{pending\\_limit} = (\\eta + 1)\\,B $$"),
       h("p",null,h("code",null,"η = max_staleness"),"、",h("code",null,"v")," 当前训练版本、",h("code",null,"B = consumer_batch_size"),"。",h("code",null,"η=0")," 近似同步 on-policy；增大 η 提吞吐但更 off-policy。",h("code",null,"RolloutStat")," 的四个计数在状态转移时更新：enqueued → (submitted) running → (accepted) accepted / (rejected) rejected。",h("code",null,"should_accept_fn")," 在 workflow 返回后过滤坏轨迹（拒绝的计 rejected，不进训练）。"),
       h("div",{className:"note"},"断点恢复有个坑：恢复后 version 直接跳到 v，容量公式会突然放出 (η+v+1)·B 的额度造成请求暴涌。on_version_recovered 把 accepted 重置为 v·B 来消掉这个跳变。"),
-      h("div",null,h(Src,{label:"StalenessManager.get_capacity",path:"areal/infra/staleness_manager.py",line:79}),h(Src,{label:"WorkflowExecutor",path:"areal/infra/workflow_executor.py",line:746}),h(Src,{label:"submit / wait",path:"areal/infra/remote_inf_engine.py",line:1023}),h(Src,{label:"RolloutStat（第2课）",path:"areal/api/io_struct.py",line:341}),h(Src,{label:"AReaL 异步 RL 文档",path:"docs/en/algorithms/async.md",line:null}))
+      h("div",null,h(Src,{label:"StalenessManager.get_capacity",path:"areal/infra/staleness_manager.py",line:79}),h(Src,{label:"WorkflowExecutor",path:"areal/infra/workflow_executor.py",line:747}),h(Src,{label:"submit / wait",path:"areal/infra/remote_inf_engine.py",line:1085}),h(Src,{label:"RolloutStat（第2课）",path:"areal/api/io_struct.py",line:349}),h(Src,{label:"AReaL 异步 RL 文档",path:"docs/en/algorithms/async.md",line:null}))
     );
   }
 

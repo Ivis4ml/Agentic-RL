@@ -169,13 +169,13 @@
         h("li",null,h("strong",{className:"hl-blue"},"ETP")," 专家张量并行：专家内部再做 TP。")),
       h(Formula,{cap:"约束（非专家维度）"},"$$ N_{\\text{world}} = \\text{dp}\\times\\text{tp}\\times\\text{pp}\\times\\text{cp} $$"),
       h("p",null,"相比 FSDP（只有 DP/SP/TP、无 PP），Megatron 的强项是大模型的 PP 与 MoE 的 EP。代价是配置复杂、要做 HF↔Megatron 权重转换（第 6 课的 mcore/hf_load、hf_save）。"),
-      h("div",null,h(Src,{label:"MegatronEngine",path:"areal/engine/megatron_engine.py",line:168}),h(Src,{label:"initialize_model_parallel",path:"areal/engine/megatron_engine.py",line:229}),h(Ext,{href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},"Megatron-Core 文档"),h(Src,{label:"AReaL Megatron 教程",path:"docs/en/tutorial/megatron.md",line:null}))
+      h("div",null,h(Src,{label:"MegatronEngine",path:"areal/engine/megatron_engine.py",line:168}),h(Src,{label:"initialize_model_parallel",path:"areal/engine/megatron_engine.py",line:231}),h(Ext,{href:"https://docs.nvidia.com/megatron-core/developer-guide/latest/"},"Megatron-Core 文档"),h(Src,{label:"AReaL Megatron 教程",path:"docs/en/tutorial/megatron.md",line:null}))
     ];}},
     {key:"pp",name:"流水并行 PP",render:function(){return [
       h("p",null,"PP 把 L 层切成 P 段，每卡一段，micro-batch 像流水线一样在段间流动。朴素做法（所有 forward 再所有 backward）气泡很大；Megatron 用 ",h("strong",null,"1F1B"),"（稳态下 1 前向紧跟 1 反向）压缩气泡，",h("strong",null,"交错式 VPP")," 让每卡持有多个不连续的层块进一步压缩。"),
       h(Formula,{cap:"流水线气泡占比（m 个 micro-batch，v 个虚拟段）"},"$$ \\text{bubble} = \\frac{P-1}{m \\cdot v} $$"),
       h("p",null,h("code",null,"configure_pipeline_layer_splits")," 按参数量把层均衡分到各 PP stage（避免某段过重拖慢整条流水线），",h("code",null,"estimate_stage_parameter_buckets")," 估算各 stage 的梯度缓冲。",h("code",null,"forward_backward_batch")," 直接用 Megatron 的 ",h("code",null,"get_forward_backward_func()")," 拿到 1F1B/交错调度，把 ",h("code",null,"forward_step")," 回调交给它编排，梯度累积由调度内部完成。"),
-      h("div",null,h(Src,{label:"configure_pipeline_layer_splits",path:"areal/engine/megatron_utils/pipeline_parallel.py",line:17}),h(Src,{label:"forward_backward_batch",path:"areal/engine/megatron_engine.py",line:802}),h(Ext,{href:"https://arxiv.org/abs/2104.04473"},"1F1B / 交错流水线论文"))
+      h("div",null,h(Src,{label:"configure_pipeline_layer_splits",path:"areal/engine/megatron_utils/pipeline_parallel.py",line:17}),h(Src,{label:"forward_backward_batch",path:"areal/engine/megatron_engine.py",line:835}),h(Ext,{href:"https://arxiv.org/abs/2104.04473"},"1F1B / 交错流水线论文"))
     ];}},
     {key:"cp",name:"上下文并行 CP",render:function(){return [
       h("p",null,"CP 把单条序列的 token 切到多卡处理超长上下文。难点是 packed 批次：每条序列长度不一，要按 ",h("code",null,"cu_seqlens")," 把每条序列均匀切到各 CP rank，attention 时各卡持有部分 K/V，靠环形/all-gather 通信补全，算完再把 logprob 按原序列顺序拼回。"),

@@ -100,7 +100,7 @@
           h("div",{className:"card-title"},h("span",{className:"pill amber"},"为什么独立成文件")),
           h("p",null,"把数学原语与分布式框架解耦有两个动机。其一，正确性。强化学习的 bug 往往是静默的（损失数值看似正常但梯度方向错误），把纯计算抽离便于写确定性的单元测试。其二，可移植。同一套优势与损失公式既服务于 Megatron 后端，也可被自定义优势函数（",h("code",null,"custom_advantage_function_path"),"）复用，无需重写。"))
       ),
-      h("div",null,h(Src,{label:"ppo_utils.py",path:"slime/utils/ppo_utils.py"}),h(Src,{label:"_post_process_rewards",path:"slime/ray/rollout.py",line:684}),h(Src,{label:"compute_advantages_and_returns",path:"slime/backends/megatron_utils/loss.py",line:575}),h(Src,{label:"policy_loss_function（拼装处）",path:"slime/backends/megatron_utils/loss.py",line:899}))
+      h("div",null,h(Src,{label:"ppo_utils.py",path:"slime/utils/ppo_utils.py"}),h(Src,{label:"_post_process_rewards",path:"slime/ray/rollout.py",line:684}),h(Src,{label:"compute_advantages_and_returns",path:"slime/backends/megatron_utils/loss.py",line:575}),h(Src,{label:"policy_loss_function（拼装处）",path:"slime/backends/megatron_utils/loss.py",line:801}))
     );
   }
 

@@ -139,7 +139,7 @@
     ];}},
     {key:"slurm",name:"Slurm",render:function(){return [
       h("p",null,"裸机 HPC 集群首选。通过 sbatch/srun 把作业提交到 Slurm 队列，按节点/GPU 分配，容器化执行。launcher 负责把 controller 与各角色 worker 拼成 Slurm 作业脚本。生产大规模训练的标准路径。"),
-      h("div",null,h(Src,{label:"SlurmScheduler",path:"areal/infra/scheduler/slurm.py",line:1}),h(Src,{label:"slurm launcher",path:"areal/infra/launcher/slurm.py",line:1}),h(Ext,{href:"https://slurm.schedmd.com/documentation.html"},"Slurm 文档"))
+      h("div",null,h(Src,{label:"SlurmScheduler",path:"areal/infra/scheduler/slurm.py",line:72}),h(Src,{label:"slurm launcher",path:"areal/infra/launcher/slurm.py",line:52}),h(Ext,{href:"https://slurm.schedmd.com/documentation.html"},"Slurm 文档"))
     ];}}
   ];
   function SchedExplorer(){const [s,setS]=useState(0);const d=SCHED[s];
