@@ -521,7 +521,7 @@ a.src:hover::before{color:var(--train)}
     先看下面几个核心入口：
     <div class="srcrow">
       <a class="src" data-f="examples/math/gsm8k_rl.py" data-l="9"></a>
-      <a class="src" data-f="areal/trainer/rl_trainer.py" data-l="525">rl_trainer.py:525 · train()</a>
+      <a class="src" data-f="areal/trainer/rl_trainer.py" data-l="552">rl_trainer.py:552 · train()</a>
       <a class="src" data-f="areal/api/engine_api.py" data-l="32">engine_api.py · TrainEngine</a>
       <a class="src" data-f="areal/api/workflow_api.py" data-l="14">workflow_api.py · RolloutWorkflow</a>
     </div>
@@ -643,7 +643,7 @@ a.src:hover::before{color:var(--train)}
       <p>RL 训练有个风险：模型为了多拿奖励，可能学出一堆怪话、丢掉原本的语言能力（reward hacking）。解法是用一个<strong>冻结的参考模型 $\pi_{\text{ref}}$</strong>（通常是 RL 前的初始模型），惩罚当前策略偏离它太远：</p>
       <div class="formula">$$ \text{penalty} = \beta\, D_{\mathrm{KL}}\!\left[\, \pi_\theta \,\big\|\, \pi_{\text{ref}} \,\right] $$</div>
       <div class="intuition"><b>这就是架构图里 <span style="color:var(--train)">ref 模型</span>的作用。</b>AReaL 的实现里，KL 不直接加进目标函数，而是经 <code>KLEstimator</code> 折进每个 token 的奖励、再做 GAE（PPO 式），由 <code>actor.kl_ctl</code> 控制力度 $\beta$。</div>
-      <div class="srcrow"><a class="src" data-f="areal/trainer/rl_trainer.py" data-l="612">rl_trainer.py:612 · ref.compute_logp（算 KL 用）</a></div>
+      <div class="srcrow"><a class="src" data-f="areal/trainer/rl_trainer.py" data-l="650">rl_trainer.py:650 · ref.compute_logp（算 KL 用）</a></div>
     </div>
 
   </div>
@@ -726,7 +726,7 @@ a.src:hover::before{color:var(--train)}
   <div class="srcrow reveal">
     <a class="src" data-f="areal/trainer/rl_trainer.py" data-l="105">rl_trainer.py:105 · PPOTrainer</a>
     <a class="src" data-f="areal/infra/controller/train_controller.py" data-l="174">train_controller.py:174 · TrainController</a>
-    <a class="src" data-f="areal/infra/remote_inf_engine.py" data-l="327">remote_inf_engine.py:327 · RemoteInfEngine</a>
+    <a class="src" data-f="areal/infra/remote_inf_engine.py" data-l="340">remote_inf_engine.py:340 · RemoteInfEngine</a>
     <a class="src" data-f="areal/trainer/ppo/actor.py" data-l="368">actor.py:368 · PPOActorController</a>
   </div>
 
@@ -881,7 +881,7 @@ SerializedTensor = {
   <h3 class="reveal">每个组件的关键算法与数据结构</h3>
   <table class="tbl reveal">
     <tr><th>组件</th><th>关键算法 / 数据结构</th><th>源码</th></tr>
-    <tr><td>BatchTaskDispatcher</td><td>异步任务队列 · 在途批次流水线 · 动态过滤凑批</td><td><a class="src" data-f="areal/infra/workflow_executor.py" data-l="262">workflow_executor.py:262</a></td></tr>
+    <tr><td>BatchTaskDispatcher</td><td>异步任务队列 · 在途批次流水线 · 动态过滤凑批</td><td><a class="src" data-f="areal/infra/workflow_executor.py" data-l="263">workflow_executor.py:263</a></td></tr>
     <tr><td>TrainController 分发</td><td><b>FFD</b> / <b>Karmarkar-Karp</b> 序列装箱 · metadata-only dispatch · NCCL all-reduce</td><td><a class="src" data-f="areal/infra/controller/train_controller.py" data-l="76">train_controller.py:76</a></td></tr>
     <tr><td>序列打包 packing</td><td>FFD（O(n log n)）/ KK（近最优均衡）· MicroBatchSpec</td><td><a class="src" data-f="areal/api/cli_args.py" data-l="99">cli_args.py:99</a></td></tr>
     <tr><td>推理引擎</td><td>continuous batching · PagedAttention/KV cache · agenerate（token→token）</td><td><a class="src" data-f="areal/api/engine_api.py" data-l="620">engine_api.py:620</a></td></tr>
@@ -960,7 +960,7 @@ clear_checkpoint_after_load       <span class="cm"># 可选清理</span></pre>
       <div class="srcrow">
         <a class="src" data-f="areal/engine/fsdp_engine.py" data-l="1566">fsdp_engine.py:1566 · _update_weights_from_distributed</a>
         <a class="src" data-f="areal/engine/fsdp_engine.py" data-l="1665">fsdp_engine.py:1665 · _update_weights_from_disk</a>
-        <a class="src" data-f="areal/infra/remote_inf_engine.py" data-l="886">remote_inf_engine.py:886 · init_weights_update_group</a>
+        <a class="src" data-f="areal/infra/remote_inf_engine.py" data-l="948">remote_inf_engine.py:948 · init_weights_update_group</a>
       </div>
     </div>
   </details>
@@ -1008,9 +1008,9 @@ clear_checkpoint_after_load       <span class="cm"># 可选清理</span></pre>
   </div>
 
   <div class="srcrow reveal">
-    <a class="src" data-f="areal/infra/workflow_executor.py" data-l="262">workflow_executor.py:262 · BatchTaskDispatcher</a>
+    <a class="src" data-f="areal/infra/workflow_executor.py" data-l="263">workflow_executor.py:263 · BatchTaskDispatcher</a>
     <a class="src" data-f="areal/infra/workflow_executor.py" data-l="746">workflow_executor.py:746 · WorkflowExecutor</a>
-    <a class="src" data-f="areal/engine/sglang_remote.py" data-l="315">sglang_remote.py:315 · RemoteSGLangEngine</a>
+    <a class="src" data-f="areal/engine/sglang_remote.py" data-l="367">sglang_remote.py:367 · RemoteSGLangEngine</a>
     <a class="src" data-f="areal/api/engine_api.py" data-l="620">engine_api.py:620 · agenerate()</a>
   </div>
 
@@ -1053,7 +1053,7 @@ capacity = min(concurrency_cap,
 <span class="cm"># max_staleness = max_head_offpolicyness</span></pre>
         </div>
         <div class="ds-card">
-          <div class="dsh">每个 token 打版本号 · <a class="src" data-f="areal/infra/remote_inf_engine.py" data-l="838">remote_inf_engine.py:838</a></div>
+          <div class="dsh">每个 token 打版本号 · <a class="src" data-f="areal/infra/remote_inf_engine.py" data-l="900">remote_inf_engine.py:900</a></div>
 <pre><span class="cm"># 生成时按当时版本打 tag</span>
 accumulated_versions.extend(
   [self.get_version()]
@@ -1125,7 +1125,7 @@ versions = [<span class="vv">-1</span>]*input_len \
     <a class="src" data-f="areal/experimental/openai/proxy/proxy_rollout_server.py" data-l="214">proxy_rollout_server.py · FastAPI</a>
     <a class="src" data-f="areal/experimental/openai/cache.py" data-l="13">cache.py:13 · InteractionCache</a>
     <a class="src" data-f="areal/experimental/openai/types.py" data-l="143">types.py:143 · to_tensor_dict()</a>
-    <a class="src" data-f="areal/experimental/openai/client.py" data-l="1212">client.py:1212 · ArealOpenAI</a>
+    <a class="src" data-f="areal/experimental/openai/client.py" data-l="1218">client.py:1218 · ArealOpenAI</a>
   </div>
 
   <h3 class="reveal">奖励沿对话树反向传播（交互演示）</h3>
@@ -1214,7 +1214,7 @@ for it in reversed(interactions):
   </p>
   <div class="srcrow reveal">
     <a class="src" data-f="areal/trainer/ppo/actor.py" data-l="253">actor.py:253 · ppo_update（损失在这里算）</a>
-    <a class="src" data-f="areal/api/cli_args.py" data-l="1442">cli_args.py:1442 · PPOActorConfig</a>
+    <a class="src" data-f="areal/api/cli_args.py" data-l="1461">cli_args.py:1461 · PPOActorConfig</a>
     <a class="src" data-f="areal/api/cli_args.py" data-l="42">cli_args.py:42 · NormConfig</a>
     <a class="src" data-f="docs/en/algorithms/grpo_series.md" data-l="1">docs · grpo_series.md</a>
   </div>
@@ -1348,7 +1348,7 @@ for it in reversed(interactions):
     其中 $v$ 是各 token 生成时的策略版本号。开启方式：<code>actor.prox_logp_method=loglinear</code>。
   </p>
   <div class="srcrow reveal">
-    <a class="src" data-f="areal/api/cli_args.py" data-l="1442">cli_args.py:1442 · PPOActorConfig（use_decoupled_loss / prox_logp_method）</a>
+    <a class="src" data-f="areal/api/cli_args.py" data-l="1461">cli_args.py:1461 · PPOActorConfig（use_decoupled_loss / prox_logp_method）</a>
     <a class="src" data-f="docs/en/algorithms/prox_approx.md" data-l="1">docs · prox_approx.md</a>
   </div>
   <table class="tbl reveal">
@@ -1581,12 +1581,12 @@ setMode('async');
       role:'管理 SGLang/vLLM 推理 worker，把 prompt 路由过去、收集回轨迹。controller 侧只拿到 RTensor 元数据。',
       algos:['round-robin 任务路由','RTensor：元数据与分片分离','版本号与 staleness 跟踪'],
       rat:'推理是 memory-bound 的自回归长尾任务，必须与训练解耦、独立打满。',
-      f:'areal/infra/remote_inf_engine.py',l:327},
+      f:'areal/infra/remote_inf_engine.py',l:340},
     disp:{x:70,y:166,w:180,h:42,side:'roll',title:'BatchTaskDispatcher',sub:'后台提交 / 回收',
       role:'controller 上的后台线程：持续向 rollout worker 提交任务、回收完成的轨迹，维持 2+ 个 batch 在途以隐藏长尾延迟。',
       algos:['非阻塞 submit / collect 队列','在途批次流水线（hide latency）','dynamic_filter_fn 动态过滤 + 凑齐 batch_size'],
       rat:'生成有长尾，把「提交」和「回收」脱钩，训练侧永远有数据可吃。',
-      f:'areal/infra/workflow_executor.py',l:262},
+      f:'areal/infra/workflow_executor.py',l:263},
     tc:{x:690,y:110,w:180,h:46,side:'train',title:'TrainController',sub:'FFD 分发 worker',
       role:'管理 FSDP/Megatron 训练 worker：把一个 batch 切片均衡下发，再把各 worker 的结果合并回来。',
       algos:['FFD / Karmarkar-Karp 序列装箱','data_parallel_dispatch() / merge()','worker 直接拉分片，绕开 controller'],
@@ -1621,7 +1621,7 @@ setMode('async');
       role:'可选辅助模型。ref 算 KL 参考；critic 算 value 供 PPO 的 GAE；teacher 提供蒸馏用的 logp。',
       algos:['KLEstimator：KL 折进 per-token reward','critic + GAE value','蒸馏 loss 加权（rl / distill weight）'],
       rat:'把可选成分做成可插拔模块；GRPO 不需要 critic，直接省一半显存。',
-      f:'areal/trainer/rl_trainer.py',l:612}
+      f:'areal/trainer/rl_trainer.py',l:172}
   };
   const FLOWS=[
     {d:'M410 84 Q210 92 160 110',cls:'ctrl',mk:'arrCtrl'},
@@ -1710,7 +1710,7 @@ setMode('async');
      tool:'<b>aiohttp</b> 并发 HTTP · base64 解码 · <b>_fetch_buffer</b> 缓存',f:'areal/infra/rpc/rtensor.py',l:447},
     {t:'用完两端都要清',side:'cons',tag:'step 末 · clear_batches',
      desc:'字节同时活在生产方的 _storage 和消费方的 _fetch_buffer 里。每个 training step 结束，clear_batches 向存储方发 DELETE /data/clear，同时在每个消费进程调 clear_fetch_buffer()。少清任一端，内存都会随 step 无限增长（issue #1209）。',
-     tool:'DELETE /data/clear + clear_fetch_buffer()',f:'areal/infra/rpc/rtensor.py',l:593}
+     tool:'DELETE /data/clear + clear_fetch_buffer()',f:'areal/infra/rpc/rtensor.py',l:551}
   ];
   const sideName={prod:'生产方 · rollout',ctrl:'控制器',cons:'消费方 · train'};
   let cur=0;
@@ -1773,34 +1773,34 @@ function mountStepper(host, steps, sideLabels){
 const DEEP_STEPPERS={
   weightsync:{labels:{train:'训练侧',roll:'推理侧',ctrl:'协调'},steps:[
     {t:'建立 NCCL 通信组',side:'train',tag:'train rank0',desc:'训练端 rank0 取本机 IP 和一个空端口做 TCP bootstrap，init_custom_process_group 建一个 world_size = 推理 worker 数 + 1 的 NCCL 组，组名 update_weight_group（PP>1 则每个 PP rank 一组）。',tool:'torch.distributed init_process_group（NCCL）',f:'areal/engine/fsdp_engine.py',l:1484},
-    {t:'通知推理端一起建组',side:'ctrl',tag:'train → roll',desc:'rank0 通过 RPC 调各推理引擎的 init_weights_update_group；推理端对每个 worker HTTP POST /init_weights_update_group，用 asyncio.gather 并发，让它们加入同一个 NCCL 组。',tool:'aiohttp + asyncio.gather',f:'areal/infra/remote_inf_engine.py',l:886},
-    {t:'暂停推理 + 同步',side:'roll',tag:'roll',desc:'rank0 调 pause_generation() 拦住新的推理请求，再 dist.barrier(cpu_group) 让所有训练 rank 到齐，准备一致地广播。',tool:'pause_generation + dist.barrier',f:'areal/engine/fsdp_engine.py',l:1578},
-    {t:'收齐全量参数并分桶',side:'train',tag:'train',desc:'遍历参数：FSDP 的 DTensor 先 full_tensor() 把分片收成完整张量（集合通信），rank0 把 fp32 cast 成 bf16，再按 weight_chunked_mem_mb（默认 1024MB）把多个张量攒成一个广播桶。',tool:'DTensor.full_tensor · 分桶',f:'areal/engine/fsdp_engine.py',l:1610},
-    {t:'广播一个桶',side:'train',tag:'train → roll',desc:'每个桶：先把这批张量的 ParamSpec（name/shape/dtype）发给推理端，推理端起 HTTP /update_weights_from_distributed 等收；rank0 对每个张量 dist.broadcast(src=0, group, async_op=True) 非阻塞推过去。',tool:'torch.distributed.broadcast（NCCL, async）',f:'areal/engine/fsdp_engine.py',l:1326},
-    {t:'等完成 + 打版本号',side:'ctrl',tag:'train/roll',desc:'handle.wait() 等 NCCL 广播完，fut.result() 等推理端 HTTP 收完。然后 actor / critic / rollout / eval_rollout 全部 set_version(step+1)，新版本号生效。',tool:'NCCL handle.wait · set_version',f:'areal/trainer/rl_trainer.py',l:744},
-    {t:'恢复推理',side:'roll',tag:'roll',desc:'continue_generation() 放开推理。新请求在 header 带上新版本号，用新权重重新计算 KV cache（旧权重的缓存作废）。',tool:'continue_generation',f:'areal/trainer/rl_trainer.py',l:833}
+    {t:'通知推理端一起建组',side:'ctrl',tag:'train → roll',desc:'rank0 通过 RPC 调各推理引擎的 init_weights_update_group；推理端对每个 worker HTTP POST /init_weights_update_group，用 asyncio.gather 并发，让它们加入同一个 NCCL 组。',tool:'aiohttp + asyncio.gather',f:'areal/infra/remote_inf_engine.py',l:948},
+    {t:'暂停推理 + 同步',side:'roll',tag:'roll',desc:'rank0 调 pause_generation() 拦住新的推理请求，再 dist.barrier(cpu_group) 让所有训练 rank 到齐，准备一致地广播。',tool:'pause_generation + dist.barrier',f:'areal/engine/fsdp_engine.py',l:1582},
+    {t:'收齐全量参数并分桶',side:'train',tag:'train',desc:'遍历参数：FSDP 的 DTensor 先 full_tensor() 把分片收成完整张量（集合通信），rank0 把 fp32 cast 成 bf16，再按 weight_chunked_mem_mb（默认 1024MB）把多个张量攒成一个广播桶。',tool:'DTensor.full_tensor · 分桶',f:'areal/engine/fsdp_engine.py',l:1609},
+    {t:'广播一个桶',side:'train',tag:'train → roll',desc:'每个桶：先把这批张量的 ParamSpec（name/shape/dtype）发给推理端，推理端起 HTTP /update_weights_from_distributed 等收；rank0 对每个张量 dist.broadcast(src=0, group, async_op=True) 非阻塞推过去。',tool:'torch.distributed.broadcast（NCCL, async）',f:'areal/engine/fsdp_engine.py',l:1328},
+    {t:'等完成 + 打版本号',side:'ctrl',tag:'train/roll',desc:'handle.wait() 等 NCCL 广播完，fut.result() 等推理端 HTTP 收完。然后 actor / critic / rollout / eval_rollout 全部 set_version(step+1)，新版本号生效。',tool:'NCCL handle.wait · set_version',f:'areal/trainer/rl_trainer.py',l:772},
+    {t:'恢复推理',side:'roll',tag:'roll',desc:'continue_generation() 放开推理。新请求在 header 带上新版本号，用新权重重新计算 KV cache（旧权重的缓存作废）。',tool:'continue_generation',f:'areal/trainer/rl_trainer.py',l:859}
   ]},
   staleness:{labels:{roll:'推理侧',ctrl:'控制器',train:'训练侧'},steps:[
-    {t:'enqueue 入队',side:'ctrl',tag:'main thread',desc:'submit_task_input 把任务塞进 _pending_inputs 队列，并通知 StalenessManager on_rollout_enqueued，登记到活跃任务集合。',tool:'deque + StalenessManager',f:'areal/infra/workflow_executor.py',l:528},
-    {t:'producer 容量门控',side:'ctrl',tag:'后台线程',desc:'_commit_loop 持续运行：先算 get_capacity()，>0 才把任务 submit 给 runner 并 on_rollout_submitted；容量 ≤0（陈旧度预算用尽）就把任务回插、等待容量信号。这是异步重叠的闸门。',tool:'get_capacity 门控',f:'areal/infra/workflow_executor.py',l:359},
-    {t:'生成并逐 token 打版本',side:'roll',tag:'推理引擎',desc:'每生成一段，就用「当时的」get_version() 给这些 token 打版本 tag：accumulated_versions.extend([ver]*len(tokens))。版本随训练推进而变。',tool:'get_version · 逐 token tag',f:'areal/infra/remote_inf_engine.py',l:838},
-    {t:'partial rollout 续生成',side:'roll',tag:'推理引擎',desc:'若被权重更新 pause 打断，就 sleep 0.5s 等待再续生成；一条轨迹的不同段可能带不同版本号；被 abort 的当作 length 结束。这就是「一条轨迹跨多个策略版本」。',tool:'pause 感知 · 续生成循环',f:'areal/infra/remote_inf_engine.py',l:787},
-    {t:'consumer 收集 + 唤醒',side:'ctrl',tag:'后台线程',desc:'_fetch_loop 每 0.05s 非阻塞地从 runner 取结果（每次最多 100 个），存进 _pending_results，并 notify 唤醒 producer 去提交下一批，这就是维持 2+ batch 在途的关键。',tool:'非阻塞 poll + notify',f:'areal/infra/workflow_executor.py',l:395},
-    {t:'凑齐 batch 交训练',side:'train',tag:'main thread',desc:'wait_results 阻塞到累计 ≥ batch_size 个被接受的轨迹，按创建时间排序、多余的回插、shuffle 增加多样性，然后交给训练。trajectory 里 versions = [-1]*input_len + output_versions。',tool:'wait_results · shuffle',f:'areal/infra/workflow_executor.py',l:546}
+    {t:'enqueue 入队',side:'ctrl',tag:'main thread',desc:'submit_task_input 把任务塞进 _pending_inputs 队列，并通知 StalenessManager on_rollout_enqueued，登记到活跃任务集合。',tool:'deque + StalenessManager',f:'areal/infra/workflow_executor.py',l:529},
+    {t:'producer 容量门控',side:'ctrl',tag:'后台线程',desc:'_commit_loop 持续运行：先算 get_capacity()，>0 才把任务 submit 给 runner 并 on_rollout_submitted；容量 ≤0（陈旧度预算用尽）就把任务回插、等待容量信号。这是异步重叠的闸门。',tool:'get_capacity 门控',f:'areal/infra/workflow_executor.py',l:360},
+    {t:'生成并逐 token 打版本',side:'roll',tag:'推理引擎',desc:'每生成一段，就用「当时的」get_version() 给这些 token 打版本 tag：accumulated_versions.extend([ver]*len(tokens))。版本随训练推进而变。',tool:'get_version · 逐 token tag',f:'areal/infra/remote_inf_engine.py',l:900},
+    {t:'partial rollout 续生成',side:'roll',tag:'推理引擎',desc:'若被权重更新 pause 打断，就 sleep 0.5s 等待再续生成；一条轨迹的不同段可能带不同版本号；被 abort 的当作 length 结束。这就是「一条轨迹跨多个策略版本」。',tool:'pause 感知 · 续生成循环',f:'areal/infra/remote_inf_engine.py',l:849},
+    {t:'consumer 收集 + 唤醒',side:'ctrl',tag:'后台线程',desc:'_fetch_loop 每 0.05s 非阻塞地从 runner 取结果（每次最多 100 个），存进 _pending_results，并 notify 唤醒 producer 去提交下一批，这就是维持 2+ batch 在途的关键。',tool:'非阻塞 poll + notify',f:'areal/infra/workflow_executor.py',l:396},
+    {t:'凑齐 batch 交训练',side:'train',tag:'main thread',desc:'wait_results 阻塞到累计 ≥ batch_size 个被接受的轨迹，按创建时间排序、多余的回插、shuffle 增加多样性，然后交给训练。trajectory 里 versions = [-1]*input_len + output_versions。',tool:'wait_results · shuffle',f:'areal/infra/workflow_executor.py',l:547}
   ]},
   agentic:{labels:{roll:'proxy / 推理',ctrl:'会话编排'},steps:[
-    {t:'grant_capacity 预留',side:'ctrl',tag:'admin key',desc:'POST /grant_capacity（管理员鉴权）增加全局容量计数，做 staleness 控制（在线模式下尤其重要）。',tool:'FastAPI 端点',f:'areal/experimental/openai/proxy/proxy_rollout_server.py',l:350},
-    {t:'start_session 开会话',side:'ctrl',tag:'admin key',desc:'POST /rl/start_session 生成唯一 session_id + 专属 session api_key，建一个 SessionData（内含 InteractionCache），存进 _session_cache。',tool:'SessionData + InteractionCache',f:'areal/experimental/openai/proxy/proxy_rollout_server.py',l:410},
-    {t:'chat/completions 调用',side:'roll',tag:'session key',desc:'agent 用 session key 发 POST /v1/chat/completions：proxy 用 apply_chat_template 把消息 tokenize，调 engine.agenerate 生成带 logprob 的 token，建一个 InteractionWithTokenLogpReward，以 completion.id 为键存入 cache（此刻触发父子最长前缀匹配）。',tool:'apply_chat_template · engine.agenerate',f:'areal/experimental/openai/proxy/proxy_rollout_server.py',l:615},
-    {t:'set_reward 赋奖励',side:'roll',tag:'session key',desc:'agent 算完一轮，POST /rl/set_reward 给某次交互或最后一次赋 reward，写进 InteractionCache。',tool:'cache.set_reward',f:'areal/experimental/openai/proxy/proxy_rollout_server.py',l:494},
-    {t:'end_session 收尾',side:'roll',tag:'session key',desc:'POST /rl/end_session 调 session.finish() 标记完成、触发完成事件。',tool:'session.finish',f:'areal/experimental/openai/proxy/proxy_rollout_server.py',l:473},
+    {t:'grant_capacity 预留',side:'ctrl',tag:'admin key',desc:'POST /grant_capacity（管理员鉴权）增加全局容量计数，做 staleness 控制（在线模式下尤其重要）。',tool:'FastAPI 端点',f:'areal/experimental/openai/proxy/proxy_rollout_server.py',l:351},
+    {t:'start_session 开会话',side:'ctrl',tag:'admin key',desc:'POST /rl/start_session 生成唯一 session_id + 专属 session api_key，建一个 SessionData（内含 InteractionCache），存进 _session_cache。',tool:'SessionData + InteractionCache',f:'areal/experimental/openai/proxy/proxy_rollout_server.py',l:411},
+    {t:'chat/completions 调用',side:'roll',tag:'session key',desc:'agent 用 session key 发 POST /v1/chat/completions：proxy 用 apply_chat_template 把消息 tokenize，调 engine.agenerate 生成带 logprob 的 token，建一个 InteractionWithTokenLogpReward，以 completion.id 为键存入 cache（此刻触发父子最长前缀匹配）。',tool:'apply_chat_template · engine.agenerate',f:'areal/experimental/openai/proxy/proxy_rollout_server.py',l:616},
+    {t:'set_reward 赋奖励',side:'roll',tag:'session key',desc:'agent 算完一轮，POST /rl/set_reward 给某次交互或最后一次赋 reward，写进 InteractionCache。',tool:'cache.set_reward',f:'areal/experimental/openai/proxy/proxy_rollout_server.py',l:495},
+    {t:'end_session 收尾',side:'roll',tag:'session key',desc:'POST /rl/end_session 调 session.finish() 标记完成、触发完成事件。',tool:'session.finish',f:'areal/experimental/openai/proxy/proxy_rollout_server.py',l:474},
     {t:'export 导出训练张量',side:'ctrl',tag:'admin key',desc:'POST /export_trajectories：先 apply_reward_discount 按逆拓扑序做几何折扣回传，再按 style 导出（concat 只留叶子节点 / individual 全留），最后 to_tensor_dict 转成 input_ids/loss_mask/logprobs/versions/rewards 张量。',tool:'apply_reward_discount · to_tensor_dict',f:'areal/experimental/openai/cache.py',l:55}
   ]},
   parallel:{labels:{train:'训练侧'},steps:[
     {t:'解析 backend 字符串',side:'train',tag:'alloc_mode',desc:'用 Lark 文法把 "megatron:d2p2t4e4" 这样的字符串解析成 ParallelStrategy / ModelAllocation，得到 d/t/p/c/e 各维大小，world_size = d*c*t*p。',tool:'Lark 文法解析器',f:'areal/api/alloc_mode.py',l:1096},
     {t:'FSDP2 建 device mesh',side:'train',tag:'fsdp',desc:'ParallelHelper.from_parallel_strategy 调 init_device_mesh(mesh_shape=(dp,sp,tp))，再 flatten 出 dp_sp、sp_tp 等子网格，供后续分片用。',tool:'torch DeviceMesh · init_device_mesh',f:'areal/engine/fsdp_utils/parallel.py',l:80},
     {t:'fully_shard 真正分片',side:'train',tag:'fsdp',desc:'先 apply_non_moe_tp 做张量并行，再对每个 module 调 fully_shard(mesh=dp_sp, reshard_after_forward=True)，把参数 / 梯度 / 优化器状态按 dp_sp 子网格分片。',tool:'torch.distributed.fsdp.fully_shard',f:'areal/engine/fsdp_utils/__init__.py',l:99},
-    {t:'（或）Megatron 5D 网格',side:'train',tag:'megatron',desc:'走 Megatron 时，mpu.initialize_model_parallel 按 order="tp-cp-ep-dp-pp" 构建 5D 并行的 rank 布局，支持流水与专家并行。',tool:'megatron.core.parallel_state',f:'areal/engine/megatron_engine.py',l:229},
+    {t:'（或）Megatron 5D 网格',side:'train',tag:'megatron',desc:'走 Megatron 时，mpu.initialize_model_parallel 按 order="tp-cp-ep-dp-pp" 构建 5D 并行的 rank 布局，支持流水与专家并行。',tool:'megatron.core.parallel_state',f:'areal/engine/megatron_engine.py',l:231},
     {t:'sequence packing 装箱',side:'train',tag:'seqpack',desc:'训练前按 token 长度，用 FFD（降序首次适配，O(n log n)）或 KK（Karmarkar-Karp 最大差分，近最优）把变长序列装箱到各 DP rank / micro-batch，均衡前向反向计算量。',tool:'ffd_allocate / kk_allocate',f:'areal/utils/seqpack.py',l:195},
     {t:'tree attention 省算力',side:'train',tag:'tree_attn',desc:'多轮轨迹常共享长前缀。把它们建成 TrieNode 压缩前缀树，precompute_tree_attention_data 预算注意力结构，再用 Triton kernel 对共享前缀只算一次注意力。',tool:'TrieNode + Triton kernel',f:'areal/models/tree_attn/tree.py',l:40}
   ]}
